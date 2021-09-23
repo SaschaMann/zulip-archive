@@ -1,0 +1,74 @@
+[
+    {
+        "content": "<p>I would like to do the following</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">T</span><span class=\"p\">{</span><span class=\"kt\">R1</span><span class=\"p\">},</span> <span class=\"n\">b</span><span class=\"o\">::</span><span class=\"kt\">T</span><span class=\"p\">{</span><span class=\"kt\">R2</span><span class=\"p\">})</span> <span class=\"k\">where</span> <span class=\"p\">{</span><span class=\"kt\">R1</span><span class=\"p\">,</span><span class=\"kt\">R2</span><span class=\"p\">,</span> <span class=\"kt\">T</span> <span class=\"o\">&lt;:</span> <span class=\"kt\">SomeAbstractType</span><span class=\"p\">}</span>\n\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>but this doesn't compile. </p>\n<p>Is there a way to accomplish such a thing? I want <code>foo</code> to dispatch only when <code>a,b</code> have the same subtype of some abstract type <em>but</em> possibly different type parameters.</p>\n<p>edit: missing curly bracket, clarification</p>",
+        "id": 242920043,
+        "sender_full_name": "peter j.",
+        "timestamp": 1623867069
+    },
+    {
+        "content": "<p>Is your abstract type also parametrized? If so, I think you could do </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">T</span><span class=\"p\">,</span> <span class=\"n\">b</span><span class=\"o\">::</span><span class=\"kt\">T</span><span class=\"p\">)</span> <span class=\"k\">where</span> <span class=\"p\">{</span><span class=\"kt\">R1</span><span class=\"p\">,</span><span class=\"kt\">R2</span><span class=\"p\">,</span> <span class=\"kt\">T</span> <span class=\"o\">&lt;:</span> <span class=\"kt\">SomeAbstractType</span><span class=\"p\">{</span><span class=\"kt\">R1</span><span class=\"p\">,</span><span class=\"kt\">R2</span><span class=\"p\">}}</span>\n\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 242920322,
+        "sender_full_name": "Max Köhler",
+        "timestamp": 1623867178
+    },
+    {
+        "content": "<p>It is, but only with one type parameter, so that does not work.</p>",
+        "id": 242921751,
+        "sender_full_name": "peter j.",
+        "timestamp": 1623867867
+    },
+    {
+        "content": "<p>This must be possible, I think, since one can do:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">xx</span><span class=\"o\">::</span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Int</span><span class=\"p\">},</span> <span class=\"n\">yy</span><span class=\"o\">::</span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Float64</span><span class=\"p\">})</span> <span class=\"o\">=</span> <span class=\"nb\">true</span>\n<span class=\"n\">f</span> <span class=\"p\">(</span><span class=\"n\">generic</span> <span class=\"k\">function</span> <span class=\"n\">with</span> <span class=\"mi\">2</span> <span class=\"n\">methods</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">f</span><span class=\"p\">([</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"mi\">2</span><span class=\"p\">],</span> <span class=\"p\">[</span><span class=\"mf\">1.0</span><span class=\"p\">,</span> <span class=\"mf\">2.0</span><span class=\"p\">])</span>\n<span class=\"nb\">true</span>\n</code></pre></div>",
+        "id": 242923173,
+        "sender_full_name": "mbaz",
+        "timestamp": 1623868531
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">T1</span><span class=\"p\">,</span> <span class=\"n\">b</span><span class=\"o\">::</span><span class=\"kt\">T2</span><span class=\"p\">)</span> <span class=\"k\">where</span> <span class=\"p\">{</span><span class=\"kt\">R1</span><span class=\"p\">,</span><span class=\"kt\">R2</span><span class=\"p\">,</span> <span class=\"kt\">T1</span> <span class=\"o\">&lt;:</span> <span class=\"kt\">SomeAbstractType</span><span class=\"p\">{</span><span class=\"kt\">R1</span><span class=\"p\">},</span> <span class=\"kt\">T2</span> <span class=\"o\">&lt;:</span><span class=\"kt\">SomeAbstractType</span><span class=\"p\">{</span><span class=\"kt\">R2</span><span class=\"p\">}}</span>\n\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>but probably there's a more elegant version</p>",
+        "id": 242924712,
+        "sender_full_name": "Max Köhler",
+        "timestamp": 1623869291
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"276387\">Max Köhler</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Dispatch.20on.20same.20type.20but.20different.20type.20parameters.3F/near/242924712\">said</a>:</p>\n<blockquote>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">T1</span><span class=\"p\">,</span> <span class=\"n\">b</span><span class=\"o\">::</span><span class=\"kt\">T2</span><span class=\"p\">)</span> <span class=\"k\">where</span> <span class=\"p\">{</span><span class=\"kt\">R1</span><span class=\"p\">,</span><span class=\"kt\">R2</span><span class=\"p\">,</span> <span class=\"kt\">T1</span> <span class=\"o\">&lt;:</span> <span class=\"kt\">SomeAbstractType</span><span class=\"p\">{</span><span class=\"kt\">R1</span><span class=\"p\">},</span> <span class=\"kt\">T2</span> <span class=\"o\">&lt;:</span><span class=\"kt\">SomeAbstractType</span><span class=\"p\">{</span><span class=\"kt\">R2</span><span class=\"p\">}}</span>\n\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>but probably there's a more elegant version</p>\n</blockquote>\n<p>Thanks, but this doesn't satisfy the question since it dispatches even if T1 and T2 are different subtypes of SomeAbstractType.</p>\n<p>e.g.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">abstract type</span> <span class=\"kt\">Bar</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span> <span class=\"k\">end</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">struct</span> <span class=\"kt\">Bar1</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span> <span class=\"o\">&lt;:</span> <span class=\"kt\">Bar</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span> <span class=\"k\">end</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">struct</span> <span class=\"kt\">Bar2</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span> <span class=\"o\">&lt;:</span> <span class=\"kt\">Bar</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span> <span class=\"k\">end</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">function</span> <span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">T1</span><span class=\"p\">,</span> <span class=\"n\">b</span><span class=\"o\">::</span><span class=\"kt\">T2</span><span class=\"p\">)</span> <span class=\"k\">where</span> <span class=\"p\">{</span><span class=\"kt\">R1</span><span class=\"p\">,</span> <span class=\"kt\">R2</span><span class=\"p\">,</span> <span class=\"kt\">T1</span><span class=\"o\">&lt;:</span><span class=\"kt\">Bar</span><span class=\"p\">{</span><span class=\"kt\">R1</span><span class=\"p\">},</span> <span class=\"kt\">T2</span><span class=\"o\">&lt;:</span><span class=\"kt\">Bar</span><span class=\"p\">{</span><span class=\"kt\">R2</span><span class=\"p\">}}</span>\n       <span class=\"k\">return</span> <span class=\"nb\">true</span>\n       <span class=\"k\">end</span>\n<span class=\"n\">foo</span> <span class=\"p\">(</span><span class=\"n\">generic</span> <span class=\"k\">function</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">b</span> <span class=\"o\">=</span> <span class=\"kt\">Bar1</span><span class=\"p\">{</span><span class=\"kt\">Int</span><span class=\"p\">}()</span>\n<span class=\"kt\">Bar1</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">}()</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">a</span> <span class=\"o\">=</span> <span class=\"kt\">Bar2</span><span class=\"p\">{</span><span class=\"kt\">Float64</span><span class=\"p\">}()</span>\n<span class=\"kt\">Bar2</span><span class=\"p\">{</span><span class=\"kt\">Float64</span><span class=\"p\">}()</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">,</span><span class=\"n\">b</span><span class=\"p\">)</span>\n<span class=\"nb\">true</span>\n</code></pre></div>",
+        "id": 242925394,
+        "sender_full_name": "peter j.",
+        "timestamp": 1623869607
+    },
+    {
+        "content": "<p>but can't you just do</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">T1</span><span class=\"p\">,</span> <span class=\"n\">b</span><span class=\"o\">::</span><span class=\"kt\">T2</span><span class=\"p\">)</span> <span class=\"k\">where</span> <span class=\"p\">{</span><span class=\"kt\">R1</span><span class=\"p\">,</span><span class=\"kt\">R2</span><span class=\"p\">,</span> <span class=\"kt\">T1</span> <span class=\"o\">&lt;:</span> <span class=\"kt\">Bar1</span><span class=\"p\">{</span><span class=\"kt\">R1</span><span class=\"p\">},</span> <span class=\"kt\">T2</span> <span class=\"o\">&lt;:</span><span class=\"kt\">Bar1</span><span class=\"p\">{</span><span class=\"kt\">R2</span><span class=\"p\">}}</span>\n\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>then?</p>",
+        "id": 242925618,
+        "sender_full_name": "Max Köhler",
+        "timestamp": 1623869688
+    },
+    {
+        "content": "<p>and</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">T1</span><span class=\"p\">,</span> <span class=\"n\">b</span><span class=\"o\">::</span><span class=\"kt\">T2</span><span class=\"p\">)</span> <span class=\"k\">where</span> <span class=\"p\">{</span><span class=\"kt\">R1</span><span class=\"p\">,</span><span class=\"kt\">R2</span><span class=\"p\">,</span> <span class=\"kt\">T1</span> <span class=\"o\">&lt;:</span> <span class=\"kt\">Bar2</span><span class=\"p\">{</span><span class=\"kt\">R1</span><span class=\"p\">},</span> <span class=\"kt\">T2</span> <span class=\"o\">&lt;:</span><span class=\"kt\">Bar2</span><span class=\"p\">{</span><span class=\"kt\">R2</span><span class=\"p\">}}</span>\n\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>respectively</p>",
+        "id": 242925743,
+        "sender_full_name": "Max Köhler",
+        "timestamp": 1623869743
+    },
+    {
+        "content": "<p>Yeah. This works for my actual problem,  but then I would need to define one of these for each subtype of Bar. It's more academic at this point but I'm wondering if this can work for arbitrary subtypes of Bar.</p>",
+        "id": 242925950,
+        "sender_full_name": "peter j.",
+        "timestamp": 1623869833
+    },
+    {
+        "content": "<p>ye sorry if my answer is not satisfying, but I actually think it's a nice problem, so happy to hear other solutions as well</p>",
+        "id": 242926014,
+        "sender_full_name": "Max Köhler",
+        "timestamp": 1623869866
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"276387\">Max Köhler</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Dispatch.20on.20same.20type.20but.20different.20type.20parameters.3F/near/242926014\">said</a>:</p>\n<blockquote>\n<p>ye sorry if my answer is not satisfying, but I actually think it's a nice problem, so happy to hear other solutions as well</p>\n</blockquote>\n<p>no problem, I appreciate the answers!</p>",
+        "id": 242926194,
+        "sender_full_name": "peter j.",
+        "timestamp": 1623869933
+    },
+    {
+        "content": "<p>I think for a general approach, this conversation is essentially the same problem, isn't it? <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Functions.20of.20abstract.20parametric.20types\">https://julialang.zulipchat.com/#narrow/stream/274208-helpdesk-.28published.29/topic/Functions.20of.20abstract.20parametric.20types</a></p>",
+        "id": 242927012,
+        "sender_full_name": "Max Köhler",
+        "timestamp": 1623870244
+    }
+]

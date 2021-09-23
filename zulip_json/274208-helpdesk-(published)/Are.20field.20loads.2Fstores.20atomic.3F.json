@@ -1,0 +1,86 @@
+[
+    {
+        "content": "<p>I'm curious to know whether field accesses(i.e., <code>Core.getfield</code> and <code>Core.setfield</code>) are atomic by default. For example, can we call the following two accessor functions (<code>getx</code>, <code>setzero!</code>) concurrently from multiple threads without a data race? If not, does <code>Threads.Atomic</code> solve the problem?</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">mutable struct</span> <span class=\"kt\">Foo</span>\n    <span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">Int</span>\n<span class=\"k\">end</span>\n<span class=\"n\">getx</span><span class=\"p\">(</span><span class=\"n\">foo</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">foo</span><span class=\"o\">.</span><span class=\"n\">x</span>\n<span class=\"n\">setzero!</span><span class=\"p\">(</span><span class=\"n\">foo</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">foo</span><span class=\"o\">.</span><span class=\"n\">x</span> <span class=\"o\">=</span> <span class=\"mi\">0</span>\n</code></pre></div>",
+        "id": 248463865,
+        "sender_full_name": "Kenta Sato",
+        "timestamp": 1628162364
+    },
+    {
+        "content": "<p>IIUC there's no memory ordering or atomicity implied for <code>setfield!</code> or <code>getfield</code> so you'll need <code>Threads.Atomic</code> to avoid a data race.</p>\n<p>In julia-1.7 there's been a lot of work done on atomic operations and you'll be able to to use the new atomic macro to annotate <code>@atomic x::Int</code>and the use sites of <code>x</code>. See <a href=\"https://github.com/JuliaLang/julia/pull/37847\">https://github.com/JuliaLang/julia/pull/37847</a> and <a href=\"https://hackmd.io/s/SyFljvtdO\">https://hackmd.io/s/SyFljvtdO</a></p>",
+        "id": 248472250,
+        "sender_full_name": "Chris Foster",
+        "timestamp": 1628167877
+    },
+    {
+        "content": "<p>Thank you. I'm interested only in atomicity, not in memory ordering. I'd like to add a bit of my context: When I read the code of <code>lock(::ReentrantLock)</code>, I found it accesses the <code>locked_by</code> field before acquiring any lock. So, I thought Julia would implicitly assume atomicity of field access. I haven't read though that Manifesto (I found it yesterday!). Perhaps adding the <code>@atomic</code> macro before each field and access is a safer way.</p>",
+        "id": 248474770,
+        "sender_full_name": "Kenta Sato",
+        "timestamp": 1628169166
+    },
+    {
+        "content": "<p>Hmm, on all platforms supported by Julia, relaxed loads and stores seem to be mapped to vanilla loads and stores, respectively. <a href=\"https://www.cl.cam.ac.uk/~pes20/cpp/cpp0xmappings.html\">https://www.cl.cam.ac.uk/~pes20/cpp/cpp0xmappings.html</a></p>",
+        "id": 248484204,
+        "sender_full_name": "Kenta Sato",
+        "timestamp": 1628173493
+    },
+    {
+        "content": "<p>Loads and stores of small single objects like <code>Int</code> are atomic, in that they're a single indivisible operation.</p>\n<p>Special \"atomic\" instructions are needed when what we'd like to do atomically normally would not be atomic, like <code>atomic_add!</code> which loads, adds, and stores as a single indivisible operation.<br>\nOr for memory ordering.</p>",
+        "id": 248486225,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1628174355
+    },
+    {
+        "content": "<p>Right, but the specs of C++ define concurrent loads and stores are a data race and it leads to undefined behavior. I think this is the case even if the manipulated object is an integer.</p>",
+        "id": 248489905,
+        "sender_full_name": "Kenta Sato",
+        "timestamp": 1628175754
+    },
+    {
+        "content": "<p>That's correct. For some <em>specific</em> architectures and objects of some <em>specific</em> sizes, loads and stores <em>may</em> be indivisible but that's not what the C++ memory model (on which Julia's memory model is defined IIUC) formally defines. We are programming against the abstract machine, not concrete architecture. Otherwise, it's impossible to have an optimizing compiler and portable program.</p>\n<p>(Of course, performance tuning would benefit hugely from understanding concrete machine mechanisms. However, for writing correct code, I don't think we should be relying on the behavior of certain architecture as much as possible.)</p>\n<p>If you need indivisibility and are sure that no memory ordering is required, use the <code>:monotonic</code> (aka relaxed) ordering. In x86, it's likely compiled down to the normal load/store for small objects.</p>",
+        "id": 248496828,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1628178755
+    },
+    {
+        "content": "<p>Thank you, all. So, my takeaway here is that field loads and stores are practically atomic for some objects on all supported platforms. However, this is not a solid specification and therefore Julia devs are now working on consolidating its memory model as Julia Atomics Manifesto, which will be introduced in Julia 1.7 (or 1.8?).</p>",
+        "id": 248499502,
+        "sender_full_name": "Kenta Sato",
+        "timestamp": 1628179991
+    },
+    {
+        "content": "<p>Yes, I think that's a nice summary!</p>",
+        "id": 248501028,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1628180765
+    },
+    {
+        "content": "<p>1.7 already has the atomics, BTW</p>",
+        "id": 248501135,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1628180820
+    },
+    {
+        "content": "<blockquote>\n<p>field loads and stores are practically atomic for some objects on all supported platforms</p>\n</blockquote>\n<p>It depends on what you mean by \"atomic\".  The term is rather overloaded, I'm afraid.</p>\n<p>For one thing, you may worry about whether you can see a \"torn read\" where some bits of a wide word come before an update vs some after.  IIUC this isn't something to worry about in practice right now, as you've stated. At least for reasonable sized word widths with correct alignment.</p>\n<p>But considerations like torn reads are really only one consequence of data races, potentially not even the major consequence.</p>\n<p>Much more tricky is how data races interact with compiler optimizations. The compiler is allowed to do all sorts of program transformations under the assumption that your code is data race free. On the other hand, if your program has data races many of these compiler transformations can just become invalid. I like the following article about this:<br>\n<a href=\"https://software.intel.com/content/www/us/en/develop/blogs/benign-data-races-what-could-possibly-go-wrong.html\">https://software.intel.com/content/www/us/en/develop/blogs/benign-data-races-what-could-possibly-go-wrong.html</a></p>",
+        "id": 248555969,
+        "sender_full_name": "Chris Foster",
+        "timestamp": 1628211861
+    },
+    {
+        "content": "<p>Yeah, I agree torn reads are not the hardest part. Caches also interact with memory ordering, too. FYI, for people who prefer watching over reading, I dumped a bunch of useful talks on atomics in <a href=\"#narrow/stream/236830-concurrency/topic/Useful.20talks.20on.20atomics\">https://julialang.zulipchat.com/#narrow/stream/236830-concurrency/topic/Useful.20talks.20on.20atomics</a> For anyone new to this, I think Herb Sutter's atomic&lt;&gt; Weapons is a great introduction.</p>",
+        "id": 248558254,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1628214627
+    },
+    {
+        "content": "<p>Right, I mentioned compiler optimizations... but hardware can also dynamically optimize some aspects of execution under a race free assumption (eg which cache to read from). In a high level language there's so many layers of this kind of thing. It seems best to assume there's no such thing as a safe data race.</p>",
+        "id": 248569793,
+        "sender_full_name": "Chris Foster",
+        "timestamp": 1628222905
+    },
+    {
+        "content": "<p>Well, data race in C/C++ memory model is undefined behavior which is obviously unsafe <img alt=\":troll:\" class=\"emoji\" src=\"https://zulip-avatars.s3.amazonaws.com/7178/emoji/images/15252.png\" title=\"troll\"> . OK, there's a C++ proposal called Tearable Atomics <a href=\"http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0690r1.html\">http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0690r1.html</a> which is in a way trying to define almost-but-not-really-a-race. So, it's possible that we can even talk about \"conforming torn read\" at some point.</p>\n<p>(Although I do want this now, for implementing work-stealing deque and concurrent dictionary...)</p>",
+        "id": 248571516,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1628225670
+    }
+]

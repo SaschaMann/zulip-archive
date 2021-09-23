@@ -1,0 +1,128 @@
+[
+    {
+        "content": "<p>Hello again. I'm trying to make a package that fetches random numbers from an API. I can get them as UInt8 and UInt16s. I use bit shifting to get UInt32,64,128 and some random bools for Int8,16,32,64,128. However, I'm stuck on Floats. It would get great if I could just tell Julia to take an Int64 and then treat the same pointer as a Float64 ... but my google-fu has not revealed a way to do so.<br>\nAny suggestions?</p>",
+        "id": 244438061,
+        "sender_full_name": "Timothy",
+        "timestamp": 1625065581
+    },
+    {
+        "content": "<p>Like this (using <a href=\"https://docs.julialang.org/en/v1/base/arrays/#Base.reinterpret\"><code>reinterpret</code></a>)?</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">x</span> <span class=\"o\">=</span> <span class=\"mh\">0x400921fb54442d18</span><span class=\"p\">;</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">reinterpret</span><span class=\"p\">(</span><span class=\"kt\">Float64</span><span class=\"p\">,</span> <span class=\"n\">x</span><span class=\"p\">)</span>\n<span class=\"mf\">3.141592653589793</span>\n</code></pre></div>",
+        "id": 244438610,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1625065773
+    },
+    {
+        "content": "<p>That looks great! Thanks</p>",
+        "id": 244439108,
+        "sender_full_name": "Timothy",
+        "timestamp": 1625065946
+    },
+    {
+        "content": "<p>Looks like I just need to find a way to set the exponent bits now...</p>",
+        "id": 244439405,
+        "sender_full_name": "Timothy",
+        "timestamp": 1625066057
+    },
+    {
+        "content": "<p>Probably easier if I do that with the UInt64</p>",
+        "id": 244439440,
+        "sender_full_name": "Timothy",
+        "timestamp": 1625066074
+    },
+    {
+        "content": "<p>You might be looking for <code>frexp</code></p>",
+        "id": 244439883,
+        "sender_full_name": "Simeon Schaub",
+        "timestamp": 1625066250
+    },
+    {
+        "content": "<p><code>frexp.(reinterpret.(Float64, rand(UInt64, 20)))</code> looks promising, but I'm thinking try bitwise operations first</p>",
+        "id": 244440834,
+        "sender_full_name": "Timothy",
+        "timestamp": 1625066560
+    },
+    {
+        "content": "<p>I <em>think</em> as long as I set the start to <code>0b001111111100</code> then I should get a Float in <code>[0, 1]</code></p>",
+        "id": 244441036,
+        "sender_full_name": "Timothy",
+        "timestamp": 1625066643
+    },
+    {
+        "content": "<p>You might want to think about what kind of distribution you want. Assuming your random sources are uniformly distributed you're about to construct a uniform distribution on the representable floating point numbers in <code>[0, 1]</code>, which is rather different from a uniform distribution on the real numbers in  <code>[0, 1]</code>.</p>",
+        "id": 244443060,
+        "sender_full_name": "Gunnar Farnebäck",
+        "timestamp": 1625067330
+    },
+    {
+        "content": "<p>The target here is a uniform distribution on <code>[0, 1]</code></p>",
+        "id": 244443176,
+        "sender_full_name": "Timothy",
+        "timestamp": 1625067366
+    },
+    {
+        "content": "<p>Since the <code>UInt64</code>should be uniform, I interpret that as each bit being fairly random (in the \"fair coin\" sense of fair).</p>",
+        "id": 244443239,
+        "sender_full_name": "Timothy",
+        "timestamp": 1625067396
+    },
+    {
+        "content": "<p>Turns out looking at the IEE 754 spec was helpful, who would have thought <span aria-label=\"stuck out tongue\" class=\"emoji emoji-1f61b\" role=\"img\" title=\"stuck out tongue\">:stuck_out_tongue:</span>. Result looks good<br>\n<a href=\"/user_uploads/7178/UJOei-9L9eU4PdUOERZXvaWR/image.png\">image.png</a></p>\n<div class=\"message_inline_image\"><a href=\"/user_uploads/7178/UJOei-9L9eU4PdUOERZXvaWR/image.png\" title=\"image.png\"><img src=\"/user_uploads/7178/UJOei-9L9eU4PdUOERZXvaWR/image.png\"></a></div>",
+        "id": 244444732,
+        "sender_full_name": "Timothy",
+        "timestamp": 1625068062
+    },
+    {
+        "content": "<p>If you want <code>(0,1)</code> instead of <code>[0,1]</code>, an easy way is to mask the random <code>UInt64</code> it into <code>[1,2)</code> and then subtract <code>prevfloat(1.0)</code>.</p>",
+        "id": 244450266,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1625070158
+    },
+    {
+        "content": "<p>That's what I'm doing actually <span aria-label=\"smile\" class=\"emoji emoji-1f642\" role=\"img\" title=\"smile\">:smile:</span></p>",
+        "id": 244450773,
+        "sender_full_name": "Timothy",
+        "timestamp": 1625070399
+    },
+    {
+        "content": "<p>Unfortunately, it turns out that <code>Random</code> deals with <code>Float64</code> in a different way ... which means I'm currently just getting error <span aria-label=\"frown\" class=\"emoji emoji-1f641\" role=\"img\" title=\"frown\">:frown:</span></p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gr\">ERROR: StackOverflowError:</span>\n<span class=\"gr\">Stacktrace:</span>\n<span class=\"gr\">     [1] _rand52(r::ANUQRNG, #unused#::Type{Float64})</span>\n<span class=\"gr\">       @ Random /home/abuild/rpmbuild/BUILD/julia-1.6.0/usr/share/julia/stdlib/v1.6/Random/src/generation.jl:117</span>\n<span class=\"gr\">     [2] rand(r::ANUQRNG, #unused#::Random.SamplerTrivial{Random.UInt52Raw{UInt64}, UInt64})</span>\n<span class=\"gr\">       @ Random /home/abuild/rpmbuild/BUILD/julia-1.6.0/usr/share/julia/stdlib/v1.6/Random/src/generation.jl:114</span>\n<span class=\"gr\">     [3] rand(rng::ANUQRNG, X::Random.UInt52Raw{UInt64})</span>\n<span class=\"gr\">       @ Random /home/abuild/rpmbuild/BUILD/julia-1.6.0/usr/share/julia/stdlib/v1.6/Random/src/Random.jl:253</span>\n<span class=\"gr\">     [4] rand(r::ANUQRNG, #unused#::Random.SamplerTrivial{Random.UInt52{UInt64}, UInt64})</span>\n<span class=\"gr\">       @ Random /home/abuild/rpmbuild/BUILD/julia-1.6.0/usr/share/julia/stdlib/v1.6/Random/src/generation.jl:125</span>\n<span class=\"gr\">     [5] rand(rng::ANUQRNG, X::Random.UInt52{UInt64})</span>\n<span class=\"gr\">       @ Random /home/abuild/rpmbuild/BUILD/julia-1.6.0/usr/share/julia/stdlib/v1.6/Random/src/Random.jl:253</span>\n<span class=\"gr\">     [6] rand(r::ANUQRNG, #unused#::Random.SamplerTrivial{Random.CloseOpen12{Float64}, Float64})</span>\n<span class=\"gr\">       @ Random /home/abuild/rpmbuild/BUILD/julia-1.6.0/usr/share/julia/stdlib/v1.6/Random/src/generation.jl:32</span>\n<span class=\"gr\">     [7] rand(rng::ANUQRNG, X::Random.CloseOpen12{Float64})</span>\n<span class=\"gr\">       @ Random /home/abuild/rpmbuild/BUILD/julia-1.6.0/usr/share/julia/stdlib/v1.6/Random/src/Random.jl:253</span>\n<span class=\"gr\">--- the last 7 lines are repeated 11425 more times ---</span>\n<span class=\"gr\"> [79983] _rand52(r::ANUQRNG, #unused#::Type{Float64})</span>\n<span class=\"gr\">       @ Random /home/abuild/rpmbuild/BUILD/julia-1.6.0/usr/share/julia/stdlib/v1.6/Random/src/generation.jl:117</span>\n</code></pre></div>",
+        "id": 244451152,
+        "sender_full_name": "Timothy",
+        "timestamp": 1625070578
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@inline</span> <span class=\"n\">setbits</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span> <span class=\"n\">y</span><span class=\"p\">,</span> <span class=\"n\">m</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"p\">(</span><span class=\"n\">x</span> <span class=\"o\">&amp;</span> <span class=\"n\">m</span><span class=\"p\">)</span> <span class=\"o\">|</span> <span class=\"n\">y</span>\n<span class=\"n\">setbits</span> <span class=\"p\">(</span><span class=\"n\">generic</span> <span class=\"k\">function</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@inline</span> <span class=\"n\">floatbitmask</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span> <span class=\"o\">::</span><span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">Float64</span><span class=\"p\">})</span> <span class=\"o\">=</span> <span class=\"n\">reinterpret</span><span class=\"p\">(</span><span class=\"kt\">Float64</span><span class=\"p\">,</span> <span class=\"n\">setbits</span><span class=\"p\">(</span><span class=\"n\">reinterpret</span><span class=\"p\">(</span><span class=\"kt\">UInt64</span><span class=\"p\">,</span> <span class=\"n\">x</span><span class=\"p\">),</span> <span class=\"mh\">0x3ff0000000000000</span><span class=\"p\">,</span> <span class=\"mh\">0x000fffffffffffff</span><span class=\"p\">))</span>\n<span class=\"n\">floatbitmask</span> <span class=\"p\">(</span><span class=\"n\">generic</span> <span class=\"k\">function</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@inline</span> <span class=\"n\">floatbitmask</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span> <span class=\"o\">::</span><span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">Float32</span><span class=\"p\">})</span> <span class=\"o\">=</span> <span class=\"n\">reinterpret</span><span class=\"p\">(</span><span class=\"kt\">Float32</span><span class=\"p\">,</span> <span class=\"n\">setbits</span><span class=\"p\">(</span><span class=\"n\">reinterpret</span><span class=\"p\">(</span><span class=\"kt\">UInt32</span><span class=\"p\">,</span> <span class=\"n\">x</span><span class=\"p\">),</span> <span class=\"mh\">0x3f800000</span><span class=\"p\">,</span> <span class=\"mh\">0x007fffff</span><span class=\"p\">))</span>\n<span class=\"n\">floatbitmask</span> <span class=\"p\">(</span><span class=\"n\">generic</span> <span class=\"k\">function</span> <span class=\"n\">with</span> <span class=\"mi\">2</span> <span class=\"n\">methods</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">floatbitmask</span><span class=\"p\">(</span><span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"kt\">UInt64</span><span class=\"p\">),</span> <span class=\"kt\">Float64</span><span class=\"p\">)</span> <span class=\"o\">-</span> <span class=\"n\">prevfloat</span><span class=\"p\">(</span><span class=\"mf\">1.0</span><span class=\"p\">)</span>\n<span class=\"mf\">0.05111789230783048</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">floatbitmask</span><span class=\"p\">(</span><span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"kt\">UInt64</span><span class=\"p\">),</span> <span class=\"kt\">Float64</span><span class=\"p\">)</span> <span class=\"o\">-</span> <span class=\"n\">prevfloat</span><span class=\"p\">(</span><span class=\"mf\">1.0</span><span class=\"p\">)</span>\n<span class=\"mf\">0.20961601722925594</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">floatbitmask</span><span class=\"p\">(</span><span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"kt\">UInt64</span><span class=\"p\">),</span> <span class=\"kt\">Float64</span><span class=\"p\">)</span> <span class=\"o\">-</span> <span class=\"n\">prevfloat</span><span class=\"p\">(</span><span class=\"mf\">1.0</span><span class=\"p\">)</span>\n<span class=\"mf\">0.9792547222862796</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">floatbitmask</span><span class=\"p\">(</span><span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"kt\">UInt64</span><span class=\"p\">),</span> <span class=\"kt\">Float64</span><span class=\"p\">)</span> <span class=\"o\">-</span> <span class=\"n\">prevfloat</span><span class=\"p\">(</span><span class=\"mf\">1.0</span><span class=\"p\">)</span>\n<span class=\"mf\">0.1771319766794791</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">floatbitmask</span><span class=\"p\">(</span><span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"kt\">UInt64</span><span class=\"p\">),</span> <span class=\"kt\">Float64</span><span class=\"p\">)</span> <span class=\"o\">-</span> <span class=\"n\">prevfloat</span><span class=\"p\">(</span><span class=\"mf\">1.0</span><span class=\"p\">)</span>\n<span class=\"mf\">0.7201901350024212</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">floatbitmask</span><span class=\"p\">(</span><span class=\"n\">typemin</span><span class=\"p\">(</span><span class=\"kt\">UInt64</span><span class=\"p\">),</span> <span class=\"kt\">Float64</span><span class=\"p\">)</span> <span class=\"o\">-</span> <span class=\"n\">prevfloat</span><span class=\"p\">(</span><span class=\"mf\">1.0</span><span class=\"p\">)</span>\n<span class=\"mf\">1.1102230246251565e-16</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">floatbitmask</span><span class=\"p\">(</span><span class=\"n\">typemax</span><span class=\"p\">(</span><span class=\"kt\">UInt64</span><span class=\"p\">),</span> <span class=\"kt\">Float64</span><span class=\"p\">)</span> <span class=\"o\">-</span> <span class=\"n\">prevfloat</span><span class=\"p\">(</span><span class=\"mf\">1.0</span><span class=\"p\">)</span>\n<span class=\"mf\">0.9999999999999999</span>\n</code></pre></div>",
+        "id": 244452620,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1625071268
+    },
+    {
+        "content": "<p>Not sure what you're trying to do that resulted in that error?</p>",
+        "id": 244452645,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1625071279
+    },
+    {
+        "content": "<p>I'm directly generating random <code>Float64</code>s and apparently <code>Random</code> isn't built to accept that easily...</p>",
+        "id": 244452763,
+        "sender_full_name": "Timothy",
+        "timestamp": 1625071328
+    },
+    {
+        "content": "<p>What does directly generating them mean?<br>\nWhat're you calling?</p>",
+        "id": 244452910,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1625071415
+    },
+    {
+        "content": "<p>Well, for all the Int types (<code>UInt8</code>, <code>UInt16</code>, ..., <code>Int64, </code>Int128`) I'm defining a function</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">rand!</span><span class=\"p\">(</span><span class=\"n\">r</span><span class=\"o\">::</span><span class=\"kt\">ANUQRNG</span><span class=\"p\">,</span> <span class=\"n\">A</span><span class=\"o\">::</span><span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"o\">$</span><span class=\"kt\">T</span><span class=\"p\">},</span> <span class=\"n\">sp</span><span class=\"o\">::</span><span class=\"kt\">Random</span><span class=\"o\">.</span><span class=\"kt\">SamplerType</span><span class=\"p\">{</span><span class=\"o\">$</span><span class=\"kt\">T</span><span class=\"p\">})</span>\n</code></pre></div>\n<p>but having the same for floats doesn't allow for random floats to be generated.</p>",
+        "id": 244453127,
+        "sender_full_name": "Timothy",
+        "timestamp": 1625071515
+    },
+    {
+        "content": "<p>Ah! Found what I need:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">rand!</span><span class=\"p\">(</span><span class=\"n\">r</span><span class=\"o\">::</span><span class=\"kt\">ANUQRNG</span><span class=\"p\">,</span> <span class=\"n\">A</span><span class=\"o\">::</span><span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">Float64</span><span class=\"p\">},</span> <span class=\"n\">sp</span><span class=\"o\">::</span><span class=\"kt\">Random</span><span class=\"o\">.</span><span class=\"kt\">SamplerTrivial</span><span class=\"p\">{</span><span class=\"kt\">Random</span><span class=\"o\">.</span><span class=\"kt\">CloseOpen01</span><span class=\"p\">{</span><span class=\"kt\">Float64</span><span class=\"p\">},</span> <span class=\"kt\">Float64</span><span class=\"p\">})</span>\n</code></pre></div>",
+        "id": 244453821,
+        "sender_full_name": "Timothy",
+        "timestamp": 1625071838
+    }
+]

@@ -1,0 +1,128 @@
+[
+    {
+        "content": "<p>I have a julia script that somehow requires 60+ gb of memory. However, running</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">varinfo</span><span class=\"p\">(</span><span class=\"n\">imported</span><span class=\"o\">=</span><span class=\"nb\">true</span><span class=\"p\">,</span><span class=\"n\">sortby</span><span class=\"o\">=</span><span class=\"ss\">:size</span><span class=\"p\">,</span><span class=\"n\">all</span><span class=\"o\">=</span><span class=\"nb\">true</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>shows something which adds up to 100mb. If I turn recursive=true on in varinfo, the process allocates an extra 40gb and runs out of memory...</p>\n<p>How can I found out how this memory is wasted? Are there any \"usual suspects\"?</p>",
+        "id": 251063293,
+        "sender_full_name": "Maarten",
+        "timestamp": 1630164661
+    },
+    {
+        "content": "<p>I'd guess  you may have lots of intermediate allocations that are freed, but the garbage collector isn't keeping up. You could try <code>@allocated</code> on different pieces of the code, or annotate the code with <a href=\"https://github.com/search?q=TimerOutputs.jl&amp;type=Repositories\">TimerOutputs.jl</a></p>",
+        "id": 251071019,
+        "sender_full_name": "Chad Scherrer",
+        "timestamp": 1630172645
+    },
+    {
+        "content": "<p>I'm not sure, if I run just half of the script and get back repl access, then after GC.gc(), there shouldn't be any intermediary variables right? yet if I do this, the memory usage remains ridiculously high. Nothing is running, and the variables I see in varinfo are quite modest in size.</p>",
+        "id": 251072022,
+        "sender_full_name": "Maarten",
+        "timestamp": 1630173643
+    },
+    {
+        "content": "<p>it's also bugging me that varinfo goes and takes up 40+ gigabytes before crashing.</p>",
+        "id": 251072129,
+        "sender_full_name": "Maarten",
+        "timestamp": 1630173747
+    },
+    {
+        "content": "<p>Even if no variables are leaked into the REPL? Generated code is not GCd, do you by any chance do a lot of codegen?</p>\n<p>In either case, it would be nice if you could share the script as a MWE of a potential GC bug</p>",
+        "id": 251115156,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1630224012
+    },
+    {
+        "content": "<p>at the moment it's not very minimal. There is a bit of generated code; can I check the size of the compiled code? There are a few variables leaked into the repl, but those I can see with varinfo, and they amount to 100mb. I can try to reduce the script a bit, and then share it.</p>",
+        "id": 251115717,
+        "sender_full_name": "Maarten",
+        "timestamp": 1630224626
+    },
+    {
+        "content": "<p>I modified varinfo to spit out the intermediary results and I see lines like:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">MPSKit</span><span class=\"o\">.</span><span class=\"n\">MPSKit</span><span class=\"o\">.</span><span class=\"n\">LinearAlgebra</span><span class=\"o\">.</span><span class=\"n\">MPSKit</span><span class=\"o\">.</span><span class=\"n\">MPSKit</span><span class=\"o\">.</span><span class=\"n\">LinearAlgebra</span><span class=\"o\">.</span><span class=\"n\">BLAS</span><span class=\"o\">.</span><span class=\"n\">MPSKit</span><span class=\"o\">.</span><span class=\"n\">MPSKit</span><span class=\"o\">.</span><span class=\"n\">LinearAlgebra</span><span class=\"o\">.</span><span class=\"n\">MPSKit</span><span class=\"o\">.</span><span class=\"n\">MPSKit</span><span class=\"o\">.</span><span class=\"n\">LinearAlgebra</span><span class=\"o\">.</span><span class=\"n\">BLAS</span><span class=\"o\">.</span><span class=\"n\">LinearAlgebra</span><span class=\"o\">.*</span>\n</code></pre></div>\n<p>which implies that it revisits modules that it already visited, so it's pretty bugged.</p>",
+        "id": 251118499,
+        "sender_full_name": "Maarten",
+        "timestamp": 1630227695
+    },
+    {
+        "content": "<p>Is the script performing disk IO? If so, is your issue similar to <a href=\"https://github.com/JuliaData/CSV.jl/issues/850\">https://github.com/JuliaData/CSV.jl/issues/850</a><br>\n?</p>",
+        "id": 251121878,
+        "sender_full_name": "Fredrik Bagge Carlson",
+        "timestamp": 1630231523
+    },
+    {
+        "content": "<p>a tiny bit of disk io, so it's not similar</p>",
+        "id": 251216108,
+        "sender_full_name": "Maarten",
+        "timestamp": 1630323446
+    },
+    {
+        "content": "<p>I wrote a dirty-patched version of varinfo <a href=\"/user_uploads/7178/n0paBM2SwS3PCecjHPnhQDEy/derp.txt\">derp.txt</a>  and the total memory usage known about by julia is estimated at 600mb</p>",
+        "id": 251216191,
+        "sender_full_name": "Maarten",
+        "timestamp": 1630323484
+    },
+    {
+        "content": "<blockquote>\n<p><code>MPSKit.MPSKit.LinearAlgebra.MPSKit</code></p>\n</blockquote>\n<p>This does seem troubling — how does the binding <code>LinearAlgebra.MPSKit</code> come to exist?</p>",
+        "id": 251487205,
+        "sender_full_name": "Chris Foster",
+        "timestamp": 1630460314
+    },
+    {
+        "content": "<p>That turned out to be a problem in varinfo itself, which I think I have patched locally. However, I'm not entirely sure how the function was meant to work (why did it filter out Base,Main and Core), so I'm not sure if I should open a pull request</p>",
+        "id": 251503403,
+        "sender_full_name": "Maarten",
+        "timestamp": 1630473768
+    },
+    {
+        "content": "<p>there was also a \"mistake\" in base, summarysize on bitarrays failed as size appears undefined</p>",
+        "id": 251503546,
+        "sender_full_name": "Maarten",
+        "timestamp": 1630473855
+    },
+    {
+        "content": "<p>whut</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">total</span> <span class=\"o\">=</span> <span class=\"mi\">0</span><span class=\"p\">;</span> <span class=\"k\">for</span> <span class=\"p\">(</span><span class=\"n\">k</span><span class=\"p\">,</span><span class=\"n\">v</span><span class=\"p\">)</span> <span class=\"k\">in</span> <span class=\"n\">SUNRepresentations</span><span class=\"o\">.</span><span class=\"n\">CGCCACHE</span><span class=\"p\">[(</span><span class=\"mi\">3</span><span class=\"p\">,</span><span class=\"kt\">Float64</span><span class=\"p\">)]</span>\n       <span class=\"n\">total</span><span class=\"o\">+=</span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">summarysize</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"p\">)</span>\n       <span class=\"k\">end</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">total</span>\n<span class=\"mi\">2184221472</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">summarysize</span><span class=\"p\">(</span><span class=\"n\">SUNRepresentations</span><span class=\"o\">.</span><span class=\"n\">CGCCACHE</span><span class=\"p\">[(</span><span class=\"mi\">3</span><span class=\"p\">,</span><span class=\"kt\">Float64</span><span class=\"p\">)])</span>\n<span class=\"mi\">463032</span>\n</code></pre></div>",
+        "id": 251504936,
+        "sender_full_name": "Maarten",
+        "timestamp": 1630474804
+    },
+    {
+        "content": "<p>I understand summarysize is a lower bound, but this seems a bit too crazy</p>",
+        "id": 251505122,
+        "sender_full_name": "Maarten",
+        "timestamp": 1630474924
+    },
+    {
+        "content": "<p>aha, perhaps this is related <a href=\"https://github.com/JuliaLang/julia/issues/41941\">https://github.com/JuliaLang/julia/issues/41941</a></p>",
+        "id": 251507486,
+        "sender_full_name": "Maarten",
+        "timestamp": 1630476576
+    },
+    {
+        "content": "<p>This does seem related and it was fixed in nightly already - <a href=\"https://github.com/JuliaLang/julia/pull/41492\">https://github.com/JuliaLang/julia/pull/41492</a><br>\nThough I'm not sure that will fix all your varinfo problems here.</p>",
+        "id": 251815049,
+        "sender_full_name": "Chris Foster",
+        "timestamp": 1630636879
+    },
+    {
+        "content": "<p>indeed it was! I changed varinfo a bit, I'm not sure if I should open a pull request as it does things differently as the other varinfo, but in combination with the latest julia it now shows nicely where the memory usage is coming from! :D</p>",
+        "id": 251831987,
+        "sender_full_name": "Maarten",
+        "timestamp": 1630652982
+    },
+    {
+        "content": "<p>the varinfo thing has apparantly also been fixed <a href=\"https://github.com/JuliaLang/julia/pull/42061\">https://github.com/JuliaLang/julia/pull/42061</a></p>",
+        "id": 251852697,
+        "sender_full_name": "Maarten",
+        "timestamp": 1630662521
+    },
+    {
+        "content": "<blockquote>\n<p>why did it filter out Base,Main and Core</p>\n</blockquote>\n<p>I don't know either (author of that fix here), but I did give is a lovely fake name in my patch :)</p>",
+        "id": 252572023,
+        "sender_full_name": "Jameson Nash",
+        "timestamp": 1631164360
+    },
+    {
+        "content": "<p>thanks a lot for the fix, the code is now also much nicer to read :) we also resolved the underlying issue in our own code, and now everything works again with much less memory usage</p>",
+        "id": 252649499,
+        "sender_full_name": "Maarten",
+        "timestamp": 1631202940
+    }
+]

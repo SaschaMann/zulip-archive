@@ -1,0 +1,165 @@
+<html>
+<head><meta charset="utf-8"><title>julia memory usage · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-(published)/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-(published)/topic/julia.20memory.20usage.html">julia memory usage</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="251063293"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251063293" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-(published)/topic/julia.20memory.20usage.html#251063293">(Aug 28 2021 at 15:31)</a>:</h4>
+<p>I have a julia script that somehow requires 60+ gb of memory. However, running</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">varinfo</span><span class="p">(</span><span class="n">imported</span><span class="o">=</span><span class="nb">true</span><span class="p">,</span><span class="n">sortby</span><span class="o">=</span><span class="ss">:size</span><span class="p">,</span><span class="n">all</span><span class="o">=</span><span class="nb">true</span><span class="p">)</span>
+</code></pre></div>
+<p>shows something which adds up to 100mb. If I turn recursive=true on in varinfo, the process allocates an extra 40gb and runs out of memory...</p>
+<p>How can I found out how this memory is wasted? Are there any "usual suspects"?</p>
+
+
+
+<a name="251071019"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251071019" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Chad Scherrer <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-(published)/topic/julia.20memory.20usage.html#251071019">(Aug 28 2021 at 17:44)</a>:</h4>
+<p>I'd guess  you may have lots of intermediate allocations that are freed, but the garbage collector isn't keeping up. You could try <code>@allocated</code> on different pieces of the code, or annotate the code with <a href="https://github.com/search?q=TimerOutputs.jl&amp;type=Repositories">TimerOutputs.jl</a></p>
+
+
+
+<a name="251072022"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251072022" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-(published)/topic/julia.20memory.20usage.html#251072022">(Aug 28 2021 at 18:00)</a>:</h4>
+<p>I'm not sure, if I run just half of the script and get back repl access, then after GC.gc(), there shouldn't be any intermediary variables right? yet if I do this, the memory usage remains ridiculously high. Nothing is running, and the variables I see in varinfo are quite modest in size.</p>
+
+
+
+<a name="251072129"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251072129" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-(published)/topic/julia.20memory.20usage.html#251072129">(Aug 28 2021 at 18:02)</a>:</h4>
+<p>it's also bugging me that varinfo goes and takes up 40+ gigabytes before crashing.</p>
+
+
+
+<a name="251115156"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251115156" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-(published)/topic/julia.20memory.20usage.html#251115156">(Aug 29 2021 at 08:00)</a>:</h4>
+<p>Even if no variables are leaked into the REPL? Generated code is not GCd, do you by any chance do a lot of codegen?</p>
+<p>In either case, it would be nice if you could share the script as a MWE of a potential GC bug</p>
+
+
+
+<a name="251115717"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251115717" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-(published)/topic/julia.20memory.20usage.html#251115717">(Aug 29 2021 at 08:10)</a>:</h4>
+<p>at the moment it's not very minimal. There is a bit of generated code; can I check the size of the compiled code? There are a few variables leaked into the repl, but those I can see with varinfo, and they amount to 100mb. I can try to reduce the script a bit, and then share it.</p>
+
+
+
+<a name="251118499"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251118499" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-(published)/topic/julia.20memory.20usage.html#251118499">(Aug 29 2021 at 09:01)</a>:</h4>
+<p>I modified varinfo to spit out the intermediary results and I see lines like:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">MPSKit</span><span class="o">.</span><span class="n">MPSKit</span><span class="o">.</span><span class="n">LinearAlgebra</span><span class="o">.</span><span class="n">MPSKit</span><span class="o">.</span><span class="n">MPSKit</span><span class="o">.</span><span class="n">LinearAlgebra</span><span class="o">.</span><span class="n">BLAS</span><span class="o">.</span><span class="n">MPSKit</span><span class="o">.</span><span class="n">MPSKit</span><span class="o">.</span><span class="n">LinearAlgebra</span><span class="o">.</span><span class="n">MPSKit</span><span class="o">.</span><span class="n">MPSKit</span><span class="o">.</span><span class="n">LinearAlgebra</span><span class="o">.</span><span class="n">BLAS</span><span class="o">.</span><span class="n">LinearAlgebra</span><span class="o">.*</span>
+</code></pre></div>
+<p>which implies that it revisits modules that it already visited, so it's pretty bugged.</p>
+
+
+
+<a name="251121878"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251121878" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Bagge Carlson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-(published)/topic/julia.20memory.20usage.html#251121878">(Aug 29 2021 at 10:05)</a>:</h4>
+<p>Is the script performing disk IO? If so, is your issue similar to <a href="https://github.com/JuliaData/CSV.jl/issues/850">https://github.com/JuliaData/CSV.jl/issues/850</a><br>
+?</p>
+
+
+
+<a name="251216108"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251216108" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-(published)/topic/julia.20memory.20usage.html#251216108">(Aug 30 2021 at 11:37)</a>:</h4>
+<p>a tiny bit of disk io, so it's not similar</p>
+
+
+
+<a name="251216191"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251216191" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-(published)/topic/julia.20memory.20usage.html#251216191">(Aug 30 2021 at 11:38)</a>:</h4>
+<p>I wrote a dirty-patched version of varinfo <a href="/user_uploads/7178/n0paBM2SwS3PCecjHPnhQDEy/derp.txt">derp.txt</a>  and the total memory usage known about by julia is estimated at 600mb</p>
+
+
+
+<a name="251487205"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251487205" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Chris Foster <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-(published)/topic/julia.20memory.20usage.html#251487205">(Sep 01 2021 at 01:38)</a>:</h4>
+<blockquote>
+<p><code>MPSKit.MPSKit.LinearAlgebra.MPSKit</code></p>
+</blockquote>
+<p>This does seem troubling — how does the binding <code>LinearAlgebra.MPSKit</code> come to exist?</p>
+
+
+
+<a name="251503403"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251503403" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-(published)/topic/julia.20memory.20usage.html#251503403">(Sep 01 2021 at 05:22)</a>:</h4>
+<p>That turned out to be a problem in varinfo itself, which I think I have patched locally. However, I'm not entirely sure how the function was meant to work (why did it filter out Base,Main and Core), so I'm not sure if I should open a pull request</p>
+
+
+
+<a name="251503546"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251503546" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-(published)/topic/julia.20memory.20usage.html#251503546">(Sep 01 2021 at 05:24)</a>:</h4>
+<p>there was also a "mistake" in base, summarysize on bitarrays failed as size appears undefined</p>
+
+
+
+<a name="251504936"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251504936" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-(published)/topic/julia.20memory.20usage.html#251504936">(Sep 01 2021 at 05:40)</a>:</h4>
+<p>whut</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">total</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="p">)</span> <span class="k">in</span> <span class="n">SUNRepresentations</span><span class="o">.</span><span class="n">CGCCACHE</span><span class="p">[(</span><span class="mi">3</span><span class="p">,</span><span class="kt">Float64</span><span class="p">)]</span>
+       <span class="n">total</span><span class="o">+=</span><span class="n">Base</span><span class="o">.</span><span class="n">summarysize</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+       <span class="k">end</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">total</span>
+<span class="mi">2184221472</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">Base</span><span class="o">.</span><span class="n">summarysize</span><span class="p">(</span><span class="n">SUNRepresentations</span><span class="o">.</span><span class="n">CGCCACHE</span><span class="p">[(</span><span class="mi">3</span><span class="p">,</span><span class="kt">Float64</span><span class="p">)])</span>
+<span class="mi">463032</span>
+</code></pre></div>
+
+
+
+<a name="251505122"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251505122" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-(published)/topic/julia.20memory.20usage.html#251505122">(Sep 01 2021 at 05:42)</a>:</h4>
+<p>I understand summarysize is a lower bound, but this seems a bit too crazy</p>
+
+
+
+<a name="251507486"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251507486" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-(published)/topic/julia.20memory.20usage.html#251507486">(Sep 01 2021 at 06:09)</a>:</h4>
+<p>aha, perhaps this is related <a href="https://github.com/JuliaLang/julia/issues/41941">https://github.com/JuliaLang/julia/issues/41941</a></p>
+
+
+
+<a name="251815049"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251815049" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Chris Foster <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-(published)/topic/julia.20memory.20usage.html#251815049">(Sep 03 2021 at 02:41)</a>:</h4>
+<p>This does seem related and it was fixed in nightly already - <a href="https://github.com/JuliaLang/julia/pull/41492">https://github.com/JuliaLang/julia/pull/41492</a><br>
+Though I'm not sure that will fix all your varinfo problems here.</p>
+
+
+
+<a name="251831987"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251831987" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-(published)/topic/julia.20memory.20usage.html#251831987">(Sep 03 2021 at 07:09)</a>:</h4>
+<p>indeed it was! I changed varinfo a bit, I'm not sure if I should open a pull request as it does things differently as the other varinfo, but in combination with the latest julia it now shows nicely where the memory usage is coming from! :D</p>
+
+
+
+<a name="251852697"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251852697" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-(published)/topic/julia.20memory.20usage.html#251852697">(Sep 03 2021 at 09:48)</a>:</h4>
+<p>the varinfo thing has apparantly also been fixed <a href="https://github.com/JuliaLang/julia/pull/42061">https://github.com/JuliaLang/julia/pull/42061</a></p>
+
+
+
+<a name="252572023"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/252572023" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jameson Nash <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-(published)/topic/julia.20memory.20usage.html#252572023">(Sep 09 2021 at 05:12)</a>:</h4>
+<blockquote>
+<p>why did it filter out Base,Main and Core</p>
+</blockquote>
+<p>I don't know either (author of that fix here), but I did give is a lovely fake name in my patch :)</p>
+
+
+
+<a name="252649499"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/252649499" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-(published)/topic/julia.20memory.20usage.html#252649499">(Sep 09 2021 at 15:55)</a>:</h4>
+<p>thanks a lot for the fix, the code is now also much nicer to read :) we also resolved the underlying issue in our own code, and now everything works again with much less memory usage</p>
+
+
+
+<hr><p>Last updated: Sep 23 2021 at 15:01 UTC</p>
+</html>

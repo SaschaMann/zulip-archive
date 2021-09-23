@@ -1,0 +1,98 @@
+[
+    {
+        "content": "<p>Given a range <code>r = 0.5:10.0</code> how do we recover the first and last as typed?</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">first</span><span class=\"p\">(</span><span class=\"n\">r</span><span class=\"p\">)</span> <span class=\"c\"># ok this is 0.5</span>\n<span class=\"n\">last</span><span class=\"p\">(</span><span class=\"n\">r</span><span class=\"p\">)</span> <span class=\"c\"># not ok this is 9.5</span>\n</code></pre></div>",
+        "id": 227969264,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1614363602
+    },
+    {
+        "content": "<p>You can't, it computes this when it first constructs the type.  What you happened to type in is lost.</p>",
+        "id": 227969518,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1614363700
+    },
+    {
+        "content": "<p>It's like asking \"suppose I type <code>x = round(1.5)</code>, how do I get back <code>1.5</code>?\"</p>",
+        "id": 227970672,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614364206
+    },
+    {
+        "content": "<p>I get it, just wanted to double check. I am trying to write a function <code>slice(obj, ranges...)</code> that is implemented in terms of a bounding box <code>view(obj, Box(first.(ranges), last.(ranges))</code> and because the last is not the same as the one typed by the user the behavior is unexpected <span aria-label=\"confused\" class=\"emoji emoji-1f615\" role=\"img\" title=\"confused\">:confused:</span></p>",
+        "id": 227971805,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1614364668
+    },
+    {
+        "content": "<p>yeah, it's certainly a reasonable question!</p>",
+        "id": 227971943,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614364728
+    },
+    {
+        "content": "<p>There is no workaround for this?</p>",
+        "id": 227972036,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1614364781
+    },
+    {
+        "content": "<p>How could I enforce the same range given a range object?</p>",
+        "id": 227972073,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1614364799
+    },
+    {
+        "content": "<p>I think I will just add a warning to the doc string in this case. It is easier. Users can remediate the situation with a buffer.</p>",
+        "id": 227972219,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1614364851
+    },
+    {
+        "content": "<p>Not with this type, you'd need to create a new type for it.  I'm not really following what you're trying to do, but I suspect if I were you I would not want to echo what the user typed in, but instead the actual underlying state of the thing.  If you show them what they typed in, you will not actually be showing them the bound of the range.</p>",
+        "id": 227972364,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1614364917
+    },
+    {
+        "content": "<p>you could do:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">function</span> <span class=\"p\">(</span><span class=\"o\">:</span><span class=\"p\">)(</span><span class=\"n\">x</span><span class=\"p\">,</span> <span class=\"n\">y</span><span class=\"p\">)</span>\n           <span class=\"n\">col</span> <span class=\"o\">=</span> <span class=\"n\">Base</span><span class=\"o\">.:</span><span class=\"p\">(</span><span class=\"o\">:</span><span class=\"p\">)(</span><span class=\"n\">x</span><span class=\"p\">,</span> <span class=\"n\">y</span><span class=\"p\">)</span>\n           <span class=\"k\">if</span> <span class=\"n\">col</span><span class=\"p\">[</span><span class=\"k\">begin</span><span class=\"p\">]</span> <span class=\"o\">!=</span> <span class=\"n\">x</span> <span class=\"o\">||</span> <span class=\"n\">col</span><span class=\"p\">[</span><span class=\"k\">end</span><span class=\"p\">]</span> <span class=\"o\">!=</span> <span class=\"n\">y</span>\n               <span class=\"n\">throw</span><span class=\"p\">(</span><span class=\"s\">\"don't do that\"</span><span class=\"p\">)</span>\n           <span class=\"k\">end</span>\n           <span class=\"n\">col</span>\n       <span class=\"k\">end</span>\n<span class=\"o\">:</span> <span class=\"p\">(</span><span class=\"n\">generic</span> <span class=\"k\">function</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"mf\">0.5</span><span class=\"o\">:</span><span class=\"mi\">10</span>\n<span class=\"n\">ERROR</span><span class=\"o\">:</span> <span class=\"s\">\"don't do that\"</span>\n<span class=\"n\">Stacktrace</span><span class=\"o\">:</span>\n <span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span> <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">Float64</span><span class=\"p\">,</span> <span class=\"n\">y</span><span class=\"o\">::</span><span class=\"kt\">Int64</span><span class=\"p\">)</span>\n   <span class=\"err\">@</span> <span class=\"n\">Main</span> <span class=\"o\">./</span><span class=\"n\">REPL</span><span class=\"p\">[</span><span class=\"mi\">2</span><span class=\"p\">]</span><span class=\"o\">:</span><span class=\"mi\">4</span>\n <span class=\"p\">[</span><span class=\"mi\">2</span><span class=\"p\">]</span> <span class=\"n\">top</span><span class=\"o\">-</span><span class=\"n\">level</span> <span class=\"n\">scope</span>\n   <span class=\"err\">@</span> <span class=\"n\">REPL</span><span class=\"p\">[</span><span class=\"mi\">3</span><span class=\"p\">]</span><span class=\"o\">:</span><span class=\"mi\">1</span>\n</code></pre></div>",
+        "id": 227972436,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614364935
+    },
+    {
+        "content": "<p>Or something similar</p>",
+        "id": 227972447,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614364942
+    },
+    {
+        "content": "<p>A note about rounding in the docstring would be a good idea.</p>",
+        "id": 227972556,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614364989
+    },
+    {
+        "content": "<p>oh yeah, that's a much better option; I was confused about whether you just wanted a different display behavior or whether you want to throw an error for rangers with a bound the doesn't correspond to the end.  Throwing an error seems far more reasonable</p>",
+        "id": 227972574,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1614364999
+    },
+    {
+        "content": "<p>If you want to guarantee the endpoints of the range, I suggest using <code>length</code> rather than <code>step</code>.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">range</span><span class=\"p\">(</span><span class=\"mf\">0.5</span><span class=\"p\">,</span> <span class=\"mi\">10</span><span class=\"p\">;</span> <span class=\"n\">length</span> <span class=\"o\">=</span> <span class=\"mi\">11</span><span class=\"p\">)</span>\n<span class=\"mf\">0.5</span><span class=\"o\">:</span><span class=\"mf\">0.95</span><span class=\"o\">:</span><span class=\"mf\">10.0</span>\n</code></pre></div>\n<p>In Julia 1.7, you will be able to specify <code>length</code> as the third positional argument.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">range</span><span class=\"p\">(</span><span class=\"mf\">0.5</span><span class=\"p\">,</span> <span class=\"mi\">10</span><span class=\"p\">,</span> <span class=\"mi\">11</span><span class=\"p\">)</span>\n<span class=\"mf\">0.5</span><span class=\"o\">:</span><span class=\"mf\">0.95</span><span class=\"o\">:</span><span class=\"mf\">10.0</span>\n</code></pre></div>",
+        "id": 228015682,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1614384220
+    },
+    {
+        "content": "<p>If what you want is to just memoize the two numbers, may I suggest <code>Pair</code>?</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">p</span> <span class=\"o\">=</span> <span class=\"mf\">0.5</span> <span class=\"o\">=&gt;</span> <span class=\"mi\">10</span>\n<span class=\"mf\">0.5</span> <span class=\"o\">=&gt;</span> <span class=\"mi\">10</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">first</span><span class=\"p\">(</span><span class=\"n\">p</span><span class=\"p\">)</span>\n<span class=\"mf\">0.5</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">last</span><span class=\"p\">(</span><span class=\"n\">p</span><span class=\"p\">)</span>\n<span class=\"mi\">10</span>\n</code></pre></div>\n<p>I created something of a rogue package to experiment with different range concepts if you are interested. One of those forms accepts a <code>Pair</code>:<br>\n<a href=\"https://github.com/mkitti/Ranges.jl\">https://github.com/mkitti/Ranges.jl</a></p>",
+        "id": 228015997,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1614384432
+    },
+    {
+        "content": "<p>In this use case users will not use ranges like this, they will probably write <code>slice(obj, 0.5:10.0, 0.5:10.0)</code>. I just added a warning to the docstring.</p>",
+        "id": 228019035,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1614386866
+    }
+]

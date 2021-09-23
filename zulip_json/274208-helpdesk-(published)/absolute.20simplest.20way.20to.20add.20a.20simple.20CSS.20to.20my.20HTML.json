@@ -1,0 +1,134 @@
+[
+    {
+        "content": "<p>I have a super simple server that I built with <a href=\"https://github.com/search?q=Mux.jl&amp;type=Repositories\">Mux.jl</a>, most of the functionality is in responding to a few very simple HTTP calls.  In addition, I have a few endpoints which return some helpful information, and are viewable in browsers.  I can respond in markdown using the <code>Markdown</code> stdlib simply by doing <code>html(Markdown.parse(str))</code>.  For the most part I'm thrilled with how nicely this works out, but there is one problem: unfortunately the default formatting in most browsers is completely garbage, even for simple text (bizarrely, it does not even seem to be able to handle simple UTF-8).  So, I'm wondering, can I pick a super simple CSS and somehow shove it into the HTML response?  I'm a little worried that I can't simply do this with the stdlib stuff, because it doesn't give me a convenient way of sticking in the CSS reference.  Perhaps I can just write a function that always adds a simple line to the markdown?  What should that look like?</p>",
+        "id": 224246103,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1611781048
+    },
+    {
+        "content": "<p>Are you serving the raw content from the <code>html</code> function? That does not include header etc so perhaps you can just embed that in another template.</p>",
+        "id": 224255707,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1611785467
+    },
+    {
+        "content": "<p>Or maybe <a href=\"https://github.com/search?q=Mux.jl&amp;type=Repositories\">Mux.jl</a> adds stuff like that, I have never used it.</p>",
+        "id": 224255804,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1611785522
+    },
+    {
+        "content": "<p>Looks like it doesn't, so you can do it like this:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">using</span> <span class=\"n\">Markdown</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">body</span> <span class=\"o\">=</span> <span class=\"n\">Markdown</span><span class=\"o\">.</span><span class=\"n\">html</span><span class=\"p\">(</span><span class=\"n\">Markdown</span><span class=\"o\">.</span><span class=\"n\">parse</span><span class=\"p\">(</span><span class=\"s\">\"\"\"</span>\n<span class=\"s\">       # Hello</span>\n\n<span class=\"s\">       Some text</span>\n<span class=\"s\">       \"\"\"</span><span class=\"p\">));</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">fullpage</span> <span class=\"o\">=</span> <span class=\"s\">\"\"\"</span>\n<span class=\"s\">       &lt;!doctype html&gt;</span>\n<span class=\"s\">       &lt;html&gt;</span>\n<span class=\"s\">       &lt;head&gt;</span>\n<span class=\"s\">       &lt;meta charset=\"UTF-8\"&gt;</span>\n<span class=\"s\">       &lt;meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"&gt;</span>\n<span class=\"s\">       &lt;style&gt;</span>\n<span class=\"s\">       h1 {</span>\n<span class=\"s\">         text-align: center;</span>\n<span class=\"s\">       }</span>\n<span class=\"s\">       &lt;/style&gt;</span>\n<span class=\"s\">       &lt;head&gt;</span>\n<span class=\"s\">       &lt;body&gt;</span>\n<span class=\"s\">       </span><span class=\"si\">$</span><span class=\"p\">(</span><span class=\"n\">body</span><span class=\"p\">)</span><span class=\"s\"></span>\n<span class=\"s\">       &lt;/body&gt;</span>\n<span class=\"s\">       &lt;/html&gt;</span>\n<span class=\"s\">       \"\"\"</span><span class=\"p\">;</span>\n</code></pre></div>\n<p>and respond with that string. You can of course serve the css as a separate file and tell Mux about that endpoint somehow.</p>",
+        "id": 224257871,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1611786498
+    },
+    {
+        "content": "<p>Yes, what you are showing here is exactly what I'm doing now, what I want to know is exactly <em>how</em> I should serve the css (it can't really be a separate file because it needs to be in the same response)</p>",
+        "id": 224259063,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1611787155
+    },
+    {
+        "content": "<p>What do you mean then? My example above includes some css for the page.</p>",
+        "id": 224259261,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1611787294
+    },
+    {
+        "content": "<p>oh, sorry, I misunderstood what you did.  Ah, yeah, so I can just look up a decent css and write a function like that</p>",
+        "id": 224259351,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1611787349
+    },
+    {
+        "content": "<p>I wonder if it's a problem for the browser that I don't include <code>&lt;html&gt;</code> or <code>&lt;body&gt;</code>.  It doesn't complain about it, but it also looks like shit (though it is changing font sizes for headings and including bullet points, stuff like that)</p>",
+        "id": 224259435,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1611787413
+    },
+    {
+        "content": "<p>I don't think they are necessary, and apparently Google style guide recommends against it (when possible): <a href=\"https://google.github.io/styleguide/htmlcssguide.html#Optional_Tags\">https://google.github.io/styleguide/htmlcssguide.html#Optional_Tags</a> (from <a href=\"https://stackoverflow.com/questions/5641997/is-it-necessary-to-write-head-body-and-html-tags\">https://stackoverflow.com/questions/5641997/is-it-necessary-to-write-head-body-and-html-tags</a>).</p>",
+        "id": 224259954,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1611787731
+    },
+    {
+        "content": "<p>cool, should be easy then.  So I guess a \"floating\" <code>&lt;style&gt;</code> should work, right?</p>",
+        "id": 224260416,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1611787986
+    },
+    {
+        "content": "<p>Yea probably.</p>",
+        "id": 224260444,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1611788004
+    },
+    {
+        "content": "<p>oh, maybe I need <code>&lt;meta charset=\"UTF-8\"&gt;</code>, maybe that's why it was rendering it wrongly.  Bizarre that's not the default, but at least it gives me something to try.</p>",
+        "id": 224260476,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1611788027
+    },
+    {
+        "content": "<p>thanks!</p>",
+        "id": 224260480,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1611788028
+    },
+    {
+        "content": "<p>btw, if you (or anyone else) know of particularly convenient ways of doing this with light Julia dependencies, that would be great.  I'd like to not re-invent the wheel, but I'd also like simple lightweight dependencies that admit simple HTML strings.  I was very pleased with how simple parsing the markdown into HTML turned out to be.</p>",
+        "id": 224260659,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1611788117
+    },
+    {
+        "content": "<p>Maybe worth having a look at <a href=\"https://github.com/MichaelHatherly/CommonMark.jl\">https://github.com/MichaelHatherly/CommonMark.jl</a> which, I believe, is superiour to the Markdown stdlib.</p>",
+        "id": 224261144,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1611788401
+    },
+    {
+        "content": "<p>In particular it handles inline HTML in the markdown, which you probably will find useful. The Markdown stdlib can't handle that.</p>",
+        "id": 224261257,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1611788440
+    },
+    {
+        "content": "<p>Ah, that looks like exactly what I had in mind, thanks!</p>",
+        "id": 224261304,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1611788462
+    },
+    {
+        "content": "<p>Does anyone have any examples of using <a href=\"https://github.com/search?q=CommonMark.jl&amp;type=Repositories\">CommonMark.jl</a>?  I can't seem to get it to include anything in its output beyond the direct rendering of the original markdown string (i.e. can't get it to do any css or additional formatting)</p>",
+        "id": 224340569,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1611847221
+    },
+    {
+        "content": "<p>That seems out of scope</p>",
+        "id": 224346325,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1611849374
+    },
+    {
+        "content": "<p>You should probably include the generated HTML in a template that handles styling</p>",
+        "id": 224346367,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1611849393
+    },
+    {
+        "content": "<p>also give <a href=\"https://github.com/search?q=GithubMarkdown.jl&amp;type=Repositories\">GithubMarkdown.jl</a> a go, although I <em>think</em> <a href=\"https://github.com/search?q=CommonMark.jl&amp;type=Repositories\">CommonMark.jl</a> should be strictly more powerful</p>",
+        "id": 224346437,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1611849427
+    },
+    {
+        "content": "<p>I figured it out.  It turned out not to be super useful for me though.  I decided instead to just write a very simple HTML page template and interpolate what I get from the Markdown stdlib using <a href=\"https://github.com/search?q=Mustache.jl&amp;type=Repositories\">Mustache.jl</a>.</p>",
+        "id": 224346767,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1611849560
+    }
+]

@@ -1,0 +1,38 @@
+[
+    {
+        "content": "<p>I've always been confused by this...<br>\nIn <a href=\"https://docs.julialang.org/en/v1.6/manual/types/#man-custom-pretty-printing\">https://docs.julialang.org/en/v1.6/manual/types/#man-custom-pretty-printing</a>, this function to pretty-print polar numbers is defined:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">show</span><span class=\"p\">(</span><span class=\"n\">io</span><span class=\"o\">::</span><span class=\"kt\">IO</span><span class=\"p\">,</span> <span class=\"o\">::</span><span class=\"kt\">MIME</span><span class=\"s\">\"text/html\"</span><span class=\"p\">,</span> <span class=\"n\">z</span><span class=\"o\">::</span><span class=\"n\">Polar</span><span class=\"p\">{</span><span class=\"n\">T</span><span class=\"p\">})</span> <span class=\"n\">where</span> <span class=\"p\">{</span><span class=\"n\">T</span><span class=\"p\">}</span> <span class=\"o\">=</span>\n           <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"n\">io</span><span class=\"p\">,</span> <span class=\"s\">\"&lt;code&gt;Polar{</span><span class=\"si\">$T</span><span class=\"s\">}&lt;/code&gt; complex number: \"</span><span class=\"p\">,</span>\n                   <span class=\"n\">z</span><span class=\"o\">.</span><span class=\"n\">r</span><span class=\"p\">,</span> <span class=\"s\">\" &lt;i&gt;e&lt;/i&gt;&lt;sup&gt;\"</span><span class=\"p\">,</span> <span class=\"n\">z</span><span class=\"o\">.</span><span class=\"n\">Θ</span><span class=\"p\">,</span> <span class=\"s\">\" &lt;i&gt;i&lt;/i&gt;&lt;/sup&gt;\"</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>and then it is called as</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">show</span><span class=\"p\">(</span><span class=\"n\">stdout</span><span class=\"p\">,</span> <span class=\"s\">\"text/html\"</span><span class=\"p\">,</span> <span class=\"n\">Polar</span><span class=\"p\">(</span><span class=\"mf\">3.0</span><span class=\"p\">,</span><span class=\"mf\">4.0</span><span class=\"p\">))</span>\n</code></pre></div>\n<p>Why does <code>\"text/html\"</code>, which is a <code>String</code>, match the signature <code>::MIME\"text/html\"</code>?</p>\n<p>If I try to do the same in my own function, it doesn't work:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">ttt</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">MIME</span><span class=\"s\">\"text/html\"</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"s\">\"yes\"</span><span class=\"p\">)</span>\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">ttt</span><span class=\"p\">(</span><span class=\"s\">\"text/html\"</span><span class=\"p\">)</span>\n<span class=\"n\">ERROR</span><span class=\"o\">:</span> <span class=\"kt\">MethodError</span><span class=\"o\">:</span> <span class=\"n\">no</span> <span class=\"n\">method</span> <span class=\"n\">matching</span> <span class=\"n\">ttt</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"n\">String</span><span class=\"p\">)</span>\n<span class=\"n\">Closest</span> <span class=\"n\">candidates</span> <span class=\"n\">are</span><span class=\"o\">:</span>\n  <span class=\"n\">ttt</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">MIME</span><span class=\"p\">{</span><span class=\"kt\">Symbol</span><span class=\"p\">(</span><span class=\"s\">\"text/html\"</span><span class=\"p\">)})</span> <span class=\"n\">at</span> <span class=\"n\">REPL</span><span class=\"p\">[</span><span class=\"mi\">14</span><span class=\"p\">]</span><span class=\"o\">:</span><span class=\"mi\">1</span>\n<span class=\"n\">Stacktrace</span><span class=\"o\">:</span>\n <span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span> <span class=\"n\">top</span><span class=\"o\">-</span><span class=\"n\">level</span> <span class=\"n\">scope</span>\n   <span class=\"err\">@</span> <span class=\"n\">REPL</span><span class=\"p\">[</span><span class=\"mi\">16</span><span class=\"p\">]</span><span class=\"o\">:</span><span class=\"mi\">1</span>\n</code></pre></div>",
+        "id": 232469021,
+        "sender_full_name": "mbaz",
+        "timestamp": 1617126973
+    },
+    {
+        "content": "<p>Nevermind, I found it in <code>multimedia.jl</code>:<br>\n<code>show(io::IO, m::AbstractString, x) = show(io, MIME(m), x)</code></p>",
+        "id": 232472587,
+        "sender_full_name": "mbaz",
+        "timestamp": 1617128334
+    },
+    {
+        "content": "<p>That part of the manual sure is confusing.</p>",
+        "id": 232472655,
+        "sender_full_name": "mbaz",
+        "timestamp": 1617128370
+    },
+    {
+        "content": "<p>Yeah. IMO the way we handle <code>show</code> has a lot of problems. It's really useful because it gives tonnes of different ways to customize <code>show</code>, but it sucks because it's really confusing and filled with edge cases.</p>",
+        "id": 232519818,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1617151652
+    },
+    {
+        "content": "<p>Yes; things like the two-argument and three-argument <code>show</code> variants, the reliance on MIME, plus <code>display</code>, plus all the multimedia I/O stuff are confusing. I spent hours getting Gaton's <code>show</code> to work properly in Pluto and IJulia, and I'm still not sure my implementation is correct.</p>",
+        "id": 232521815,
+        "sender_full_name": "mbaz",
+        "timestamp": 1617153459
+    },
+    {
+        "content": "<p>I submitted an issue regarding <code>show()</code> for containers, got no response so far... <a href=\"https://github.com/JuliaLang/julia/issues/40030\">https://github.com/JuliaLang/julia/issues/40030</a></p>",
+        "id": 232661979,
+        "sender_full_name": "Kirill Simonov",
+        "timestamp": 1617223417
+    }
+]

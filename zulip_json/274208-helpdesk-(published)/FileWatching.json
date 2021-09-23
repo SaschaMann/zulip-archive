@@ -1,0 +1,68 @@
+[
+    {
+        "content": "<p>I'm struggling to understand how <code>FileWatching.watch_folder</code> works. If I set up a small \"server\" that is listening to a folder according to</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">watchserver</span><span class=\"p\">(</span><span class=\"n\">path</span><span class=\"p\">)</span>\n    <span class=\"nd\">@info</span> <span class=\"s\">\"Starting server watching for changes in \"</span><span class=\"p\">,</span> <span class=\"n\">path</span>\n    <span class=\"k\">while</span> <span class=\"kc\">true</span>\n        <span class=\"n\">file</span><span class=\"p\">,</span> <span class=\"n\">event</span> <span class=\"o\">=</span> <span class=\"n\">watch_folder</span><span class=\"p\">(</span><span class=\"n\">path</span><span class=\"p\">,</span> <span class=\"o\">-</span><span class=\"mi\">1</span><span class=\"p\">)</span> <span class=\"c\"># timeout inf</span>\n        <span class=\"n\">file</span> <span class=\"o\">===</span> <span class=\"nb\">nothing</span> <span class=\"o\">&amp;&amp;</span> <span class=\"k\">continue</span>\n        <span class=\"nd\">@info</span> <span class=\"s\">\"Got \"</span><span class=\"p\">,</span> <span class=\"n\">event</span><span class=\"p\">,</span> <span class=\"n\">file</span>\n        <span class=\"n\">sleep</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">)</span>\n        <span class=\"k\">if</span> <span class=\"n\">event</span><span class=\"o\">.</span><span class=\"n\">changed</span> <span class=\"o\">||</span> <span class=\"n\">event</span><span class=\"o\">.</span><span class=\"n\">renamed</span>\n            <span class=\"k\">try</span>\n                <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"s\">\"doing the work\"</span><span class=\"p\">)</span> <span class=\"c\"># display_data(joinpath(path, file))</span>\n            <span class=\"k\">catch</span> <span class=\"nb\">e</span>\n                <span class=\"nd\">@error</span> <span class=\"s\">\"Plotting failed, got error\"</span> <span class=\"nb\">e</span>\n            <span class=\"k\">end</span>\n        <span class=\"k\">end</span>\n        <span class=\"n\">event</span><span class=\"o\">.</span><span class=\"n\">timedout</span> <span class=\"o\">&amp;&amp;</span> <span class=\"k\">return</span>\n    <span class=\"k\">end</span>\n<span class=\"k\">end</span>\n\n<span class=\"n\">path</span> <span class=\"o\">=</span> <span class=\"s\">\"/home/fredrikb/Documents/\"</span>\n<span class=\"c\"># path = ARGS[1]</span>\n<span class=\"n\">task</span> <span class=\"o\">=</span> <span class=\"n\">watchserver</span><span class=\"p\">(</span><span class=\"n\">path</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>I expect to get a signle event when something happens. Instead, I seem to get repeated events causing the <code>println</code> statement to be executed indefinitely. I suspect my understanding of how <code>watch_folder</code> works might be wrong?</p>",
+        "id": 223546845,
+        "sender_full_name": "Fredrik Bagge Carlson",
+        "timestamp": 1611252067
+    },
+    {
+        "content": "<p>I expect <code>watch_folder</code> to be blocking, and return something when an event occurs?</p>",
+        "id": 223546944,
+        "sender_full_name": "Fredrik Bagge Carlson",
+        "timestamp": 1611252112
+    },
+    {
+        "content": "<p>It appears as if I get at least 3 events for a single change</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">clinton</span> <span class=\"o\">~/</span><span class=\"n\">scratch</span><span class=\"o\">&gt;</span> <span class=\"n\">julia6</span> <span class=\"n\">data_verification_app</span><span class=\"o\">.</span><span class=\"n\">jl</span> <span class=\"s\">\"/home/fredrikb/Documents/\"</span>\n<span class=\"p\">[</span> <span class=\"n\">Info</span><span class=\"o\">:</span> <span class=\"p\">(</span><span class=\"s\">\"Starting server watching for changes in \"</span><span class=\"p\">,</span> <span class=\"s\">\"/home/fredrikb/Documents/\"</span><span class=\"p\">)</span>\n<span class=\"p\">[</span> <span class=\"n\">Info</span><span class=\"o\">:</span> <span class=\"p\">(</span><span class=\"s\">\"Got \"</span><span class=\"p\">,</span> <span class=\"n\">FileWatching</span><span class=\"o\">.</span><span class=\"n\">FileEvent</span><span class=\"p\">(</span><span class=\"kc\">true</span><span class=\"p\">,</span> <span class=\"kc\">false</span><span class=\"p\">,</span> <span class=\"kc\">false</span><span class=\"p\">),</span> <span class=\"s\">\"2021-01-19 - HKM (another copy).zip\"</span><span class=\"p\">)</span>\n<span class=\"mi\">2021</span><span class=\"o\">-</span><span class=\"mi\">01</span><span class=\"o\">-</span><span class=\"mi\">19</span> <span class=\"o\">-</span> <span class=\"n\">HKM</span> <span class=\"p\">(</span><span class=\"n\">another</span> <span class=\"n\">copy</span><span class=\"p\">)</span><span class=\"o\">.</span><span class=\"n\">zip</span>\n<span class=\"p\">[</span> <span class=\"n\">Info</span><span class=\"o\">:</span> <span class=\"p\">(</span><span class=\"s\">\"Got \"</span><span class=\"p\">,</span> <span class=\"n\">FileWatching</span><span class=\"o\">.</span><span class=\"n\">FileEvent</span><span class=\"p\">(</span><span class=\"kc\">false</span><span class=\"p\">,</span> <span class=\"kc\">true</span><span class=\"p\">,</span> <span class=\"kc\">false</span><span class=\"p\">),</span> <span class=\"s\">\"2021-01-19 - HKM (another copy).zip\"</span><span class=\"p\">)</span>\n<span class=\"mi\">2021</span><span class=\"o\">-</span><span class=\"mi\">01</span><span class=\"o\">-</span><span class=\"mi\">19</span> <span class=\"o\">-</span> <span class=\"n\">HKM</span> <span class=\"p\">(</span><span class=\"n\">another</span> <span class=\"n\">copy</span><span class=\"p\">)</span><span class=\"o\">.</span><span class=\"n\">zip</span>\n<span class=\"p\">[</span> <span class=\"n\">Info</span><span class=\"o\">:</span> <span class=\"p\">(</span><span class=\"s\">\"Got \"</span><span class=\"p\">,</span> <span class=\"n\">FileWatching</span><span class=\"o\">.</span><span class=\"n\">FileEvent</span><span class=\"p\">(</span><span class=\"kc\">false</span><span class=\"p\">,</span> <span class=\"kc\">true</span><span class=\"p\">,</span> <span class=\"kc\">false</span><span class=\"p\">),</span> <span class=\"s\">\"2021-01-19 - HKM (another copy).zip\"</span><span class=\"p\">)</span>\n<span class=\"mi\">2021</span><span class=\"o\">-</span><span class=\"mi\">01</span><span class=\"o\">-</span><span class=\"mi\">19</span> <span class=\"o\">-</span> <span class=\"n\">HKM</span> <span class=\"p\">(</span><span class=\"n\">another</span> <span class=\"n\">copy</span><span class=\"p\">)</span><span class=\"o\">.</span><span class=\"n\">zip</span>\n</code></pre></div>",
+        "id": 223547229,
+        "sender_full_name": "Fredrik Bagge Carlson",
+        "timestamp": 1611252206
+    },
+    {
+        "content": "<p>If I save all files that have generated an event in a set and only proceed if it's an event for a new file, I seem to get what I want.</p>",
+        "id": 223548362,
+        "sender_full_name": "Fredrik Bagge Carlson",
+        "timestamp": 1611252667
+    },
+    {
+        "content": "<p><a href=\"https://nodejs.org/api/fs.html#fs_caveats\">https://nodejs.org/api/fs.html#fs_caveats</a> from the docstring of <code>watch_folder</code> might be relevant? I only get 2 events for a created file though.</p>",
+        "id": 223548753,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1611252859
+    },
+    {
+        "content": "<p>For a new file it looks like you get two events, which makes sense when you think about it: one event for creating the file (<code>.renamed</code>) and one event for writing the content to the file (<code>.changed</code>).<br>\nAppending to an existing file gives one event (<code>.changed</code>) and deleting a file gives one event (<code>.renamed</code>).</p>",
+        "id": 223549667,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1611253283
+    },
+    {
+        "content": "<p>That seems to agree with my experimentation. This was a bit trickier than I anticipated. It turns out that after the first handled file event that induces precompilation, subsequent file events are triggered too fast for the file to be written completely and reading it fails without some <code>sleep</code> before ^^</p>",
+        "id": 223550527,
+        "sender_full_name": "Fredrik Bagge Carlson",
+        "timestamp": 1611253713
+    },
+    {
+        "content": "<p>For completeness, here's my working implementation</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"kd\">const</span> <span class=\"n\">handled</span> <span class=\"o\">=</span> <span class=\"kt\">Set</span><span class=\"p\">{</span><span class=\"n\">String</span><span class=\"p\">}()</span>\n<span class=\"k\">function</span> <span class=\"n\">watchserver</span><span class=\"p\">(</span><span class=\"n\">path</span><span class=\"p\">)</span>\n    <span class=\"nd\">@info</span> <span class=\"s\">\"Starting server watching for changes in \"</span> <span class=\"n\">path</span>\n    <span class=\"k\">while</span> <span class=\"kc\">true</span>\n        <span class=\"n\">file</span><span class=\"p\">,</span> <span class=\"n\">event</span> <span class=\"o\">=</span> <span class=\"n\">watch_folder</span><span class=\"p\">(</span><span class=\"n\">path</span><span class=\"p\">,</span> <span class=\"o\">-</span><span class=\"mi\">1</span><span class=\"p\">)</span> <span class=\"c\"># timeout inf</span>\n        <span class=\"p\">(</span><span class=\"n\">file</span> <span class=\"o\">===</span> <span class=\"nb\">nothing</span> <span class=\"o\">||</span> <span class=\"n\">file</span> <span class=\"o\">∈</span> <span class=\"n\">handled</span><span class=\"p\">)</span> <span class=\"o\">&amp;&amp;</span> <span class=\"k\">continue</span>\n        <span class=\"k\">if</span> <span class=\"n\">event</span><span class=\"o\">.</span><span class=\"n\">changed</span>\n            <span class=\"nd\">@info</span> <span class=\"s\">\"Got \"</span> <span class=\"n\">event</span> <span class=\"n\">file</span>\n            <span class=\"n\">push!</span><span class=\"p\">(</span><span class=\"n\">handled</span><span class=\"p\">,</span> <span class=\"n\">file</span><span class=\"p\">)</span>\n            <span class=\"k\">try</span>\n                <span class=\"n\">fullpath</span> <span class=\"o\">=</span> <span class=\"n\">joinpath</span><span class=\"p\">(</span><span class=\"n\">path</span><span class=\"p\">,</span> <span class=\"n\">file</span><span class=\"p\">)</span>\n                <span class=\"c\"># println(file)</span>\n                <span class=\"n\">sleep</span><span class=\"p\">(</span><span class=\"mi\">2</span><span class=\"p\">)</span>\n                <span class=\"n\">display_data</span><span class=\"p\">(</span><span class=\"n\">fullpath</span><span class=\"p\">)</span>\n            <span class=\"k\">catch</span> <span class=\"nb\">e</span>\n                <span class=\"nd\">@error</span> <span class=\"s\">\"Plotting failed, got error\"</span> <span class=\"nb\">e</span>\n            <span class=\"k\">end</span>\n        <span class=\"k\">end</span>\n        <span class=\"n\">event</span><span class=\"o\">.</span><span class=\"n\">timedout</span> <span class=\"o\">&amp;&amp;</span> <span class=\"k\">return</span>\n    <span class=\"k\">end</span>\n<span class=\"k\">end</span>\n\n<span class=\"c\"># path = \"/home/fredrikb/Documents/\"</span>\n<span class=\"n\">path</span> <span class=\"o\">=</span> <span class=\"nb\">ARGS</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span>\n<span class=\"n\">task</span> <span class=\"o\">=</span> <span class=\"n\">watchserver</span><span class=\"p\">(</span><span class=\"n\">path</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 223550615,
+        "sender_full_name": "Fredrik Bagge Carlson",
+        "timestamp": 1611253759
+    },
+    {
+        "content": "<p>Thanks for clarifying Fredrik :)</p>",
+        "id": 223551644,
+        "sender_full_name": "Fredrik Bagge Carlson",
+        "timestamp": 1611254170
+    },
+    {
+        "content": "<p>I couldn't resist, sorry..<br>\n<a href=\"/user_uploads/7178/l1utc-JfFW23JitdhBlGh3K0/grafik.png\">grafik.png</a></p>\n<div class=\"message_inline_image\"><a href=\"/user_uploads/7178/l1utc-JfFW23JitdhBlGh3K0/grafik.png\" title=\"grafik.png\"><img src=\"/user_uploads/7178/l1utc-JfFW23JitdhBlGh3K0/grafik.png\"></a></div>",
+        "id": 223559826,
+        "sender_full_name": "Max Köhler",
+        "timestamp": 1611257841
+    },
+    {
+        "content": "<p>Hey <span class=\"user-mention\" data-user-id=\"272599\">@Fredrik Bagge Carlson</span> - you may be interested in this discourse post I opened talking about Julia usage on a server: <a href=\"https://discourse.julialang.org/t/running-julia-on-a-personal-linux-server/53449\">https://discourse.julialang.org/t/running-julia-on-a-personal-linux-server/53449</a> It discusses using both FileWatching and DaemonMode for Julia usage with a crontab.</p>",
+        "id": 223634060,
+        "sender_full_name": "TheCedarPrince",
+        "timestamp": 1611318225
+    }
+]

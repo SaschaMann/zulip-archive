@@ -1,0 +1,86 @@
+[
+    {
+        "content": "<p>I have an algorithm that needs to allocate several integer vectors of random size (around 10,000 elements), mutate them in calculations, and then discard them.</p>\n<p>Is it possible to make these vectors stack allocated? From reading through the thread on StrideArrays it seem like it might be. </p>\n<p>Currently they represent a large fraction of my code's memory usage which I think is killing my multithreaded performance.</p>\n<p>Here is a representative example:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">g</span><span class=\"p\">()</span> <span class=\"c\">#would like to reduce allocations here</span>\n    <span class=\"n\">l</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">9000</span><span class=\"o\">:</span><span class=\"mi\">10_000</span><span class=\"p\">)</span> <span class=\"c\">#large random integer</span>\n    <span class=\"n\">arr</span> <span class=\"o\">=</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Int</span><span class=\"p\">}(</span><span class=\"nb\">undef</span><span class=\"p\">,</span><span class=\"n\">l</span><span class=\"p\">)</span> <span class=\"c\">#array of length l</span>\n\n    <span class=\"c\">#do some stuff with arr</span>\n    <span class=\"n\">accum</span> <span class=\"o\">=</span> <span class=\"mi\">0</span>\n    <span class=\"n\">arr</span> <span class=\"o\">.=</span> <span class=\"mi\">1</span>\n    <span class=\"k\">for</span> <span class=\"n\">k</span> <span class=\"k\">in</span> <span class=\"n\">arr</span>\n        <span class=\"n\">accum</span> <span class=\"o\">+=</span> <span class=\"n\">k</span> <span class=\"o\">+</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">arr</span><span class=\"p\">)</span>\n    <span class=\"k\">end</span>\n\n    <span class=\"k\">return</span> <span class=\"n\">accum</span> <span class=\"c\">#discard arr</span>\n<span class=\"k\">end</span>\n<span class=\"k\">function</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">arr</span><span class=\"p\">)</span>\n    <span class=\"k\">return</span> <span class=\"n\">arr</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span><span class=\"o\">*</span><span class=\"mi\">2</span>\n<span class=\"k\">end</span>\n<span class=\"nd\">@allocated</span> <span class=\"n\">g</span><span class=\"p\">()</span>\n</code></pre></div>\n<p>thanks!</p>",
+        "id": 242625264,
+        "sender_full_name": "peter j.",
+        "timestamp": 1623688617
+    },
+    {
+        "content": "<p>Can you pre-allocate and re-use one single vector? You could pre-allocate a 10_000-long vector and keep track of the actual length separately.</p>",
+        "id": 242626093,
+        "sender_full_name": "mbaz",
+        "timestamp": 1623688993
+    },
+    {
+        "content": "<p>Oh, maybe! Not one single vector, but a few of them sure. I could then use views of them that are dynamically sized?</p>",
+        "id": 242626564,
+        "sender_full_name": "peter j.",
+        "timestamp": 1623689188
+    },
+    {
+        "content": "<p>Worth a try I'd guess <span aria-label=\"smile\" class=\"emoji emoji-1f642\" role=\"img\" title=\"smile\">:smile:</span></p>",
+        "id": 242626611,
+        "sender_full_name": "mbaz",
+        "timestamp": 1623689218
+    },
+    {
+        "content": "<p>Yes, you can take dynamically sized views of arrays. Preallocating is probably your best approach here.</p>\n<p>Currently <a href=\"https://github.com/search?q=StrideArrays.jl&amp;type=Repositories\">StrideArrays.jl</a> cannot make dynamically sized stack allocated arrays.</p>",
+        "id": 242633789,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1623692311
+    },
+    {
+        "content": "<p>E.g.: </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">function</span> <span class=\"n\">g!</span><span class=\"p\">(</span><span class=\"n\">_arr</span><span class=\"p\">)</span>\n           <span class=\"n\">l</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">9000</span><span class=\"o\">:</span><span class=\"mi\">10_000</span><span class=\"p\">)</span> <span class=\"c\">#large random integer</span>\n           <span class=\"n\">arr</span> <span class=\"o\">=</span> <span class=\"nd\">@view</span> <span class=\"n\">_arr</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">l</span><span class=\"p\">]</span>\n\n           <span class=\"c\">#do some stuff with arr</span>\n           <span class=\"n\">accum</span> <span class=\"o\">=</span> <span class=\"mi\">0</span>\n           <span class=\"n\">arr</span> <span class=\"o\">.=</span> <span class=\"mi\">1</span>\n           <span class=\"k\">for</span> <span class=\"n\">k</span> <span class=\"k\">in</span> <span class=\"n\">arr</span>\n               <span class=\"n\">accum</span> <span class=\"o\">+=</span> <span class=\"n\">k</span> <span class=\"o\">+</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">arr</span><span class=\"p\">)</span>\n           <span class=\"k\">end</span>\n\n           <span class=\"k\">return</span> <span class=\"n\">accum</span>\n       <span class=\"k\">end</span>\n<span class=\"n\">g!</span> <span class=\"p\">(</span><span class=\"n\">generic</span> <span class=\"k\">function</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">function</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">arr</span><span class=\"p\">)</span>\n           <span class=\"k\">return</span> <span class=\"n\">arr</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span><span class=\"o\">*</span><span class=\"mi\">2</span>\n       <span class=\"k\">end</span>\n<span class=\"n\">f</span> <span class=\"p\">(</span><span class=\"n\">generic</span> <span class=\"k\">function</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">let</span> <span class=\"n\">_arr</span> <span class=\"o\">=</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Int</span><span class=\"p\">}(</span><span class=\"nb\">undef</span><span class=\"p\">,</span> <span class=\"mi\">10_000</span><span class=\"p\">)</span>\n           <span class=\"nd\">@benchmark</span> <span class=\"n\">g!</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">_arr</span><span class=\"p\">)</span>\n       <span class=\"k\">end</span>\n<span class=\"n\">BechmarkTools</span><span class=\"o\">.</span><span class=\"n\">Trial</span><span class=\"o\">:</span> <span class=\"mi\">10000</span> <span class=\"n\">samples</span> <span class=\"n\">with</span> <span class=\"mi\">3</span> <span class=\"n\">evaluations</span><span class=\"o\">.</span>\n <span class=\"n\">Time</span>  <span class=\"p\">(</span><span class=\"n\">median</span><span class=\"p\">)</span><span class=\"o\">:</span>     <span class=\"mf\">9.140</span> <span class=\"n\">μs</span>               <span class=\"n\">┊</span> <span class=\"n\">GC</span> <span class=\"p\">(</span><span class=\"n\">median</span><span class=\"p\">)</span><span class=\"o\">:</span>    <span class=\"mf\">0.00</span><span class=\"o\">%</span>\n <span class=\"n\">Time</span>  <span class=\"p\">(</span><span class=\"n\">mean</span> <span class=\"o\">±</span> <span class=\"n\">σ</span><span class=\"p\">)</span><span class=\"o\">:</span>   <span class=\"mf\">9.202</span> <span class=\"n\">μs</span> <span class=\"o\">±</span> <span class=\"mf\">479.145</span> <span class=\"n\">ns</span>  <span class=\"n\">┊</span> <span class=\"n\">GC</span> <span class=\"p\">(</span><span class=\"n\">mean</span> <span class=\"o\">±</span> <span class=\"n\">σ</span><span class=\"p\">)</span><span class=\"o\">:</span>  <span class=\"mf\">0.00</span><span class=\"o\">%</span> <span class=\"o\">±</span> <span class=\"mf\">0.00</span><span class=\"o\">%</span>\n <span class=\"n\">Range</span> <span class=\"p\">(</span><span class=\"n\">min</span> <span class=\"o\">…</span> <span class=\"n\">max</span><span class=\"p\">)</span><span class=\"o\">:</span>  <span class=\"mf\">8.437</span> <span class=\"n\">μs</span> <span class=\"o\">…</span>  <span class=\"mf\">17.377</span> <span class=\"n\">μs</span>  <span class=\"n\">┊</span> <span class=\"n\">GC</span> <span class=\"p\">(</span><span class=\"n\">min</span> <span class=\"o\">…</span> <span class=\"n\">max</span><span class=\"p\">)</span><span class=\"o\">:</span> <span class=\"mf\">0.00</span><span class=\"o\">%</span> <span class=\"o\">…</span> <span class=\"mf\">0.00</span><span class=\"o\">%</span>\n\n            <span class=\"n\">▂▄▅▇███▇▆▅▃▂▁</span>\n  <span class=\"n\">▁▁▁▁▂▃▄▅▇███████████████▅▅▄▃▃▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁</span>\n  <span class=\"mf\">8.44</span> <span class=\"n\">μs</span>          <span class=\"n\">Histogram</span><span class=\"o\">:</span> <span class=\"n\">frequency</span> <span class=\"n\">by</span> <span class=\"n\">time</span>           <span class=\"mf\">11.1</span> <span class=\"n\">μs</span>\n\n <span class=\"n\">Memory</span> <span class=\"n\">estimate</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">,</span> <span class=\"n\">allocs</span> <span class=\"n\">estimate</span><span class=\"o\">:</span> <span class=\"mf\">0.</span>\n</code></pre></div>",
+        "id": 242634484,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1623692624
+    },
+    {
+        "content": "<p>compared to</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@benchmark</span> <span class=\"n\">g</span><span class=\"p\">()</span>\n<span class=\"n\">BechmarkTools</span><span class=\"o\">.</span><span class=\"n\">Trial</span><span class=\"o\">:</span> <span class=\"mi\">10000</span> <span class=\"n\">samples</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">evaluations</span><span class=\"o\">.</span>\n <span class=\"n\">Time</span>  <span class=\"p\">(</span><span class=\"n\">median</span><span class=\"p\">)</span><span class=\"o\">:</span>     <span class=\"mf\">13.290</span> <span class=\"n\">μs</span>              <span class=\"n\">┊</span> <span class=\"n\">GC</span> <span class=\"p\">(</span><span class=\"n\">median</span><span class=\"p\">)</span><span class=\"o\">:</span>    <span class=\"mf\">0.00</span><span class=\"o\">%</span>\n <span class=\"n\">Time</span>  <span class=\"p\">(</span><span class=\"n\">mean</span> <span class=\"o\">±</span> <span class=\"n\">σ</span><span class=\"p\">)</span><span class=\"o\">:</span>   <span class=\"mf\">16.383</span> <span class=\"n\">μs</span> <span class=\"o\">±</span> <span class=\"mf\">30.578</span> <span class=\"n\">μs</span>  <span class=\"n\">┊</span> <span class=\"n\">GC</span> <span class=\"p\">(</span><span class=\"n\">mean</span> <span class=\"o\">±</span> <span class=\"n\">σ</span><span class=\"p\">)</span><span class=\"o\">:</span>  <span class=\"mf\">6.87</span><span class=\"o\">%</span> <span class=\"o\">±</span>  <span class=\"mf\">3.74</span><span class=\"o\">%</span>\n <span class=\"n\">Range</span> <span class=\"p\">(</span><span class=\"n\">min</span> <span class=\"o\">…</span> <span class=\"n\">max</span><span class=\"p\">)</span><span class=\"o\">:</span>   <span class=\"mf\">9.490</span> <span class=\"n\">μs</span> <span class=\"o\">…</span>  <span class=\"mf\">1.189</span> <span class=\"n\">ms</span>  <span class=\"n\">┊</span> <span class=\"n\">GC</span> <span class=\"p\">(</span><span class=\"n\">min</span> <span class=\"o\">…</span> <span class=\"n\">max</span><span class=\"p\">)</span><span class=\"o\">:</span> <span class=\"mf\">0.00</span><span class=\"o\">%</span> <span class=\"o\">…</span> <span class=\"mf\">96.94</span><span class=\"o\">%</span>\n\n     <span class=\"n\">▃▅▇██▇▅▄▅▆▆▆▄▃▂▁▁▁▁▁</span>        <span class=\"n\">▁▁▁▁▁</span>         <span class=\"n\">▁▁</span>\n  <span class=\"n\">▅▅████████████████████████▇██████████▇▇▇▇▆███████▇▇▅▅▆▅▅▅▅▆▅▅▅▆</span>\n  <span class=\"mf\">9.49</span> <span class=\"n\">μs</span>        <span class=\"n\">Histogram</span><span class=\"o\">:</span> <span class=\"n\">log</span><span class=\"p\">(</span><span class=\"n\">frequency</span><span class=\"p\">)</span> <span class=\"n\">by</span> <span class=\"n\">time</span>        <span class=\"mf\">37.8</span> <span class=\"n\">μs</span>\n\n <span class=\"n\">Memory</span> <span class=\"n\">estimate</span><span class=\"o\">:</span> <span class=\"mf\">70.39</span> <span class=\"n\">KiB</span><span class=\"p\">,</span> <span class=\"n\">allocs</span> <span class=\"n\">estimate</span><span class=\"o\">:</span> <span class=\"mf\">2.</span>\n</code></pre></div>",
+        "id": 242634939,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1623692831
+    },
+    {
+        "content": "<p>Yeah, I'd reccommend the views-of-a-huge vector approach.</p>\n<p>But 10_000 <code>Int</code>s isn't too large to be stack allocated either. If that's your upper limit, you could also stack allocate a vector that large, and then take a view of it.</p>",
+        "id": 243286291,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1624164811
+    },
+    {
+        "content": "<p>Thanks all. </p>\n<p>This makes me wonder, would it be possible to write a package that takes upper-bound for the memory usage of my code and then gives me all efficient allocations?  I have nowhere near the understanding of memory management to write such a package, just curious.</p>",
+        "id": 243320055,
+        "sender_full_name": "peter j.",
+        "timestamp": 1624220955
+    },
+    {
+        "content": "<p>Generally yes! Just make however many <code>Array</code>s that are bigger than you need at the beginning, and then keep re-using them (or views into them) in-place. If you can get everything to be in-place after the initial allocation, you could in principle even disable the GC if you wanted.</p>",
+        "id": 243320195,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1624221152
+    },
+    {
+        "content": "<p>Oh sorry, you mean a package that does all that for you..  <span class=\"user-mention\" data-user-id=\"209534\">@Lyndon White</span> 's  <a href=\"https://github.com/oxinabox/AutoPreallocation.jl\">https://github.com/oxinabox/AutoPreallocation.jl</a> is not too far off from that IIRC!</p>",
+        "id": 243320209,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1624221224
+    },
+    {
+        "content": "<p>How do you get this histogram output with <a href=\"https://github.com/search?q=BenchmarkTools.jl&amp;type=Repositories\">BenchmarkTools.jl</a>?</p>",
+        "id": 243791543,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1624543767
+    },
+    {
+        "content": "<p><a href=\"https://github.com/JuliaCI/BenchmarkTools.jl/pull/217\">https://github.com/JuliaCI/BenchmarkTools.jl/pull/217</a></p>",
+        "id": 243791729,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1624543838
+    },
+    {
+        "content": "<p><a href=\"https://discourse.julialang.org/t/ann-benchmarkhistograms-jl/61653\">https://discourse.julialang.org/t/ann-benchmarkhistograms-jl/61653</a></p>",
+        "id": 243806704,
+        "sender_full_name": "Fredrik Bagge Carlson",
+        "timestamp": 1624549975
+    }
+]

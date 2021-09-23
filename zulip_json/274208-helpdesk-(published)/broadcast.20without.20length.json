@@ -1,0 +1,56 @@
+[
+    {
+        "content": "<p>Is it possible to define broadcasting behavior for a type without having to define <code>Base.length</code>?</p>",
+        "id": 229199757,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1615134591
+    },
+    {
+        "content": "<p>Yeah. One way woudl be to just overload <code>Base.broadcasted</code>:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">struct</span> <span class=\"n\">MyVector</span><span class=\"p\">{</span><span class=\"n\">T</span><span class=\"p\">}</span>\n           <span class=\"n\">data</span><span class=\"o\">::</span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"n\">T</span><span class=\"p\">}</span>\n       <span class=\"k\">end</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">v</span> <span class=\"o\">=</span> <span class=\"n\">MyVector</span><span class=\"p\">([</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"mi\">3</span><span class=\"p\">])</span>\n<span class=\"n\">MyVector</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">}([</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"mi\">2</span><span class=\"p\">,</span> <span class=\"mi\">3</span><span class=\"p\">])</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">broadcasted</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"n\">v</span><span class=\"o\">::</span><span class=\"n\">MyVector</span><span class=\"p\">,</span> <span class=\"n\">args</span><span class=\"o\">...</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">broadcasted</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"n\">v</span><span class=\"o\">.</span><span class=\"n\">data</span><span class=\"p\">,</span> <span class=\"n\">args</span><span class=\"o\">...</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">exp</span><span class=\"o\">.</span><span class=\"p\">(</span><span class=\"n\">v</span> <span class=\"o\">.+</span> <span class=\"mi\">1</span><span class=\"p\">)</span>\n<span class=\"mi\">3</span><span class=\"o\">-</span><span class=\"n\">element</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Float64</span><span class=\"p\">}</span><span class=\"o\">:</span>\n  <span class=\"mf\">7.38905609893065</span>\n <span class=\"mf\">20.085536923187668</span>\n <span class=\"mf\">54.598150033144236</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">length</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"p\">)</span>\n<span class=\"n\">ERROR</span><span class=\"o\">:</span> <span class=\"kt\">MethodError</span><span class=\"o\">:</span> <span class=\"n\">no</span> <span class=\"n\">method</span> <span class=\"n\">matching</span> <span class=\"n\">length</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"n\">MyVector</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">})</span>\n</code></pre></div>",
+        "id": 229203416,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615137950
+    },
+    {
+        "content": "<p>A more robust way would be to define a custom broadcast style as explained here: <a href=\"https://docs.julialang.org/en/v1/manual/interfaces/#man-interfaces-broadcasting\">https://docs.julialang.org/en/v1/manual/interfaces/#man-interfaces-broadcasting</a></p>",
+        "id": 229203482,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615137980
+    },
+    {
+        "content": "<p>Unfortunately, the docs on custom broadcast styles are kinda lacking in examples that aren't basically just standard arrays.</p>",
+        "id": 229203521,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615138035
+    },
+    {
+        "content": "<p>Actually, the easiest thing here would probably be to use <code>Base.broadcastable</code> instead. So instead of defining <code>broadcasted</code> above, you'd just do</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">struct</span> <span class=\"n\">MyVector</span><span class=\"p\">{</span><span class=\"n\">T</span><span class=\"p\">}</span>\n           <span class=\"n\">data</span><span class=\"o\">::</span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"n\">T</span><span class=\"p\">}</span>\n       <span class=\"k\">end</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">v</span> <span class=\"o\">=</span> <span class=\"n\">MyVector</span><span class=\"p\">([</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"mi\">3</span><span class=\"p\">])</span>\n<span class=\"n\">MyVector</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">}([</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"mi\">2</span><span class=\"p\">,</span> <span class=\"mi\">3</span><span class=\"p\">])</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">broadcastable</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"o\">::</span><span class=\"n\">MyVector</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">v</span><span class=\"o\">.</span><span class=\"n\">data</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">log</span><span class=\"o\">.</span><span class=\"p\">(</span><span class=\"mi\">1</span> <span class=\"o\">.+</span> <span class=\"mi\">3</span> <span class=\"o\">.+</span> <span class=\"n\">v</span><span class=\"p\">)</span>\n<span class=\"mi\">3</span><span class=\"o\">-</span><span class=\"n\">element</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Float64</span><span class=\"p\">}</span><span class=\"o\">:</span>\n <span class=\"mf\">1.6094379124341003</span>\n <span class=\"mf\">1.791759469228055</span>\n <span class=\"mf\">1.9459101490553132</span>\n</code></pre></div>",
+        "id": 229203647,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615138193
+    },
+    {
+        "content": "<p>Maybe now it's time for someone to answer <a href=\"https://stackoverflow.com/questions/50517457/how-to-overload-general-broadcasting-for-a-custom-type\">this really old SO question of mine</a>?</p>",
+        "id": 229267429,
+        "sender_full_name": "Philipp Gabler",
+        "timestamp": 1615194311
+    },
+    {
+        "content": "<p>Upvoted <span aria-label=\"+1\" class=\"emoji emoji-1f44d\" role=\"img\" title=\"+1\">:+1:</span></p>",
+        "id": 229286893,
+        "sender_full_name": "Chad Scherrer",
+        "timestamp": 1615204680
+    },
+    {
+        "content": "<p>Thank you <span class=\"user-mention\" data-user-id=\"269150\">@Mason Protter</span> and everyone else. I will read the links to learn more about custom broadcasts.</p>",
+        "id": 229349390,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1615228098
+    },
+    {
+        "content": "<p>It would be nice if someone with more experience in custom broadcasting styles could write a blog post for the community. This is a topic that Julia can really shine and yet very few of us understand it well even after years playing with the language.</p>",
+        "id": 229349778,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1615228229
+    }
+]
