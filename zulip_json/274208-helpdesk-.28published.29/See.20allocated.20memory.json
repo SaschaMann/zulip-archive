@@ -1,0 +1,32 @@
+[
+    {
+        "content": "<p>Is it possible to see what objects Julia has memory allocated for (i.e. what variables can't be garbage collected)?</p>\n<p>Reason is that I'm doing some interactive plotting where I load some data from disk and plot it in windows. Problem is that every time I generate a plot the amount of memory used by Julia (as seen by windows) increases until it is way more than the amount of RAM I have and things just become dead slow and programs start crashing in the background, meaning I have to restart the REPL every couple of plots. </p>\n<p>Functions don't return anything but the actual plot which only plots some heavily aggregated statistics (e.g. mean and a few percentiles) and even if I set all variables in workspace to 0 and run <code>GC.gc()</code> multiple times windows insists that Julia is taking more and more memory, even if I'm just running the same same plot command multiple times.</p>",
+        "id": 345945412,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1680268230
+    },
+    {
+        "content": "<p>We need a more detailed description to figure out what's wrong. How much data are you loading for each plot? What plotting library are you using? What commands did you issue in the REPL?</p>",
+        "id": 346298541,
+        "sender_full_name": "Santtu",
+        "timestamp": 1680415035
+    },
+    {
+        "content": "<p>But you might try <a href=\"https://github.com/search?q=Debugger.jl&amp;type=Repositories\">Debugger.jl</a> ([link]) to observe sizes of variables.</p>\n<p>[link]: <a href=\"https://github.com/JuliaDebug/Debugger.jl\">https://github.com/JuliaDebug/Debugger.jl</a></p>",
+        "id": 346300058,
+        "sender_full_name": "Santtu",
+        "timestamp": 1680415598
+    },
+    {
+        "content": "<p>There are alot of packages involved and I would guess the root cause might be difficult to sort out. </p>\n<p>As a first step, I wanted to see if windows and Julia agree on how much memory Julia needs. There are many packages involved and I think at least a few of them use global caches (<a href=\"https://github.com/search?q=Dagger.jl&amp;type=Repositories\">Dagger.jl</a> being one of my prime suspects). Instead of manually going through the source code of each such package I was hoping to find some kind of way to profile what the GC thinks it can not clean up atm.</p>\n<p>After a bit of search prompt engineering I found <code>Base.varinfo</code> which looks promising, but even <code>varinfo(;all=true, imported=true, recursive=true, sortby=:size)</code> seems to skip const globals in loaded packages.</p>\n<p>Debugger sounds a bit heavy handed since I'm more after a profiler, but I'll look into it (have never used it).</p>\n<p>When I run a single load-&gt;mangle-&gt;plot call with <code>@time</code> it reports around 10Gb of allocations which seems somewhat reasonable given the amount of data being processed. Running it again gives a similar number, but windows just keeps increasing the commit charge with each call. </p>\n<p>Non rigorous example: After letting my session sit over the night with a 45 GB commit charge the working set size was down to just over 1 GB the next day (commit charge stayed the same), but running the plot command again bumped up the commit charge to 69 GB and a 13 GB working set.</p>",
+        "id": 346327852,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1680429330
+    },
+    {
+        "content": "<p>I'm not even certain that the commit charge is the problem, but it is the one thing I have observed which just gets larger. The symptom is that calls suddenly get two orders of magnitude slower and if I keep going without restating then programs (explorer, browsers and eventually vs code) starts to crash.</p>",
+        "id": 346328326,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1680429512
+    }
+]

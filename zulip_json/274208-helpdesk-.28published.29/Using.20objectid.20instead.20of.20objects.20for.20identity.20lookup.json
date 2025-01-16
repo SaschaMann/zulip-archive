@@ -1,0 +1,62 @@
+[
+    {
+        "content": "<p>Assume one wants to have some kind of simple object identity lookup table, like <code>Base.ImmutableDict</code> or just a tuple with pairs, but the keys are of all kinds of crazy types (values are always the same type). Would it be safe/useful to use <code>objectid(x)</code> as keys instead of <code>x</code> just to get some type harmonization and e.g. reduce the risk of exploding compile times? </p>\n<p>Finding the object from the keys will never be useful in this case since it will only be used when one has access to the original object.</p>",
+        "id": 360030688,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1684665015
+    },
+    {
+        "content": "<p>Something like <a href=\"https://docs.julialang.org/en/v1/base/collections/#Base.IdDict\">IdDict</a> ?</p>",
+        "id": 360041934,
+        "sender_full_name": "ederag",
+        "timestamp": 1684669447
+    },
+    {
+        "content": "<p>Those are fast; you \"just\" have to keep in mind that equal objects with different IDs will be treated as different keys.</p>",
+        "id": 360042466,
+        "sender_full_name": "ederag",
+        "timestamp": 1684669698
+    },
+    {
+        "content": "<p>The way to use an <code>IdDict</code> would be to have an <code>IdDict{UInt64}</code> instead of an <code>IdDict{Any}</code> and always access it with <code>objectid(x)</code> instead of just <code>x</code>. I don't think this has any direct advantages in most cases, especially since <code>IdDict</code>s  tend to be slower than normal <code>Dict</code>s for simple objects like <code>UInt64</code>s.</p>\n<p>In my case I also want to avoid mutation (and Dicts in general) since I'd like it to be as autodiff compatible as possible which is why I looked into <code>Base.ImmutableDict</code> or just a plain tuple or some own type with the same type of characteristics.</p>\n<p>The <code>IdDict</code> is however one reason why I asked the above since it seems to be doing alot more than just checking object identities. I guess one reason could be that you want to be able to retrieve the actual keys, e.g. when iterating and this is not something I need to do.</p>",
+        "id": 360064598,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1684678374
+    },
+    {
+        "content": "<p>I thought you wanted to make your dict work like an IdDict, which would be used as <code>id_dict[object]</code> directly<br>\n(no need to know the actual id, just use the object).</p>",
+        "id": 360085508,
+        "sender_full_name": "ederag",
+        "timestamp": 1684685510
+    },
+    {
+        "content": "<p>Yeah, I was perhaps not so clear. The main goal was to avoid/circumvent type heterogenity, and since all I need is an IdDict to look up things from I though one could just store the object ids as <code>UInt64</code>s. The docs are not fully clear on what the unusual cases \"usually when x !== y, objectid(x) != objectid(y).\" are. Perhaps it is the normal hash collisions (i,e there are more possible objects than there are unique object ids).</p>",
+        "id": 360093226,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1684688711
+    },
+    {
+        "content": "<p>it's exactly the usual hash collision</p>",
+        "id": 360093602,
+        "sender_full_name": "Sukera",
+        "timestamp": 1684688852
+    },
+    {
+        "content": "<p>I sometimes wonder why it is not possible to just get some unique memory address for an object, but I guess if it was simple then there would be datastructures which make use of it already. Back to the drawing table on this one...</p>",
+        "id": 360098774,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1684691302
+    },
+    {
+        "content": "<p>not all objects are guaranteed to have a memory address :)</p>",
+        "id": 360098986,
+        "sender_full_name": "Sukera",
+        "timestamp": 1684691412
+    },
+    {
+        "content": "<p>the hardware/OS/memory space under the hood is an implementation detail - just think of values that only exist in registers (or ones that only exist during optimization in compilation)</p>",
+        "id": 360099098,
+        "sender_full_name": "Sukera",
+        "timestamp": 1684691473
+    }
+]

@@ -1,0 +1,20 @@
+[
+    {
+        "content": "<p>Why might this application of the turbo macro fail and fall back to inbounds and simd? We're trying to do <code>mul!(y, A, x[:, col])</code>, but without copying the column of x.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">matmul_column!</span><span class=\"p\">(</span><span class=\"n\">y</span><span class=\"p\">,</span> <span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"n\">x</span><span class=\"p\">,</span> <span class=\"n\">col</span><span class=\"p\">)</span>\n    <span class=\"nd\">@turbo</span> <span class=\"k\">for</span> <span class=\"n\">i</span> <span class=\"k\">in</span> <span class=\"n\">axes</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"mi\">1</span><span class=\"p\">)</span>\n        <span class=\"n\">yi</span> <span class=\"o\">=</span> <span class=\"mf\">0.</span>\n        <span class=\"k\">for</span> <span class=\"n\">j</span> <span class=\"k\">in</span> <span class=\"n\">axes</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"mi\">2</span><span class=\"p\">)</span>\n            <span class=\"n\">yi</span> <span class=\"o\">+=</span> <span class=\"n\">A</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">,</span> <span class=\"n\">j</span><span class=\"p\">]</span> <span class=\"o\">*</span> <span class=\"n\">x</span><span class=\"p\">[</span><span class=\"n\">j</span><span class=\"p\">,</span> <span class=\"n\">col</span><span class=\"p\">]</span>\n        <span class=\"k\">end</span>\n        <span class=\"n\">y</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span> <span class=\"o\">=</span> <span class=\"n\">yi</span>\n    <span class=\"k\">end</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 280136946,
+        "sender_full_name": "Jack C",
+        "timestamp": 1650925022
+    },
+    {
+        "content": "<p>What are the element types?<br>\nNote that <code>@view(x[:,col])</code> should also let you avoid copying the column of <code>x</code>.</p>",
+        "id": 280207706,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1650978808
+    },
+    {
+        "content": "<p>Turns out the element types were <code>SVectors</code>, no wonder it wasn't working. Reshaping things to be a 3d <code>SArray</code> rather than a <code>SMatrix{SVector}</code> fixed it.</p>\n<p>The matrix <code>x</code> is tiny enough that I don't want the overhead of the <code>@view</code>, but that's something I should measure too.</p>",
+        "id": 280379427,
+        "sender_full_name": "Jack C",
+        "timestamp": 1651078781
+    }
+]

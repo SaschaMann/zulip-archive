@@ -1,0 +1,68 @@
+[
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">lds</span><span class=\"o\">.</span><span class=\"n\">set_index</span><span class=\"p\">(</span><span class=\"s\">\"Area\"</span><span class=\"p\">)</span><span class=\"o\">.</span><span class=\"n\">filter</span><span class=\"p\">(</span><span class=\"n\">regex</span> <span class=\"o\">=</span> <span class=\"s\">\"ER_.*\"</span><span class=\"p\">)</span><span class=\"o\">.</span><span class=\"n\">rename</span><span class=\"p\">(</span><span class=\"n\">columns</span> <span class=\"o\">=</span> <span class=\"n\">lambda</span> <span class=\"n\">s</span><span class=\"o\">:</span> <span class=\"n\">int</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"p\">[</span><span class=\"mi\">3</span><span class=\"o\">:</span><span class=\"p\">]))</span><span class=\"o\">.</span><span class=\"n\">T</span><span class=\"p\">[[</span><span class=\"s\">\"South West\"</span><span class=\"p\">,</span> <span class=\"s\">\"London\"</span><span class=\"p\">]]</span><span class=\"o\">.</span><span class=\"n\">plot</span><span class=\"p\">()</span>\n</code></pre></div>\n<p>Hiya! I'd like to start using julia and Pluto instead of Jupyter, but I'm finding it tough to see how to do similar things.<br>\nHow would I write code to do the same thing as this pandas/matplotlib code? It's selecting the rows with South West and London for their \"Area\", and graphing the values in the <code>ER_{2005, 2006, ..., 2019}</code> columns for each.</p>",
+        "id": 267595228,
+        "sender_full_name": "Plecra",
+        "timestamp": 1641913991
+    },
+    {
+        "content": "<p>Hey! I think <a href=\"https://github.com/search?q=AlgebraOfGraphics.jl&amp;type=Repositories\">AlgebraOfGraphics.jl</a> could be awesome for this. Could you share an example of what <code>lds</code> looks like and the corresponding plot you are trying to make?</p>",
+        "id": 267628593,
+        "sender_full_name": "Ian Weaver",
+        "timestamp": 1641927316
+    },
+    {
+        "content": "<p>Generally, <a href=\"https://github.com/search?q=DataFrames.jl&amp;type=Repositories\">DataFrames.jl</a> is the pandas replacement, with helper packages like <a href=\"https://github.com/search?q=DataFramesMeta.jl&amp;type=Repositories\">DataFramesMeta.jl</a> (among others). <a href=\"https://github.com/search?q=Plots.jl&amp;type=Repositories\">Plots.jl</a> is the general plots package, but <a href=\"https://github.com/search?q=StatsPlots.jl&amp;type=Repositories\">StatsPlots.jl</a> has a nice interface for working with DataFrames specifically. </p>\n<p>I don't know pandas, but based on your description, something like this would be equivalent:</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"k\">using</span> <span class=\"n\">DataFrames</span><span class=\"p\">,</span> <span class=\"n\">Random</span><span class=\"p\">,</span> <span class=\"n\">StatsPlots</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">df</span> <span class=\"o\">=</span> <span class=\"n\">DataFrame</span><span class=\"p\">(</span><span class=\"n\">area</span> <span class=\"o\">=</span> <span class=\"p\">[</span><span class=\"s\">\"South West\"</span><span class=\"p\">,</span> <span class=\"s\">\"Edinburgh\"</span><span class=\"p\">,</span> <span class=\"s\">\"London\"</span><span class=\"p\">,</span> <span class=\"s\">\"South West\"</span><span class=\"p\">,</span> <span class=\"s\">\"Morecombe\"</span><span class=\"p\">],</span> <span class=\"n\">ER_2005</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">100</span><span class=\"p\">,</span> <span class=\"mi\">5</span><span class=\"p\">),</span> <span class=\"n\">ER_2015</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">100</span><span class=\"p\">,</span> <span class=\"mi\">5</span><span class=\"p\">),</span> <span class=\"n\">something</span> <span class=\"o\">=</span> <span class=\"n\">map</span><span class=\"p\">(</span><span class=\"n\">_</span><span class=\"o\">-&gt;</span><span class=\"n\">randstring</span><span class=\"p\">(),</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">5</span><span class=\"p\">))</span>\n<span class=\"go\">5×4 DataFrame</span>\n<span class=\"go\"> Row │ area        ER_2005  ER_2015  something</span>\n<span class=\"go\">     │ String      Int64    Int64    String</span>\n<span class=\"go\">─────┼─────────────────────────────────────────</span>\n<span class=\"go\">   1 │ South West       71       83  aZQ5TM4K</span>\n<span class=\"go\">   2 │ Edinburgh        98       99  BLzqoIFg</span>\n<span class=\"go\">   3 │ London           39       15  u43jnMLH</span>\n<span class=\"go\">   4 │ South West       58       49  EtrFImPX</span>\n<span class=\"go\">   5 │ Morecombe       100       84  1U773XwD</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"nd\">@df</span> <span class=\"n\">df</span><span class=\"p\">[</span><span class=\"k\">in</span><span class=\"p\">([</span><span class=\"s\">\"South West\"</span><span class=\"p\">,</span> <span class=\"s\">\"London\"</span><span class=\"p\">])</span><span class=\"o\">.</span><span class=\"p\">(</span><span class=\"n\">df</span><span class=\"o\">.</span><span class=\"n\">area</span><span class=\"p\">),</span> <span class=\"sa\">r</span><span class=\"sr\">\"ER_.*\"</span><span class=\"p\">]</span> <span class=\"n\">plot</span><span class=\"p\">(</span><span class=\"n\">cols</span><span class=\"p\">())</span>\n</code></pre></div>",
+        "id": 267631106,
+        "sender_full_name": "Sundar R",
+        "timestamp": 1641928551
+    },
+    {
+        "content": "<p>See also: <a href=\"https://dataframes.juliadata.org/latest/man/comparisons/#Comparison-with-the-Python-package-pandas\">https://dataframes.juliadata.org/latest/man/comparisons/#Comparison-with-the-Python-package-pandas</a></p>",
+        "id": 267631170,
+        "sender_full_name": "Sundar R",
+        "timestamp": 1641928565
+    },
+    {
+        "content": "<p>Yeah! These are the libraries I've been using, though I've been struggling to find alternatives to all of pandas' methods</p>",
+        "id": 267859539,
+        "sender_full_name": "Plecra",
+        "timestamp": 1642075583
+    },
+    {
+        "content": "<p>It seems like the shape of the API is a little different, so translations probably wont be one to one</p>",
+        "id": 267859581,
+        "sender_full_name": "Plecra",
+        "timestamp": 1642075607
+    },
+    {
+        "content": "<p>I've been finding that a lot of seemingly common operations in R and pylab are quite difficult in Julia though - matrix transpositions are common enough for python to have the short <code>.T</code> accessor for them, but there's no blessed implementation I could find.<br>\nIs this because I'm looking in the wrong places? Or does Julia expect more things to be manually implemented.</p>",
+        "id": 267859853,
+        "sender_full_name": "Plecra",
+        "timestamp": 1642075753
+    },
+    {
+        "content": "<p>Oh, tangential question: The postfix methods are quite a lot easier to chain, is there a way to write them in the same order?</p>",
+        "id": 267859920,
+        "sender_full_name": "Plecra",
+        "timestamp": 1642075795
+    },
+    {
+        "content": "<p>And thanks for your example code <span class=\"user-mention\" data-user-id=\"423970\">@Sundar R</span> ! It's nice to know I wasn't too far off, this is almost exactly what I was using already. My trouble is with extending it - I want the axes' values to be properly labelled from the names (\"ER_nnnn\" is being parsed to an int in the python), and I'm plotting multiple rows in the line chart. That's <code>matplot</code> in R.<br>\nI think the ecosystem just isn't as mature, and I'll have to stick to python's notebooks for now.</p>",
+        "id": 267860435,
+        "sender_full_name": "Plecra",
+        "timestamp": 1642076139
+    },
+    {
+        "content": "<p>It's not immature, it's just different.</p>\n<p>I highly recommend to read Bogumil blog on DataFrames to get better understanding. For example, you can start with <a href=\"https://bkamins.github.io/julialang/2020/12/24/minilanguage.html\">https://bkamins.github.io/julialang/2020/12/24/minilanguage.html</a> May be it is outdated, I do not know, but still it gives very good introduction in dataframes workflow.</p>\n<p>Also, there are packages which provide some syntax sugar, for example <a href=\"https://github.com/search?q=Chain.jl&amp;type=Repositories\">Chain.jl</a>, <a href=\"https://github.com/search?q=Pipe.jl&amp;type=Repositories\">Pipe.jl</a>, <a href=\"https://github.com/search?q=Underscores.jl&amp;type=Repositories\">Underscores.jl</a>. May be you'll find them useful.</p>",
+        "id": 267866541,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1642079724
+    },
+    {
+        "content": "<p>Couldn't agree more. Here's a <a href=\"https://icweaver.github.io/Pluto_sample_notebooks/some_data_viz.html\">quick example</a> using some of those tools to start getting your plot off the ground, I just split out some of the parts for clarity. With Pluto's built-in package manager, running the notebook after you download it should just work™, but I might be pushing it with the Python example at the end <span aria-label=\"snake\" class=\"emoji emoji-1f40d\" role=\"img\" title=\"snake\">:snake:</span></p>\n<p><a href=\"/user_uploads/7178/y96_DH9UTs8rIJBoifp_dSyc/Screenshot-from-2022-01-13-13-27-13.png\">Screenshot-from-2022-01-13-13-27-13.png</a></p>\n<div class=\"message_inline_image\"><a href=\"/user_uploads/7178/y96_DH9UTs8rIJBoifp_dSyc/Screenshot-from-2022-01-13-13-27-13.png\" title=\"Screenshot-from-2022-01-13-13-27-13.png\"><img src=\"/user_uploads/7178/y96_DH9UTs8rIJBoifp_dSyc/Screenshot-from-2022-01-13-13-27-13.png\"></a></div>",
+        "id": 267910092,
+        "sender_full_name": "Ian Weaver",
+        "timestamp": 1642098326
+    }
+]

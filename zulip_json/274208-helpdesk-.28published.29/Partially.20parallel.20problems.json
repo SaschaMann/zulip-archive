@@ -1,0 +1,98 @@
+[
+    {
+        "content": "<p>I'm trying to find some resources on how to work on improving the parallel processing of an algorithm, but I don't know what terms I should be searching with. The specific algorithm I'm looking at is <a href=\"https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm\">Needleman-Wunch</a>, a classic in bioinformatics and an example of \"dynamic programming\" (though I don't actually know what that term means).</p>\n<p>Basically, given an <code>n x m</code> matrix, one can calculate the value of position <code>(i, j)</code>, as long as <code>[(i-1, j-1), (i-1, j), (i, j-1)]</code> are known (the first row and first column can all be calculated from the start). </p>\n<p>I found <a href=\"https://upload.wikimedia.org/wikipedia/en/c/c4/ParallelNeedlemanAlgorithm.pdf\">this paper</a>, but it seems to be doing some fancy tricks to optimize, I'm looking to just sort of queue up tasks as they become available, if that makes any sense. Or maybe this is just an incredibly naive way to think about it...</p>",
+        "id": 242674075,
+        "sender_full_name": "Kevin Bonham",
+        "timestamp": 1623715650
+    },
+    {
+        "content": "<p>Dynamic programming is the main pillar of modern mathematical economics. There are at least 4 or 5 econ Nobel prize winners that I can think of whose work contributed to the foundations of dynamic programming (sadly Richard Bellman, the \"father\" of dynamic programming, did not get the prize). Thomas Sargent, of Julia and Nobel fame, has good intro chapters in most of his books, and there will be Julia-based lectures over at Quant Econ: <a href=\"https://julia.quantecon.org/dynamic_programming/index_grad.html\">https://julia.quantecon.org/dynamic_programming/index_grad.html</a></p>\n<p>Being an economist I was surprised that I'd never heard of Needleman-Wunch, not even by name. I got curious and found these introductory pages: It seems that naive approaches run into memory issues pretty quickly. Sorry I can't help at all, but I'd love to learn more about this.</p>\n<p>Around page 30 or so:</p>\n<p><a href=\"https://www.google.com/books/edition/Algorithms_in_Bioinformatics/4j_GfM0tyPUC?hl=en&amp;gbpv=1&amp;dq=%22Needleman-Wunsch%22&amp;printsec=frontcover\">https://www.google.com/books/edition/Algorithms_in_Bioinformatics/4j_GfM0tyPUC?hl=en&amp;gbpv=1&amp;dq=%22Needleman-Wunsch%22&amp;printsec=frontcover</a></p>",
+        "id": 242693507,
+        "sender_full_name": "Patrick Toche",
+        "timestamp": 1623739434
+    },
+    {
+        "content": "<p>Maybe just put everything in a channel and use Worker Pool approach?<br>\n<a href=\"https://juliafolds.github.io/data-parallelism/tutorials/concurrency-patterns/\">https://juliafolds.github.io/data-parallelism/tutorials/concurrency-patterns/</a></p>",
+        "id": 242698980,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1623743551
+    },
+    {
+        "content": "<p>You probable should lock channel on read/write operations, which can be bottleneck, but other then that it should work smoothly.</p>",
+        "id": 242699122,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1623743653
+    },
+    {
+        "content": "<p>You sure you need Needleman-Wunch and not Smith-Waterman? Smith-Waterman has been ridiculously optimized. There are several shortcuts to make in the algorithm, and there exists SIMD variants. Ufortunately I don't know _too_ much about these optimizations themselves, but some Googling might reveal some nice sources<br>\nsee: <a href=\"https://bmcbioinformatics.biomedcentral.com/track/pdf/10.1186/1471-2105-12-221.pdf\">https://bmcbioinformatics.biomedcentral.com/track/pdf/10.1186/1471-2105-12-221.pdf</a><br>\n<a href=\"https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0082138\">https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0082138</a></p>",
+        "id": 242720096,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1623757112
+    },
+    {
+        "content": "<p>I agree with others that it might be better to look into existing implementation strategies. Maybe there are some domain specific optimizations you can do.</p>\n<p>But, from just the description of the OP, it looks like what you want has this access pattern?</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"c\"># \"left top\" means (1, 1) and \"right bottom\" means (n, m)</span>\n<span class=\"k\">for</span> <span class=\"n\">i</span> <span class=\"k\">in</span> <span class=\"n\">left_top_to_right_bottom</span>      <span class=\"c\"># serialized</span>\n    <span class=\"k\">for</span> <span class=\"n\">j</span> <span class=\"k\">in</span> <span class=\"n\">left_bottom_to_right_top</span>  <span class=\"c\"># parallelizable</span>\n        <span class=\"n\">xs</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">,</span> <span class=\"n\">j</span><span class=\"p\">]</span> <span class=\"o\">=</span> <span class=\"n\">compute</span><span class=\"p\">(</span><span class=\"n\">xs</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"o\">-</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"n\">j</span><span class=\"o\">-</span><span class=\"mi\">1</span><span class=\"p\">],</span> <span class=\"n\">xs</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"o\">-</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"n\">j</span><span class=\"p\">],</span> <span class=\"n\">xs</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">,</span> <span class=\"n\">j</span><span class=\"o\">-</span><span class=\"mi\">1</span><span class=\"p\">])</span>\n    <span class=\"k\">end</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>If so, it looks like you can \"just\" parallelize the inner loop? You can use <code>@threads</code> or <code>@floop</code> to do it.</p>\n<p>Also, for this kind of \"parallel loop(s) inside sequential loop\" pattern, <a href=\"https://github.com/tkf/Barriers.jl\">https://github.com/tkf/Barriers.jl</a> may be an interesting tool to use. Though it's a bit lower-level than simple parallel <code>for</code> loops.</p>",
+        "id": 242816055,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1623802732
+    },
+    {
+        "content": "<p>You can't parallelize the inner loop,  right? It is dependent on the order of j.</p>",
+        "id": 242865769,
+        "sender_full_name": "Syx Pek",
+        "timestamp": 1623842147
+    },
+    {
+        "content": "<p>However, if you iterate \"diagonally\", you can parallelize the inner loop.</p>",
+        "id": 242892652,
+        "sender_full_name": "Rasmus Henningsson",
+        "timestamp": 1623855353
+    },
+    {
+        "content": "<p>ah, yeah, iterating diagonally was what I meant by left top to right bottom etc. but using <code>i</code> and <code>j</code> there was incorrect</p>",
+        "id": 242939662,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1623875889
+    },
+    {
+        "content": "<p>Cool, thanks for the responses everyone, sorry it took me a while to get back to it!</p>\n<p><span class=\"user-mention\" data-user-id=\"416587\">@Patrick Toche</span> Very interesting, thanks. I still don't know what dynamic programming means, but sounds like it has a rich history! <span aria-label=\"laughter tears\" class=\"emoji emoji-1f602\" role=\"img\" title=\"laughter tears\">:laughter_tears:</span> . I will get to your reading list, thanks! Happy to tell you more about the bioinformatics part if you like.</p>\n<p><span class=\"user-mention\" data-user-id=\"272650\">@Jakob Nybo Nissen</span> I am, because it's simpler than Smith-Waterman and I'm doing it as a learning exercise (for myself and my students). Ultimately I'm interested in figuring out <a href=\"https://www.biorxiv.org/content/10.1101/2020.09.08.287128v1.full\">this paper</a>, which is supposedly based on NW, and possibly trying to write it in julia - the tool is supposed to be amazing, but basically only the grad student who wrote it knows how to use it, and he jumped to industry. The impression he gave (though to be frank it was a bit tough to understand him) was that those optimizations and shortcuts detract from the \"provably optimal\" nature of NW... whether that's actually significant, I don't really know.</p>\n<p><span class=\"user-mention\" data-user-id=\"297129\">@Takafumi Arakaki (tkf)</span> Cool - thanks! If I understand what you mean by iterating diagonally, I think that's right, but I'll need to spend more time wrapping my head around it.</p>",
+        "id": 242957400,
+        "sender_full_name": "Kevin Bonham",
+        "timestamp": 1623887088
+    },
+    {
+        "content": "<p>Always interested to read about this! Had a quick look at the BURST github page: looks like quite a bit of work went into it!</p>",
+        "id": 242967787,
+        "sender_full_name": "Patrick Toche",
+        "timestamp": 1623899143
+    },
+    {
+        "content": "<p>Yeah, I met the guy that wrote it - he's pretty clearly a genius. But one of those whose genius does not extend to explaining themselves well, nor apparently to documenting a tool that's meant to be used by others. <span aria-label=\"shrug\" class=\"emoji emoji-1f937\" role=\"img\" title=\"shrug\">:shrug:</span></p>\n<p>I'm pretty sure his PI doesn't even understand what's going on there...</p>",
+        "id": 242968661,
+        "sender_full_name": "Kevin Bonham",
+        "timestamp": 1623900405
+    },
+    {
+        "content": "<p><a href=\"https://github.com/knights-lab/BURST\">https://github.com/knights-lab/BURST</a> looks reasonably short at least.. I wonder how direct of a C-to-Julia port you could get away with? Julia written in C-like style is usually not too bad performance wise..  but I guess the pointer stuff including all the <code>-&gt;</code> s would be a bit tricky to naively translate and still get the same performance as C given that there apparently isn't quite a proper \"dereference\" in Julia  since according to <a href=\"https://giordano.github.io/blog/2019-05-03-julia-get-pointer-value/\">https://giordano.github.io/blog/2019-05-03-julia-get-pointer-value/</a> even <code>unsafe_load</code> makes a copy</p>",
+        "id": 242971225,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1623903719
+    },
+    {
+        "content": "<p>…but the pragma omp stuff could be pretty trivially replaced with the built-in multithreading, and the preprocessor macro stuff seems like it ought to be no trouble by Julia metaprogramming standards?</p>",
+        "id": 242972193,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1623904912
+    },
+    {
+        "content": "<p>atomic increment of an element in an array like this is a bit tricky ATM (it's doable but you'd need to write LLVM IR by hand)</p>\n<p><a href=\"https://github.com/knights-lab/BURST/blob/0a304581ab5ee86875d6be4966be027630a54da1/burst.c#L1941-L1942\">https://github.com/knights-lab/BURST/blob/0a304581ab5ee86875d6be4966be027630a54da1/burst.c#L1941-L1942</a></p>",
+        "id": 242972872,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1623905790
+    },
+    {
+        "content": "<p><a href=\"https://github.com/analytech-solutions/CBinding.jl\">CBinding.jl</a> provides a decent solution for C's <code>-&gt;</code> style <a href=\"https://github.com/analytech-solutions/CBinding.jl#working-with-pointers\">dereferencing</a> in Julia without making copies.</p>",
+        "id": 242995768,
+        "sender_full_name": "Keith Rutkowski",
+        "timestamp": 1623924021
+    }
+]

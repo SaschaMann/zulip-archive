@@ -1,0 +1,122 @@
+[
+    {
+        "content": "<p>I recall reading somewhere that <code>AbstractRange</code>s must use 1-based indexing, but now I can't find that anywhere. Does anyone know if that is the case?</p>",
+        "id": 419937510,
+        "sender_full_name": "Lilith Hafner",
+        "timestamp": 1707171162
+    },
+    {
+        "content": "<p>Can't find it either (and if neither of us can find it, it can't really be claimed to be documented).<br>\nThe default implementation is 1-based.</p>",
+        "id": 420001350,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1707209930
+    },
+    {
+        "content": "<p>There are non-1 based ranges in <a href=\"https://juliahub.com/ui/Packages/General/OffsetArrays\">OffsetArrays.jl</a></p>",
+        "id": 420005801,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1707211549
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">OffsetArrays</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">A</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">OffsetArray</span><span class=\"p\">(</span><span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">11</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"o\">-</span><span class=\"mi\">5</span><span class=\"o\">:</span><span class=\"mi\">5</span><span class=\"p\">);</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">I</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">eachindex</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">)</span>\n<span class=\"go\">OffsetArrays.IdOffsetRange(values=-5:5, indices=-5:5)</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">I</span><span class=\"p\">[</span><span class=\"o\">-</span><span class=\"mi\">5</span><span class=\"p\">]</span>\n<span class=\"go\">-5</span>\n</code></pre></div>",
+        "id": 420006352,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1707211732
+    },
+    {
+        "content": "<p>In that case this doesn't look good:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">sortperm</span><span class=\"p\">(</span><span class=\"n\">r</span><span class=\"o\">::</span><span class=\"kt\">AbstractRange</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">issorted</span><span class=\"p\">(</span><span class=\"n\">r</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">?</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">length</span><span class=\"p\">(</span><span class=\"n\">r</span><span class=\"p\">))</span><span class=\"w\"> </span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">length</span><span class=\"p\">(</span><span class=\"n\">r</span><span class=\"p\">)</span><span class=\"o\">:-</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">1</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 420072746,
+        "sender_full_name": "Lilith Hafner",
+        "timestamp": 1707233373
+    },
+    {
+        "content": "<p>Also won't that method cover step ranges?</p>",
+        "id": 420073055,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1707233444
+    },
+    {
+        "content": "<p>related: <a href=\"https://github.com/JuliaLang/julia/pull/39071#issuecomment-1928125865\">https://github.com/JuliaLang/julia/pull/39071#issuecomment-1928125865</a></p>",
+        "id": 420073799,
+        "sender_full_name": "Andy Dienes",
+        "timestamp": 1707233654
+    },
+    {
+        "content": "<p>I thought the same thing, but it's sortperm, not sort, and we can assume indexing is consecutive.</p>",
+        "id": 420073840,
+        "sender_full_name": "Lilith Hafner",
+        "timestamp": 1707233663
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"671422\">@Andy Dienes</span> Yes, that's why I brought this up</p>",
+        "id": 420073953,
+        "sender_full_name": "Lilith Hafner",
+        "timestamp": 1707233698
+    },
+    {
+        "content": "<p><a href=\"https://github.com/JuliaLang/julia/issues/53208\">#53208</a></p>",
+        "id": 420076259,
+        "sender_full_name": "Lilith Hafner",
+        "timestamp": 1707234359
+    },
+    {
+        "content": "<p>After stumbling across this, I wondered whether <code>sortperm</code> is supposed to return indices or a permutation?</p>",
+        "id": 420088640,
+        "sender_full_name": "Michael Abbott",
+        "timestamp": 1707237717
+    },
+    {
+        "content": "<p><code>sortperm(OffsetArray(randn(5), 10))</code> does return indices</p>",
+        "id": 420088800,
+        "sender_full_name": "Michael Abbott",
+        "timestamp": 1707237758
+    },
+    {
+        "content": "<p>I think <code>issorted(x[sortperm(x)])</code> should always be true</p>",
+        "id": 420089409,
+        "sender_full_name": "Andy Dienes",
+        "timestamp": 1707237925
+    },
+    {
+        "content": "<p>I agree: <a href=\"https://github.com/JuliaLang/julia/pull/53208/commits/150e61bdcd53853a97936bd48f08924dccfd059a\">https://github.com/JuliaLang/julia/pull/53208/commits/150e61bdcd53853a97936bd48f08924dccfd059a</a></p>",
+        "id": 420101940,
+        "sender_full_name": "Lilith Hafner",
+        "timestamp": 1707241677
+    },
+    {
+        "content": "<p>while on the topic, maybe <code>empty</code> should be implemented for most range types?</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">empty</span><span class=\"p\">(</span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">OneTo</span><span class=\"p\">(</span><span class=\"mi\">10</span><span class=\"p\">))</span>\n<span class=\"kt\">Int64</span><span class=\"p\">[]</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">empty</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">10</span><span class=\"p\">)</span>\n<span class=\"kt\">Int64</span><span class=\"p\">[]</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">empty</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">10</span><span class=\"p\">)</span>\n<span class=\"kt\">Int64</span><span class=\"p\">[]</span>\n</code></pre></div>\n<p>seems like those should arguably return <code>Base.OneTo(0)</code>, <code>1:0</code> and <code>1:1:0</code></p>",
+        "id": 420112574,
+        "sender_full_name": "Andy Dienes",
+        "timestamp": 1707245324
+    },
+    {
+        "content": "<p>I think the result of empty should be mutable.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"w\">  </span><span class=\"n\">empty</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"o\">::</span><span class=\"kt\">AbstractVector</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">eltype</span><span class=\"p\">])</span>\n\n<span class=\"w\">  </span><span class=\"n\">Create</span><span class=\"w\"> </span><span class=\"n\">an</span><span class=\"w\"> </span><span class=\"n\">empty</span><span class=\"w\"> </span><span class=\"n\">vector</span><span class=\"w\"> </span><span class=\"n\">similar</span><span class=\"w\"> </span><span class=\"n\">to</span><span class=\"w\"> </span><span class=\"n\">v</span><span class=\"p\">,</span>\n<span class=\"w\">  </span><span class=\"n\">optionally</span><span class=\"w\"> </span><span class=\"n\">changing</span><span class=\"w\"> </span><span class=\"n\">the</span><span class=\"w\"> </span><span class=\"n\">eltype</span><span class=\"o\">.</span>\n</code></pre></div>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">similar</span><span class=\"p\">(</span><span class=\"n\">array</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">element_type</span><span class=\"o\">=</span><span class=\"n\">eltype</span><span class=\"p\">(</span><span class=\"n\">array</span><span class=\"p\">)],</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">dims</span><span class=\"o\">=</span><span class=\"n\">size</span><span class=\"p\">(</span><span class=\"n\">array</span><span class=\"p\">)])</span>\n\n<span class=\"w\">  </span><span class=\"n\">Create</span><span class=\"w\"> </span><span class=\"n\">an</span><span class=\"w\"> </span><span class=\"n\">uninitialized</span><span class=\"w\"> </span><span class=\"n\">mutable</span><span class=\"w\"> </span><span class=\"n\">array</span><span class=\"w\"> </span><span class=\"n\">with</span><span class=\"w\"> </span><span class=\"n\">the</span>\n<span class=\"w\">  </span><span class=\"n\">given</span><span class=\"w\"> </span><span class=\"n\">element</span><span class=\"w\"> </span><span class=\"n\">type</span><span class=\"w\"> </span><span class=\"n\">and</span><span class=\"w\"> </span><span class=\"n\">size</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">based</span><span class=\"w\"> </span><span class=\"n\">upon</span><span class=\"w\"> </span><span class=\"n\">the</span>\n<span class=\"w\">  </span><span class=\"n\">given</span><span class=\"w\"> </span><span class=\"n\">source</span><span class=\"w\"> </span><span class=\"n\">array</span><span class=\"o\">...</span>\n</code></pre></div>",
+        "id": 420127935,
+        "sender_full_name": "Lilith Hafner",
+        "timestamp": 1707250609
+    },
+    {
+        "content": "<p>A key observation in <code>OffsetArrays</code> is that the axes of an <code>OffsetArray</code> are their own axes. These, therefore, can't be 1-based. Admittedly, offset ranges aren't treated fully consistently in Base (occasionally the offset is ignored, e.g. when comparing the ranges), and Tim Holy had an issue open about handling offset ranges consistently for Julia 2.0</p>",
+        "id": 420172971,
+        "sender_full_name": "Jishnu Bhattacharya",
+        "timestamp": 1707275542
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"490881\">Jishnu Bhattacharya</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Do.20all.20ranges.20use.201-based.20indexing.3F/near/420172971\">said</a>:</p>\n<blockquote>\n<p>A key observation in <code>OffsetArrays</code> is that the axes of an <code>OffsetArray</code> are their own axes. These, therefore, can't be 1-based.</p>\n</blockquote>\n<p>But is there any good reason for that? It seems unnecessary to me</p>",
+        "id": 420215482,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1707299872
+    },
+    {
+        "content": "<p>I think Tim Holy thought carefully about what properties to require, at some point? And maybe the key was something like <code>x[axes(x,1)] .== x</code> combined with <code>axes(x[ind]) == axes(ind)</code>? Edit: The docs say the basic axiom is <code>x[inds][j] == x[inds[j]]</code>, but don't spend any time arguing for why we must accept this.</p>",
+        "id": 420266264,
+        "sender_full_name": "Michael Abbott",
+        "timestamp": 1707316711
+    },
+    {
+        "content": "<p>Would be happier if there was a different set of nice axioms allowing simple UnitRanges, though.</p>",
+        "id": 420266330,
+        "sender_full_name": "Michael Abbott",
+        "timestamp": 1707316732
+    }
+]

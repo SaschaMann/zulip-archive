@@ -1,0 +1,62 @@
+[
+    {
+        "content": "<p>What's the reasonable way to replace a character in a String in a specified position? Well, maybe replace is no possible safely, but is this the best we can get?</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">new</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">old</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">pos</span><span class=\"o\">-</span><span class=\"mi\">1</span><span class=\"p\">]</span><span class=\"o\">*</span><span class=\"sc\">'C'</span><span class=\"o\">*</span><span class=\"p\">[</span><span class=\"n\">pos</span><span class=\"o\">+</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"k\">end</span><span class=\"p\">]</span>\n</code></pre></div>\n<p>Maybe with <code>@views</code></p>",
+        "id": 444576249,
+        "sender_full_name": "Leandro Martínez",
+        "timestamp": 1718318463
+    },
+    {
+        "content": "<p><a href=\"https://juliahub.com/ui/Packages/General/Accessors\">Accessors.jl</a> has functionality for it:</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">Accessors</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"nd\">@set</span><span class=\"w\"> </span><span class=\"s\">\"helio\"</span><span class=\"p\">[</span><span class=\"mi\">4</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"sc\">'l'</span>\n<span class=\"go\">\"hello\"</span>\n</code></pre></div>",
+        "id": 444583657,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1718322793
+    },
+    {
+        "content": "<p>Nice, but it just seems to be doing the same I do (so not worth the dependency):</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">s</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"s\">\"abcdefghijklmnop\"</span>\n<span class=\"go\">\"abcdefghijklmnop\"</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">g</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"nd\">@set</span><span class=\"w\"> </span><span class=\"n\">s</span><span class=\"p\">[</span><span class=\"mi\">10</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"sc\">'C'</span>\n<span class=\"go\">g (generic function with 1 method)</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">s</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">9</span><span class=\"p\">]</span><span class=\"o\">*</span><span class=\"sc\">'C'</span><span class=\"o\">*</span><span class=\"n\">s</span><span class=\"p\">[</span><span class=\"mi\">11</span><span class=\"o\">:</span><span class=\"k\">end</span><span class=\"p\">]</span>\n<span class=\"go\">f (generic function with 1 method)</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"nd\">@b</span><span class=\"w\"> </span><span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"p\">)</span>\n<span class=\"go\">85.958 ns (3.03 allocs: 104.664 bytes)</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"nd\">@b</span><span class=\"w\"> </span><span class=\"n\">g</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"p\">)</span>\n<span class=\"go\">85.509 ns (3.02 allocs: 104.609 bytes)</span>\n</code></pre></div>",
+        "id": 444585398,
+        "sender_full_name": "Leandro Martínez",
+        "timestamp": 1718324159
+    },
+    {
+        "content": "<p>Yeah that’s not particularly surprising. I like Accessors because it lets people ‘share’ these sorts of implementations, and takes some of the guess work out of it. </p>\n<p>that is, I wouldnt be surprised if there was a more efficient/safe way to do this, and I’d hope that if I used Accessors, someone might contribute that implementation.</p>",
+        "id": 444593349,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1718329913
+    },
+    {
+        "content": "<p>It’s also just cleaner syntax-wise</p>",
+        "id": 444593425,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1718329944
+    },
+    {
+        "content": "<p>Also, the Accessors solution works for multi-byte characters, unlike the code from the first post:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">old</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"s\">\"абвгд\"</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">pos</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mi\">5</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">old</span><span class=\"p\">[</span><span class=\"n\">pos</span><span class=\"p\">]</span>\n<span class=\"sc\">'в'</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"n\">Unicode</span><span class=\"w\"> </span><span class=\"n\">U</span><span class=\"o\">+</span><span class=\"mi\">0432</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">category</span><span class=\"w\"> </span><span class=\"n\">Ll</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"n\">Letter</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">lowercase</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">old</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">pos</span><span class=\"o\">-</span><span class=\"mi\">1</span><span class=\"p\">]</span><span class=\"o\">*</span><span class=\"sc\">'C'</span><span class=\"o\">*</span><span class=\"n\">old</span><span class=\"p\">[</span><span class=\"n\">pos</span><span class=\"o\">+</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"k\">end</span><span class=\"p\">]</span>\n<span class=\"n\">ERROR</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"kt\">StringIndexError</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"n\">invalid</span><span class=\"w\"> </span><span class=\"n\">index</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">4</span><span class=\"p\">],</span><span class=\"w\"> </span><span class=\"n\">valid</span><span class=\"w\"> </span><span class=\"n\">nearby</span><span class=\"w\"> </span><span class=\"n\">indices</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">3</span><span class=\"p\">]</span><span class=\"o\">=&gt;</span><span class=\"sc\">'б'</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">5</span><span class=\"p\">]</span><span class=\"o\">=&gt;</span><span class=\"sc\">'в'</span>\n<span class=\"n\">Stacktrace</span><span class=\"o\">:</span>\n<span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"n\">string_index_err</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"o\">::</span><span class=\"kt\">String</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">i</span><span class=\"o\">::</span><span class=\"kt\">Int64</span><span class=\"p\">)</span>\n<span class=\"w\">   </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"w\"> </span><span class=\"o\">./</span><span class=\"n\">strings</span><span class=\"o\">/</span><span class=\"n\">string</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">12</span>\n<span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">2</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"n\">getindex</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"o\">::</span><span class=\"kt\">String</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">r</span><span class=\"o\">::</span><span class=\"kt\">UnitRange</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">})</span>\n<span class=\"w\">   </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"w\"> </span><span class=\"o\">./</span><span class=\"n\">strings</span><span class=\"o\">/</span><span class=\"n\">string</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">470</span>\n<span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">3</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"n\">top</span><span class=\"o\">-</span><span class=\"n\">level</span><span class=\"w\"> </span><span class=\"n\">scope</span>\n<span class=\"w\">   </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">REPL</span><span class=\"p\">[</span><span class=\"mi\">21</span><span class=\"p\">]</span><span class=\"o\">:</span><span class=\"mi\">1</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"nd\">@set</span><span class=\"w\"> </span><span class=\"n\">old</span><span class=\"p\">[</span><span class=\"n\">pos</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"sc\">'C'</span>\n<span class=\"s\">\"абCгд\"</span>\n</code></pre></div>",
+        "id": 444596475,
+        "sender_full_name": "aplavin",
+        "timestamp": 1718332107
+    },
+    {
+        "content": "<p>That's the implementation: <a href=\"https://github.com/JuliaObjects/Accessors.jl/blob/270e78fed32763096c448541148d520aa275e667/src/setindex.jl#L47\">https://github.com/JuliaObjects/Accessors.jl/blob/270e78fed32763096c448541148d520aa275e667/src/setindex.jl#L47</a>.<br>\nMay be upstreamed to Base if someone is up to making a PR, I guess...</p>",
+        "id": 444596562,
+        "sender_full_name": "aplavin",
+        "timestamp": 1718332186
+    },
+    {
+        "content": "<p>There probably isn't a better way than the f function, if it used views.<br>\nOr you can use <a href=\"https://juliahub.com/ui/Packages/General/StringViews\">StringViews.jl</a> which are mutable</p>",
+        "id": 444616263,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1718341641
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"455681\">Leandro Martínez</span> has marked this topic as resolved.</p>",
+        "id": 444680963,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1718364963
+    },
+    {
+        "content": "<p>Thanks all for the alternatives and tips. My use case is simple enough so that I will just keep the simple function for now.</p>",
+        "id": 444681126,
+        "sender_full_name": "Leandro Martínez",
+        "timestamp": 1718365034
+    }
+]

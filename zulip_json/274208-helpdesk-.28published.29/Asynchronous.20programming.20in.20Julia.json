@@ -1,0 +1,38 @@
+[
+    {
+        "content": "<p>I'm starting to learn how to do asynchronous programming in Julia, yet, the topic is brand new to me and Julia's Documentation is kind of terse in the subject. In the code below, I download a bunch of files using the <code>@async</code> macro, and then I do some processing. The thing is, I wish to only the the processing once the files have been downloaded...</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">parsedocuments</span><span class=\"p\">()</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">b</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">11</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">21</span><span class=\"p\">]</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"n\">downloadbatch</span><span class=\"p\">(</span><span class=\"n\">documents</span><span class=\"p\">[</span><span class=\"n\">b</span><span class=\"o\">:</span><span class=\"n\">b</span><span class=\"o\">+</span><span class=\"mi\">9</span><span class=\"p\">,</span><span class=\"o\">:</span><span class=\"p\">])</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"n\">Threads</span><span class=\"o\">.</span><span class=\"nd\">@threads</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">i</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">b</span><span class=\"o\">:</span><span class=\"p\">(</span><span class=\"n\">b</span><span class=\"o\">+</span><span class=\"mi\">9</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">            </span><span class=\"k\">try</span><span class=\"w\"></span>\n<span class=\"w\">                </span><span class=\"nd\">@suppress</span><span class=\"w\"> </span><span class=\"n\">parsedocument</span><span class=\"p\">(</span><span class=\"n\">documents</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"o\">:</span><span class=\"p\">])</span><span class=\"w\"></span>\n<span class=\"w\">            </span><span class=\"k\">catch</span><span class=\"w\"></span>\n<span class=\"w\">                </span><span class=\"k\">continue</span><span class=\"w\"></span>\n<span class=\"w\">            </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"k\">end</span><span class=\"w\"></span>\n\n<span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">downloadbatch</span><span class=\"p\">(</span><span class=\"n\">batch</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"n\">output</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">datadir</span><span class=\"p\">()</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"s\">\"/temp/\"</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">row</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">eachrow</span><span class=\"p\">(</span><span class=\"n\">batch</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"nd\">@async</span><span class=\"w\"> </span><span class=\"n\">run</span><span class=\"p\">(</span><span class=\"sb\">`aws s3 cp </span><span class=\"si\">$</span><span class=\"p\">(</span><span class=\"n\">row</span><span class=\"p\">[</span><span class=\"ss\">:pasta</span><span class=\"p\">])</span><span class=\"sb\"> </span><span class=\"si\">$</span><span class=\"p\">(</span><span class=\"n\">output</span><span class=\"p\">)</span><span class=\"sb\">`</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"k\">end</span><span class=\"w\"></span>\n</code></pre></div>\n<p>I haven't been able to figure out how to do this... I mean, the code for <code>parsedocument</code> starts running before the download has finished.</p>",
+        "id": 283116076,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1653074996
+    },
+    {
+        "content": "<p>Two separate loops? You may also want a <code>@sync</code> in there somewhere..</p>",
+        "id": 283116452,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1653075234
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"293896\">Brenhin Keller</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Asynchronous.20programming.20in.20Julia/near/283116452\">said</a>:</p>\n<blockquote>\n<p>Two separate loops? You may also want a <code>@sync</code> in there somewhere..</p>\n</blockquote>\n<p>Tried adding a <code>@sync</code>, but it did not work.</p>",
+        "id": 283122505,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1653078685
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"nd\">@sync</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">row</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">eachrow</span><span class=\"p\">(</span><span class=\"n\">batch</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"nd\">@async</span><span class=\"w\"> </span><span class=\"n\">run</span><span class=\"p\">(</span><span class=\"sb\">`aws s3 cp </span><span class=\"si\">$</span><span class=\"p\">(</span><span class=\"n\">row</span><span class=\"p\">[</span><span class=\"ss\">:pasta</span><span class=\"p\">])</span><span class=\"sb\"> </span><span class=\"si\">$</span><span class=\"p\">(</span><span class=\"n\">output</span><span class=\"p\">)</span><span class=\"sb\">`</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"k\">end</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 283127053,
+        "sender_full_name": "Maarten",
+        "timestamp": 1653081010
+    },
+    {
+        "content": "<p>You should read tkf blog about async patterns, it is extremely useful.</p>\n<p>Or just use his packages, like <a href=\"https://github.com/search?q=FLoops.jl&amp;type=Repositories\">FLoops.jl</a> and <a href=\"https://github.com/search?q=ThreadsX.jl&amp;type=Repositories\">ThreadsX.jl</a></p>",
+        "id": 283319842,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1653313104
+    },
+    {
+        "content": "<p><a href=\"https://discourse.julialang.org/t/tutorial-concurrency-patterns-for-controlled-parallelisms/62651\">https://discourse.julialang.org/t/tutorial-concurrency-patterns-for-controlled-parallelisms/62651</a></p>",
+        "id": 283319963,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1653313165
+    }
+]

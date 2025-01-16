@@ -1,0 +1,62 @@
+[
+    {
+        "content": "<p><code>auto</code> is everyone's favourite (modern) C++ keyword.  Now that we have typed globals, it'd be cool to be able to type <code>@auto x = 2</code> to get the expression <code>x::Int = 2</code>.  Probably not much useful here, but it may be useful in cases where the right-hand side has a much more complex type.</p>\n<p>I quickly cooked this macro:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">macro</span> <span class=\"n\">auto</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"p\">)</span>\n    <span class=\"n\">ex</span><span class=\"o\">.</span><span class=\"n\">head</span> <span class=\"o\">!==</span> <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"o\">=</span><span class=\"p\">)</span> <span class=\"o\">&amp;&amp;</span> <span class=\"n\">throw</span><span class=\"p\">(</span><span class=\"kt\">ArgumentError</span><span class=\"p\">(</span><span class=\"s\">\"@auto: `</span><span class=\"si\">$</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"p\">)</span><span class=\"s\">` is not an assigment expression.\"</span><span class=\"p\">))</span>\n    <span class=\"k\">return</span> <span class=\"o\">:</span><span class=\"p\">(</span> <span class=\"n\">x</span> <span class=\"o\">=</span> <span class=\"o\">$</span><span class=\"p\">(</span><span class=\"n\">esc</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"o\">.</span><span class=\"n\">args</span><span class=\"p\">[</span><span class=\"mi\">2</span><span class=\"p\">]));</span> <span class=\"o\">$</span><span class=\"p\">(</span><span class=\"n\">esc</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"o\">.</span><span class=\"n\">args</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]))</span><span class=\"o\">::</span><span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">x</span> <span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>but it has the issue that it pollutes the current scope with a gensym'ed variable (<code>x</code> in the body of the macro).  if you're wondering why doing </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">x</span> <span class=\"o\">=</span> <span class=\"o\">$</span><span class=\"p\">(</span><span class=\"n\">esc</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"o\">.</span><span class=\"n\">args</span><span class=\"p\">[</span><span class=\"mi\">2</span><span class=\"p\">]));</span> <span class=\"o\">$</span><span class=\"p\">(</span><span class=\"n\">esc</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"o\">.</span><span class=\"n\">args</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]))</span><span class=\"o\">::</span><span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">x</span>\n</code></pre></div>\n<p>instead of</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"o\">$</span><span class=\"p\">(</span><span class=\"n\">esc</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"o\">.</span><span class=\"n\">args</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]))</span><span class=\"o\">::</span><span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"p\">(</span><span class=\"n\">esc</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"o\">.</span><span class=\"n\">args</span><span class=\"p\">[</span><span class=\"mi\">2</span><span class=\"p\">])))</span> <span class=\"o\">=</span> <span class=\"o\">$</span><span class=\"p\">(</span><span class=\"n\">esc</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"o\">.</span><span class=\"n\">args</span><span class=\"p\">[</span><span class=\"mi\">2</span><span class=\"p\">]))</span>\n</code></pre></div>\n<p>that's to avoid evaluating twice the right-hand side of the assignment expression, which may be costly and/or have side effects.</p>\n<p>is there a way to avoid avoid polluting the namespace with the extra name?  I thought about doing</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">let</span>\n    <span class=\"n\">x</span> <span class=\"o\">=</span> <span class=\"o\">$</span><span class=\"p\">(</span><span class=\"n\">esc</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"o\">.</span><span class=\"n\">args</span><span class=\"p\">[</span><span class=\"mi\">2</span><span class=\"p\">]))</span>\n    <span class=\"k\">global</span> <span class=\"o\">$</span><span class=\"p\">(</span><span class=\"n\">esc</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"o\">.</span><span class=\"n\">args</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]))</span><span class=\"o\">::</span><span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">x</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>but that wouldn't work in local scope (like inside a function), which would be nice to retain.</p>\n<p>I feel like someone else may have done this macro before</p>",
+        "id": 277467593,
+        "sender_full_name": "Mosè Giordano",
+        "timestamp": 1648841322
+    },
+    {
+        "content": "<p>What's the problem with polluting the namespace with <code>gensym</code>ed variable names?</p>\n<p>I'd been meaning to write a version of this macro that walks the following expression, applying the assert to all assignments.<br>\nWould be nice to write <code>@auto function</code>, for example.</p>",
+        "id": 277468211,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1648841757
+    },
+    {
+        "content": "<p>In Julia I'd like a more specific name than <code>auto</code> since, unlike in C++, the pre-identifier position isn't assumed to be a type. eg <code>@infertype</code>, <code>@infer</code>, ...</p>",
+        "id": 277470719,
+        "sender_full_name": "jar",
+        "timestamp": 1648843254
+    },
+    {
+        "content": "<p>I like <code>@stable</code></p>",
+        "id": 277472995,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1648844520
+    },
+    {
+        "content": "<p>Is</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">x</span> <span class=\"o\">=</span> <span class=\"n\">foo</span><span class=\"p\">()</span>\n<span class=\"n\">x</span><span class=\"o\">::</span><span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>valid Julia (I'm on my phone)?</p>",
+        "id": 277473002,
+        "sender_full_name": "Christopher Rowley",
+        "timestamp": 1648844521
+    },
+    {
+        "content": "<p>Yes,  but that's just an assert, not a promise that the type won't change</p>",
+        "id": 277473133,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1648844574
+    },
+    {
+        "content": "<p>Or</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">x</span> <span class=\"o\">=</span> <span class=\"n\">foo</span><span class=\"p\">()</span>\n<span class=\"n\">x</span><span class=\"o\">::</span><span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">x</span>\n</code></pre></div>\n<p>?</p>",
+        "id": 277473335,
+        "sender_full_name": "Christopher Rowley",
+        "timestamp": 1648844675
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"269186\">@Mosè Giordano</span> </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">macro</span> <span class=\"n\">auto</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"p\">)</span>\n           <span class=\"n\">ex</span><span class=\"o\">.</span><span class=\"n\">head</span> <span class=\"o\">!==</span> <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"o\">=</span><span class=\"p\">)</span> <span class=\"o\">&amp;&amp;</span> <span class=\"n\">throw</span><span class=\"p\">(</span><span class=\"kt\">ArgumentError</span><span class=\"p\">(</span><span class=\"s\">\"@auto: `</span><span class=\"si\">$</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"p\">)</span><span class=\"s\">` is not an assigment expression.\"</span><span class=\"p\">))</span>\n           <span class=\"k\">quote</span>\n               <span class=\"k\">local</span> <span class=\"n\">x</span> <span class=\"o\">=</span> <span class=\"o\">$</span><span class=\"p\">(</span><span class=\"n\">esc</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"o\">.</span><span class=\"n\">args</span><span class=\"p\">[</span><span class=\"mi\">2</span><span class=\"p\">]))</span>\n               <span class=\"o\">$</span><span class=\"p\">(</span><span class=\"n\">esc</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"o\">.</span><span class=\"n\">args</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]))</span><span class=\"o\">::</span><span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">x</span>\n           <span class=\"k\">end</span>\n       <span class=\"k\">end</span>\n</code></pre></div>\n<p>The <code>local</code> keyword is what you want I think</p>",
+        "id": 277473597,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1648844807
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"284680\">chriselrod</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Non-polluting.20.60.40auto.60.20macro/near/277468211\">said</a>:</p>\n<blockquote>\n<p>What's the problem with polluting the namespace with <code>gensym</code>ed variable names?</p>\n</blockquote>\n<p>it isn't a <em>huge</em> deal, but it's still nice to avoid introducing extra variables if possible at all.  I've got bitten by tests in <code>Base</code> which check the number of names before and after calling a macro <span aria-label=\"smile\" class=\"emoji emoji-1f642\" role=\"img\" title=\"smile\">:smile:</span> </p>\n<p><span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Non-polluting.20.60.40auto.60.20macro/near/277473597\">said</a>:</p>\n<blockquote>\n<p>The <code>local</code> keyword is what you want I think</p>\n</blockquote>\n<p>oh yes, that was it, thanks!</p>",
+        "id": 277479564,
+        "sender_full_name": "Mosè Giordano",
+        "timestamp": 1648848274
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269186\">Mosè Giordano</span> has marked this topic as resolved.</p>",
+        "id": 277479570,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1648848277
+    }
+]

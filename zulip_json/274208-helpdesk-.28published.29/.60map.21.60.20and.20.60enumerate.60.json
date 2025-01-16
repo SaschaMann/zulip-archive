@@ -1,0 +1,68 @@
+[
+    {
+        "content": "<p>Is it expected that the last item errors?</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">a</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">zeros</span><span class=\"p\">(</span><span class=\"mi\">3</span><span class=\"p\">);</span>\n\n<span class=\"n\">map</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">-&gt;</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">+</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"p\">[</span><span class=\"mi\">2</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">enumerate</span><span class=\"p\">([</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">3</span><span class=\"p\">]));</span><span class=\"w\">       </span><span class=\"c\"># this works</span>\n<span class=\"n\">map!</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">-&gt;</span><span class=\"w\">  </span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">a</span><span class=\"p\">,[</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">3</span><span class=\"p\">]);</span><span class=\"w\">                        </span><span class=\"c\"># this works</span>\n<span class=\"n\">map!</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">-&gt;</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">+</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"p\">[</span><span class=\"mi\">2</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">a</span><span class=\"p\">,[(</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">1</span><span class=\"p\">),(</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">),(</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">3</span><span class=\"p\">)])</span><span class=\"w\">      </span><span class=\"c\"># this works</span>\n<span class=\"n\">map!</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">-&gt;</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">+</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"p\">[</span><span class=\"mi\">2</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">a</span><span class=\"p\">,</span><span class=\"n\">enumerate</span><span class=\"p\">([</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">3</span><span class=\"p\">]));</span><span class=\"w\">    </span><span class=\"c\"># method error</span>\n</code></pre></div>\n<p>I also tried <code>(i,x) -&gt; i + x*2</code> with the last one, but that didn't work either. <code>collect</code>ing the enumeration first does work.</p>",
+        "id": 381343640,
+        "sender_full_name": "Alec",
+        "timestamp": 1691033599
+    },
+    {
+        "content": "<p>It looks like weirdly, <code>map!</code> is not defined for arbitrary iterables.<br>\nAnyway, IMO, people should default to lazy mapping in most cases: <code>Iterators.map(x -&gt; x[1] + x[2] * 2, enumerate(a))</code> works just fine</p>",
+        "id": 381483205,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1691069268
+    },
+    {
+        "content": "<p>I think that, in the general case, it's not clear how to do assignment on arbitrary iterables, which is probably why <code>map!</code> is not defined for them.  For example, trying to <code>map!</code> from a tuple into a matrix is ambiguous unless you assume some convention for indexing the matrix by <code>1:n</code>.  Probably fine in this case since Julia already has an integer indexing convention for matrices, but it may not generalize well.</p>",
+        "id": 381557757,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1691082489
+    },
+    {
+        "content": "<p>In my mind fewer functions should be defined for general iterables because some of them make rather large and often incorrect assumptions about their inputs. In that light I agree</p>",
+        "id": 381568247,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1691084819
+    },
+    {
+        "content": "<p>But in this particular case, it should be known how to do assignment on the destination since it's an Array?</p>",
+        "id": 381568620,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1691084916
+    },
+    {
+        "content": "<p>A method which takes as source an arbitrary iterable and throws if it doesn't have a known length (which the return type of <code>enumerate</code> does) seems reasonable</p>",
+        "id": 381568939,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1691084996
+    },
+    {
+        "content": "<p>You could always assume an implicit mapping by iteration order, but, <code>map</code> is array-aware in a way I'm not entirely sure I understand, for example</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">In</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">2</span><span class=\"p\">]</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"n\">map</span><span class=\"p\">(</span><span class=\"n\">identity</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">3</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">.*</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">4</span><span class=\"p\">)</span><span class=\"o\">'</span><span class=\"p\">)</span>\n<span class=\"mi\">3</span><span class=\"o\">×</span><span class=\"mi\">4</span><span class=\"w\"> </span><span class=\"kt\">Matrix</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">}</span><span class=\"o\">:</span>\n<span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"w\">  </span><span class=\"mi\">2</span><span class=\"w\">  </span><span class=\"mi\">3</span><span class=\"w\">   </span><span class=\"mi\">4</span>\n<span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"w\">  </span><span class=\"mi\">4</span><span class=\"w\">  </span><span class=\"mi\">6</span><span class=\"w\">   </span><span class=\"mi\">8</span>\n<span class=\"w\"> </span><span class=\"mi\">3</span><span class=\"w\">  </span><span class=\"mi\">6</span><span class=\"w\">  </span><span class=\"mi\">9</span><span class=\"w\">  </span><span class=\"mi\">12</span>\n</code></pre></div>\n<p>If <code>map!</code> is respecting the array shape of it's arguments, it would be weird if it let you combine them with iterators that dont' have a shape (or have a merely implicit flat shape).</p>",
+        "id": 381569812,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1691085232
+    },
+    {
+        "content": "<p><code>map</code> is a whole different mess and a can on worms I'd rather not open</p>",
+        "id": 381571502,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1691085617
+    },
+    {
+        "content": "<p>For <code>map!</code>, I think Base has all the right traits to check that the source iterable has the same size/shape as the destination array before proceeding</p>",
+        "id": 381572407,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1691085822
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"278065\">@Brian Chen</span> You  mean in the special case of <code>Iterators.Enumerate{UnitRange{Int64}}</code> or for more general iterators with potentially unknown size?</p>",
+        "id": 381575468,
+        "sender_full_name": "jar",
+        "timestamp": 1691086452
+    },
+    {
+        "content": "<p>They'd need to have a known size since Arrays have a known size. Enumerating a range or an array happens to fit that criteria, yes</p>",
+        "id": 381576051,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1691086612
+    }
+]

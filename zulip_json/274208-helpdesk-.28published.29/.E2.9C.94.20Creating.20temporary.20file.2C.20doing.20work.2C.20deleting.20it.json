@@ -1,0 +1,44 @@
+[
+    {
+        "content": "<p>I was wondering if there is some standard \"correct\" way of creating temp files, then doing some work on then, and then deleting them. In my case, I have some code to generate an SVG file. But then, I want to create a function that writes a PDF file, and I require first generating the SVG, converting it to PDF and saving the PDF. Hence, my code involves creating a temp SVG file. Here is some possible code:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">savesvg</span><span class=\"p\">(</span><span class=\"n\">plt</span><span class=\"o\">::</span><span class=\"kt\">Union</span><span class=\"p\">{</span><span class=\"kt\">Mark</span><span class=\"p\">,</span><span class=\"kt\">D</span><span class=\"p\">{</span><span class=\"kt\">Mark</span><span class=\"p\">}};</span><span class=\"w\"> </span><span class=\"n\">height</span><span class=\"o\">=</span><span class=\"mi\">400</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">pad</span><span class=\"o\">=</span><span class=\"mi\">10</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"n\">img</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">string</span><span class=\"p\">(</span><span class=\"n\">drawsvg</span><span class=\"p\">(</span><span class=\"n\">plt</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">height</span><span class=\"o\">=</span><span class=\"n\">height</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">pad</span><span class=\"o\">=</span><span class=\"n\">pad</span><span class=\"p\">))</span>\n\n<span class=\"w\">    </span><span class=\"c\"># Create a temporary file</span>\n<span class=\"w\">    </span><span class=\"n\">temp_file_path</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">tempname</span><span class=\"p\">()</span>\n\n<span class=\"w\">    </span><span class=\"k\">try</span>\n<span class=\"w\">        </span><span class=\"n\">open</span><span class=\"p\">(</span><span class=\"n\">temp_file_path</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"s\">\"w\"</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"> </span><span class=\"n\">file</span>\n<span class=\"w\">            </span><span class=\"n\">write</span><span class=\"p\">(</span><span class=\"n\">file</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">img</span><span class=\"p\">)</span>\n<span class=\"w\">        </span><span class=\"k\">end</span>\n\n<span class=\"w\">        </span><span class=\"c\"># Use the temporary file as needed</span>\n\n<span class=\"w\">    </span><span class=\"k\">finally</span>\n<span class=\"w\">        </span><span class=\"c\"># Delete the temporary file after use</span>\n<span class=\"w\">        </span><span class=\"n\">rm</span><span class=\"p\">(</span><span class=\"n\">temp_file_path</span><span class=\"p\">;</span><span class=\"w\"> </span><span class=\"n\">force</span><span class=\"o\">=</span><span class=\"nb\">true</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"k\">end</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>I was wondering if there is some \"don'ts\" in here, or if this is how to properly handle it.</p>",
+        "id": 423013944,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1708694240
+    },
+    {
+        "content": "<p>There's a <code>mktemp</code> method that does that stuff for you: </p>\n<blockquote>\n<p>mktemp(f::Function, parent=tempdir())</p>\n<p>Apply the function f to the result of mktemp(parent) and remove the temporary file upon completion.</p>\n</blockquote>",
+        "id": 423014721,
+        "sender_full_name": "Sundar R",
+        "timestamp": 1708694531
+    },
+    {
+        "content": "<p>Hmm, I'm trying to figure out how to use this function.</p>",
+        "id": 423017466,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1708695432
+    },
+    {
+        "content": "<p>Thanks for the tip, <span class=\"user-mention\" data-user-id=\"423970\">@Sundar R</span></p>",
+        "id": 423017496,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1708695444
+    },
+    {
+        "content": "<p>Your function pretty much becomes </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">savesvg</span><span class=\"p\">(</span><span class=\"n\">plt</span><span class=\"o\">::</span><span class=\"kt\">Union</span><span class=\"p\">{</span><span class=\"kt\">Mark</span><span class=\"p\">,</span><span class=\"kt\">D</span><span class=\"p\">{</span><span class=\"kt\">Mark</span><span class=\"p\">}};</span><span class=\"w\"> </span><span class=\"n\">height</span><span class=\"o\">=</span><span class=\"mi\">400</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">pad</span><span class=\"o\">=</span><span class=\"mi\">10</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"n\">img</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">string</span><span class=\"p\">(</span><span class=\"n\">drawsvg</span><span class=\"p\">(</span><span class=\"n\">plt</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">height</span><span class=\"o\">=</span><span class=\"n\">height</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">pad</span><span class=\"o\">=</span><span class=\"n\">pad</span><span class=\"p\">))</span>\n\n<span class=\"w\">    </span><span class=\"n\">mktemp</span><span class=\"p\">()</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"> </span><span class=\"n\">_</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">file</span>\n<span class=\"w\">            </span><span class=\"n\">write</span><span class=\"p\">(</span><span class=\"n\">file</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">img</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"k\">end</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 423019786,
+        "sender_full_name": "Sundar R",
+        "timestamp": 1708696250
+    },
+    {
+        "content": "<p>If you need to work with multiple temporary files, it can be practical to generate a temporary directory instead.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">mktempdir</span><span class=\"p\">()</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"> </span><span class=\"n\">tmpdir</span>\n<span class=\"w\">    </span><span class=\"n\">path1</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">joinpath</span><span class=\"p\">(</span><span class=\"n\">tmpdir</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"s\">\"file1\"</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"n\">path2</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">joinpath</span><span class=\"p\">(</span><span class=\"n\">tmpdir</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"s\">\"file2\"</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"o\">...</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 423030347,
+        "sender_full_name": "Gunnar Farnebäck",
+        "timestamp": 1708699779
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"358317\">Davi Sales Barreira</span> has marked this topic as resolved.</p>",
+        "id": 423066963,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1708710944
+    }
+]

@@ -1,0 +1,128 @@
+[
+    {
+        "content": "<p>I am tinkering with coding a simple proof by exhaustion. Seems to work ok.<br>\nI'd like to display the results clearly. This is part of the code:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">println</span><span class=\"p\">(</span><span class=\"s\">\"Associativity\"</span><span class=\"p\">)</span>\n<span class=\"k\">let</span>\n    <span class=\"n\">comb</span> <span class=\"o\">=</span> <span class=\"n\">permutationsWithOrder</span><span class=\"p\">(</span><span class=\"n\">bools</span><span class=\"p\">,</span> <span class=\"mi\">3</span><span class=\"p\">)</span>\n    <span class=\"k\">for</span> <span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">,</span> <span class=\"n\">b</span><span class=\"p\">,</span> <span class=\"n\">c</span><span class=\"p\">)</span> <span class=\"k\">in</span> <span class=\"n\">comb</span>\n        <span class=\"nd\">@show</span> <span class=\"p\">(</span><span class=\"n\">a</span> <span class=\"o\">⊻</span> <span class=\"n\">b</span><span class=\"p\">)</span> <span class=\"o\">⊻</span> <span class=\"n\">c</span> <span class=\"o\">==</span> <span class=\"n\">a</span> <span class=\"o\">⊻</span> <span class=\"p\">(</span><span class=\"n\">b</span> <span class=\"o\">⊻</span> <span class=\"n\">c</span><span class=\"p\">)</span>\n    <span class=\"k\">end</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>I get this result, which although comforting to me, I wouldn't ask anyone else to accept it as a proof.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">Associativity</span>\n<span class=\"p\">(</span><span class=\"n\">a</span> <span class=\"o\">⊻</span> <span class=\"n\">b</span><span class=\"p\">)</span> <span class=\"o\">⊻</span> <span class=\"n\">c</span> <span class=\"o\">==</span> <span class=\"n\">a</span> <span class=\"o\">⊻</span> <span class=\"p\">(</span><span class=\"n\">b</span> <span class=\"o\">⊻</span> <span class=\"n\">c</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"nb\">true</span>\n<span class=\"p\">(</span><span class=\"n\">a</span> <span class=\"o\">⊻</span> <span class=\"n\">b</span><span class=\"p\">)</span> <span class=\"o\">⊻</span> <span class=\"n\">c</span> <span class=\"o\">==</span> <span class=\"n\">a</span> <span class=\"o\">⊻</span> <span class=\"p\">(</span><span class=\"n\">b</span> <span class=\"o\">⊻</span> <span class=\"n\">c</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"nb\">true</span>\n<span class=\"p\">(</span><span class=\"n\">a</span> <span class=\"o\">⊻</span> <span class=\"n\">b</span><span class=\"p\">)</span> <span class=\"o\">⊻</span> <span class=\"n\">c</span> <span class=\"o\">==</span> <span class=\"n\">a</span> <span class=\"o\">⊻</span> <span class=\"p\">(</span><span class=\"n\">b</span> <span class=\"o\">⊻</span> <span class=\"n\">c</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"nb\">true</span>\n<span class=\"o\">...</span>\n</code></pre></div>\n<p>I need the variables substituted into the expression on the LHS of <code>=</code>.  Something like:<br>\n<code>(one ⊻ zero) ⊻ zero == one ⊻ (zero ⊻ zero) -&gt;  true</code> - I know I’ve done something unorthodox with functions zero and one</p>\n<p>I don't want to write a separate expression for display, because it might be less trustworthy.  I want to use the exact code of the proof.<br>\nI'm wondering if there is an existing macro that does this?</p>",
+        "id": 262149845,
+        "sender_full_name": "Peter Goodall",
+        "timestamp": 1637367909
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"427737\">Peter Goodall</span> has marked this topic as resolved.</p>",
+        "id": 262163155,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1637383930
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"427737\">Peter Goodall</span> has marked this topic as unresolved.</p>",
+        "id": 262163158,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1637383936
+    },
+    {
+        "content": "<p>So <code>@show</code> shows unevaluated code on the LHS and the evaluation result on the RHS... and you want the same RHS, but LHS to have just the variables evaluated, not the whole expression. <br>\nThat sounds like an unorthodox requirement, seems unlikely there'd be a standard macro for this already.</p>",
+        "id": 262163190,
+        "sender_full_name": "Sundar R",
+        "timestamp": 1637384038
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"423970\">@Sundar R</span>  OK <span aria-label=\"pray\" class=\"emoji emoji-1f64f\" role=\"img\" title=\"pray\">:pray:</span> - makes sense.<br>\nI’ll see if anyone else has an idea, otherwise I’ll enjoy another diversion, and learn to write macros. Of-course from where I am, I can't tell if this is feasible yet.</p>",
+        "id": 262163752,
+        "sender_full_name": "Peter Goodall",
+        "timestamp": 1637384841
+    },
+    {
+        "content": "<p>It might be a good idea to make show allow $() expressions for this purpose</p>",
+        "id": 262166311,
+        "sender_full_name": "Syx Pek",
+        "timestamp": 1637389236
+    },
+    {
+        "content": "<p>May be use interpolation?</p>\n<p>Instead of <code>@show</code> do something like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">println</span><span class=\"p\">(</span><span class=\"s\">\"(</span><span class=\"si\">$a</span><span class=\"s\"> v </span><span class=\"si\">$b</span><span class=\"s\">) v </span><span class=\"si\">$c</span><span class=\"s\"> == </span><span class=\"si\">$a</span><span class=\"s\"> v (</span><span class=\"si\">$b</span><span class=\"s\"> v </span><span class=\"si\">$c</span><span class=\"s\">) = </span><span class=\"si\">$</span><span class=\"p\">((</span><span class=\"n\">a</span> <span class=\"n\">v</span> <span class=\"n\">b</span><span class=\"p\">)</span> <span class=\"n\">v</span> <span class=\"n\">c</span> <span class=\"o\">==</span> <span class=\"n\">a</span> <span class=\"n\">v</span> <span class=\"p\">(</span><span class=\"n\">b</span> <span class=\"n\">v</span> <span class=\"n\">c</span><span class=\"p\">))</span><span class=\"s\">\"</span>\n</code></pre></div>",
+        "id": 262172701,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1637399068
+    },
+    {
+        "content": "<p>Sorry, I do not have this logic operator symbol on a phone, so used <code>v</code> instead</p>",
+        "id": 262172713,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1637399101
+    },
+    {
+        "content": "<p>Ah, sorry, missed that you do not want separate expression.</p>",
+        "id": 262172780,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1637399185
+    },
+    {
+        "content": "<p>In that case, yes, some metaprogramming magic is needed. Shouldn't be too hard though, if you have exact and not too big set of rules.</p>",
+        "id": 262172798,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1637399258
+    },
+    {
+        "content": "<p>Sounds to me like you don't want to eagerly evaluate your formula, but rather construct a lazy representation of it instead, which you can define a <code>show</code> method for that also evaluates, maybe in parts</p>",
+        "id": 262177614,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637406453
+    },
+    {
+        "content": "<p>would probably also be more handy to manipulate - though at some point, you may end up with a TSP solver</p>",
+        "id": 262177669,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637406504
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"284969\">Syx Pek</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/showing.20expression.20with.20variables.20substituted.20and.20result/near/262166311\">said</a>:</p>\n<blockquote>\n<p>It might be a good idea to make show allow $() expressions for this purpose</p>\n</blockquote>\n<p>There's a \"# TODO: implement interpolated strings\" in <code>base/show.jl:1655</code> next to a function that <code>@show</code> uses, and afaict it's referring to the same idea. So apparently it's on the todo list, just not implemented yet.</p>",
+        "id": 262189570,
+        "sender_full_name": "Sundar R",
+        "timestamp": 1637422861
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"272771\">Andrey Oskin</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/showing.20expression.20with.20variables.20substituted.20and.20result/near/262172798\">said</a>:</p>\n<blockquote>\n<p>In that case, yes, some metaprogramming magic is needed. Shouldn't be too hard though, if you have exact and not too big set of rules.</p>\n</blockquote>\n<p>It's probably a good first real  exercise. I'm guessing a general case would be tricky. I think it will look something like interpolated strings.  Two arguments [ list of variables to interpolate, the expression to interpolate then @show ]</p>",
+        "id": 262209371,
+        "sender_full_name": "Peter Goodall",
+        "timestamp": 1637448969
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"306754\">Sukera</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/showing.20expression.20with.20variables.20substituted.20and.20result/near/262177669\">said</a>:</p>\n<blockquote>\n<p>would probably also be more handy to manipulate - though at some point, you may end up with a TSP solver</p>\n</blockquote>\n<p>I'm pretty sure I'm not ready to do a general solution - thanks for pointing out where it might lead.</p>",
+        "id": 262209450,
+        "sender_full_name": "Peter Goodall",
+        "timestamp": 1637449090
+    },
+    {
+        "content": "<p>I'll have a go, interpolated println() first, then try the macro. Will report back :-)</p>",
+        "id": 262209472,
+        "sender_full_name": "Peter Goodall",
+        "timestamp": 1637449148
+    },
+    {
+        "content": "<p>There's a <a href=\"https://github.com/search?q=MacroTools.jl&amp;type=Repositories\">MacroTools.jl</a> package, in case you weren't aware of it. <code>postwalk</code> might be pretty useful for this.</p>",
+        "id": 262210362,
+        "sender_full_name": "Sundar R",
+        "timestamp": 1637450217
+    },
+    {
+        "content": "<p>although, thinking about it, it might not be doable with <code>postwalk</code> <span aria-label=\"shrug\" class=\"emoji emoji-1f937\" role=\"img\" title=\"shrug\">:shrug:</span>  you might have to copy and modify the <code>show_unquoted</code> function from <code>base/show.jl:1655</code> that I mentioned above. Not sure about any of this, just giving pointers in case they're helpful.</p>",
+        "id": 262210501,
+        "sender_full_name": "Sundar R",
+        "timestamp": 1637450422
+    },
+    {
+        "content": "<p>I made an attempt several hours ago (when you posted this), using <code>postwalk</code>, but I was trying to be too generic and gave up after a while. That's when I ended up at the <code>show_unquoted</code> function.</p>",
+        "id": 262210534,
+        "sender_full_name": "Sundar R",
+        "timestamp": 1637450506
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"272771\">@Andrey Oskin</span>  If I'd known enough - I would have followed your suggestion :-)</p>\n<p>I spent quite some time learning about macros, <a href=\"https://github.com/search?q=MacroTools.jl&amp;type=Repositories\">MacroTools.jl</a> and <a href=\"https://github.com/search?q=Match.jl&amp;type=Repositories\">Match.jl</a>. I also enjoyed watching <a href=\"https://youtu.be/U1VhkcTuXuw\">\"JuliaCon 2020 | Advanced Metaprogramming Tools | Mike Innes\"</a>. </p>\n<div class=\"youtube-video message_inline_image\"><a data-id=\"U1VhkcTuXuw\" href=\"https://youtu.be/U1VhkcTuXuw\"><img src=\"https://uploads.zulipusercontent.net/73b98ffc458147865e5a45ec6b736fa208459d0b/68747470733a2f2f692e7974696d672e636f6d2f76692f553156686b6354755875772f64656661756c742e6a7067\"></a></div><p>The result is that I much better understand what I'm asking for, and what the tools do. Maybe <a href=\"https://julia.mit.edu/Cassette.jl/stable/whycassette.html\">Cassette</a> would do what I want. I wrote something pretty simple - which does the job ( abbreviated):</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">run_identity</span><span class=\"p\">(</span><span class=\"n\">str</span><span class=\"p\">)</span>\n    <span class=\"n\">evp</span> <span class=\"o\">=</span> <span class=\"n\">eval</span> <span class=\"o\">∘</span> <span class=\"n\">Meta</span><span class=\"o\">.</span><span class=\"n\">parse</span>\n    <span class=\"n\">evp</span><span class=\"p\">(</span><span class=\"s\">\"@show \"</span> <span class=\"o\">*</span> <span class=\"n\">str</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n\n<span class=\"c\"># pvo=permutationsWithOrder(source-set, tuple-size)</span>\n\n<span class=\"c\"># Associativity by exhaustion - feasible because 𝔹 is a small type.</span>\n<span class=\"n\">pr</span><span class=\"p\">(</span><span class=\"s\">\"Associativity\"</span><span class=\"p\">)</span>\n<span class=\"k\">let</span>\n    <span class=\"n\">comb</span> <span class=\"o\">=</span> <span class=\"n\">pwo</span><span class=\"p\">(</span><span class=\"n\">bools</span><span class=\"p\">,</span> <span class=\"mi\">3</span><span class=\"p\">)</span>\n    <span class=\"k\">for</span> <span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">,</span> <span class=\"n\">b</span><span class=\"p\">,</span> <span class=\"n\">c</span><span class=\"p\">)</span> <span class=\"k\">in</span> <span class=\"n\">comb</span>\n        <span class=\"n\">run_identity</span><span class=\"p\">(</span><span class=\"s\">\"(</span><span class=\"si\">$a</span><span class=\"s\"> ⊻ </span><span class=\"si\">$b</span><span class=\"s\">) ⊻ </span><span class=\"si\">$c</span><span class=\"s\"> == </span><span class=\"si\">$a</span><span class=\"s\"> ⊻ (</span><span class=\"si\">$b</span><span class=\"s\"> ⊻ </span><span class=\"si\">$c</span><span class=\"s\">)\"</span><span class=\"p\">)</span>\n    <span class=\"k\">end</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>[...]</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">Associativity</span>\n<span class=\"p\">(</span><span class=\"n\">one</span> <span class=\"o\">⊻</span> <span class=\"n\">zero</span><span class=\"p\">)</span> <span class=\"o\">⊻</span> <span class=\"n\">zero</span> <span class=\"o\">==</span> <span class=\"n\">one</span> <span class=\"o\">⊻</span> <span class=\"p\">(</span><span class=\"n\">zero</span> <span class=\"o\">⊻</span> <span class=\"n\">zero</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"nb\">true</span>\n<span class=\"p\">(</span><span class=\"n\">zero</span> <span class=\"o\">⊻</span> <span class=\"n\">one</span><span class=\"p\">)</span> <span class=\"o\">⊻</span> <span class=\"n\">one</span> <span class=\"o\">==</span> <span class=\"n\">zero</span> <span class=\"o\">⊻</span> <span class=\"p\">(</span><span class=\"n\">one</span> <span class=\"o\">⊻</span> <span class=\"n\">one</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"nb\">true</span>\n<span class=\"p\">(</span><span class=\"n\">one</span> <span class=\"o\">⊻</span> <span class=\"n\">zero</span><span class=\"p\">)</span> <span class=\"o\">⊻</span> <span class=\"n\">one</span> <span class=\"o\">==</span> <span class=\"n\">one</span> <span class=\"o\">⊻</span> <span class=\"p\">(</span><span class=\"n\">zero</span> <span class=\"o\">⊻</span> <span class=\"n\">one</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"nb\">true</span>\n<span class=\"p\">(</span><span class=\"n\">zero</span> <span class=\"o\">⊻</span> <span class=\"n\">zero</span><span class=\"p\">)</span> <span class=\"o\">⊻</span> <span class=\"n\">one</span> <span class=\"o\">==</span> <span class=\"n\">zero</span> <span class=\"o\">⊻</span> <span class=\"p\">(</span><span class=\"n\">zero</span> <span class=\"o\">⊻</span> <span class=\"n\">one</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"nb\">true</span>\n<span class=\"p\">(</span><span class=\"n\">one</span> <span class=\"o\">⊻</span> <span class=\"n\">one</span><span class=\"p\">)</span> <span class=\"o\">⊻</span> <span class=\"n\">one</span> <span class=\"o\">==</span> <span class=\"n\">one</span> <span class=\"o\">⊻</span> <span class=\"p\">(</span><span class=\"n\">one</span> <span class=\"o\">⊻</span> <span class=\"n\">one</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"nb\">true</span>\n<span class=\"p\">(</span><span class=\"n\">zero</span> <span class=\"o\">⊻</span> <span class=\"n\">zero</span><span class=\"p\">)</span> <span class=\"o\">⊻</span> <span class=\"n\">zero</span> <span class=\"o\">==</span> <span class=\"n\">zero</span> <span class=\"o\">⊻</span> <span class=\"p\">(</span><span class=\"n\">zero</span> <span class=\"o\">⊻</span> <span class=\"n\">zero</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"nb\">true</span>\n<span class=\"p\">(</span><span class=\"n\">zero</span> <span class=\"o\">⊻</span> <span class=\"n\">one</span><span class=\"p\">)</span> <span class=\"o\">⊻</span> <span class=\"n\">zero</span> <span class=\"o\">==</span> <span class=\"n\">zero</span> <span class=\"o\">⊻</span> <span class=\"p\">(</span><span class=\"n\">one</span> <span class=\"o\">⊻</span> <span class=\"n\">zero</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"nb\">true</span>\n<span class=\"p\">(</span><span class=\"n\">one</span> <span class=\"o\">⊻</span> <span class=\"n\">one</span><span class=\"p\">)</span> <span class=\"o\">⊻</span> <span class=\"n\">zero</span> <span class=\"o\">==</span> <span class=\"n\">one</span> <span class=\"o\">⊻</span> <span class=\"p\">(</span><span class=\"n\">one</span> <span class=\"o\">⊻</span> <span class=\"n\">zero</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"nb\">true</span>\n\n<span class=\"n\">Commutativity</span>\n<span class=\"n\">zero</span> <span class=\"o\">⊻</span> <span class=\"n\">one</span> <span class=\"o\">==</span> <span class=\"n\">one</span> <span class=\"o\">⊻</span> <span class=\"n\">zero</span> <span class=\"o\">=</span> <span class=\"nb\">true</span>\n<span class=\"n\">one</span> <span class=\"o\">⊻</span> <span class=\"n\">zero</span> <span class=\"o\">==</span> <span class=\"n\">zero</span> <span class=\"o\">⊻</span> <span class=\"n\">one</span> <span class=\"o\">=</span> <span class=\"nb\">true</span>\n<span class=\"n\">one</span> <span class=\"o\">⊻</span> <span class=\"n\">one</span> <span class=\"o\">==</span> <span class=\"n\">one</span> <span class=\"o\">⊻</span> <span class=\"n\">one</span> <span class=\"o\">=</span> <span class=\"nb\">true</span>\n<span class=\"n\">zero</span> <span class=\"o\">⊻</span> <span class=\"n\">zero</span> <span class=\"o\">==</span> <span class=\"n\">zero</span> <span class=\"o\">⊻</span> <span class=\"n\">zero</span> <span class=\"o\">=</span> <span class=\"nb\">true</span>\n\n<span class=\"n\">Self</span><span class=\"o\">-</span><span class=\"n\">inverting</span>\n<span class=\"n\">zero</span> <span class=\"o\">⊻</span> <span class=\"n\">zero</span> <span class=\"o\">==</span> <span class=\"n\">𝕫</span> <span class=\"o\">=</span> <span class=\"nb\">true</span>\n<span class=\"n\">one</span> <span class=\"o\">⊻</span> <span class=\"n\">one</span> <span class=\"o\">==</span> <span class=\"n\">𝕫</span> <span class=\"o\">=</span> <span class=\"nb\">true</span>\n</code></pre></div>",
+        "id": 262846194,
+        "sender_full_name": "Peter Goodall",
+        "timestamp": 1637975447
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"427737\">Peter Goodall</span> has marked this topic as resolved.</p>",
+        "id": 262846347,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1637975683
+    }
+]

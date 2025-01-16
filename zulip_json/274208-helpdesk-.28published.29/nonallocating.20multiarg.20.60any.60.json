@@ -1,0 +1,482 @@
+[
+    {
+        "content": "<p>#gripes multi-arg <code>mapreduce</code> is just <code>reduce(..., map(...</code></p>\n<p>And so it allocates an intermediate array. I am trying to write a fast version of <code>all(map(foo, array1, array2))</code>.</p>",
+        "id": 229607114,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615355471
+    },
+    {
+        "content": "<p>I can think to do</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">_all</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"n\">B</span><span class=\"p\">)</span>\n  <span class=\"k\">for</span> <span class=\"n\">i</span> <span class=\"o\">=</span> <span class=\"n\">eachindex</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"n\">B</span><span class=\"p\">)</span>\n    <span class=\"nd\">@inbounds</span> <span class=\"n\">a</span> <span class=\"o\">=</span> <span class=\"n\">A</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span>\n    <span class=\"nd\">@inbounds</span> <span class=\"n\">b</span> <span class=\"o\">=</span> <span class=\"n\">A</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span>\n    <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">,</span> <span class=\"n\">b</span><span class=\"p\">)</span> <span class=\"o\">||</span> <span class=\"k\">return</span> <span class=\"kc\">false</span>\n  <span class=\"k\">end</span>\n  <span class=\"k\">return</span> <span class=\"kc\">true</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>It doesn't handle missing. I could make an iterator and use <code>all(f, itr)</code> in Base. But  I'd like a good primitive for this, that can be sped up with parallelism, for example.</p>",
+        "id": 229609272,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615357347
+    },
+    {
+        "content": "<p>Have you tried <a href=\"https://github.com/search?q=Transducers.jl&amp;type=Repositories\">Transducers.jl</a> for this? It’ll require zipping and then splatting the arrays, but it’ll give you parallelism.</p>",
+        "id": 229610758,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615358634
+    },
+    {
+        "content": "<p>I've been meaning to try that, but I haven't yet.</p>",
+        "id": 229696176,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615393857
+    },
+    {
+        "content": "<p>Let's suppose I'm doing <code>reduce((a, b) -&gt; map(foo, a, b), [array1, array2, ...])</code></p>\n<p>So there's two \" levels\" where parallelism can come in: the <code>map</code>, and the <code>reduce</code>. Does <a href=\"https://github.com/search?q=Transducers.jl&amp;type=Repositories\">Transducers.jl</a> give me a way to not think about where to make operations parallel?</p>",
+        "id": 229700089,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615394902
+    },
+    {
+        "content": "<blockquote>\n<p>Does <a href=\"https://github.com/search?q=Transducers.jl&amp;type=Repositories\">Transducers.jl</a> give me a way to not think about where to make operations parallel?</p>\n</blockquote>\n<p>Yes, absolutely</p>",
+        "id": 229703808,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615396087
+    },
+    {
+        "content": "<p>So here's what this'd look like using Transducers in the singlethreaded case:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">tr_all</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"n\">B</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">foldl</span><span class=\"p\">(</span><span class=\"o\">&amp;</span><span class=\"p\">,</span> <span class=\"n\">zip</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"n\">B</span><span class=\"p\">)</span> <span class=\"o\">|&gt;</span> <span class=\"n\">MapSplat</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">)</span> <span class=\"o\">|&gt;</span> <span class=\"n\">ReduceIf</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">Bool</span> <span class=\"o\">-&gt;</span> <span class=\"n\">x</span> <span class=\"o\">==</span> <span class=\"kc\">false</span><span class=\"p\">))</span>\n</code></pre></div>\n<p>Breaking this into parts, first look at </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">zip</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"n\">B</span><span class=\"p\">)</span> <span class=\"o\">|&gt;</span> <span class=\"n\">MapSplat</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">)</span> <span class=\"o\">|&gt;</span> <span class=\"n\">ReduceIf</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">Bool</span> <span class=\"o\">-&gt;</span> <span class=\"n\">x</span> <span class=\"o\">==</span> <span class=\"kc\">false</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>this is called an 'eduction', and you can think of it kinda like an iterator, except it's specifically designed for use with folds. Looking at it's parts, </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">zip</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"n\">B</span><span class=\"p\">)</span> <span class=\"o\">|&gt;</span> <span class=\"n\">MapSplat</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>is kinda like a lazy version of <code>map(f, A, B)</code>. Basically,  <code>zip(A, B)</code> combines <code>A</code> and <code>B</code> into a single iterable container and then <code>MapSplat(f)</code> applied to that iterator will take each element of the iterator <code>ABi</code> and perform <code>f(ABi...)</code> to it.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">let</span> <span class=\"n\">A</span> <span class=\"o\">=</span>  <span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"mi\">2</span><span class=\"p\">,</span> <span class=\"mi\">3</span><span class=\"p\">],</span> <span class=\"n\">B</span> <span class=\"o\">=</span> <span class=\"p\">[</span><span class=\"o\">:</span><span class=\"n\">a</span><span class=\"p\">,</span> <span class=\"o\">:</span><span class=\"n\">b</span><span class=\"p\">,</span> <span class=\"o\">:</span><span class=\"n\">c</span><span class=\"p\">]</span>\n           <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">,</span> <span class=\"n\">b</span><span class=\"p\">)</span><span class=\"o\">=</span> <span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">=</span><span class=\"n\">a</span><span class=\"p\">,</span> <span class=\"n\">b</span><span class=\"o\">=</span><span class=\"n\">b</span><span class=\"p\">)</span>\n           <span class=\"n\">collect</span><span class=\"p\">(</span><span class=\"n\">zip</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"n\">B</span><span class=\"p\">)</span> <span class=\"o\">|&gt;</span> <span class=\"n\">MapSplat</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">))</span>\n       <span class=\"k\">end</span>\n<span class=\"mi\">3</span><span class=\"o\">-</span><span class=\"n\">element</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"n\">NamedTuple</span><span class=\"p\">{(</span><span class=\"o\">:</span><span class=\"n\">a</span><span class=\"p\">,</span> <span class=\"o\">:</span><span class=\"n\">b</span><span class=\"p\">),</span> <span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">,</span> <span class=\"kt\">Symbol</span><span class=\"p\">}}}</span><span class=\"o\">:</span>\n <span class=\"p\">(</span><span class=\"n\">a</span> <span class=\"o\">=</span> <span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"n\">b</span> <span class=\"o\">=</span> <span class=\"o\">:</span><span class=\"n\">a</span><span class=\"p\">)</span>\n <span class=\"p\">(</span><span class=\"n\">a</span> <span class=\"o\">=</span> <span class=\"mi\">2</span><span class=\"p\">,</span> <span class=\"n\">b</span> <span class=\"o\">=</span> <span class=\"o\">:</span><span class=\"n\">b</span><span class=\"p\">)</span>\n <span class=\"p\">(</span><span class=\"n\">a</span> <span class=\"o\">=</span> <span class=\"mi\">3</span><span class=\"p\">,</span> <span class=\"n\">b</span> <span class=\"o\">=</span> <span class=\"o\">:</span><span class=\"n\">c</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>The next ingredient is the <code>|&gt; ReduceIf(x::Bool -&gt; x == false)</code>. This is important for early termination. It basically allows us to bail out of the <code>fold</code> if we ever encounter an element that is <code>false</code> (this is important for <code>all</code> to be performant!). </p>\n<p>Then finally we can look at the whole thing</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">foldl</span><span class=\"p\">(</span><span class=\"o\">&amp;</span><span class=\"p\">,</span> <span class=\"n\">zip</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"n\">B</span><span class=\"p\">)</span> <span class=\"o\">|&gt;</span> <span class=\"n\">MapSplat</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">)</span> <span class=\"o\">|&gt;</span> <span class=\"n\">ReduceIf</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">Bool</span> <span class=\"o\">-&gt;</span> <span class=\"n\">x</span> <span class=\"o\">==</span> <span class=\"kc\">false</span><span class=\"p\">))</span>\n</code></pre></div>\n<p>This says \"take the eduction <code>zip(A, B) |&gt; MapSplat(f) |&gt; ReduceIf(x::Bool -&gt; x == false)</code> and fold over it with <code>&amp;</code>. <a href=\"https://github.com/search?q=Transducers.jl&amp;type=Repositories\">Transducers.jl</a> has all sorts of clever ways to optimize these sorts of reductions better than naive iterators.</p>\n<p>Looking at some benchmarks, it seems that there's really not a huge win here compared to allocating an intermediate array:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">let</span> <span class=\"n\">n</span> <span class=\"o\">=</span> <span class=\"mi\">500</span>\n           <span class=\"n\">A</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"n\">n</span><span class=\"p\">)</span> <span class=\"o\">.+</span> <span class=\"mi\">1</span>\n           <span class=\"n\">B</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"n\">n</span><span class=\"p\">)</span>\n           <span class=\"k\">function</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span> <span class=\"n\">y</span><span class=\"p\">)</span>\n               <span class=\"n\">x</span> <span class=\"o\">&gt;</span> <span class=\"n\">y</span>\n           <span class=\"k\">end</span>\n           <span class=\"nd\">@btime</span> <span class=\"n\">all</span><span class=\"p\">(</span><span class=\"n\">map</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">B</span><span class=\"p\">))</span>\n           <span class=\"nd\">@btime</span> <span class=\"n\">tr_all</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">B</span><span class=\"p\">)</span>\n       <span class=\"k\">end</span>\n  <span class=\"mf\">612.653</span> <span class=\"n\">ns</span> <span class=\"p\">(</span><span class=\"mi\">1</span> <span class=\"n\">allocation</span><span class=\"o\">:</span> <span class=\"mi\">624</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n  <span class=\"mf\">574.342</span> <span class=\"n\">ns</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n<span class=\"kc\">true</span>\n</code></pre></div>\n<p>and it seems there is still some overhead compared to the way <code>all</code> works</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">let</span> <span class=\"n\">n</span> <span class=\"o\">=</span> <span class=\"mi\">100_000</span>\n           <span class=\"n\">A</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"n\">n</span><span class=\"p\">)</span> <span class=\"o\">.+</span> <span class=\"mi\">1</span>\n           <span class=\"n\">B</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"n\">n</span><span class=\"p\">)</span>\n           <span class=\"k\">function</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span> <span class=\"n\">y</span><span class=\"p\">)</span>\n               <span class=\"n\">exp</span><span class=\"p\">(</span><span class=\"n\">sin</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">))</span> <span class=\"o\">&gt;</span> <span class=\"n\">exp</span><span class=\"p\">(</span><span class=\"n\">sin</span><span class=\"p\">(</span><span class=\"n\">y</span><span class=\"p\">))</span>\n           <span class=\"k\">end</span>\n           <span class=\"nd\">@btime</span> <span class=\"n\">all</span><span class=\"p\">(</span><span class=\"n\">map</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">B</span><span class=\"p\">))</span>\n           <span class=\"nd\">@btime</span> <span class=\"n\">tr_all</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">B</span><span class=\"p\">)</span>\n       <span class=\"k\">end</span>\n  <span class=\"mf\">2.497</span> <span class=\"n\">ms</span> <span class=\"p\">(</span><span class=\"mi\">2</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mf\">97.77</span> <span class=\"n\">KiB</span><span class=\"p\">)</span>\n  <span class=\"mf\">2.501</span> <span class=\"n\">ms</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n<span class=\"kc\">true</span>\n</code></pre></div>\n<p>Perhaps there is a better way I could have written the transducer.</p>",
+        "id": 229726565,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615404200
+    },
+    {
+        "content": "<p>Ahh! Thanks for taking the time. I was just trying to wrap my head around the documentation.</p>",
+        "id": 229727199,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615404425
+    },
+    {
+        "content": "<p>I would like to ensure that <code>axes(A) == axes(B)</code>. I am guessing that  <code>zip(A, B)</code> doesn't do that for me.</p>",
+        "id": 229727540,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615404544
+    },
+    {
+        "content": "<p>Now lets look at multithreading. The nice thing about transducers is that they can be multithreaded pretty easily by just replacing <code>foldl</code> with <code>foldlxt</code>:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">tr_all_xt</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"n\">B</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">foldxt</span><span class=\"p\">(</span><span class=\"o\">&amp;</span><span class=\"p\">,</span> <span class=\"n\">zip</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"n\">B</span><span class=\"p\">)</span> <span class=\"o\">|&gt;</span> <span class=\"n\">MapSplat</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">)</span> <span class=\"o\">|&gt;</span> <span class=\"n\">ReduceIf</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">Bool</span> <span class=\"o\">-&gt;</span> <span class=\"n\">x</span> <span class=\"o\">==</span> <span class=\"kc\">false</span><span class=\"p\">))</span>\n<span class=\"n\">tr_all_xt</span> <span class=\"p\">(</span><span class=\"n\">generic</span> <span class=\"k\">function</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>Now let's see how it compares</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">let</span> <span class=\"n\">n</span> <span class=\"o\">=</span> <span class=\"mi\">100_000</span>\n           <span class=\"n\">A</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"n\">n</span><span class=\"p\">)</span> <span class=\"o\">.+</span> <span class=\"mi\">1</span>\n           <span class=\"n\">B</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"n\">n</span><span class=\"p\">)</span>\n           <span class=\"k\">function</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span> <span class=\"n\">y</span><span class=\"p\">)</span>\n               <span class=\"n\">x</span> <span class=\"o\">&gt;</span> <span class=\"n\">y</span>\n           <span class=\"k\">end</span>\n           <span class=\"nd\">@btime</span> <span class=\"n\">all</span><span class=\"p\">(</span><span class=\"n\">map</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">B</span><span class=\"p\">))</span>\n           <span class=\"nd\">@btime</span> <span class=\"n\">tr_all</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">B</span><span class=\"p\">)</span>\n           <span class=\"nd\">@btime</span> <span class=\"n\">tr_all_xt</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">B</span><span class=\"p\">)</span>\n       <span class=\"k\">end</span>\n  <span class=\"mf\">110.539</span> <span class=\"n\">μs</span> <span class=\"p\">(</span><span class=\"mi\">2</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mf\">97.77</span> <span class=\"n\">KiB</span><span class=\"p\">)</span>\n  <span class=\"mf\">114.949</span> <span class=\"n\">μs</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n  <span class=\"mf\">35.380</span> <span class=\"n\">μs</span> <span class=\"p\">(</span><span class=\"mi\">64</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mf\">5.41</span> <span class=\"n\">KiB</span><span class=\"p\">)</span>\n<span class=\"kc\">true</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">let</span> <span class=\"n\">n</span> <span class=\"o\">=</span> <span class=\"mi\">100_000</span>\n           <span class=\"n\">A</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"n\">n</span><span class=\"p\">)</span> <span class=\"o\">.+</span> <span class=\"mi\">1</span>\n           <span class=\"n\">B</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"n\">n</span><span class=\"p\">)</span>\n           <span class=\"k\">function</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span> <span class=\"n\">y</span><span class=\"p\">)</span>\n               <span class=\"n\">exp</span><span class=\"p\">(</span><span class=\"n\">sin</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">))</span> <span class=\"o\">&gt;</span> <span class=\"n\">exp</span><span class=\"p\">(</span><span class=\"n\">sin</span><span class=\"p\">(</span><span class=\"n\">y</span><span class=\"p\">))</span>\n           <span class=\"k\">end</span>\n           <span class=\"nd\">@btime</span> <span class=\"n\">all</span><span class=\"p\">(</span><span class=\"n\">map</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">B</span><span class=\"p\">))</span>\n           <span class=\"nd\">@btime</span> <span class=\"n\">tr_all</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">B</span><span class=\"p\">)</span>\n           <span class=\"nd\">@btime</span> <span class=\"n\">tr_all_xt</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">B</span><span class=\"p\">)</span>\n       <span class=\"k\">end</span>\n  <span class=\"mf\">2.490</span> <span class=\"n\">ms</span> <span class=\"p\">(</span><span class=\"mi\">2</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mf\">97.77</span> <span class=\"n\">KiB</span><span class=\"p\">)</span>\n  <span class=\"mf\">2.464</span> <span class=\"n\">ms</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n  <span class=\"mf\">638.910</span> <span class=\"n\">μs</span> <span class=\"p\">(</span><span class=\"mi\">65</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mf\">5.44</span> <span class=\"n\">KiB</span><span class=\"p\">)</span>\n<span class=\"kc\">true</span>\n</code></pre></div>",
+        "id": 229727831,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615404628
+    },
+    {
+        "content": "<p>I'm trying to understand the intent of the name \"Reduce If \".  \"Do reduce if predicate\"? Doesn't seem to make sense to me.<br>\nEarly return, in any case, makes sense. What about writing it just as <code>ReduceIf(!)</code> ?</p>",
+        "id": 229728019,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615404695
+    },
+    {
+        "content": "<p>Yes, you could just write <code>ReduceIf(!)</code>. I figured it might be more clear what it was doing if I wrote <code>x -&gt; x == false</code> but I guess I was wrong</p>",
+        "id": 229728188,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615404740
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"217494\">Gustavo Goretkin</span> said:</p>\n<blockquote>\n<p>I would like to ensure that <code>axes(A) == axes(B)</code>. I am guessing that  <code>zip(A, B)</code> doesn't do that for me.</p>\n</blockquote>\n<p>yeah that's right. You could just stick in an <code>@assert axes(A) == axes(B)</code> in that case</p>",
+        "id": 229728275,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615404779
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span> [said](https://julialang.zulipchat.com/#narrow/stream/225540-gripes/topic/multi-arg.20.60mapreduce.60.20is.20just.20.60reduce(.2E.2E.2E.2C.20map(.2E.2E.2E.60/near/229728188):</p>\n<blockquote>\n<p>Yes, you could just write <code>ReduceIf(!)</code>. I figured it might be more clear what it was doing if I wrote <code>x -&gt; x == false</code> but I guess I was wrong</p>\n</blockquote>\n<p>I'm not sure you were wrong :)</p>\n<p>What does it mean to just bail out of the fold? If we were expressing \"any\" we'd like to bail out as soon as we see <code>true</code>, but by early-returning <code>true</code>.</p>",
+        "id": 229728478,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615404847
+    },
+    {
+        "content": "<p>Yeah that's right. For any, we'd just write</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">tr_any_xt</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"n\">B</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">foldxt</span><span class=\"p\">(</span><span class=\"o\">|</span><span class=\"p\">,</span> <span class=\"n\">zip</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"n\">B</span><span class=\"p\">)</span> <span class=\"o\">|&gt;</span> <span class=\"n\">MapSplat</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">)</span> <span class=\"o\">|&gt;</span> <span class=\"n\">ReduceIf</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">Bool</span> <span class=\"o\">-&gt;</span> <span class=\"n\">x</span> <span class=\"o\">==</span> <span class=\"kc\">true</span><span class=\"p\">))</span>\n</code></pre></div>",
+        "id": 229728749,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615404942
+    },
+    {
+        "content": "<p>Wait, so it returns early with whatever the value of <code>x</code> is?</p>",
+        "id": 229729017,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615405048
+    },
+    {
+        "content": "<p>Yes</p>",
+        "id": 229729043,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615405055
+    },
+    {
+        "content": "<p>Oh, okay. Something about that seems surprising, but it's exactly what is needed for any / all.</p>",
+        "id": 229729167,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615405096
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">collect</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">10</span> <span class=\"o\">|&gt;</span> <span class=\"n\">ReduceIf</span><span class=\"p\">(</span><span class=\"n\">x</span> <span class=\"o\">-&gt;</span> <span class=\"n\">x</span> <span class=\"o\">&gt;=</span> <span class=\"mi\">5</span><span class=\"p\">))</span>\n<span class=\"mi\">5</span><span class=\"o\">-</span><span class=\"n\">element</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">}</span><span class=\"o\">:</span>\n <span class=\"mi\">1</span>\n <span class=\"mi\">2</span>\n <span class=\"mi\">3</span>\n <span class=\"mi\">4</span>\n <span class=\"mi\">5</span>\n</code></pre></div>",
+        "id": 229729171,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615405101
+    },
+    {
+        "content": "<p>Oh, I think I had misunderstood. This stops the \"iteration\".</p>",
+        "id": 229729251,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615405140
+    },
+    {
+        "content": "<p><code>ReduceIf</code> is indeed a bit of a confusing name.</p>",
+        "id": 229729312,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615405166
+    },
+    {
+        "content": "<p>it's not exactly an early return. But of course <code>fold</code> will now return, because the iteration stopped.</p>",
+        "id": 229729345,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615405189
+    },
+    {
+        "content": "<p>e.g. <code>StopIf(x -&gt; false)</code> is an identity on  ...eductions?</p>",
+        "id": 229729556,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615405266
+    },
+    {
+        "content": "<p>(Oops, I renamed <code>ReduceIf</code> to <code>StopIf</code> in my mind.)</p>",
+        "id": 229729602,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615405286
+    },
+    {
+        "content": "<p>I believe it's modelled off of writing</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">res</span> <span class=\"o\">=</span> <span class=\"n\">_initial_value</span>\n<span class=\"k\">for</span> <span class=\"n\">x</span> <span class=\"kp\">in</span> <span class=\"n\">iter</span>\n    <span class=\"n\">res</span> <span class=\"o\">=</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span> <span class=\"n\">res</span><span class=\"p\">)</span>\n    <span class=\"k\">if</span> <span class=\"n\">cond</span><span class=\"p\">(</span><span class=\"n\">res</span><span class=\"p\">)</span>\n      <span class=\"k\">return</span> <span class=\"n\">res</span>\n   <span class=\"k\">end</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 229729664,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615405322
+    },
+    {
+        "content": "<p>Oh, for me it seems more like <code>Iterators.takewhile</code></p>",
+        "id": 229729827,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615405386
+    },
+    {
+        "content": "<p>Yeah, <code>ReduceIf(_ -&gt; false)</code> would be a do-nothing operation</p>",
+        "id": 229729844,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615405392
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span> [said](https://julialang.zulipchat.com/#narrow/stream/225540-gripes/topic/multi-arg.20.60mapreduce.60.20is.20just.20.60reduce(.2E.2E.2E.2C.20map(.2E.2E.2E.60/near/229729171):</p>\n<blockquote>\n<p><div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">collect</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">10</span> <span class=\"o\">|&gt;</span> <span class=\"n\">ReduceIf</span><span class=\"p\">(</span><span class=\"n\">x</span> <span class=\"o\">-&gt;</span> <span class=\"n\">x</span> <span class=\"o\">&gt;=</span> <span class=\"mi\">5</span><span class=\"p\">))</span>\n<span class=\"mi\">5</span><span class=\"o\">-</span><span class=\"n\">element</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">}</span><span class=\"o\">:</span>\n <span class=\"mi\">1</span>\n <span class=\"mi\">2</span>\n <span class=\"mi\">3</span>\n <span class=\"mi\">4</span>\n <span class=\"mi\">5</span>\n</code></pre></div><br>\n</p>\n</blockquote>\n<p>since this returned not just <code>5</code>.</p>",
+        "id": 229729893,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615405416
+    },
+    {
+        "content": "<p>(Is there a bug in Zulip? Why is quote-and-reply broken? I saw you edited yours earlier to fix it, but I don't know what the syntax is)</p>",
+        "id": 229730040,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615405466
+    },
+    {
+        "content": "<p>That's because I used collect, not fold.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">foldl</span><span class=\"p\">(</span><span class=\"n\">right</span><span class=\"p\">,</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">10</span> <span class=\"o\">|&gt;</span> <span class=\"n\">ReduceIf</span><span class=\"p\">(</span><span class=\"n\">x</span> <span class=\"o\">-&gt;</span> <span class=\"n\">x</span> <span class=\"o\">&gt;=</span> <span class=\"mi\">5</span><span class=\"p\">))</span>\n<span class=\"mi\">5</span>\n</code></pre></div>",
+        "id": 229730051,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615405474
+    },
+    {
+        "content": "<p>Yeah, it seems there's some bug in the quote reply</p>",
+        "id": 229730109,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615405503
+    },
+    {
+        "content": "<p>But that's because you're using <code>right</code> and not, e.g. <code>+</code>, which would give 1 + 2 + 3 + 4 + 5, right?</p>",
+        "id": 229730153,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615405521
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">foldl</span><span class=\"p\">(</span><span class=\"o\">+</span><span class=\"p\">,</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">10</span> <span class=\"o\">|&gt;</span> <span class=\"n\">ReduceIf</span><span class=\"p\">(</span><span class=\"n\">x</span> <span class=\"o\">-&gt;</span> <span class=\"n\">x</span> <span class=\"o\">&gt;=</span> <span class=\"mi\">5</span><span class=\"p\">))</span>\n<span class=\"mi\">15</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">sum</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">5</span><span class=\"p\">)</span>\n<span class=\"mi\">15</span>\n</code></pre></div>",
+        "id": 229730323,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615405573
+    },
+    {
+        "content": "<p>In my notional machine, <code>1:10 |&gt; ReduceIf(x -&gt; x &gt;= 5)</code> evaluates to equivalent to  <code>1:5</code>,  not to <code>5</code>. That's why it feels like <code>ReduceIf</code> is like <code>takewhile</code></p>",
+        "id": 229730332,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615405575
+    },
+    {
+        "content": "<p>yeah, it seems like it's basically <code>iter |&gt; ReduceIf(pred) ≈ takewhile(!pred, iter)</code></p>",
+        "id": 229730733,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615405717
+    },
+    {
+        "content": "<p>Not quite because there's different behaviour with the final element</p>",
+        "id": 229730907,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615405787
+    },
+    {
+        "content": "<p>Right, yeah, the predicate is negated. Maybe I'll be annoying and open an issue suggesting it be called <code>StopIf</code> or <code>StopWhen</code>. <code>Reduce</code> seems like it is quite the wrong word in this context, since it approximately means \"fold\", and in fact is called <code>reduce</code> and <code>mapreduce</code> in <code>Base</code>.</p>",
+        "id": 229731038,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615405833
+    },
+    {
+        "content": "<p>Yeah, I think <span class=\"user-mention\" data-user-id=\"297129\">@Takafumi Arakaki (tkf)</span> would appreciate feedback on this</p>",
+        "id": 229731143,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615405879
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span> [said](https://julialang.zulipchat.com/#narrow/stream/225540-gripes/topic/multi-arg.20.60mapreduce.60.20is.20just.20.60reduce(.2E.2E.2E.2C.20map(.2E.2E.2E.60/near/229730907):</p>\n<blockquote>\n<p>Not quite because there's different behaviour with the final element</p>\n</blockquote>\n<p>Pesky boundary case. It's hard to encode that in a name...</p>",
+        "id": 229731144,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615405881
+    },
+    {
+        "content": "<p>By the way, do you mind if I transfer this thread to <a class=\"stream\" data-stream-id=\"274208\" href=\"/#narrow/stream/274208-helpdesk-.28published.29\">#helpdesk (published)</a>  or <a class=\"stream\" data-stream-id=\"225542\" href=\"/#narrow/stream/225542-helpdesk\">#helpdesk</a>? I get that the base behaviour is gripe worthy, but I think there's information here that might be useful here to future readers.</p>",
+        "id": 229731584,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615406042
+    },
+    {
+        "content": "<p>That would be great. <a class=\"stream\" data-stream-id=\"274208\" href=\"/#narrow/stream/274208-helpdesk-.28published.29\">#helpdesk (published)</a> is fine.</p>\n<p>I wonder if [the link to the discussion in this thread](https://julialang.zulipchat.com/#narrow/stream/225540-gripes/topic/multi-arg.20.60mapreduce.60.20is.20just.20.60reduce(.2E.2E.2E.2C.20map(.2E.2E.2E.60) will still work after the discussion is moved.</p>",
+        "id": 229732092,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615406233
+    },
+    {
+        "content": "<p>Yeah, I'm not sure about the links either <span aria-label=\"confused\" class=\"emoji emoji-1f615\" role=\"img\" title=\"confused\">:confused:</span> Just before I move it, would you mind editing the first line of your post to include what you wrote on the topic? I'm going to rename the topic to \"nonallocating multiarg <code>any</code>\" if that's okay. </p>\n<p>If I change it now, the first line might be a bit confusing</p>",
+        "id": 229732873,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615406519
+    },
+    {
+        "content": "<p>Changed!</p>",
+        "id": 229733686,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615406770
+    },
+    {
+        "content": "<p>This topic was moved here from <a class=\"stream-topic\" data-stream-id=\"225540\" href=\"/#narrow/stream/225540-gripes/topic/no.20subject\">#gripes &gt; no subject</a> by <span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span></p>",
+        "id": 229733778,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1615406800
+    },
+    {
+        "content": "<p>For the record, the link broke.</p>",
+        "id": 229734130,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615406925
+    },
+    {
+        "content": "<p><span aria-label=\"confused\" class=\"emoji emoji-1f615\" role=\"img\" title=\"confused\">:confused:</span></p>",
+        "id": 229734179,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615406947
+    },
+    {
+        "content": "<p>Oh! By the way, the link formatting wasn't working because my original subject contained unmatched parentheses. Hahaha! Perils of in-band signalling.</p>",
+        "id": 229734438,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615407030
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"217494\">Gustavo Goretkin</span> <a href=\"#narrow/stream/274208-helpdesk-(published)/topic/nonallocating.20multiarg.20.60any.60/near/229731038\">said</a>:</p>\n<blockquote>\n<p>Right, yeah, the predicate is negated. Maybe I'll be annoying and open an issue suggesting it be called <code>StopIf</code> or <code>StopWhen</code>. <code>Reduce</code> seems like it is quite the wrong word in this context, since it approximately means \"fold\", and in fact is called <code>reduce</code> and <code>mapreduce</code> in <code>Base</code>.</p>\n</blockquote>\n<p>Thanks for the feedback <span aria-label=\"+1\" class=\"emoji emoji-1f44d\" role=\"img\" title=\"+1\">:+1:</span>. Yeah, I can see <code>ReduceIf</code> might be confusing. A lot of terminologies are borrowed from Clojure while I was learning about it. So, there are some messes in the terminologies that I have to cleanup.</p>",
+        "id": 229744913,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1615410505
+    },
+    {
+        "content": "<p>I wonder if we can communicate that the current element would be processed. Maybe <code>StopAfter</code>?</p>",
+        "id": 229744980,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1615410527
+    },
+    {
+        "content": "<p>Some other suggestions</p>\n<ul>\n<li><code>FinishIf</code></li>\n<li><code>ExitEarlyIf</code></li>\n<li><code>StopIf</code></li>\n</ul>",
+        "id": 229745898,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615410860
+    },
+    {
+        "content": "<p>Do you think <code>$(Stopish)If</code> is more appropriate? ATM I'm inclined to <code>$(Stopish)After</code> or <code>$(Stopish)At</code>. Maybe <code>$(Stopish)AtIf</code>?</p>",
+        "id": 229746880,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1615411250
+    },
+    {
+        "content": "<p>I don't really like <code>After</code>, <code>At</code> or <code>AtIf</code> personally</p>",
+        "id": 229747212,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615411379
+    },
+    {
+        "content": "<p>I wonder if there are other ways to convey the difference to <code>TakeWhile ∘ !</code>?</p>",
+        "id": 229747546,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1615411519
+    },
+    {
+        "content": "<p>Another idea is to ditch <code>TakeWhile</code> and have <code>StopIf</code> and <code>AbortIf</code> (which is <code>TakeWhile ∘ !</code>), since \"abort\" sounds more immediate.</p>",
+        "id": 229747705,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1615411586
+    },
+    {
+        "content": "<p>Then the transducer does one more step than is actually needed for the computation though right?</p>",
+        "id": 229750157,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615412525
+    },
+    {
+        "content": "<p>I think it's case-dependent that if you want to process the current item or not. It all depends on the function passed by the user. I think it makes sense to have both.</p>",
+        "id": 229750880,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1615412788
+    },
+    {
+        "content": "<p>I also considered <code>After</code> to convey the handling of the final element, and yet I also agree with <span class=\"user-mention\" data-user-id=\"269150\">@Mason Protter</span></p>",
+        "id": 229751337,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615412978
+    },
+    {
+        "content": "<p>re: abort, FWIW <a href=\"https://developers.google.com/style/word-list?hl=en#letter-a\">https://developers.google.com/style/word-list?hl=en#letter-a</a> and <a href=\"https://developers.google.com/style/word-list?hl=en#letter-t\">https://developers.google.com/style/word-list?hl=en#letter-t</a></p>",
+        "id": 229751585,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615413078
+    },
+    {
+        "content": "<p>oh my, naming is hard</p>",
+        "id": 229751595,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1615413084
+    },
+    {
+        "content": "<p>If you wanted to make a while loop whose body still ran once more after the condition is false, that is a do-while loop, right? As opposed to \"while-do\".</p>\n<p>So maybe that's an argument for <code>StopIf</code>. and then <code>TakeWhile ∘ !</code> is like \"IfStop\"</p>",
+        "id": 229751976,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615413244
+    },
+    {
+        "content": "<p>Or maybe it's the opposite argument. Like you said, naming is hard :-/</p>",
+        "id": 229752196,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615413326
+    },
+    {
+        "content": "<p>(btw, just a quick glance, but the world list link looks pretty useful. thanks!)</p>",
+        "id": 229752306,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1615413366
+    },
+    {
+        "content": "<p>the analogy to while-do makes me think that we can keep <code>TakeWhile</code> and create <code>ProcessWhile = ReduceIf ∘ !</code></p>",
+        "id": 229752672,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1615413512
+    },
+    {
+        "content": "<p>wait, nah, it doesn't make sense <span aria-label=\"rolling on the floor laughing\" class=\"emoji emoji-1f923\" role=\"img\" title=\"rolling on the floor laughing\">:rolling_on_the_floor_laughing:</span></p>",
+        "id": 229752846,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1615413592
+    },
+    {
+        "content": "<p>Out of curiosity, is the ¿eduction? (sorry if that's not the right term) analogous to  <code>TakeWhile ∘ !</code> useful in <a href=\"https://github.com/search?q=Transducers.jl&amp;type=Repositories\">Transducers.jl</a>?</p>",
+        "id": 229753917,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615413800
+    },
+    {
+        "content": "<p>I am trying to figure out if it is necessary to distinguish between the two ways, where the final element is or isn't \"emitted\".</p>",
+        "id": 229754229,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615413872
+    },
+    {
+        "content": "<p>Now I'm wondering about declarative vs imperative wording. \"StopIf\" is imperative. \"MakeEnd\" or \"IsEnd\" (interpreted as a constraint, not as a predicate) is declarative.</p>",
+        "id": 229754780,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615414010
+    },
+    {
+        "content": "<p>IsEnd and WasEnd for \"This is the end\" and \"That was the end\"... :-p</p>",
+        "id": 229754953,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615414053
+    },
+    {
+        "content": "<p>I think both are useful. For example, some reduce-based high-level APIs like <code>findfirst</code> requires <code>ReduceIf</code> and not implementable with <code>TakeWhile</code>:</p>\n<p><a href=\"https://github.com/tkf/ThreadsX.jl/blob/3ff8264f1c4b92318e836a1994a38ffde0433553/src/reduce.jl#L89-L97\">https://github.com/tkf/ThreadsX.jl/blob/3ff8264f1c4b92318e836a1994a38ffde0433553/src/reduce.jl#L89-L97</a></p>\n<p>(there's the same code in <a href=\"https://github.com/search?q=Folds.jl&amp;type=Repositories\">Folds.jl</a>, but would look more complicated)</p>",
+        "id": 229755622,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1615414212
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"297129\">Takafumi Arakaki (tkf)</span> <a href=\"#narrow/stream/274208-helpdesk-(published)/topic/nonallocating.20multiarg.20.60any.60/near/229755622\">said</a>:</p>\n<blockquote>\n<p>I think both are useful. For example, some reduce-based high-level APIs like <code>findfirst</code> requires <code>ReduceIf</code> and not implementable with <code>TakeWhile</code>:</p>\n<p><a href=\"https://github.com/tkf/ThreadsX.jl/blob/3ff8264f1c4b92318e836a1994a38ffde0433553/src/reduce.jl#L89-L97\">https://github.com/tkf/ThreadsX.jl/blob/3ff8264f1c4b92318e836a1994a38ffde0433553/src/reduce.jl#L89-L97</a></p>\n<p>(there's the same code in <a href=\"https://github.com/search?q=Folds.jl&amp;type=Repositories\">Folds.jl</a>, but would look more complicated)</p>\n</blockquote>\n<p>Right, but if all you had was <code>ReduceIf</code> and you did not have <code>TakeWhile</code>, would that be okay?</p>",
+        "id": 229756042,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615414320
+    },
+    {
+        "content": "<p>OTOH, I think it perfectly reasonable to want, e.g., \"give me all first consecutive positive numbers\"</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">xs</span> <span class=\"o\">|&gt;</span> <span class=\"n\">TakeWhile</span><span class=\"p\">(</span><span class=\"o\">&gt;</span><span class=\"p\">(</span><span class=\"mi\">0</span><span class=\"p\">))</span> <span class=\"o\">|&gt;</span> <span class=\"n\">collect</span>\n</code></pre></div>\n<p>and I don't think you want to get non-positive numbers in the output in this case.</p>",
+        "id": 229756049,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1615414322
+    },
+    {
+        "content": "<p>Ah, yeah, okay that answers my question. So it would be good to distinguish both.</p>",
+        "id": 229756158,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615414339
+    },
+    {
+        "content": "<p>yeah I think so</p>",
+        "id": 229756236,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1615414362
+    },
+    {
+        "content": "<p>I think a similar example is <code>eachline</code> in Base. it has <code>keep</code> argument to control the inclusion of the last element (i..e, <code>\\n</code>)</p>",
+        "id": 229756620,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1615414432
+    },
+    {
+        "content": "<p>oh yeah, I think I ran into that recently.</p>",
+        "id": 229756773,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615414455
+    },
+    {
+        "content": "<p>So, I am a big fan of using as few names as possible, so I'm tempted to suggest something like <code>KeepIf{0}(predicate)</code> and <code>KeepIf{1}(predicate)</code></p>",
+        "id": 229756923,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615414500
+    },
+    {
+        "content": "<p>where the number indicates how many elements to keep after the transition of the predicate.</p>",
+        "id": 229757061,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615414536
+    },
+    {
+        "content": "<p>(And then aliases could be introduced on top of that if it's too ugly for everyday usage. Or perhaps a default could be chosen when the type parameter is omitted)</p>",
+        "id": 229757286,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615414584
+    },
+    {
+        "content": "<p>I put it as a type parameter, but I suppose that one could rely on constant propagation. The point is that the two operations are quite, quite related, and there's just a \"flag\", like the <code>keep</code> argument you mentioned, to choose behavior.</p>",
+        "id": 229757494,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615414680
+    },
+    {
+        "content": "<p>yeah, a flag like <code>keep</code> might be the least confusing option</p>",
+        "id": 229761713,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1615416650
+    }
+]

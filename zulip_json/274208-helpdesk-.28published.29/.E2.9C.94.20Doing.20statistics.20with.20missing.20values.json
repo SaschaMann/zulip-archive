@@ -1,0 +1,62 @@
+[
+    {
+        "content": "<p>I have been trying out statistical analysis with Julia and have had difficulties working with missing values. For example, I have a DataFrame with different columns, some have missing values, some don't. I don't want to remove all the lines with missing values, only omit them when actually analysing the column that has them.</p>\n<p>What is the intended way to deal with the missing values? For example, if I am doing histograms with <a href=\"https://github.com/search?q=StatsPlots.jl&amp;type=Repositories\">StatsPlots.jl</a> then, as expected, I get an error when trying to plot a vector with missing values. If I use the <code>skipmissing</code> function on the data before plotting, I get the error type <code>Base.SkipMissing{Vector{Union{Missing, Float64}}}</code> is not supported. So my solution is to use <code>collect(skipmissing(...))</code>, which works but doesn't feel right. Is there anything better? I have the same problem with <a href=\"https://github.com/search?q=HypothesisTests.jl&amp;type=Repositories\">HypothesisTests.jl</a>.</p>\n<p>I've looked at the issues for <a href=\"https://github.com/search?q=StatsBase.jl&amp;type=Repositories\">StatsBase.jl</a> and some others and see that there is a bigger issue with the <code>skipmissing</code> function. My question is, is there a better workaround than <code>collect(skipmissing(...))</code>?</p>",
+        "id": 273337574,
+        "sender_full_name": "Moorits Muru",
+        "timestamp": 1645878109
+    },
+    {
+        "content": "<p>You want <code>dropmissing</code> rather than <code>skipmissing</code></p>",
+        "id": 273355755,
+        "sender_full_name": "jar",
+        "timestamp": 1645900527
+    },
+    {
+        "content": "<p>If I understand correctly, then this only works with a DataFrame, not with a vector, and the output is a new dataframe (or overwriting the original one). I have columns with different rows that have missing values and only wish to remove the missing values from the columns that I am currently working with. This means that I have to make new DataFrames for each different column that has missing values, so I wouldn't remove too much data. Maybe I am using DataFrames inefficiently, but the solution I was thinking of is something that I could apply to vectors as I extract the columns from the DataFrame.</p>",
+        "id": 273401338,
+        "sender_full_name": "Moorits Muru",
+        "timestamp": 1645965304
+    },
+    {
+        "content": "<p>You can specify which columns using <code>dropmissing(df, [:a, :b, :c])</code></p>",
+        "id": 273418390,
+        "sender_full_name": "jar",
+        "timestamp": 1645986913
+    },
+    {
+        "content": "<p>I would prefer if I could apply the function to vectors, but I guess I'll make do with <code>dropmissing</code> and <code>collect(skipmissing(...))</code>. Thanks for your help!</p>",
+        "id": 273428553,
+        "sender_full_name": "Moorits Muru",
+        "timestamp": 1646000606
+    },
+    {
+        "content": "<p>There's also <code>filter(!ismissing, x)</code></p>",
+        "id": 273428609,
+        "sender_full_name": "jar",
+        "timestamp": 1646000679
+    },
+    {
+        "content": "<p>You can also have a look at the <a href=\"https://github.com/search?q=Missings.jl&amp;type=Repositories\">Missings.jl</a> package.</p>",
+        "id": 273456128,
+        "sender_full_name": "Felix Cremer",
+        "timestamp": 1646035558
+    },
+    {
+        "content": "<p><code>collect(skipmissing(x))</code> is the right way of doing it in StatsPlots. <code>skipmissing</code> returns an iterator for efficiency, so you don't have to allocate in reduction operations like <code>sum(skipmissing(x))</code> but that won't work for plotting. Another thing you might consider is replacing missings with a sort of \"sentinel value\" that shows up as a separate category in the histogram by doing <code>coalesce.(x, val)</code>.</p>",
+        "id": 273468359,
+        "sender_full_name": "Nils",
+        "timestamp": 1646043193
+    },
+    {
+        "content": "<p>Thanks for the tips everybody!</p>",
+        "id": 273550729,
+        "sender_full_name": "Moorits Muru",
+        "timestamp": 1646080862
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"285139\">Moorits Muru</span> has marked this topic as resolved.</p>",
+        "id": 273550754,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1646080881
+    }
+]

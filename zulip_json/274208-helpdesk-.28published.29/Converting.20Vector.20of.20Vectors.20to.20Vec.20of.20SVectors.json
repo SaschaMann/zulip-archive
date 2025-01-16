@@ -1,0 +1,32 @@
+[
+    {
+        "content": "<p>Friends, I'm trying to convert vectors such as <code>[[1,2],[1,2]]</code> to a vector of static arrays. If I do <code>SVector([[1,2],[0,0]]...)</code> it works, but not for the case of <code>[[1,2]]</code>. How to circumvent this case? The vectors inside always have size 2.</p>",
+        "id": 393322644,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1695759854
+    },
+    {
+        "content": "<p>If you know the eltype beforehand, this seems to work for me:</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">SVector</span><span class=\"p\">{</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Int64</span><span class=\"p\">}}([[</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">],</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">]])</span>\n<span class=\"go\">2-element Vector{SVector{2, Int64}}:</span>\n<span class=\"go\"> [1, 2]</span>\n<span class=\"go\"> [1, 2]</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">SVector</span><span class=\"p\">{</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Int64</span><span class=\"p\">}}([[</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">]])</span>\n<span class=\"go\">1-element Vector{SVector{2, Int64}}:</span>\n<span class=\"go\"> [1, 2]</span>\n</code></pre></div>",
+        "id": 393323090,
+        "sender_full_name": "Daniel González",
+        "timestamp": 1695760008
+    },
+    {
+        "content": "<p>otherwise I guess you can intercept the eltype with a function</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">svector2ify</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"o\">::</span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}})</span><span class=\"w\"> </span><span class=\"k\">where</span><span class=\"w\"> </span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span>\n<span class=\"w\">           </span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">SVector</span><span class=\"p\">{</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">T</span><span class=\"p\">}}(</span><span class=\"n\">v</span><span class=\"p\">)</span>\n<span class=\"w\">       </span><span class=\"k\">end</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">svector2ify</span><span class=\"p\">([[</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">],</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">]])</span>\n<span class=\"go\">2-element Vector{SVector{2, Int64}}:</span>\n<span class=\"go\"> [1, 2]</span>\n<span class=\"go\"> [1, 2]</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">svector2ify</span><span class=\"p\">([[</span><span class=\"sc\">'a'</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"sc\">'b'</span><span class=\"p\">]])</span>\n<span class=\"go\">1-element Vector{SVector{2, Char}}:</span>\n<span class=\"go\"> ['a', 'b']</span>\n</code></pre></div>",
+        "id": 393323708,
+        "sender_full_name": "Daniel González",
+        "timestamp": 1695760247
+    },
+    {
+        "content": "<p>Thanks!</p>",
+        "id": 393324025,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1695760367
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"kt\">SVector</span><span class=\"p\">{</span><span class=\"mi\">2</span><span class=\"p\">}</span><span class=\"o\">.</span><span class=\"p\">([[</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">],[</span><span class=\"mi\">3</span><span class=\"p\">,</span><span class=\"mi\">4</span><span class=\"p\">]])</span>\n<span class=\"go\">2-element Vector{SVector{2, Int64}}:</span>\n<span class=\"go\"> [1, 2]</span>\n<span class=\"go\"> [3, 4]</span>\n</code></pre></div>\n<p>All the option create new vectors, you cannot \"convert\", because the layouts are different.</p>",
+        "id": 393351211,
+        "sender_full_name": "Leandro Martínez",
+        "timestamp": 1695773230
+    }
+]

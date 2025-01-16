@@ -1,0 +1,110 @@
+[
+    {
+        "content": "<p>Hello, friends. I have recently learned of something called a Free Monad, which is similar to a list, but over functors. I was wondering how this could be implemented in Julia. In Haskell, a free monad is defined as </p>\n<div class=\"codehilite\" data-code-language=\"Haskell\"><pre><span></span><code><span class=\"kr\">data</span><span class=\"w\"> </span><span class=\"kt\">Free</span><span class=\"w\"> </span><span class=\"n\">f</span><span class=\"w\"> </span><span class=\"n\">a</span><span class=\"w\"> </span><span class=\"ow\">=</span><span class=\"w\"> </span><span class=\"kt\">Pure</span><span class=\"w\"> </span><span class=\"n\">a</span><span class=\"w\"> </span><span class=\"o\">|</span><span class=\"w\"> </span><span class=\"kt\">Free</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"kt\">Free</span><span class=\"w\"> </span><span class=\"n\">f</span><span class=\"w\"> </span><span class=\"n\">a</span><span class=\"p\">))</span>\n</code></pre></div>\n<p>This <code>Free f</code> takes a functor <code>f</code> and creates a new functor (e.g. <code>Free_f</code>) which has a monadic structure.<br>\nI'm having a hard time figuring out how to implement this in Julia, specifically due to this recrusive nature of the definition.<br>\nI was wondering if anyone with expirience in functional programming could help.</p>",
+        "id": 382927260,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1691495533
+    },
+    {
+        "content": "<p>Maybe this might help, or at least the rest of the page? <a href=\"https://github.com/Moelf/functional-programming-jargon.jl#monad\">https://github.com/Moelf/functional-programming-jargon.jl#monad</a></p>",
+        "id": 383060136,
+        "sender_full_name": "Alec",
+        "timestamp": 1691523201
+    },
+    {
+        "content": "<p>I’m a beginner at best at this sort of thing so apologies if not helpful</p>",
+        "id": 383060239,
+        "sender_full_name": "Alec",
+        "timestamp": 1691523222
+    },
+    {
+        "content": "<p>Thanks <span class=\"user-mention\" data-user-id=\"272612\">@Alec</span> . Ive seen this, but not really helpful in this situation :(</p>",
+        "id": 383097180,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1691535864
+    },
+    {
+        "content": "<p>implementing a functor in Julia is implementing <code>map(f, x::T) -&gt; T</code> for your <code>T</code>, if I'm not mistaken</p>",
+        "id": 383271339,
+        "sender_full_name": "Sukera",
+        "timestamp": 1691585679
+    },
+    {
+        "content": "<p>since \"functor\" in haskell just means \"mappable\"</p>",
+        "id": 383271390,
+        "sender_full_name": "Sukera",
+        "timestamp": 1691585689
+    },
+    {
+        "content": "<p>the important thing is that structure is preserved; if your <code>T</code> is a tree, you'll get a tree with the same structure back out</p>",
+        "id": 383271651,
+        "sender_full_name": "Sukera",
+        "timestamp": 1691585736
+    },
+    {
+        "content": "<p>what <code>Free</code> then does is destroy that structure - instead of a tree, you'd get a flat list back out; hence why it's sometimes called <code>flatmap</code></p>",
+        "id": 383271868,
+        "sender_full_name": "Sukera",
+        "timestamp": 1691585774
+    },
+    {
+        "content": "<p>I think the closest analog we have is <code>collect</code> after such a <code>map</code> over a functor</p>",
+        "id": 383272040,
+        "sender_full_name": "Sukera",
+        "timestamp": 1691585813
+    },
+    {
+        "content": "<p>(it's a bit confusing that we call callables functors in julia...)</p>",
+        "id": 383272104,
+        "sender_full_name": "Sukera",
+        "timestamp": 1691585823
+    },
+    {
+        "content": "<p>I think I was able to implement a working example of an instance of <code>FreeF</code>. The actual <code>Free</code> functor that turns functors <code>F</code> into <code>FreeF</code> can perhaps be done via macros.</p>",
+        "id": 383288353,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1691588423
+    },
+    {
+        "content": "<p>I call parametric struct functors when they have an <code>fmap</code> function. I think this is how they do in <a href=\"https://github.com/search?q=Functors.jl&amp;type=Repositories\">Functors.jl</a></p>",
+        "id": 383288666,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1691588481
+    },
+    {
+        "content": "<p>Yes, that's pretty much the same thing, except applied to a whole struct (which is not necessary in general; you can have \"mappable structure\" without mapping over every field of an object)</p>",
+        "id": 383391092,
+        "sender_full_name": "Sukera",
+        "timestamp": 1691607290
+    },
+    {
+        "content": "<p>ah, <a href=\"https://github.com/search?q=Functors.jl&amp;type=Repositories\">Functors.jl</a> supports that too</p>",
+        "id": 383391445,
+        "sender_full_name": "Sukera",
+        "timestamp": 1691607373
+    },
+    {
+        "content": "<p>yeah, it's unrelated to being parametrized or not :)</p>",
+        "id": 383391514,
+        "sender_full_name": "Sukera",
+        "timestamp": 1691607392
+    },
+    {
+        "content": "<p>I'm a complete novice here, but I came across <a href=\"https://github.com/MikeInnes/Effects.jl/tree/master\">Effects.jl</a> on my github feed recently by coincidence. Its readme says: </p>\n<blockquote>\n<p>An implementation of effect handlers in Julia (aka algebraic effects, free monads etc). </p>\n</blockquote>\n<p>I know some of those words <span aria-label=\"smile\" class=\"emoji emoji-1f642\" role=\"img\" title=\"smile\">:smile:</span> but no idea if this is helpful either</p>",
+        "id": 383756674,
+        "sender_full_name": "Sundar R",
+        "timestamp": 1691700923
+    },
+    {
+        "content": "<p>Thanks, a lot <span class=\"user-mention\" data-user-id=\"423970\">@Sundar R</span> !</p>",
+        "id": 383909581,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1691750683
+    },
+    {
+        "content": "<p>See also optics, as implemented in <a href=\"https://github.com/search?q=Accessors.jl&amp;type=Repositories\">Accessors.jl</a>: they allow both traversing and modifying a structure (flat or nested), or extracting all/specified elements as a flat list, or putting such a list of elements back into the original structure.</p>",
+        "id": 384203761,
+        "sender_full_name": "aplavin",
+        "timestamp": 1691832874
+    }
+]

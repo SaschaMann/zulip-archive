@@ -1,0 +1,266 @@
+[
+    {
+        "content": "<p>Today I was trying to solve an issue of synchronous termination of async tasks (only async, no multithreading) in case if one of them fail, and came to this solution</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">foo</span><span class=\"p\">()</span>\n    <span class=\"n\">ts</span> <span class=\"o\">=</span> <span class=\"kt\">Task</span><span class=\"p\">[]</span>\n    <span class=\"k\">for</span> <span class=\"n\">i</span> <span class=\"k\">in</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">20</span>\n        <span class=\"n\">t</span> <span class=\"o\">=</span> <span class=\"nd\">@task</span> <span class=\"k\">begin</span>\n            <span class=\"n\">sleep</span><span class=\"p\">(</span><span class=\"n\">i</span><span class=\"o\">/</span><span class=\"mi\">10</span><span class=\"p\">)</span>\n            <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"n\">i</span><span class=\"p\">)</span>\n            <span class=\"nd\">@assert</span> <span class=\"n\">i</span> <span class=\"o\">!=</span> <span class=\"mi\">5</span>\n        <span class=\"k\">end</span>\n        <span class=\"n\">push!</span><span class=\"p\">(</span><span class=\"n\">ts</span><span class=\"p\">,</span> <span class=\"n\">t</span><span class=\"p\">)</span>\n    <span class=\"k\">end</span>\n    <span class=\"n\">foreach</span><span class=\"p\">(</span><span class=\"n\">schedule</span><span class=\"p\">,</span> <span class=\"n\">ts</span><span class=\"p\">)</span>\n    <span class=\"n\">ht</span> <span class=\"o\">=</span> <span class=\"nd\">@async</span> <span class=\"k\">begin</span>\n        <span class=\"k\">while</span> <span class=\"nb\">true</span>\n            <span class=\"n\">all</span><span class=\"p\">(</span><span class=\"n\">istaskdone</span><span class=\"p\">,</span> <span class=\"n\">ts</span><span class=\"p\">)</span> <span class=\"o\">&amp;&amp;</span> <span class=\"k\">break</span>\n            <span class=\"k\">if</span> <span class=\"n\">any</span><span class=\"p\">(</span><span class=\"n\">istaskfailed</span><span class=\"p\">,</span> <span class=\"n\">ts</span><span class=\"p\">)</span>\n                <span class=\"k\">for</span> <span class=\"n\">t</span> <span class=\"k\">in</span> <span class=\"n\">ts</span>\n                    <span class=\"n\">istaskdone</span><span class=\"p\">(</span><span class=\"n\">t</span><span class=\"p\">)</span> <span class=\"o\">&amp;&amp;</span> <span class=\"k\">continue</span>\n                    <span class=\"n\">istaskfailed</span><span class=\"p\">(</span><span class=\"n\">t</span><span class=\"p\">)</span> <span class=\"o\">&amp;&amp;</span> <span class=\"k\">continue</span>\n                    <span class=\"nd\">@async</span> <span class=\"k\">try</span> <span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">throwto</span><span class=\"p\">(</span><span class=\"n\">t</span><span class=\"p\">,</span> <span class=\"kt\">InterruptException</span><span class=\"p\">())</span> <span class=\"k\">catch</span> <span class=\"k\">end</span>\n                    <span class=\"n\">yield</span><span class=\"p\">()</span>\n                <span class=\"k\">end</span>\n                <span class=\"k\">break</span>\n            <span class=\"k\">end</span>\n            <span class=\"n\">yield</span><span class=\"p\">()</span>\n        <span class=\"k\">end</span>\n    <span class=\"k\">end</span>\n    <span class=\"n\">wait</span><span class=\"p\">(</span><span class=\"n\">ht</span><span class=\"p\">)</span>\n\n    <span class=\"k\">return</span> <span class=\"nb\">nothing</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>I wonder is it complete madness or it is more or less ok? Maybe there are better, more idiomatic ways to solve this problem?</p>",
+        "id": 247954939,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1627930064
+    },
+    {
+        "content": "<p><code>Base.throwto</code> (or <code>schedule</code>) on task that you don't \"own\" is undefined behavior. Also, I'd avoid spinning like this as much as possible.</p>\n<p>Funny story, I was answering a similar question in slack today <a href=\"https://julialang.slack.com/archives/C6SMTHQ3T/p1627916665016700?thread_ts=1627899423.013900&amp;cid=C6SMTHQ3T\">https://julialang.slack.com/archives/C6SMTHQ3T/p1627916665016700?thread_ts=1627899423.013900&amp;cid=C6SMTHQ3T</a></p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"nd\">@sync</span> <span class=\"k\">let</span> <span class=\"n\">handles</span> <span class=\"o\">=</span> <span class=\"kt\">Channel</span><span class=\"p\">(</span><span class=\"nb\">Inf</span><span class=\"p\">)</span>\n    <span class=\"k\">for</span> <span class=\"n\">i</span> <span class=\"k\">in</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">100</span>\n        <span class=\"nd\">@async</span> <span class=\"k\">begin</span>\n            <span class=\"n\">timer</span> <span class=\"o\">=</span> <span class=\"kt\">Timer</span><span class=\"p\">(</span><span class=\"n\">i</span><span class=\"p\">)</span>\n            <span class=\"k\">try</span>\n                <span class=\"k\">try</span>\n                    <span class=\"n\">put!</span><span class=\"p\">(</span><span class=\"n\">handles</span><span class=\"p\">,</span> <span class=\"n\">timer</span><span class=\"p\">)</span>\n                <span class=\"k\">catch</span>\n                    <span class=\"n\">close</span><span class=\"p\">(</span><span class=\"n\">timer</span><span class=\"p\">)</span>  <span class=\"c\"># closed by another task</span>\n                    <span class=\"k\">return</span>\n                <span class=\"k\">end</span>\n                <span class=\"k\">try</span>\n                    <span class=\"n\">wait</span><span class=\"p\">(</span><span class=\"n\">timer</span><span class=\"p\">)</span>\n                <span class=\"k\">catch</span> <span class=\"n\">err</span>\n                    <span class=\"n\">err</span> <span class=\"k\">isa</span> <span class=\"kt\">EOFError</span> <span class=\"o\">&amp;&amp;</span> <span class=\"k\">return</span>  <span class=\"c\"># closed by another task</span>\n                    <span class=\"n\">rethrow</span><span class=\"p\">()</span>\n                <span class=\"k\">end</span>\n                <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"n\">i</span><span class=\"p\">)</span>\n                <span class=\"nd\">@assert</span> <span class=\"n\">i</span> <span class=\"o\">!=</span> <span class=\"mi\">5</span>\n            <span class=\"k\">catch</span>\n                <span class=\"n\">close</span><span class=\"p\">(</span><span class=\"n\">handles</span><span class=\"p\">)</span>  <span class=\"c\"># no more `put!`</span>\n                <span class=\"n\">foreach</span><span class=\"p\">(</span><span class=\"n\">close</span><span class=\"p\">,</span> <span class=\"n\">handles</span><span class=\"p\">)</span>  <span class=\"c\"># cancel all `wait(timer)`</span>\n                <span class=\"n\">rethrow</span><span class=\"p\">()</span>\n            <span class=\"k\">end</span>\n        <span class=\"k\">end</span>\n    <span class=\"k\">end</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 247958796,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1627931911
+    },
+    {
+        "content": "<blockquote>\n<p><code>Base.throwto</code> (or <code>schedule</code>) on task that you don't \"own\" is undefined behavior.</p>\n</blockquote>\n<p>Can you elaborate on that? I know Jameson usually discourages people from doing that, but I'm not sure why (it might cause task queue inconsistencies or something, I guess)</p>",
+        "id": 247960237,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1627932566
+    },
+    {
+        "content": "<p>I also wonder, is it fundamental limitation that killing tasks that aren't owned is undefined? Or it's just current Julia implementation and it may change in the future?</p>\n<p>I mean, from pedestrian point of view, there is nothing bad in killing some task (or delegate it to some authority if such exists).</p>",
+        "id": 247960560,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1627932693
+    },
+    {
+        "content": "<blockquote>\n<p>Funny story, I was answering a similar question in slack today</p>\n</blockquote>\n<p>Yes, I have the same question from the same guy in our Telegram channel :-)</p>",
+        "id": 247960622,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1627932722
+    },
+    {
+        "content": "<p>FWIW, Juno and the VSCode extension <code>schedule</code> <code>InterruptExceptions</code> on an execution task and, anecdotally, that seems to work fairly well</p>",
+        "id": 247960888,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1627932838
+    },
+    {
+        "content": "<p>But in those cases I really want to be able to interrupt arbitrary code</p>",
+        "id": 247961001,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1627932875
+    },
+    {
+        "content": "<p>Hmm, but in Takafumi example, <code>sleep</code> is changed to <code>timer</code>. In real code, there will be no <code>sleep </code>of course, there will be some long running task (for example <code>HTTP.get</code>).</p>",
+        "id": 247961356,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1627933040
+    },
+    {
+        "content": "<p>Can this snippet be changed to support this situation as well?</p>",
+        "id": 247961398,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1627933064
+    },
+    {
+        "content": "<p>It should starts with something like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">url</span> <span class=\"o\">=</span> <span class=\"s\">\"http://example.url\"</span>\n<span class=\"nd\">@sync</span> <span class=\"k\">let</span> <span class=\"n\">handles</span> <span class=\"o\">=</span> <span class=\"kt\">Channel</span><span class=\"p\">(</span><span class=\"nb\">Inf</span><span class=\"p\">)</span>\n    <span class=\"k\">for</span> <span class=\"n\">i</span> <span class=\"k\">in</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">100</span>\n        <span class=\"nd\">@async</span> <span class=\"k\">begin</span>\n            <span class=\"n\">uri</span> <span class=\"o\">=</span> <span class=\"s\">\"</span><span class=\"si\">$url</span><span class=\"s\">/</span><span class=\"si\">$i</span><span class=\"s\">\"</span>\n           <span class=\"k\">try</span>\n             <span class=\"n\">HTTP</span><span class=\"o\">.</span><span class=\"n\">get</span><span class=\"p\">(</span><span class=\"n\">uri</span><span class=\"p\">)</span>\n            <span class=\"o\">???</span>\n          <span class=\"k\">catch</span>\n              <span class=\"o\">???</span>\n         <span class=\"k\">end</span>\n     <span class=\"k\">end</span>\n  <span class=\"k\">end</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 247961748,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1627933235
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"208845\">Sebastian Pfitzner</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Synchronization.20of.20multiple.20async.20tasks/near/247960888\">said</a>:</p>\n<blockquote>\n<p>FWIW, Juno and the VSCode extension <code>schedule</code> <code>InterruptExceptions</code> on an execution task and, anecdotally, that seems to work fairly well</p>\n</blockquote>\n<p>Hasn't Workqueue inconsistency become a problem?</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">t</span> <span class=\"o\">=</span> <span class=\"nd\">@async</span> <span class=\"nb\">nothing</span>\n       <span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">throwto</span><span class=\"p\">(</span><span class=\"n\">t</span><span class=\"p\">,</span> <span class=\"kt\">KeyError</span><span class=\"p\">(</span><span class=\"mi\">0</span><span class=\"p\">))</span>\n\n<span class=\"n\">WARNING</span><span class=\"o\">:</span> <span class=\"n\">Workqueue</span> <span class=\"n\">inconsistency</span> <span class=\"n\">detected</span><span class=\"o\">:</span> <span class=\"n\">popfirst!</span><span class=\"p\">(</span><span class=\"n\">Workqueue</span><span class=\"p\">)</span><span class=\"o\">.</span><span class=\"n\">state</span> <span class=\"o\">!=</span> <span class=\"ss\">:runnable</span>\n<span class=\"o\">^</span><span class=\"n\">CERROR</span><span class=\"o\">:</span> <span class=\"kt\">InterruptException</span><span class=\"o\">:</span>\n</code></pre></div>\n<p>Nothing can stop <code>throwto</code>-ing to a task that is in the workqueue. And it'd confuse scheduler since it thinks everything there is runnable.</p>\n<p>Also, <code>schedule</code> in general is problematic since it sets the result in the task field non-atomically. It means that doing so from different worker thread is a data race.</p>",
+        "id": 247964149,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1627934463
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"272771\">Andrey Oskin</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Synchronization.20of.20multiple.20async.20tasks/near/247961356\">said</a>:</p>\n<blockquote>\n<p>Hmm, but in Takafumi example, <code>sleep</code> is changed to <code>timer</code>. In real code, there will be no <code>sleep </code>of course, there will be some long running task (for example <code>HTTP.get</code>).</p>\n</blockquote>\n<p>Yeah, you'd need some <code>close</code>-able object there. Does HTTP have <code>open</code>-like API?</p>\n<p>But I know it's tedious and non-composable pattern...</p>",
+        "id": 247964412,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1627934594
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"272771\">Andrey Oskin</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Synchronization.20of.20multiple.20async.20tasks/near/247960560\">said</a>:</p>\n<blockquote>\n<p>I also wonder, is it fundamental limitation that killing tasks that aren't owned is undefined? Or it's just current Julia implementation and it may change in the future?</p>\n</blockquote>\n<p>I <em>think</em> it's implementable but I still don't know the task runtime end-to-end.</p>",
+        "id": 247966774,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1627935905
+    },
+    {
+        "content": "<blockquote>\n<p>Hasn't Workqueue inconsistency become a problem?</p>\n</blockquote>\n<p>No. I also don't care about the return value of that task (it basically lives forever and I communicate with it via a Channel), so non-atomically setting the result doesn't matter</p>",
+        "id": 247967136,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1627936073
+    },
+    {
+        "content": "<p>If you are using it with threading, non-atomically setting it breaks your program. There's absolutely no guarantee that the object you set is meaningful on the reader's side.</p>\n<p>Even if everything is <code>@async</code> task, I think it'd be nice to handle this the right way in an important software like VS code plugin.</p>",
+        "id": 247969021,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1627937037
+    },
+    {
+        "content": "<p>What I was trying to say is that the result is <em>never</em> read</p>",
+        "id": 247969594,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1627937355
+    },
+    {
+        "content": "<p>But yes, I'm all for cleaning up that part of the codebase!</p>",
+        "id": 247969617,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1627937370
+    },
+    {
+        "content": "<blockquote>\n<p>Yeah, you'd need some close-able object there. Does HTTP have open-like API?</p>\n</blockquote>\n<p>Well, according to their documentation there is something <code>open</code> like:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">HTTP</span><span class=\"o\">.</span><span class=\"n\">open</span><span class=\"p\">(</span><span class=\"s\">\"GET\"</span><span class=\"p\">,</span> <span class=\"s\">\"https://tinyurl.com/bach-cello-suite-1-ogg\"</span><span class=\"p\">)</span> <span class=\"k\">do</span> <span class=\"n\">http</span>\n    <span class=\"n\">n</span> <span class=\"o\">=</span> <span class=\"mi\">0</span>\n    <span class=\"n\">r</span> <span class=\"o\">=</span> <span class=\"n\">startread</span><span class=\"p\">(</span><span class=\"n\">http</span><span class=\"p\">)</span>\n    <span class=\"n\">l</span> <span class=\"o\">=</span> <span class=\"n\">parse</span><span class=\"p\">(</span><span class=\"kt\">Int</span><span class=\"p\">,</span> <span class=\"n\">HTTP</span><span class=\"o\">.</span><span class=\"n\">header</span><span class=\"p\">(</span><span class=\"n\">r</span><span class=\"p\">,</span> <span class=\"s\">\"Content-Length\"</span><span class=\"p\">))</span>\n    <span class=\"n\">open</span><span class=\"p\">(</span><span class=\"sb\">`vlc -q --play-and-exit --intf dummy -`</span><span class=\"p\">,</span> <span class=\"s\">\"w\"</span><span class=\"p\">)</span> <span class=\"k\">do</span> <span class=\"n\">vlc</span>\n        <span class=\"k\">while</span> <span class=\"o\">!</span><span class=\"n\">eof</span><span class=\"p\">(</span><span class=\"n\">http</span><span class=\"p\">)</span>\n            <span class=\"n\">bytes</span> <span class=\"o\">=</span> <span class=\"n\">readavailable</span><span class=\"p\">(</span><span class=\"n\">http</span><span class=\"p\">)</span>\n            <span class=\"n\">write</span><span class=\"p\">(</span><span class=\"n\">vlc</span><span class=\"p\">,</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n            <span class=\"n\">n</span> <span class=\"o\">+=</span> <span class=\"n\">length</span><span class=\"p\">(</span><span class=\"n\">bytes</span><span class=\"p\">)</span>\n            <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"s\">\"streamed </span><span class=\"se\">\\$</span><span class=\"s\">n-bytes </span><span class=\"se\">\\$</span><span class=\"s\">((100*n)÷l)%</span><span class=\"se\">\\\\</span><span class=\"s\">u1b[1A\"</span><span class=\"p\">)</span>\n        <span class=\"k\">end</span>\n    <span class=\"k\">end</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>The problem is they have many layers of request processing. Not sure at which point things became <code>@async</code>.</p>",
+        "id": 247970963,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1627938027
+    },
+    {
+        "content": "<p>If <code>close</code> on <code>HTTP.open</code> is \"<code>@async</code>-safe\", maybe you can do something like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">HTTP</span><span class=\"o\">.</span><span class=\"n\">open</span><span class=\"p\">(</span><span class=\"o\">...</span><span class=\"p\">)</span> <span class=\"k\">do</span> <span class=\"n\">http</span>\n    <span class=\"n\">put!</span><span class=\"p\">(</span><span class=\"n\">handles</span><span class=\"p\">,</span> <span class=\"n\">http</span><span class=\"p\">)</span>\n    <span class=\"o\">...</span> <span class=\"c\"># actual processing</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>where the <code>handles</code> is the <code>Channel</code> in my example.</p>",
+        "id": 247972485,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1627938970
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"208845\">Sebastian Pfitzner</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Synchronization.20of.20multiple.20async.20tasks/near/247969594\">said</a>:</p>\n<blockquote>\n<p>What I was trying to say is that the result is <em>never</em> read</p>\n</blockquote>\n<p>Exception is a result internally. Here's <code>Base.throwto</code> (similar code in <code>schedule</code> too)</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">throwto</span><span class=\"p\">(</span><span class=\"n\">t</span><span class=\"o\">::</span><span class=\"kt\">Task</span><span class=\"p\">,</span> <span class=\"nd\">@nospecialize</span> <span class=\"n\">exc</span><span class=\"p\">)</span>\n    <span class=\"n\">t</span><span class=\"o\">.</span><span class=\"n\">result</span> <span class=\"o\">=</span> <span class=\"n\">exc</span>\n    <span class=\"n\">t</span><span class=\"o\">.</span><span class=\"n\">_isexception</span> <span class=\"o\">=</span> <span class=\"nb\">true</span>\n    <span class=\"n\">set_next_task</span><span class=\"p\">(</span><span class=\"n\">t</span><span class=\"p\">)</span>\n    <span class=\"k\">return</span> <span class=\"n\">try_yieldto</span><span class=\"p\">(</span><span class=\"n\">identity</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p><a href=\"https://github.com/JuliaLang/julia/blob/f711f0a9076b9f11f9034985086d73bc285c2ca6/base/task.jl#L772-L777\">https://github.com/JuliaLang/julia/blob/f711f0a9076b9f11f9034985086d73bc285c2ca6/base/task.jl#L772-L777</a></p>\n<p>So, internally, the exception is just a result with <code>_isexception</code> flag set. To throw an exception, the task needs to load it from the <code>.result</code> field.</p>",
+        "id": 247972712,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1627939027
+    },
+    {
+        "content": "<p>Ah, that makes sense.</p>",
+        "id": 247973138,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1627939243
+    },
+    {
+        "content": "<p>I still don't know a) which consequences any data races could have in this case and b) what to do about it <span aria-label=\"stuck out tongue\" class=\"emoji emoji-1f61b\" role=\"img\" title=\"stuck out tongue\">:stuck_out_tongue:</span></p>",
+        "id": 247975055,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1627940459
+    },
+    {
+        "content": "<p>a) It can create an ill-formed Julia object. Since it can then corrupt the Julia runtime, anything can happen. You get a segfault if you are lucky. It's like a misplaced <code>@inbounds</code>. But worse, since the error can be hard to reproduce.</p>\n<p>b) Supporting cancellation is tedious ATM, unfortunately. You can keep around <code>close</code>-able objects like my example above. Or, pass around <code>Threads.Atomic{Bool}</code> and check it from time to time.</p>",
+        "id": 247978063,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1627942372
+    },
+    {
+        "content": "<p>I wonder, how structured concurrency is possible then (or how trio framework is working). If I get it right, nursery gracefully shutdown all children, but it looks impossible in current Julia implementation?</p>\n<p>I mean, you have a function, function is wrapped in task. The only way to stop the task externally is to set this isexception field and then it removes itself from the schedule. But this wouldn't gracefully unallocate all resources, right?</p>\n<p>So, how on earth, one can externally close the task in such a way that it would gracefully release all the resources? Task should keep track of all allocated resources (like all open files), but there is no way to do it, since there is no direct communication between function and wrapping task.</p>",
+        "id": 248177961,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1627960092
+    },
+    {
+        "content": "<p>Sorry maybe I mixing different concepts together, but it really looks more complicated now, then I thought before.</p>",
+        "id": 248177971,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1627960142
+    },
+    {
+        "content": "<p>Yeah, it is implemented in other systems. It should also be possible to implement this as a package given all possibly blocking operations go through a consistent API. I <em>think</em> it is possible to do this in the Julia runtime with some manageable surgery. The main issue probably is convincing core devs that this is worth doing.</p>",
+        "id": 248178656,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1627961219
+    },
+    {
+        "content": "<p>Ah, but how it can be implemented? I am sorry, my knowledge of those things is too little.</p>\n<p>Should it be made in such a way, that for example <code>open(io)</code> should be rewritten in such a way, that it leaves trace in wrapping Task? So that if task is interrupted it can call <code>close</code> on all such objects? It is it something different entirely (idk, some magic with stacktraces or may be even with garbage collector).</p>\n<p>I mean, it would be interesting to see this technique implemented, even as a package prototype.</p>",
+        "id": 248181225,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1627965126
+    },
+    {
+        "content": "<p>I also seen word Tapir when things like this is discussed, but I do not know, is it relevant or not.</p>",
+        "id": 248181400,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1627965392
+    },
+    {
+        "content": "<p>Yeah, that's the idea. I think creating a package for this would be useful.</p>\n<p>(It is limited in the sense that you can't keep channel/timer/file/etc. open upon task termination, compared to full-blown Structured Concurrency systems like Trio. For this, you'd need to touch the runtime or have something like Go's select.)</p>",
+        "id": 248184710,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1627970198
+    },
+    {
+        "content": "<p>Tapir is not related to the cancellation story.</p>",
+        "id": 248184729,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1627970252
+    },
+    {
+        "content": "<p>Sorry for keeping asking you questions, but what do you mean by \"touching runtime\"? I mean all things like closing/deallocating resources happens in a runtime, how is it diiferent?</p>\n<p>And what is the technique behind Go <code>select</code>? Where one can read about it? Can it be implemented in Julia in some way (I mean, maybe even through touching low level things in LLVM somehow)? Or it will go very deep in Julia semantics?</p>",
+        "id": 248186390,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1627972406
+    },
+    {
+        "content": "<p>I'm happy to nerd out about this :)</p>\n<p>By \"touching runtime,\" I meant inserting cancellation point for each yield to the runtime; e.g., <code>read</code>ing a socket, <code>take!</code> on a channel, <code>lock</code>, etc. These operations need to \"listen to\" the actual I/O outcome (e.g., data read from the socket) <em>and</em> the cancellation signal.</p>\n<p><span class=\"user-mention silent\" data-user-id=\"272771\">Andrey Oskin</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Synchronization.20of.20multiple.20async.20tasks/near/248186390\">said</a>:</p>\n<blockquote>\n<p>And what is the technique behind Go <code>select</code>? Where one can read about it?</p>\n</blockquote>\n<p>See how Go's <code>context</code> <a href=\"https://pkg.go.dev/context\">https://pkg.go.dev/context</a> (coupled with <code>errgroup</code> <a href=\"https://pkg.go.dev/golang.org/x/sync/errgroup\">https://pkg.go.dev/golang.org/x/sync/errgroup</a>) implements (something equivalent to) structured concurrency with the \"<code>Done</code> channel idiom.\"</p>\n<p><span class=\"user-mention silent\" data-user-id=\"272771\">Andrey Oskin</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Synchronization.20of.20multiple.20async.20tasks/near/248186390\">said</a>:</p>\n<blockquote>\n<p>Can it be implemented in Julia in some way (I mean, maybe even through touching low level things in LLVM somehow)?</p>\n</blockquote>\n<p>I think it's totally implementable by just writing plain Julia code. No need to use LLVM hacking or even any kind of metaprogramming.</p>\n<p>But the catch is that you'd need to re-implement <em>all</em> concurrent communication primitives (lock, condition variable, channel, ...) if you want to support cancellation (or <code>select</code>-like operations) on them. It is doable, and in fact I'm experimenting with it a bit.</p>\n<p>It's probably easier to just directly implement channel and <code>select</code> only for channel (Go's strategy). But I have a bit more roundabout idea: (1) Implement Reagent (<a href=\"https://doi.org/10.1145/2254064.2254084\">https://doi.org/10.1145/2254064.2254084</a>) (2) Implement Concurrent ML (<a href=\"https://en.wikipedia.org/wiki/Concurrent_ML\">https://en.wikipedia.org/wiki/Concurrent_ML</a>) on top of it (3) Implement Racket's Kill-safe synchronization abstractions (<a href=\"https://doi.org/10.1145/996893.996849\">https://doi.org/10.1145/996893.996849</a>) on top of it. This hopefully gives us very extensible concurrent synchronization mechanism which <em>then</em> let us create very user-friendly concurrency API like Trio on top of it.</p>",
+        "id": 248302006,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1628040702
+    },
+    {
+        "content": "<p>More resources:</p>\n<p>A talk on OCaml's Reagent implementation. A nice high-level overview:<br>\n<a href=\"https://www.youtube.com/watch?v=qRWTws_YPBA\">LDN Functionals #8 KC Sivaramakrishnan: OCaml multicore and programming with Reagents - YouTube</a></p>\n<div class=\"youtube-video message_inline_image\"><a data-id=\"qRWTws_YPBA\" href=\"https://www.youtube.com/watch?v=qRWTws_YPBA\"><img src=\"https://uploads.zulipusercontent.net/34ada58b7a6b77bd99c3d6f45ce13087e2026a88/68747470733a2f2f692e7974696d672e636f6d2f76692f7152575477735f595042412f64656661756c742e6a7067\"></a></div><p>A talk on the high-level idea of Concurrent ML. The code is kinda hard to read which is rather sad. But I think it's a nice accessible introduction. I learnt about Reagent via this talk.<br>\n<a href=\"https://www.youtube.com/watch?v=pf4VbP5q3P0\">Michael Sperber - Concurrent ML - The One That Got Away - Code Mesh 2017 - YouTube</a></p>\n<div class=\"youtube-video message_inline_image\"><a data-id=\"pf4VbP5q3P0\" href=\"https://www.youtube.com/watch?v=pf4VbP5q3P0\"><img src=\"https://uploads.zulipusercontent.net/944bb8071c3952de25ac25f34b527172773724d7/68747470733a2f2f692e7974696d672e636f6d2f76692f70663456625035713350302f64656661756c742e6a7067\"></a></div><p>Another talk on Concurrent ML. It was kinda hard to follow for me. But it goes into some implementation details.<br>\n<a href=\"https://www.youtube.com/watch?v=7IcI6sl5oBc\">Andy Wingo - Channels, Concurrency, and Cores: A new Concurrent ML implementation - YouTube</a></p>\n<div class=\"youtube-video message_inline_image\"><a data-id=\"7IcI6sl5oBc\" href=\"https://www.youtube.com/watch?v=7IcI6sl5oBc\"><img src=\"https://uploads.zulipusercontent.net/764e4a2fae4fd5572f8e0dcf212df63a1719977f/68747470733a2f2f692e7974696d672e636f6d2f76692f3749634936736c356f42632f64656661756c742e6a7067\"></a></div>",
+        "id": 248302337,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1628041114
+    },
+    {
+        "content": "<p>But, as I said before, it's totally possible that a package that automates the <code>close</code>-on-cancel pattern is sufficient for many practical problems. I know I'm in a rather deep stack of yak shaving :)</p>",
+        "id": 248304005,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1628043117
+    },
+    {
+        "content": "<p>Haha, deep indeed. The other day I was reading <a href=\"https://carllerche.com/2021/06/17/six-ways-to-make-async-rust-easier/\">https://carllerche.com/2021/06/17/six-ways-to-make-async-rust-easier/</a>  which discusses kill safety (or the lack of it) in Rust. It's a good thoughtful writeup of the current state of some of these things in Rust. We don't have cancellation in Julia, so we don't have some of their problems yet.  But otoh we have all the other problems that lack of cancellation causes <span aria-label=\"sweat smile\" class=\"emoji emoji-1f605\" role=\"img\" title=\"sweat smile\">:sweat_smile:</span></p>",
+        "id": 248312820,
+        "sender_full_name": "c42f",
+        "timestamp": 1628055615
+    },
+    {
+        "content": "<p>Related: <a href=\"https://github.com/search?q=CancellationTokens.jl&amp;type=Repositories\">CancellationTokens.jl</a></p>",
+        "id": 248326507,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1628068263
+    },
+    {
+        "content": "<p>So, here's the first step in my attempt to support cancellation in a rather roundabout way: <a href=\"https://github.com/tkf/Reagents.jl\">https://github.com/tkf/Reagents.jl</a></p>\n<p>I tired to summarize what I was saying above here: <a href=\"https://github.com/tkf/Reagents.jl/discussions/5\">https://github.com/tkf/Reagents.jl/discussions/5</a></p>",
+        "id": 248575488,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1628230796
+    },
+    {
+        "content": "<p>Oh, I am so anxious to give it a spin :-)<br>\nThat nice feeling of christmas present unpacking :-D</p>",
+        "id": 248583796,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1628238319
+    },
+    {
+        "content": "<p>This is still a very low-level infrastructure. So don't hold your breath yet :)</p>",
+        "id": 248664323,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1628281716
+    },
+    {
+        "content": "<p>The rust link from <span class=\"user-mention\" data-user-id=\"269205\">@Chris Foster</span> seems to be proposing the fix for all their issues is to do what we do now in Julia (with implicit cancellation tokens on resources):</p>\n<blockquote>\n<p>Cancel spawned tasks by disabling resources from completing.</p>\n</blockquote>",
+        "id": 251168335,
+        "sender_full_name": "Jameson Nash",
+        "timestamp": 1630281971
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"297129\">@Takafumi Arakaki (tkf)</span> I like that code snippet you posted at the top. Have you ever thought about how we could automate that better? I have wanted to make <code>@sync</code> also be able to manage in-flight resources like that, but been unsure where to start on it.</p>",
+        "id": 251168384,
+        "sender_full_name": "Jameson Nash",
+        "timestamp": 1630282052
+    },
+    {
+        "content": "<p>Good to know that you like the example! It was basically an outcome of me trying to understand your philosophy of the error handling/cancellation of concurrent programs :), to figure out the best practice for doing this in current Julia.</p>\n<p>To add something like <code>handle</code> to <code>@sync</code>, I think the main questions are:</p>\n<p>(1) Should <code>handle</code> be dynamically or lexically scoped? I prefer dynamically scoped direction but then we'd need to use something like task-local or context variable or this.</p>\n<p>Or maybe it can be done lexically by default but we can also add a macro <code>@syncgorup()</code> that returns an object wrapping the current <code>sync_varname</code> and <code>handle</code>. We can then <code>bind</code> a closable object to the \"syncgroup\" object. It's still a bit manual but it's nice to automate the <code>try</code>-<code>catch</code> dance. In the lexical environment of <code>@sync</code>, we can simply use (say) <code>@syncbind</code> or something.</p>\n<p>(2) Should the exit be non-local? In my code I used <code>return</code>s like this</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">try</span>\n    <span class=\"n\">wait</span><span class=\"p\">(</span><span class=\"n\">timer</span><span class=\"p\">)</span>\n<span class=\"k\">catch</span> <span class=\"n\">err</span>\n    <span class=\"n\">err</span> <span class=\"k\">isa</span> <span class=\"kt\">EOFError</span> <span class=\"o\">&amp;&amp;</span> <span class=\"k\">return</span>  <span class=\"c\"># closed by another task</span>\n    <span class=\"n\">rethrow</span><span class=\"p\">()</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>I could use <code>return</code> here since I know it'd end <code>@async</code>. But we can't do this for arbitrary code (e.g., the user might want to push an object to a deal with the <code>timer</code> inside a <code>open(...) do</code> block). If we go this direction, I think we'd need something like a <code>Cancelled</code> exception.</p>\n<p>Once these design decisions are address, I imagine implementation would be straightforward.</p>",
+        "id": 251176053,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1630290474
+    },
+    {
+        "content": "<p>Also, FYI, lexically scoped non-local cancellation is now implemented in <a href=\"https://github.com/tkf/Julio.jl\">https://github.com/tkf/Julio.jl</a></p>",
+        "id": 251176112,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1630290519
+    },
+    {
+        "content": "<p>Just reading the Rust blog, I didn't realize Tokio's <code>select</code> does not guarantee atomicity. It seems like an unfortunate design... (The blog post also discuss restricting it.)</p>\n<p>Reagents actually help writing something like this. <code>Julio.select</code> does not consume an <code>IO</code> if it's not selected: <a href=\"https://tkf.github.io/Julio.jl/dev/tutorials/select/#Selecting-an-arbitrary-event\">https://tkf.github.io/Julio.jl/dev/tutorials/select/#Selecting-an-arbitrary-event</a> (It's done using a manager task ATM but I think it's possible to avoid this by touching lower-level interface)</p>",
+        "id": 251176875,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1630291379
+    }
+]

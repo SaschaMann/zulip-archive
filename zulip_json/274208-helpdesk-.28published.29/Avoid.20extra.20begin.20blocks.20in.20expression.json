@@ -1,0 +1,74 @@
+[
+    {
+        "content": "<p>Is there a reasonable way to avoid the <code>begin</code> block wrapping the nested <code>let</code> block here:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">buildexpr</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">Tuple</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"n\">subexprs</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">map</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"> </span><span class=\"n\">xi</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"n\">buildexpr</span><span class=\"p\">(</span><span class=\"n\">xi</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"k\">quote</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"k\">let</span><span class=\"w\"></span>\n<span class=\"w\">            </span><span class=\"o\">$</span><span class=\"p\">(</span><span class=\"n\">subexprs</span><span class=\"o\">...</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">            </span><span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"k\">end</span><span class=\"w\"></span>\n\n<span class=\"n\">buildexpr</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"o\">:</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"></span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">buildexpr</span><span class=\"p\">((</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">,(</span><span class=\"mi\">3</span><span class=\"p\">,</span><span class=\"mi\">4</span><span class=\"p\">)))</span><span class=\"w\"></span>\n<span class=\"k\">quote</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"cm\">#= REPL[289]:6 =#</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"k\">let</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"cm\">#= REPL[289]:7 =#</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"mi\">1</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"mi\">2</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"k\">begin</span><span class=\"w\"></span>\n<span class=\"w\">            </span><span class=\"cm\">#= REPL[289]:6 =#</span><span class=\"w\"></span>\n<span class=\"w\">            </span><span class=\"k\">let</span><span class=\"w\"></span>\n<span class=\"w\">                </span><span class=\"cm\">#= REPL[289]:7 =#</span><span class=\"w\"></span>\n<span class=\"w\">                </span><span class=\"mi\">3</span><span class=\"w\"></span>\n<span class=\"w\">                </span><span class=\"mi\">4</span><span class=\"w\"></span>\n<span class=\"w\">                </span><span class=\"cm\">#= REPL[289]:8 =#</span><span class=\"w\"></span>\n<span class=\"w\">                </span><span class=\"n\">foo</span><span class=\"p\">((</span><span class=\"mi\">3</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">4</span><span class=\"p\">))</span><span class=\"w\"></span>\n<span class=\"w\">            </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"cm\">#= REPL[289]:8 =#</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"n\">foo</span><span class=\"p\">((</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">3</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">4</span><span class=\"p\">)))</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"k\">end</span><span class=\"w\"></span>\n</code></pre></div>\n<p>I guess they don't do anything bad, but I would like to make the generated expression a bit more readable as there might be many levels.</p>",
+        "id": 288839372,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1657215288
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">buildexpr</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">Tuple</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"n\">subexprs</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">map</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"> </span><span class=\"n\">xi</span><span class=\"w\"></span>\n<span class=\"w\">               </span><span class=\"n\">buildexpr</span><span class=\"p\">(</span><span class=\"n\">xi</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"o\">:</span><span class=\"p\">(</span><span class=\"k\">let</span><span class=\"w\"></span>\n<span class=\"w\">               </span><span class=\"o\">$</span><span class=\"p\">(</span><span class=\"n\">subexprs</span><span class=\"o\">...</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">               </span><span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"k\">end</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">       </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"n\">buildexpr</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">generic</span><span class=\"w\"> </span><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">with</span><span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"w\"> </span><span class=\"n\">methods</span><span class=\"p\">)</span><span class=\"w\"></span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">buildexpr</span><span class=\"p\">((</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">,(</span><span class=\"mi\">3</span><span class=\"p\">,</span><span class=\"mi\">4</span><span class=\"p\">)))</span><span class=\"w\"></span>\n<span class=\"o\">:</span><span class=\"p\">(</span><span class=\"k\">let</span><span class=\"w\"></span>\n<span class=\"w\">      </span><span class=\"cm\">#= REPL[185]:6 =#</span><span class=\"w\"></span>\n<span class=\"w\">      </span><span class=\"mi\">1</span><span class=\"w\"></span>\n<span class=\"w\">      </span><span class=\"mi\">2</span><span class=\"w\"></span>\n<span class=\"w\">      </span><span class=\"k\">let</span><span class=\"w\"></span>\n<span class=\"w\">          </span><span class=\"cm\">#= REPL[185]:6 =#</span><span class=\"w\"></span>\n<span class=\"w\">          </span><span class=\"mi\">3</span><span class=\"w\"></span>\n<span class=\"w\">          </span><span class=\"mi\">4</span><span class=\"w\"></span>\n<span class=\"w\">          </span><span class=\"cm\">#= REPL[185]:7 =#</span><span class=\"w\"></span>\n<span class=\"w\">          </span><span class=\"n\">foo</span><span class=\"p\">((</span><span class=\"mi\">3</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">4</span><span class=\"p\">))</span><span class=\"w\"></span>\n<span class=\"w\">      </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"w\">      </span><span class=\"cm\">#= REPL[185]:7 =#</span><span class=\"w\"></span>\n<span class=\"w\">      </span><span class=\"n\">foo</span><span class=\"p\">((</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">3</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">4</span><span class=\"p\">)))</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"k\">end</span><span class=\"p\">)</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 288848919,
+        "sender_full_name": "Michael Abbott",
+        "timestamp": 1657219384
+    },
+    {
+        "content": "<p>Wow, here I have been thinking for the longest time that <code>qoute</code> blocks are just a way to do <code>:()</code> with fewer parentheses. The manual seems to just kinda introduce them like they are equivalent.</p>",
+        "id": 288853127,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1657221502
+    },
+    {
+        "content": "<p><code>:()</code> is more like a quasiquote with interpolation</p>",
+        "id": 288854161,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657221990
+    },
+    {
+        "content": "<p>without interpolation, it's a \"return the literal expression written here\" thing</p>",
+        "id": 288854210,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657222015
+    },
+    {
+        "content": "<p>Yeah, that's how I mapped it to my Lisp brain as well.</p>",
+        "id": 288854400,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1657222107
+    },
+    {
+        "content": "<p>I use that pattern all the time for combining multiple let blocks into one, though not in Julia...yet <span aria-label=\"smile\" class=\"emoji emoji-1f642\" role=\"img\" title=\"smile\">:smile:</span></p>",
+        "id": 288854496,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1657222159
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"306754\">@Sukera</span>  Why do you have to distinguish between those two cases?</p>",
+        "id": 288854572,
+        "sender_full_name": "jar",
+        "timestamp": 1657222196
+    },
+    {
+        "content": "<p>because the interpolate part gets interpolated into the returned expression, instead of being an <code>interpolate</code> block in the expression</p>",
+        "id": 288854965,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657222329
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"306754\">@Sukera</span> This was how I thought about both <code>qoute</code> and <code>:()</code>. My revised intuition is that they are equivalent, its just that a <code>quote</code> adds a <code>begin</code> block when lowered (or something) which happened to show up here.</p>",
+        "id": 288855002,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1657222349
+    },
+    {
+        "content": "<p>Basically, quoting is not the same as quasiquoting</p>",
+        "id": 288855008,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1657222351
+    },
+    {
+        "content": "<p>as in, the returned expression has no idea it got interpolated into</p>",
+        "id": 288855036,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657222366
+    }
+]

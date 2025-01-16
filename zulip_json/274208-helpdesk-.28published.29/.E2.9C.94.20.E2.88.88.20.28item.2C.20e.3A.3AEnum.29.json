@@ -1,0 +1,194 @@
+[
+    {
+        "content": "<p>Is this wrong-thinking?</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">import</span> <span class=\"n\">Base</span><span class=\"o\">.∈</span>\n<span class=\"o\">∈</span><span class=\"p\">(</span><span class=\"n\">item</span><span class=\"p\">,</span> <span class=\"n\">e</span><span class=\"o\">::</span><span class=\"kt\">Enum</span><span class=\"p\">)</span> <span class=\"o\">=</span>  <span class=\"n\">item</span> <span class=\"o\">∈</span> <span class=\"n\">elements</span><span class=\"p\">(</span><span class=\"n\">e</span><span class=\"p\">)</span>\n</code></pre></div>\n<ol>\n<li>I want to write code to check if an operation on members of the enumeration is closed within the Enum.</li>\n<li>This implies iteration over members of an Enum. It would have been more complete to implement an iterate() instead. Is it bad type-thinking to enumerate an Enum? Sort of makes sense.</li>\n</ol>",
+        "id": 263096197,
+        "sender_full_name": "Peter Goodall",
+        "timestamp": 1638240675
+    },
+    {
+        "content": "<p>I just failed to understand how to build an iterator. The few tutorials seem to have the same example - I exaggerate slightly... I thought I'd be able to delegate to elements(e::Enum)</p>",
+        "id": 263097705,
+        "sender_full_name": "Peter Goodall",
+        "timestamp": 1638242382
+    },
+    {
+        "content": "<p>sorry, i dont understand the question, do you have a situation where item is not an enum?</p>",
+        "id": 263100626,
+        "sender_full_name": "Andrés Riedemann",
+        "timestamp": 1638246344
+    },
+    {
+        "content": "<p>are you comparing by numerical value?</p>",
+        "id": 263100631,
+        "sender_full_name": "Andrés Riedemann",
+        "timestamp": 1638246357
+    },
+    {
+        "content": "<p>if that is the case, this would help:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@enum</span> <span class=\"n\">h</span> <span class=\"n\">h1</span> <span class=\"n\">h2</span> <span class=\"n\">h3</span>\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">h</span>\n<span class=\"kt\">Enum</span> <span class=\"n\">h</span><span class=\"o\">:</span>\n<span class=\"n\">h1</span> <span class=\"o\">=</span> <span class=\"mi\">0</span>\n<span class=\"n\">h2</span> <span class=\"o\">=</span> <span class=\"mi\">1</span>\n<span class=\"n\">h3</span> <span class=\"o\">=</span> <span class=\"mi\">2</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">instances</span><span class=\"p\">(</span><span class=\"n\">h</span><span class=\"p\">)</span>\n<span class=\"p\">(</span><span class=\"n\">h1</span><span class=\"p\">,</span> <span class=\"n\">h2</span><span class=\"p\">,</span> <span class=\"n\">h3</span><span class=\"p\">)</span> <span class=\"c\">#of type Enum</span>\n</code></pre></div>",
+        "id": 263100892,
+        "sender_full_name": "Andrés Riedemann",
+        "timestamp": 1638246720
+    },
+    {
+        "content": "<p>oh, i found this:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">Enums</span><span class=\"o\">.</span><span class=\"n\">namemap</span><span class=\"p\">(</span><span class=\"n\">h</span><span class=\"p\">)</span>\n  <span class=\"mi\">0</span> <span class=\"o\">=&gt;</span> <span class=\"ss\">:h1</span>\n  <span class=\"mi\">2</span> <span class=\"o\">=&gt;</span> <span class=\"ss\">:h3</span>\n  <span class=\"mi\">1</span> <span class=\"o\">=&gt;</span> <span class=\"ss\">:h2</span>\n</code></pre></div>\n<p>so if you are comparing with an integer, you could do:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">import</span> <span class=\"n\">Base</span><span class=\"o\">.∈</span>\n<span class=\"o\">∈</span><span class=\"p\">(</span><span class=\"n\">item</span><span class=\"o\">::</span><span class=\"kt\">Integer</span><span class=\"p\">,</span> <span class=\"n\">e</span><span class=\"o\">::</span><span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"o\">&lt;:</span><span class=\"kt\">Enum</span><span class=\"p\">})</span> <span class=\"o\">=</span>  <span class=\"n\">item</span> <span class=\"o\">∈</span> <span class=\"n\">keys</span><span class=\"p\">(</span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">Enums</span><span class=\"o\">.</span><span class=\"n\">namemap</span><span class=\"p\">(</span><span class=\"n\">e</span><span class=\"p\">))</span>\n</code></pre></div>",
+        "id": 263101304,
+        "sender_full_name": "Andrés Riedemann",
+        "timestamp": 1638247233
+    },
+    {
+        "content": "<p>when you define a new enum with <code>@enum &lt;Name&gt; &lt;instances...&gt;</code>, you define a new type called <code>&lt;Name&gt;</code>, which subtypes <code>Enum</code></p>",
+        "id": 263109196,
+        "sender_full_name": "Sukera",
+        "timestamp": 1638257542
+    },
+    {
+        "content": "<p>you can construct instances of that enum like any other type and it will check whether that value is valid for this enum:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@enum</span> <span class=\"n\">Fruits</span> <span class=\"n\">apple</span> <span class=\"n\">banana</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">Fruits</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">)</span>\n<span class=\"n\">banana</span><span class=\"o\">::</span><span class=\"kt\">Fruits</span> <span class=\"o\">=</span> <span class=\"mi\">1</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">Fruits</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">)</span> <span class=\"o\">===</span> <span class=\"n\">banana</span>\n<span class=\"nb\">true</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">Fruits</span><span class=\"p\">(</span><span class=\"mi\">0</span><span class=\"p\">)</span> <span class=\"o\">===</span> <span class=\"n\">apple</span>\n<span class=\"nb\">true</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">Fruits</span><span class=\"p\">(</span><span class=\"mi\">2</span><span class=\"p\">)</span>\n<span class=\"n\">ERROR</span><span class=\"o\">:</span> <span class=\"kt\">ArgumentError</span><span class=\"o\">:</span> <span class=\"n\">invalid</span> <span class=\"n\">value</span> <span class=\"k\">for</span> <span class=\"kt\">Enum</span> <span class=\"n\">Fruits</span><span class=\"o\">:</span> <span class=\"mi\">2</span>\n<span class=\"n\">Stacktrace</span><span class=\"o\">:</span>\n <span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span> <span class=\"n\">enum_argument_error</span><span class=\"p\">(</span><span class=\"n\">typename</span><span class=\"o\">::</span><span class=\"kt\">Symbol</span><span class=\"p\">,</span> <span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">Int64</span><span class=\"p\">)</span>\n   <span class=\"err\">@</span> <span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">Enums</span> <span class=\"o\">./</span><span class=\"n\">Enums</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">85</span>\n <span class=\"p\">[</span><span class=\"mi\">2</span><span class=\"p\">]</span> <span class=\"n\">Fruits</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">Int64</span><span class=\"p\">)</span>\n   <span class=\"err\">@</span> <span class=\"n\">Main</span> <span class=\"o\">./</span><span class=\"n\">Enums</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">198</span>\n <span class=\"p\">[</span><span class=\"mi\">3</span><span class=\"p\">]</span> <span class=\"n\">top</span><span class=\"o\">-</span><span class=\"n\">level</span> <span class=\"n\">scope</span>\n   <span class=\"err\">@</span> <span class=\"n\">REPL</span><span class=\"p\">[</span><span class=\"mi\">5</span><span class=\"p\">]</span><span class=\"o\">:</span><span class=\"mi\">1</span>\n</code></pre></div>",
+        "id": 263109282,
+        "sender_full_name": "Sukera",
+        "timestamp": 1638257663
+    },
+    {
+        "content": "<p>for more info, check <code>?@enum</code></p>",
+        "id": 263109320,
+        "sender_full_name": "Sukera",
+        "timestamp": 1638257734
+    },
+    {
+        "content": "<p>to get all valid instances of an enum, you can use <code>instances(Fruits)</code></p>",
+        "id": 263109386,
+        "sender_full_name": "Sukera",
+        "timestamp": 1638257775
+    },
+    {
+        "content": "<p>My apologies if I wasn't clear. </p>\n<p>Given a reasonable definition of <a href=\"https://en.wikipedia.org/wiki/Enumeration\">enumeration</a>. What is an enumeration if not enumerable, and therefore iterable? Which I argue should be true for <code>Enum</code>given the existence of <code>instances(e::Enum)</code></p>\n<p>I'm actually trying to understand why semantically I can't do the following directly. </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">allPermutations</span><span class=\"p\">(</span><span class=\"n\">xs</span><span class=\"p\">,</span> <span class=\"n\">n</span><span class=\"p\">)</span>\n    <span class=\"n\">vec</span><span class=\"p\">(</span><span class=\"n\">map</span><span class=\"p\">(</span><span class=\"n\">collect</span><span class=\"p\">,</span> <span class=\"n\">Iterators</span><span class=\"o\">.</span><span class=\"n\">product</span><span class=\"p\">(</span><span class=\"n\">ntuple</span><span class=\"p\">(</span><span class=\"n\">_</span> <span class=\"o\">-&gt;</span> <span class=\"n\">xs</span><span class=\"p\">,</span> <span class=\"n\">n</span><span class=\"p\">)</span><span class=\"o\">...</span><span class=\"p\">)))</span>\n<span class=\"k\">end</span>\n\n<span class=\"nd\">@enum</span> <span class=\"n\">Suit</span> <span class=\"n\">♣</span> <span class=\"n\">♦</span> <span class=\"n\">♥</span> <span class=\"n\">♠</span>\n\n<span class=\"k\">for</span> <span class=\"n\">i</span> <span class=\"o\">∈</span> <span class=\"n\">Suit</span>\n    <span class=\"nd\">@show</span> <span class=\"n\">i</span>\n<span class=\"k\">end</span>\n\n<span class=\"k\">for</span> <span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">,</span><span class=\"n\">b</span><span class=\"p\">,</span><span class=\"n\">c</span><span class=\"p\">,</span><span class=\"n\">d</span><span class=\"p\">)</span> <span class=\"o\">∈</span> <span class=\"n\">allPermutations</span><span class=\"p\">(</span><span class=\"n\">Suite</span><span class=\"p\">,</span><span class=\"mi\">4</span><span class=\"p\">)</span>\n   <span class=\"nd\">@show</span> <span class=\"n\">a</span><span class=\"p\">,</span> <span class=\"n\">b</span><span class=\"p\">,</span> <span class=\"n\">c</span> <span class=\"p\">,</span><span class=\"n\">d</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>I'm not sure is this is because of a missing <a href=\"https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-iteration\">iterate interface</a> on <code>Enum</code>, or it could be a result of language architecture at the boundary between types and instances.</p>",
+        "id": 263205727,
+        "sender_full_name": "Peter Goodall",
+        "timestamp": 1638305057
+    },
+    {
+        "content": "<p>enumerable just means that there's a finite number of things and you can give a unique number to it - it does not imply that it's iterable</p>",
+        "id": 263205847,
+        "sender_full_name": "Sukera",
+        "timestamp": 1638305113
+    },
+    {
+        "content": "<p>iterable means that you have a state and a transition function to a new state - an enumeration is only the state, not the transition function (though you're free to define one for your <code>T &lt;: Enum</code>)</p>",
+        "id": 263206035,
+        "sender_full_name": "Sukera",
+        "timestamp": 1638305191
+    },
+    {
+        "content": "<p>that's also why there's no default definition for <code>Enum</code> - there is no generally applicable <code>iterate</code> function that would work for all <code>Enum</code>s</p>",
+        "id": 263206090,
+        "sender_full_name": "Sukera",
+        "timestamp": 1638305218
+    },
+    {
+        "content": "<p>if you're looking for a collection of all possible values of an enum, you're looking for the <code>instances</code> function, which returns a tuple of all instances of that enum which you in turn can iterate over</p>",
+        "id": 263206281,
+        "sender_full_name": "Sukera",
+        "timestamp": 1638305296
+    },
+    {
+        "content": "<p>So what other types which can be enumerated aren't iterated over in-practice? Why wouldn't you want to?<br>\nI'm new to Julia, and environments I've worked in this stuff is very uniform. So I'm not so interested in \"julia does it this way now\", as what are the arguments not to? That way I hope to learn something</p>",
+        "id": 263215684,
+        "sender_full_name": "Peter Goodall",
+        "timestamp": 1638309990
+    },
+    {
+        "content": "<p>well can you give me a universal definition for any given <code>Enum</code> on how to iterate over it or its instances?</p>",
+        "id": 263215882,
+        "sender_full_name": "Sukera",
+        "timestamp": 1638310088
+    },
+    {
+        "content": "<p>I mean, even the wikipedia article you've cited doesn't impose iteration as a requirement for enumeration. It even goes a step further and explicitly says that it depends on the context the word is used in.</p>",
+        "id": 263216140,
+        "sender_full_name": "Sukera",
+        "timestamp": 1638310228
+    },
+    {
+        "content": "<p>I don't know your background, but when I encountered enums in the past, it was always about having a finite set of elements as part of that enum that was important. Sure you can sort of say that a type is the set of all values embodied by that type, but that doesn't mean that any given type is an enum (or iterable, for that).</p>",
+        "id": 263216680,
+        "sender_full_name": "Sukera",
+        "timestamp": 1638310464
+    },
+    {
+        "content": "<p>To be clear, <code>Enum</code> in julia is the same conceptually as an <a href=\"https://en.wikipedia.org/wiki/Enumerated_type\">enumerated type</a>, not an enumeration.</p>",
+        "id": 263216908,
+        "sender_full_name": "Sukera",
+        "timestamp": 1638310618
+    },
+    {
+        "content": "<p>The difference being that each individual instance of the enum (i.e. element of the set of values comprising the enum) has a name to it as well, which you don't have in general for types.</p>",
+        "id": 263217046,
+        "sender_full_name": "Sukera",
+        "timestamp": 1638310686
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"306754\">@Sukera</span> </p>\n<p>@enum 𝔹 ᛰ ᛯ</p>\n<p>for i ∈ instances(𝔹)<br>\n    @show i<br>\nend</p>",
+        "id": 263219650,
+        "sender_full_name": "Peter Goodall",
+        "timestamp": 1638312126
+    },
+    {
+        "content": "<p>right, and by using <code>instances</code> you've opted into the arbitrary order it gives. You're still free to implement a different one for <code>iterate</code>, which can give you any order you see fit.</p>",
+        "id": 263219956,
+        "sender_full_name": "Sukera",
+        "timestamp": 1638312341
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"306754\">@Sukera</span> I'm not wanting an altercation. I'm just trying to understand some stuff. I'm also not saying any other environment is better. I'm border-line dyslexic and writing this stuff is painful...  Also AFAIK wikipedia is just a starting point...</p>\n<p>Why do you need a specific order to iterate or enumerate?</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"k\">for</span> <span class=\"n\">i</span> <span class=\"k\">in</span> <span class=\"kt\">Set</span><span class=\"p\">([</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"mi\">3</span><span class=\"p\">,</span><span class=\"mi\">4</span><span class=\"p\">])</span>\n       <span class=\"nd\">@show</span> <span class=\"n\">i</span>\n       <span class=\"k\">end</span>\n<span class=\"go\">i = 4</span>\n<span class=\"go\">i = 2</span>\n<span class=\"go\">i = 3</span>\n<span class=\"go\">i = 1</span>\n</code></pre></div>\n<p>Enum seems to have a default order</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"n\">ᛰ</span> <span class=\"o\">&lt;</span> <span class=\"n\">ᛯ</span>\n<span class=\"go\">true</span>\n</code></pre></div>",
+        "id": 263221135,
+        "sender_full_name": "Peter Goodall",
+        "timestamp": 1638313102
+    },
+    {
+        "content": "<p>I don't think there's anything particularly wrong about wanting to use <code>in</code> for this, but keep in mind that <code>𝔹</code> is a type here, and <code>ᛰ</code> and <code>ᛯ</code> are instances of that type, so the more julian expression of this idea is to use <code>isa</code>. </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@enum</span> <span class=\"n\">𝔹</span> <span class=\"n\">ᛰ</span> <span class=\"n\">ᛯ</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">𝔹</span>  <span class=\"k\">isa</span> <span class=\"kt\">Type</span>\n<span class=\"nb\">true</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">ᛰ</span> <span class=\"k\">isa</span> <span class=\"n\">𝔹</span>\n<span class=\"nb\">true</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">ᛯ</span> <span class=\"k\">isa</span> <span class=\"n\">𝔹</span>\n<span class=\"nb\">true</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">ᛯ</span> <span class=\"k\">isa</span> <span class=\"kt\">Int</span>\n<span class=\"nb\">false</span>\n</code></pre></div>",
+        "id": 263223154,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1638314394
+    },
+    {
+        "content": "<p>Similarly,</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"mi\">1</span> <span class=\"k\">isa</span> <span class=\"kt\">Int</span>\n<span class=\"nb\">true</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"mi\">1</span> <span class=\"o\">∈</span> <span class=\"kt\">Int</span>\n<span class=\"n\">ERROR</span><span class=\"o\">:</span> <span class=\"kt\">MethodError</span><span class=\"o\">:</span> <span class=\"n\">no</span> <span class=\"n\">method</span> <span class=\"n\">matching</span> <span class=\"n\">iterate</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">})</span>\n</code></pre></div>",
+        "id": 263223325,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1638314509
+    },
+    {
+        "content": "<p>I'm opposed precisely because it's a type, not a collection - conflating the notion between a type and a value is going to make things more confusing</p>",
+        "id": 263223615,
+        "sender_full_name": "Sukera",
+        "timestamp": 1638314725
+    },
+    {
+        "content": "<p>I guess I'm sympathetic to the idea of thinking of types as collections</p>",
+        "id": 263223702,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1638314786
+    },
+    {
+        "content": "<p>Though as I said, such thinking is <em>not</em> idiomatic in julia</p>",
+        "id": 263223715,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1638314805
+    },
+    {
+        "content": "<p>For me to subscribe to that notion would require proper dependent typing, which we don't have in general <span aria-label=\"shrug\" class=\"emoji emoji-1f937\" role=\"img\" title=\"shrug\">:shrug:</span></p>",
+        "id": 263223753,
+        "sender_full_name": "Sukera",
+        "timestamp": 1638314851
+    },
+    {
+        "content": "<p>I originally asked for help to understand whether the way I was approaching this was ‘wrong-thinking’ including the context of types and values. I thought that maybe this was conceptually and idiomatically  tricky because it’s on a semantic (whatever that means) boundary between types and values.  I have my answer - many thanks to all.</p>",
+        "id": 263239692,
+        "sender_full_name": "Peter Goodall",
+        "timestamp": 1638328653
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"427737\">Peter Goodall</span> has marked this topic as resolved.</p>",
+        "id": 263239698,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1638328670
+    }
+]

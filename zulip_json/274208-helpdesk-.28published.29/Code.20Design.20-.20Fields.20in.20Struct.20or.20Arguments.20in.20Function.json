@@ -1,0 +1,134 @@
+[
+    {
+        "content": "<p>Code design question here. I'm writing a drawing package, and in the package, there are several possible structs referring to geometric objects. For example, circle, triangle, rectangle.  My idea is to create a <code>drawobject(o::MyStruct)</code> function that dispatches in each struct. The question is, should the parameters of the geometric objects go inside the structs, or  appear only as arguments in the function?<br>\nFor example:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"kt\">Circle</span><span class=\"w\"></span>\n<span class=\"w\"> </span><span class=\"n\">radius</span><span class=\"o\">::</span><span class=\"kt\">Real</span><span class=\"w\"></span>\n<span class=\"w\"> </span><span class=\"n\">label</span><span class=\"o\">::</span><span class=\"kt\">String</span><span class=\"w\"></span>\n<span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"n\">c</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">Circle</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"s\">\"C\"</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"n\">drawobject</span><span class=\"p\">(</span><span class=\"n\">c</span><span class=\"p\">)</span><span class=\"w\"></span>\n</code></pre></div>\n<p>Or should I go with:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">abstract</span><span class=\"w\"> </span><span class=\"k\">type</span> <span class=\"kt\">Circle</span><span class=\"w\"> </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"n\">drawobject</span><span class=\"p\">(</span><span class=\"n\">c</span><span class=\"w\"> </span><span class=\"p\">;</span><span class=\"w\"> </span><span class=\"n\">label</span><span class=\"o\">=</span><span class=\"s\">\"C\"</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">r</span><span class=\"o\">=</span><span class=\"mf\">1.0</span><span class=\"p\">)</span><span class=\"w\"></span>\n</code></pre></div>\n<p>Is there any heuristic to know when to use one or the other in Julia?</p>",
+        "id": 282721161,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1652830472
+    },
+    {
+        "content": "<p>I think they should be in the struct</p>",
+        "id": 282721475,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652830769
+    },
+    {
+        "content": "<p>If I may. Why would you go with that? I'm trying to develop an intuition for this sort of thing.</p>",
+        "id": 282721559,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1652830825
+    },
+    {
+        "content": "<p>Well, there's a lot of different considerations, but I think that generally arguments that are a 'bundle of connected things' usually should be bundled together into a struct when possible</p>",
+        "id": 282721715,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652830949
+    },
+    {
+        "content": "<p>For instance, to take a mathematical example, we could say write a function for finding the norm of a complex number like this:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">norm</span><span class=\"p\">(</span><span class=\"n\">re</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"nb\">im</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">re</span><span class=\"o\">^</span><span class=\"mi\">2</span><span class=\"w\"> </span><span class=\"o\">+</span><span class=\"w\"> </span><span class=\"nb\">im</span><span class=\"o\">^</span><span class=\"mi\">2</span><span class=\"w\"></span>\n</code></pre></div>\n<p>but the real and imaginary parts of a complex number are tightly connected things and we usually want to think of it as just one thing. Why juggle around a bunch of different parts? Rather, we prefer to write</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">norm</span><span class=\"p\">(</span><span class=\"n\">z</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">real</span><span class=\"p\">(</span><span class=\"n\">z</span><span class=\"p\">)</span><span class=\"o\">^</span><span class=\"mi\">2</span><span class=\"w\"> </span><span class=\"o\">+</span><span class=\"w\"> </span><span class=\"n\">imag</span><span class=\"p\">(</span><span class=\"n\">z</span><span class=\"p\">)</span><span class=\"o\">^</span><span class=\"mi\">2</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 282721890,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652831101
+    },
+    {
+        "content": "<p>That said, it's possible your label isn't really an 'instrinsic part' of the circle and you might prefer to split that out of the struct</p>",
+        "id": 282721935,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652831154
+    },
+    {
+        "content": "<p>Makes total sense. Would you say that the heuristic here would be to place inside the struct the fields that are specific (\"unique\") for that struct, and leave as an argument those that appear in all of them?</p>",
+        "id": 282722163,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1652831290
+    },
+    {
+        "content": "<p>I mean, this would even make sense with the fact that structs in Julia do not inherit stuff.</p>",
+        "id": 282722177,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1652831313
+    },
+    {
+        "content": "<p>Your explanation actually made me realized I had the whole thing reversed. I was placing the commonly shared parameters in the struct, and leaving everything else out.</p>",
+        "id": 282722291,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1652831404
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"358317\">Davi Sales Barreira</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Code.20Design.20-.20Fields.20in.20Struct.20or.20Arguments.20in.20Function/near/282722163\">said</a>:</p>\n<blockquote>\n<p>Makes total sense. Would you say that the heuristic here would be to place inside the struct the fields that are specific (\"unique\") for that struct, and leave as an argument those that appear in all of them?</p>\n</blockquote>\n<p>No, I don't think I'd say that. I'd just say that the stuff that makes a circle a circle should be inside the circle struct.</p>",
+        "id": 282722337,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652831466
+    },
+    {
+        "content": "<p>Ok. I see your point. But then I still have a conundrum. My package is for drawing, so I have properties such as <code>linethickness</code> and <code>linecolor</code> and <code>fillcolor</code>... Would you say that all of these drawing attributes should be inside the struct or outside?</p>",
+        "id": 282723205,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1652832259
+    },
+    {
+        "content": "<p>At some point, for example, I could end up with a struct <code>TRex</code>, which would have stuff like <code>head</code> and <code>headcolor</code>...</p>",
+        "id": 282723309,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1652832350
+    },
+    {
+        "content": "<p>I know this sound silly, but the idea here is that the struct are like the \"atomic\" drawings. And they are going to be things beyond simple geometric objects... Thus, I'm trying to understand how should one deal with all this complexity.</p>",
+        "id": 282723418,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1652832427
+    },
+    {
+        "content": "<p>Yeah, I think this just comes down to taste and ergonomics at that point. I'd try out some different designs and see what you like</p>",
+        "id": 282723422,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652832429
+    },
+    {
+        "content": "<p>Sometimes it makes sense for stuff like the line thickness and whatnot to be in the struct and sometimes it doesn't</p>",
+        "id": 282723470,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652832466
+    },
+    {
+        "content": "<p>I see. I was wondering if there was a sort of guideline for this stuff. So I guess not.</p>",
+        "id": 282723485,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1652832477
+    },
+    {
+        "content": "<p>Yet, thanks a lot <span class=\"user-mention\" data-user-id=\"269150\">@Mason Protter</span> !</p>",
+        "id": 282723547,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1652832495
+    },
+    {
+        "content": "<p>You've already helped me a lot, not only in this post, but in many other posts here in Zulip. I'm truly grateful!</p>",
+        "id": 282723570,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1652832527
+    },
+    {
+        "content": "<p>E.g. in <a href=\"https://github.com/search?q=Plots.jl&amp;type=Repositories\">Plots.jl</a> when you do something like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">xs</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">10</span><span class=\"w\"></span>\n<span class=\"n\">plot</span><span class=\"p\">(</span><span class=\"n\">xs</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">xs</span><span class=\"w\"> </span><span class=\"o\">.^</span><span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">title</span><span class=\"o\">=</span><span class=\"s\">\"a title\"</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">linewidth</span><span class=\"o\">=</span><span class=\"mi\">2</span><span class=\"p\">)</span><span class=\"w\"></span>\n</code></pre></div>\n<p>this actually makes a <code>struct</code> that contains all that data (as well as a bunch of other default data) because it's easier to move around and combine with other plots and whatnot.</p>",
+        "id": 282723611,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652832577
+    },
+    {
+        "content": "<p>Yeah. Though that's an implementation detail of Plots.  I think Davi's question is more about what the user-facing API should be?</p>\n<p>For this I think you'd also be well served by looking at what other drawing packages do.  There's so many to take inspiration from, including ones from other languages. Usually you can mimic the API from another language's packages into Julia with very little effort (it's the other direction which is often not so easy).</p>\n<p>There's a lot of options! For example, <a href=\"https://github.com/search?q=Luxor.jl&amp;type=Repositories\">Luxor.jl</a> doesn't have structs at all, it's a very stateful imperative drawing API. That might not be what you want but personally I do find that style very easy for quick drawings. As drawings get larger and you want to compose parts, having more explicit state and functional style is less confusing, I think.</p>",
+        "id": 282866500,
+        "sender_full_name": "c42f",
+        "timestamp": 1652919552
+    },
+    {
+        "content": "<p>So I guess I'd ask: What are the structs for?</p>\n<p>Having something like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">drawobject</span><span class=\"p\">(</span><span class=\"n\">Circle</span><span class=\"p\">(</span><span class=\"n\">center</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">radius</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">stroke_width</span><span class=\"o\">=</span><span class=\"mf\">1.0</span><span class=\"p\">)</span><span class=\"w\"></span>\n</code></pre></div>\n<p>is strictly more typing than</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">circle</span><span class=\"p\">(</span><span class=\"n\">center</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">radius</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">stroke_width</span><span class=\"o\">=</span><span class=\"mf\">1.0</span><span class=\"p\">)</span><span class=\"w\"></span>\n</code></pre></div>\n<p>But it might be worth it if you think the user typically wants to pass <code>Circle</code> objects around and manipulate them.  It depends on your expected use case.</p>",
+        "id": 282866697,
+        "sender_full_name": "c42f",
+        "timestamp": 1652919758
+    },
+    {
+        "content": "<p>also check out <a href=\"https://jkrumbiegel.com/Layered.jl/dev/\">https://jkrumbiegel.com/Layered.jl/dev/</a> for a different take on 2d graphics api</p>",
+        "id": 284643118,
+        "sender_full_name": "arbitrandomuser",
+        "timestamp": 1654104297
+    }
+]

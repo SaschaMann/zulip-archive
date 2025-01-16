@@ -1,0 +1,104 @@
+[
+    {
+        "content": "<p>Are there some special low level hardcoded heuristics related to <code>nothing</code> which makes it more suitable as a sentinel value than other types?  I'm trying to avoid it since it is easy to return it by accident and I would rather throw an error in that case. </p>\n<p>Example</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">map</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">100</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"> </span><span class=\"n\">x</span>\n<span class=\"w\">       </span><span class=\"n\">isodd</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">&amp;&amp;</span><span class=\"w\"> </span><span class=\"k\">return</span><span class=\"w\"> </span><span class=\"n\">x</span>\n<span class=\"w\">       </span><span class=\"nb\">nothing</span>\n<span class=\"w\">       </span><span class=\"k\">end</span><span class=\"w\"> </span><span class=\"o\">|&gt;</span><span class=\"w\"> </span><span class=\"n\">typeof</span>\n<span class=\"go\">Vector{Union{Nothing, Int64}} (alias for Array{Union{Nothing, Int64}, 1})</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"k\">const</span><span class=\"w\"> </span><span class=\"n\">mysentinel</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"s\">\"aa\"</span>\n<span class=\"go\">\"aa\"</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">map</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">100</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"> </span><span class=\"n\">x</span>\n<span class=\"w\">       </span><span class=\"n\">isodd</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">&amp;&amp;</span><span class=\"w\"> </span><span class=\"k\">return</span><span class=\"w\"> </span><span class=\"n\">x</span>\n<span class=\"w\">       </span><span class=\"n\">mysentinel</span>\n<span class=\"w\">       </span><span class=\"k\">end</span><span class=\"w\"> </span><span class=\"o\">|&gt;</span><span class=\"w\"> </span><span class=\"n\">typeof</span>\n<span class=\"go\">Vector{Any} (alias for Array{Any, 1})</span>\n</code></pre></div>\n<p>Is it possible to make e.g. <code>MySentinelType</code> get the same treatment as nothing in the above?</p>\n<p>Its probably not a big deal in the grand scheme of things if not. It just threw me off a bit.</p>",
+        "id": 328505159,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1676649644
+    },
+    {
+        "content": "<p>I guess one option is to use missing instead which is a little bit more difficult to return by accident:</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">map</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">100</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"> </span><span class=\"n\">x</span>\n<span class=\"w\">       </span><span class=\"n\">isodd</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">&amp;&amp;</span><span class=\"w\"> </span><span class=\"k\">return</span><span class=\"w\"> </span><span class=\"n\">x</span>\n<span class=\"w\">       </span><span class=\"nb\">missing</span>\n<span class=\"w\">       </span><span class=\"k\">end</span><span class=\"w\"> </span><span class=\"o\">|&gt;</span><span class=\"w\"> </span><span class=\"n\">typeof</span>\n<span class=\"go\">Vector{Union{Missing, Int64}} (alias for Array{Union{Missing, Int64}, 1})</span>\n</code></pre></div>",
+        "id": 328505628,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1676649746
+    },
+    {
+        "content": "<p><code>Nothing</code> is insofar special cased that it's the default sentinel value signifying the end of iteration</p>",
+        "id": 328520011,
+        "sender_full_name": "Sukera",
+        "timestamp": 1676653495
+    },
+    {
+        "content": "<p>so the compiler is hesitant to promote Unions containing it to <code>Any</code>, which would make iteration (like for loops) extremely bad</p>",
+        "id": 328520144,
+        "sender_full_name": "Sukera",
+        "timestamp": 1676653524
+    },
+    {
+        "content": "<p>Since <code>Missing</code> also results in a tight union, could it be that the special-casing applies to singleton types and not only <code>Nothing</code>?</p>",
+        "id": 328547993,
+        "sender_full_name": "Cédric Belmant",
+        "timestamp": 1676662224
+    },
+    {
+        "content": "<p>No; even with singleton types the returned type is <code>Vector{Any}</code></p>",
+        "id": 328548699,
+        "sender_full_name": "mbaz",
+        "timestamp": 1676662450
+    },
+    {
+        "content": "<p>So I recon it is some hardcoded special handling then? Anyways, missing is probably a safer choice in this case so I'll go with that.</p>",
+        "id": 328567459,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1676669734
+    },
+    {
+        "content": "<p>in 95% of cases, you do not want to generate new missings</p>",
+        "id": 328568333,
+        "sender_full_name": "Sukera",
+        "timestamp": 1676670091
+    },
+    {
+        "content": "<p>in your example, why not use <code>filter</code> instead of <code>map</code> in the first place?</p>",
+        "id": 328568344,
+        "sender_full_name": "Sukera",
+        "timestamp": 1676670101
+    },
+    {
+        "content": "<p>Example was just the simplest way to show what I meant. But yeah, I try to avoid sentinel values whenever I can and maybe I also can in this case.</p>\n<p>Real use case is I have an immutable tree structure which may be modified with an <code>fmap</code> like function but then I realized I also want to prune away stuff. What is the <code>fmap</code> equivalent of <code>filter</code>? <code>ffilter</code>?</p>\n<p>It's not a very  important project so I'd rather not redesign the whole thing just for type stability in the pruning case, but it wouldn't hurt to gain a bit of knowledge if it is served :).</p>",
+        "id": 328569917,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1676670776
+    },
+    {
+        "content": "<p>depends on how you want to prune</p>",
+        "id": 328570006,
+        "sender_full_name": "Sukera",
+        "timestamp": 1676670820
+    },
+    {
+        "content": "<p>but yes, that's just a <code>filter</code></p>",
+        "id": 328570025,
+        "sender_full_name": "Sukera",
+        "timestamp": 1676670829
+    },
+    {
+        "content": "<p>usually, pruning in a tree results in the child trees no longer being considered for expansion</p>",
+        "id": 328570128,
+        "sender_full_name": "Sukera",
+        "timestamp": 1676670873
+    },
+    {
+        "content": "<p>so the <code>filter</code> is just an additional check to be performed during expansion</p>",
+        "id": 328570194,
+        "sender_full_name": "Sukera",
+        "timestamp": 1676670907
+    },
+    {
+        "content": "<p>The tree is just a deeply nested structure and the <code>fmap</code> applies a function recursively to every node. With pruning I just meant that when <code>fmap</code>:ing the user (me in this case) sometimes just want the node gone instead of modifying it.</p>\n<p>There are nodes in the tree which can have an arbitrary amount of children so currently the missings just propagate upwards until they hit such a node which filters them out (and maybe return missing themselves if they are empty).</p>\n<p>It's probably mostly a matter of hacking away at the problem before thinking through the use cases before making the above choices, but the current situation is workable for me.</p>",
+        "id": 328570972,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1676671227
+    },
+    {
+        "content": "<p>that sounds like a bit of a weird map, doing filtering and mapping at the same time?</p>",
+        "id": 328571238,
+        "sender_full_name": "Sukera",
+        "timestamp": 1676671337
+    },
+    {
+        "content": "<p>Yeah, it is. It just happened to be quite convenient, kind of like how select from dataframes both modifies and removes columns.</p>\n<p>I guess I could just create another function with a very similar structure as the <code>fmap</code> but which expects <code>true</code> or <code>false</code> from the provded function and uses that to decide whether to keep the child node or no.  Not sure if it is just that simple since the propagation of the missings help a little bit (e.g. some nodes can only have a certain set of children so removal of one of their children must be propagated upwards).</p>",
+        "id": 328571857,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1676671612
+    }
+]

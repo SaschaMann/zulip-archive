@@ -1,0 +1,254 @@
+[
+    {
+        "content": "<p>Suppose you are given a set of points in <code>R^3</code> that mostly live in a plane (e.g. X-Y plane + noise). We can use the SVD to find a basis for the points and project then into a 2D subspace:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">proj2D</span><span class=\"p\">(</span><span class=\"n\">points</span><span class=\"p\">)</span>\n<span class=\"w\">  </span><span class=\"c\"># https://math.stackexchange.com/a/99317</span>\n<span class=\"w\">  </span><span class=\"n\">X</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">reduce</span><span class=\"p\">(</span><span class=\"n\">hcat</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">points</span><span class=\"p\">)</span>\n<span class=\"w\">  </span><span class=\"n\">μ</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">sum</span><span class=\"p\">(</span><span class=\"n\">X</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">dims</span><span class=\"o\">=</span><span class=\"mi\">2</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">/</span><span class=\"w\"> </span><span class=\"n\">size</span><span class=\"p\">(</span><span class=\"n\">X</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"p\">)</span>\n<span class=\"w\">  </span><span class=\"n\">Z</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">X</span><span class=\"w\"> </span><span class=\"o\">.-</span><span class=\"w\"> </span><span class=\"n\">μ</span>\n<span class=\"w\">  </span><span class=\"n\">U</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">svd</span><span class=\"p\">(</span><span class=\"n\">Z</span><span class=\"p\">)</span><span class=\"o\">.</span><span class=\"n\">U</span>\n<span class=\"w\">  </span><span class=\"n\">u</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">U</span><span class=\"p\">[</span><span class=\"o\">:</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"p\">]</span>\n<span class=\"w\">  </span><span class=\"n\">v</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">U</span><span class=\"p\">[</span><span class=\"o\">:</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"p\">]</span>\n<span class=\"w\">  </span><span class=\"p\">[[</span><span class=\"n\">z</span><span class=\"w\"> </span><span class=\"o\">⋅</span><span class=\"w\"> </span><span class=\"n\">u</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">z</span><span class=\"w\"> </span><span class=\"o\">⋅</span><span class=\"w\"> </span><span class=\"n\">v</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">z</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">eachcol</span><span class=\"p\">(</span><span class=\"n\">Z</span><span class=\"p\">)]</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>The problem is that the basis <code>(u, v)</code> is not necessarily oriented \"upwards\" with respect to the 3D space. For example, if the points lie in the X-Y plane, it may be the case that the basis <code>(u,v)</code> produces a normal direction pointing downwards in the direction <code>u × v = [0,0,-1]</code>.</p>\n<p>Do you know how one could post-process the basis <code>(u,v)</code> safely to make sure that it has a normal always pointing \"upwards\" according to the right-hand rule?</p>",
+        "id": 367731593,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1687201874
+    },
+    {
+        "content": "<p>I guess the easiest thing to do would just be to do something like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">u2</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">copy</span><span class=\"p\">(</span><span class=\"n\">u</span><span class=\"p\">)</span>\n<span class=\"n\">v2</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">copy</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"p\">]</span>\n<span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">i</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">eachindex</span><span class=\"p\">(</span><span class=\"n\">u</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">v</span><span class=\"p\">)</span>\n<span class=\"w\">     </span><span class=\"k\">if</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">u</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">×</span><span class=\"w\"> </span><span class=\"n\">v</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">])[</span><span class=\"mi\">3</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">&lt;</span><span class=\"w\"> </span><span class=\"mi\">0</span>\n<span class=\"w\">        </span><span class=\"n\">u2</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">v</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span>\n<span class=\"w\">        </span><span class=\"n\">v2</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">u</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span>\n<span class=\"w\">     </span><span class=\"k\">end</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 367733258,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1687202448
+    },
+    {
+        "content": "<p>that is, just check if the z component is negative, and if so, switch their order</p>",
+        "id": 367733359,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1687202480
+    },
+    {
+        "content": "<p>Can we generalize this idea to planes other than the X-Y plane?</p>",
+        "id": 367733426,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1687202506
+    },
+    {
+        "content": "<p>For example, if the original points mostly live in Y-Z, then the right hand rule says that the \"positive\" basis is Y-Z, not Z-Y</p>",
+        "id": 367733602,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1687202555
+    },
+    {
+        "content": "<p>yeah, let <code>n</code> be the normal vector to that plane, then replace the <code>if</code> statement with </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">if</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">u</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">×</span><span class=\"w\"> </span><span class=\"n\">v</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">])</span><span class=\"w\"> </span><span class=\"o\">⋅</span><span class=\"w\"> </span><span class=\"n\">n</span><span class=\"w\"> </span><span class=\"o\">&lt;</span><span class=\"w\"> </span><span class=\"mi\">0</span>\n</code></pre></div>",
+        "id": 367733659,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1687202584
+    },
+    {
+        "content": "<p>and then swap the elements of the basis?</p>",
+        "id": 367733879,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1687202657
+    },
+    {
+        "content": "<p>yeah</p>",
+        "id": 367733919,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1687202665
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"269150\">@Mason Protter</span> the code u[i] and v[i] return scalars, can you please double check?</p>",
+        "id": 367734162,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1687202760
+    },
+    {
+        "content": "<p>I don't have any runnable code here, so you're going to have to fill in the blanks. I though your <code>u</code> and <code>v</code> were a vector of vectors</p>",
+        "id": 367734407,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1687202827
+    },
+    {
+        "content": "<p>I see now they're just one single vector each</p>",
+        "id": 367734462,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1687202847
+    },
+    {
+        "content": "<p>so you don't need the loop at all then, just</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">if</span><span class=\"w\"> </span><span class=\"p\">((</span><span class=\"n\">u</span><span class=\"w\"> </span><span class=\"o\">×</span><span class=\"w\"> </span><span class=\"n\">v</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">⋅</span><span class=\"w\"> </span><span class=\"n\">n</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">&lt;</span><span class=\"w\"> </span><span class=\"mi\">0</span>\n<span class=\"w\">    </span><span class=\"n\">u</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">v</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">v</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">u</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>to swap them</p>",
+        "id": 367734723,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1687202916
+    },
+    {
+        "content": "<p>ok, and how do we get the right <code>n</code> to use in the code?</p>",
+        "id": 367735476,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1687203183
+    },
+    {
+        "content": "<p>given an arbitrary set of points, we don't know a priori if they live in X-Y, Y-Z or Z-X</p>",
+        "id": 367735567,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1687203222
+    },
+    {
+        "content": "<p>oh you don't know the <code>n</code> ahead of time? I might be mistaken but I'm not sure that makes sense then</p>",
+        "id": 367736420,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1687203553
+    },
+    {
+        "content": "<p>Pretty sure you need the whole basis to determine if it's a left handed or right handed system</p>",
+        "id": 367736591,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1687203614
+    },
+    {
+        "content": "<p>aren't left/right handed systems just conventions? iirc, to transform one to the other you just swap consistently swap x/z coordinates</p>",
+        "id": 367736730,
+        "sender_full_name": "Sukera",
+        "timestamp": 1687203672
+    },
+    {
+        "content": "<p>whether a coordinate space is left/right handed is orthogonal to whether they point \"upwards\", as far as I understand it</p>",
+        "id": 367736951,
+        "sender_full_name": "Sukera",
+        "timestamp": 1687203751
+    },
+    {
+        "content": "<p>i.e. if you have <code>u</code> pointing in the <code>y</code> direction and <code>v</code> pointing in the <code>x</code> direction, then <code>u × v = [0, 0, -1]</code>. It's then arbitrary to say whether <code>u</code> and <code>v</code> are a left handed pair spanning an upwards oriented plane, or whether they're a right handed pair spanning a plane oriented downwards</p>",
+        "id": 367736954,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1687203752
+    },
+    {
+        "content": "<p>right - whether it's left or right handed depends on your interpretation</p>",
+        "id": 367737038,
+        "sender_full_name": "Sukera",
+        "timestamp": 1687203797
+    },
+    {
+        "content": "<p>In a N-dimensional space, you need all <code>N</code> basis vectors to determine the handedness of the coordinate system</p>",
+        "id": 367737071,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1687203812
+    },
+    {
+        "content": "<p>if all you want to do is make them point \"upwards\", the simplest way I know is to take the dotprodut between the vector in question and your up vector and flip the signs of your \"up\" coordinate if the dotproduct is negative, no?</p>",
+        "id": 367737630,
+        "sender_full_name": "Sukera",
+        "timestamp": 1687204005
+    },
+    {
+        "content": "<p>if I understand your example correctly, the <code>n</code> in <span class=\"user-mention\" data-user-id=\"269150\">@Mason Protter</span>s code is that desired \"up\" vector</p>",
+        "id": 367737759,
+        "sender_full_name": "Sukera",
+        "timestamp": 1687204044
+    },
+    {
+        "content": "<p>The quantity of interest is going to be the pseudoscalar <code>u₁ ∧ u₂ ∧ ... ∧ uₙ</code> which in the special case of 3D reduces to <code>(u₁ × u₂) ⋅ u₃</code></p>",
+        "id": 367737930,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1687204093
+    },
+    {
+        "content": "<p>yes</p>",
+        "id": 367737975,
+        "sender_full_name": "Sukera",
+        "timestamp": 1687204106
+    },
+    {
+        "content": "<p>Yes, I am trying to basically fix this test here about orientation of polygonal chains that have 3D vertices: <a href=\"https://github.com/JuliaGeometry/Meshes.jl/blob/35de99a9b3b4887e9d70c67245647bb9f1ffb0f6/test/polytopes.jl#L145\">https://github.com/JuliaGeometry/Meshes.jl/blob/35de99a9b3b4887e9d70c67245647bb9f1ffb0f6/test/polytopes.jl#L145</a></p>",
+        "id": 367738002,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1687204115
+    },
+    {
+        "content": "<p>What I am doing is projecting the 3D points on the 2D plane that best approximates them and checking if the orientation is clockwise or counter-clockwise.</p>",
+        "id": 367738127,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1687204161
+    },
+    {
+        "content": "<p>The problem is that the projection of 3D points onto the plane sometimes has a \"negative\" basis and the orientation of the chain is reverted.</p>",
+        "id": 367738175,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1687204183
+    },
+    {
+        "content": "<p>As you can see in the test, I just added a z coordinate to all points and the orientation changed.</p>",
+        "id": 367738499,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1687204278
+    },
+    {
+        "content": "<p>that sounds like you're \"viewing\" the object from the front in one case, and the back in the other</p>",
+        "id": 367738778,
+        "sender_full_name": "Sukera",
+        "timestamp": 1687204361
+    },
+    {
+        "content": "<p>exactly, and that is not my intent, I want to always view the object from the \"same upwards side\" according to the right-hand rule.</p>",
+        "id": 367739280,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1687204516
+    },
+    {
+        "content": "<p>Perhaps it is safe to always use <code>n = [1,1,1]</code>? It is pointing towards the positive orthant.</p>",
+        "id": 367740429,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1687204896
+    },
+    {
+        "content": "<p>I will proceed and fix <code>n=[0,0,1]</code> in this specific application.</p>",
+        "id": 367743707,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1687206092
+    },
+    {
+        "content": "<p>what you deem \"up\" is entirely dependent on your conventions <img alt=\":shrugging:\" class=\"emoji\" src=\"https://zulip-avatars.s3.amazonaws.com/7178/emoji/images/15207.gif\" title=\"shrugging\"></p>",
+        "id": 367748495,
+        "sender_full_name": "Sukera",
+        "timestamp": 1687207741
+    },
+    {
+        "content": "<p>popular choices are <code>[0 0 1]</code> and <code>[0 1 0]</code></p>",
+        "id": 367748573,
+        "sender_full_name": "Sukera",
+        "timestamp": 1687207767
+    },
+    {
+        "content": "<p>thank you <span class=\"user-mention\" data-user-id=\"306754\">@Sukera</span> and <span class=\"user-mention\" data-user-id=\"269150\">@Mason Protter</span> for the help <span aria-label=\"smile\" class=\"emoji emoji-1f642\" role=\"img\" title=\"smile\">:smile:</span></p>",
+        "id": 367749009,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1687207950
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"273172\">Júlio Hoffimann</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/SVD.20and.20orientation/near/367740429\">said</a>:</p>\n<blockquote>\n<p>Perhaps it is safe to always use <code>n = [1,1,1]</code>? It is pointing towards the positive orthant.</p>\n</blockquote>\n<p>what if <code>u × v</code> is orthogonal to that?</p>",
+        "id": 367749623,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1687208210
+    },
+    {
+        "content": "<p>good point, I will just stick to 0,0,1 which is the convention we need in our use case</p>",
+        "id": 367749728,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1687208270
+    },
+    {
+        "content": "<p>(the orthogonality issue with your \"up\" can happen in every case)</p>",
+        "id": 367749827,
+        "sender_full_name": "Sukera",
+        "timestamp": 1687208302
+    },
+    {
+        "content": "<p>though it sounds like those are the cases you don't need to worry about for your application, since that would mean the vector is already in your preferred plane</p>",
+        "id": 367749883,
+        "sender_full_name": "Sukera",
+        "timestamp": 1687208338
+    },
+    {
+        "content": "<p>exactly</p>",
+        "id": 367750110,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1687208422
+    },
+    {
+        "content": "<p>one thing I think we forgot to mention - if you have an object with some points, and some of those points lie on the \"wrong\" side of your plane, you don't actually know whether you're viewing the object from the front or the back without knowing which side of the object is the front. Also, if you only swap the coordinates for some of the points instead of all of the points, you'll end up \"folding\" the far side of your object \"upwards\"</p>",
+        "id": 367794458,
+        "sender_full_name": "Sukera",
+        "timestamp": 1687234152
+    }
+]

@@ -1,0 +1,56 @@
+[
+    {
+        "content": "<p>Can you please give an example of a valid range in the <code>mode</code> docstring? <a href=\"https://juliastats.org/StatsBase.jl/v0.20/scalarstats.html#Mode-and-Modes-1\">https://juliastats.org/StatsBase.jl/v0.20/scalarstats.html#Mode-and-Modes-1</a></p>\n<p>What it means to pass a range to the mode function?</p>",
+        "id": 254960974,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1632689382
+    },
+    {
+        "content": "<p>Looking at the <a href=\"https://github.com/JuliaStats/StatsBase.jl/blob/9f1d7aafa86f8771a995b54de1e2432c6e9f55a0/src/scalarstats.jl#L63-L69\">source</a>, it looks like values outside the given <code>Range</code> are ignored for the calculation of <code>mode</code>.</p>",
+        "id": 254967642,
+        "sender_full_name": "Sundar R",
+        "timestamp": 1632695521
+    },
+    {
+        "content": "<p>So <code>mode(arr, 2:4)</code> should be semantically the same as <code>mode(filter(n -&gt; 2 &lt;= n &lt;= 4, arr))</code> (but presumably more efficient)</p>",
+        "id": 254967723,
+        "sender_full_name": "Sundar R",
+        "timestamp": 1632695580
+    },
+    {
+        "content": "<p>Did you try running the code? It doesn't work with simple ranges:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">mode</span><span class=\"p\">(</span><span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">10</span><span class=\"p\">),</span> <span class=\"mf\">0.5</span><span class=\"o\">:</span><span class=\"mf\">1.0</span><span class=\"p\">)</span>\n<span class=\"n\">ERROR</span><span class=\"o\">:</span> <span class=\"kt\">MethodError</span><span class=\"o\">:</span> <span class=\"n\">no</span> <span class=\"n\">method</span> <span class=\"n\">matching</span> <span class=\"n\">mode</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Float64</span><span class=\"p\">},</span> <span class=\"o\">::</span><span class=\"kt\">StepRangeLen</span><span class=\"p\">{</span><span class=\"kt\">Float64</span><span class=\"p\">,</span> <span class=\"kt\">Base</span><span class=\"o\">.</span><span class=\"kt\">TwicePrecision</span><span class=\"p\">{</span><span class=\"kt\">Float64</span><span class=\"p\">},</span> <span class=\"kt\">Base</span><span class=\"o\">.</span><span class=\"kt\">TwicePrecision</span><span class=\"p\">{</span><span class=\"kt\">Float64</span><span class=\"p\">}})</span>\n<span class=\"n\">Closest</span> <span class=\"n\">candidates</span> <span class=\"n\">are</span><span class=\"o\">:</span>\n  <span class=\"n\">mode</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">AbstractVector</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span> <span class=\"k\">where</span> <span class=\"kt\">T</span><span class=\"p\">,</span> <span class=\"o\">::</span><span class=\"kt\">AbstractWeights</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">,</span> <span class=\"kt\">T1</span><span class=\"p\">,</span> <span class=\"kt\">V</span><span class=\"p\">}</span> <span class=\"k\">where</span> <span class=\"p\">{</span><span class=\"kt\">T1</span><span class=\"o\">&lt;:</span><span class=\"kt\">Real</span><span class=\"p\">,</span> <span class=\"kt\">V</span><span class=\"o\">&lt;:</span><span class=\"kt\">AbstractVector</span><span class=\"p\">{</span><span class=\"kt\">T1</span><span class=\"p\">}})</span> <span class=\"k\">where</span> <span class=\"kt\">T</span><span class=\"o\">&lt;:</span><span class=\"kt\">Real</span> <span class=\"n\">at</span> <span class=\"o\">/</span><span class=\"n\">home</span><span class=\"o\">/</span><span class=\"n\">juliohm</span><span class=\"o\">/.</span><span class=\"n\">julia</span><span class=\"o\">/</span><span class=\"n\">packages</span><span class=\"o\">/</span><span class=\"n\">StatsBase</span><span class=\"o\">/</span><span class=\"n\">PGTj8</span><span class=\"o\">/</span><span class=\"n\">src</span><span class=\"o\">/</span><span class=\"n\">scalarstats</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">164</span>\n  <span class=\"n\">mode</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Any</span><span class=\"p\">)</span> <span class=\"n\">at</span> <span class=\"o\">/</span><span class=\"n\">home</span><span class=\"o\">/</span><span class=\"n\">juliohm</span><span class=\"o\">/.</span><span class=\"n\">julia</span><span class=\"o\">/</span><span class=\"n\">packages</span><span class=\"o\">/</span><span class=\"n\">StatsBase</span><span class=\"o\">/</span><span class=\"n\">PGTj8</span><span class=\"o\">/</span><span class=\"n\">src</span><span class=\"o\">/</span><span class=\"n\">scalarstats</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">111</span>\n</code></pre></div>",
+        "id": 255023010,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1632737268
+    },
+    {
+        "content": "<p>Sure it does, but the range argument is only implemented for integers:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">arr</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">10</span><span class=\"p\">,</span> <span class=\"mi\">10</span><span class=\"p\">)</span>\n<span class=\"mi\">10</span><span class=\"o\">-</span><span class=\"n\">element</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">}</span><span class=\"o\">:</span>\n  <span class=\"mi\">3</span>\n  <span class=\"mi\">6</span>\n  <span class=\"mi\">6</span>\n  <span class=\"mi\">1</span>\n  <span class=\"mi\">5</span>\n <span class=\"mi\">10</span>\n  <span class=\"mi\">5</span>\n  <span class=\"mi\">1</span>\n  <span class=\"mi\">3</span>\n  <span class=\"mi\">6</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">mode</span><span class=\"p\">(</span><span class=\"n\">arr</span><span class=\"p\">,</span> <span class=\"mi\">4</span><span class=\"o\">:</span><span class=\"mi\">6</span><span class=\"p\">)</span>\n<span class=\"mi\">6</span>\n</code></pre></div>",
+        "id": 255023690,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1632737655
+    },
+    {
+        "content": "<p>The docstring just fails to mention that</p>",
+        "id": 255023700,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1632737664
+    },
+    {
+        "content": "<p>Even the first argument must be integer ?</p>",
+        "id": 255062771,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1632754755
+    },
+    {
+        "content": "<p>For the two argument call, yes: </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">mode</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">AbstractArray</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">},</span> <span class=\"n\">r</span><span class=\"o\">::</span><span class=\"kt\">UnitRange</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">})</span> <span class=\"k\">where</span> <span class=\"kt\">T</span><span class=\"o\">&lt;:</span><span class=\"kt\">Integer</span>\n</code></pre></div>\n<p>I'm not sure why this range argument exists in the first place (when for eg. it doesn't exist for <code>mean</code>), and now also not sure why it's only defined for <code>Integer</code> values and ranges. Maybe it's worth opening an issue for, at least to clarify things and maybe document them better.</p>",
+        "id": 255088837,
+        "sender_full_name": "Sundar R",
+        "timestamp": 1632764413
+    },
+    {
+        "content": "<p>Yes it doesn't seem like a natural choice of arguments to me either.</p>",
+        "id": 255136103,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1632784929
+    }
+]

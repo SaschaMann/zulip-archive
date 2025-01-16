@@ -1,0 +1,44 @@
+[
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">a</span> <span class=\"o\">=</span> <span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"mi\">3</span><span class=\"p\">]</span>\n<span class=\"mi\">3</span><span class=\"o\">-</span><span class=\"n\">element</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">}</span><span class=\"o\">:</span>\n <span class=\"mi\">1</span>\n <span class=\"mi\">2</span>\n <span class=\"mi\">3</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">b</span> <span class=\"o\">=</span> <span class=\"p\">[</span><span class=\"mi\">3</span><span class=\"p\">,</span><span class=\"mi\">4</span><span class=\"p\">,</span><span class=\"mi\">4</span><span class=\"p\">,</span><span class=\"mi\">5</span><span class=\"p\">,</span><span class=\"mi\">6</span><span class=\"p\">]</span>\n<span class=\"mi\">5</span><span class=\"o\">-</span><span class=\"n\">element</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">}</span><span class=\"o\">:</span>\n <span class=\"mi\">3</span>\n <span class=\"mi\">4</span>\n <span class=\"mi\">4</span>\n <span class=\"mi\">5</span>\n <span class=\"mi\">6</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">symdiff</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">,</span><span class=\"n\">b</span><span class=\"p\">)</span>\n<span class=\"mi\">4</span><span class=\"o\">-</span><span class=\"n\">element</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">}</span><span class=\"o\">:</span>\n <span class=\"mi\">1</span>\n <span class=\"mi\">2</span>\n <span class=\"mi\">5</span>\n <span class=\"mi\">6</span>\n</code></pre></div>\n<p>I would expect the result to be <code>1,2,4,5,6</code>.</p>",
+        "id": 275117947,
+        "sender_full_name": "pg.",
+        "timestamp": 1647120328
+    },
+    {
+        "content": "<p>if <code>a,b</code> are sets the result is correct</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">symdiff</span><span class=\"p\">(</span><span class=\"kt\">Set</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">),</span><span class=\"kt\">Set</span><span class=\"p\">(</span><span class=\"n\">b</span><span class=\"p\">))</span>\n<span class=\"kt\">Set</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">}</span> <span class=\"n\">with</span> <span class=\"mi\">5</span> <span class=\"n\">elements</span><span class=\"o\">:</span>\n  <span class=\"mi\">5</span>\n  <span class=\"mi\">4</span>\n  <span class=\"mi\">6</span>\n  <span class=\"mi\">2</span>\n  <span class=\"mi\">1</span>\n</code></pre></div>",
+        "id": 275118284,
+        "sender_full_name": "pg.",
+        "timestamp": 1647120864
+    },
+    {
+        "content": "<p>Going one level down in the call stack:</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"n\">symdiff!</span><span class=\"p\">(</span><span class=\"kt\">Int</span><span class=\"p\">[],</span> <span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"mi\">2</span><span class=\"p\">,</span> <span class=\"mi\">3</span><span class=\"p\">],</span> <span class=\"p\">[</span><span class=\"mi\">3</span><span class=\"p\">,</span> <span class=\"mi\">4</span><span class=\"p\">,</span> <span class=\"mi\">5</span><span class=\"p\">,</span> <span class=\"mi\">6</span><span class=\"p\">])</span>\n<span class=\"go\">5-element Vector{Int64}:</span>\n<span class=\"go\"> 1</span>\n<span class=\"go\"> 2</span>\n<span class=\"go\"> 4</span>\n<span class=\"go\"> 5</span>\n<span class=\"go\"> 6</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">symdiff!</span><span class=\"p\">(</span><span class=\"kt\">Int</span><span class=\"p\">[],</span> <span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"mi\">2</span><span class=\"p\">,</span> <span class=\"mi\">3</span><span class=\"p\">],</span> <span class=\"p\">[</span><span class=\"mi\">3</span><span class=\"p\">,</span> <span class=\"mi\">4</span><span class=\"p\">,</span> <span class=\"mi\">4</span><span class=\"p\">,</span> <span class=\"mi\">5</span><span class=\"p\">,</span> <span class=\"mi\">6</span><span class=\"p\">])</span>\n<span class=\"go\">4-element Vector{Int64}:</span>\n<span class=\"go\"> 1</span>\n<span class=\"go\"> 2</span>\n<span class=\"go\"> 5</span>\n<span class=\"go\"> 6</span>\n</code></pre></div>",
+        "id": 275118519,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1647121229
+    },
+    {
+        "content": "<p>And one more (ref. <a href=\"https://github.com/JuliaLang/julia/blob/master/base/array.jl#L2666-L2667\">https://github.com/JuliaLang/julia/blob/master/base/array.jl#L2666-L2667</a>):</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"n\">symdiff!</span><span class=\"p\">(</span><span class=\"kt\">Set</span><span class=\"p\">{</span><span class=\"kt\">Int</span><span class=\"p\">}(),</span> <span class=\"kt\">Int</span><span class=\"p\">[],</span> <span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"mi\">2</span><span class=\"p\">,</span> <span class=\"mi\">3</span><span class=\"p\">],</span> <span class=\"p\">[</span><span class=\"mi\">3</span><span class=\"p\">,</span> <span class=\"mi\">4</span><span class=\"p\">,</span> <span class=\"mi\">5</span><span class=\"p\">,</span> <span class=\"mi\">6</span><span class=\"p\">])</span>\n<span class=\"go\">Set{Int64} with 5 elements:</span>\n<span class=\"go\">  5</span>\n<span class=\"go\">  4</span>\n<span class=\"go\">  6</span>\n<span class=\"go\">  2</span>\n<span class=\"go\">  1</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">symdiff!</span><span class=\"p\">(</span><span class=\"kt\">Set</span><span class=\"p\">{</span><span class=\"kt\">Int</span><span class=\"p\">}(),</span> <span class=\"kt\">Int</span><span class=\"p\">[],</span> <span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"mi\">2</span><span class=\"p\">,</span> <span class=\"mi\">3</span><span class=\"p\">],</span> <span class=\"p\">[</span><span class=\"mi\">3</span><span class=\"p\">,</span> <span class=\"mi\">4</span><span class=\"p\">,</span> <span class=\"mi\">4</span><span class=\"p\">,</span> <span class=\"mi\">5</span><span class=\"p\">,</span> <span class=\"mi\">6</span><span class=\"p\">])</span>\n<span class=\"go\">Set{Int64} with 4 elements:</span>\n<span class=\"go\">  5</span>\n<span class=\"go\">  6</span>\n<span class=\"go\">  2</span>\n<span class=\"go\">  1</span>\n</code></pre></div>",
+        "id": 275118544,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1647121314
+    },
+    {
+        "content": "<p>thanks! seems like it should call <code>union(setdiff(a,b),setdiff(b,a))</code> or call <code>symdiff!</code> with the larger vector first</p>\n<p>I opened an issue here: <a href=\"https://github.com/JuliaLang/julia/issues/44591\">https://github.com/JuliaLang/julia/issues/44591</a></p>",
+        "id": 275118676,
+        "sender_full_name": "pg.",
+        "timestamp": 1647121511
+    },
+    {
+        "content": "<p>Great, will post my findings on the issue then.</p>",
+        "id": 275118752,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1647121676
+    },
+    {
+        "content": "<p>thank you!</p>",
+        "id": 275118789,
+        "sender_full_name": "pg.",
+        "timestamp": 1647121684
+    }
+]

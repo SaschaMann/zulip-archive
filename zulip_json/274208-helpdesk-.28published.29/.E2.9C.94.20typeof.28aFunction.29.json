@@ -1,0 +1,134 @@
+[
+    {
+        "content": "<p>if I check the type of an identifier which is a function:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">zero</span><span class=\"p\">)</span>\n<span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">zero</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>wouldn't <code>generic function \"zero\"</code> be more helpful?</p>",
+        "id": 261699841,
+        "sender_full_name": "Peter Goodall",
+        "timestamp": 1637093404
+    },
+    {
+        "content": "<p>but that's not the type</p>",
+        "id": 261699876,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1637093425
+    },
+    {
+        "content": "<p>OK - but I feel short-changed by getting <code>typeof(zero)</code> echoed back. I don't think I got any more information...<br>\nif I do <code>methods(zero)</code> I seem to get the full description, but it's more than I need. What should I be asking?</p>",
+        "id": 261700813,
+        "sender_full_name": "Peter Goodall",
+        "timestamp": 1637093880
+    },
+    {
+        "content": "<p>I guess that depends on what you want to know</p>",
+        "id": 261701092,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637094005
+    },
+    {
+        "content": "<p>Basically, when you type</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n    <span class=\"n\">x</span> <span class=\"o\">+</span> <span class=\"mi\">1</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>that gets turned into something essentially equivalent to</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"kt\">var</span><span class=\"s\">\"typeof(foo)\"</span>\n<span class=\"k\">end</span>\n<span class=\"k\">function</span> <span class=\"p\">(</span><span class=\"n\">foo</span> <span class=\"o\">::</span> <span class=\"sa\">var</span><span class=\"s\">\"typeof(foo)\"</span><span class=\"p\">)(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n    <span class=\"n\">x</span> <span class=\"o\">+</span> <span class=\"mi\">1</span>\n<span class=\"k\">end</span>\n<span class=\"k\">const</span> <span class=\"n\">foo</span> <span class=\"o\">=</span> <span class=\"sa\">var</span><span class=\"s\">\"typeof(foo)\"</span><span class=\"p\">()</span>\n</code></pre></div>",
+        "id": 261701104,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1637094010
+    },
+    {
+        "content": "<p>all julia functions are just callable structs</p>",
+        "id": 261701134,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1637094026
+    },
+    {
+        "content": "<p>julia, unlike Haskell, doesn't have the arguments to a function as part of the type signature</p>",
+        "id": 261701141,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637094028
+    },
+    {
+        "content": "<p>and when you define a closure, then the closed over data will end up as fields of that struct</p>",
+        "id": 261701166,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1637094046
+    },
+    {
+        "content": "<p>e.g.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">let</span> <span class=\"n\">x</span> <span class=\"o\">=</span> <span class=\"mi\">1</span>\n           <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">y</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">x</span> <span class=\"o\">+</span> <span class=\"n\">y</span>\n           <span class=\"n\">dump</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">)</span>\n       <span class=\"k\">end</span>\n<span class=\"n\">f</span> <span class=\"p\">(</span><span class=\"k\">function</span> <span class=\"n\">of</span> <span class=\"n\">type</span> <span class=\"sa\">var</span><span class=\"s\">\"#f#4\"</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">})</span>\n  <span class=\"n\">x</span><span class=\"o\">:</span> <span class=\"kt\">Int64</span> <span class=\"mi\">1</span>\n</code></pre></div>",
+        "id": 261701195,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1637094064
+    },
+    {
+        "content": "<p>a \"function\" in julia is just the name - the individual things that have code in them are \"methods\", which are associated with a tuple of argument types</p>",
+        "id": 261701217,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637094073
+    },
+    {
+        "content": "<p>this means that the above closure was equivalent to writing</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"kt\">var</span><span class=\"s\">\"f#4\"</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span>\n    <span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">T</span>\n<span class=\"k\">end</span>\n<span class=\"k\">function</span> <span class=\"p\">(</span><span class=\"n\">f</span> <span class=\"o\">::</span> <span class=\"sa\">var</span><span class=\"s\">\"f#4\"</span><span class=\"p\">)(</span><span class=\"n\">y</span><span class=\"p\">)</span>\n    <span class=\"n\">f</span><span class=\"o\">.</span><span class=\"n\">x</span> <span class=\"o\">+</span> <span class=\"n\">y</span>\n<span class=\"k\">end</span>\n<span class=\"n\">f</span> <span class=\"o\">=</span> <span class=\"sa\">var</span><span class=\"s\">\"f#4\"</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 261701546,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1637094256
+    },
+    {
+        "content": "<p>That's going to take me a while to digest :-) - very interesting... <br>\nSo what do we call the informational string I get sent when I create a method/function - looks like this (can't remember exactly) <code>generic function with 2 methods</code>.  Can I ask for that given the identifier?<br>\nI'm trying to avoid making unintended software jokes, like I did with <code>zero</code>.</p>",
+        "id": 261701943,
+        "sender_full_name": "Peter Goodall",
+        "timestamp": 1637094442
+    },
+    {
+        "content": "<p>I'd guess a display string?</p>",
+        "id": 261702141,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637094525
+    },
+    {
+        "content": "<p>it's really just an informational piece of text</p>",
+        "id": 261702182,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637094540
+    },
+    {
+        "content": "<p>\"generic\" in this context means that you can add methods to it, if I'm not mistaken (and if I am, I'll be corrected probably)</p>",
+        "id": 261702247,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637094577
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"306754\">@Sukera</span> <br>\nhelp me solve the <em>zero, one  pun</em></p>",
+        "id": 261702259,
+        "sender_full_name": "Peter Goodall",
+        "timestamp": 1637094584
+    },
+    {
+        "content": "<p><code>dump</code> is a very useful function when you need to understand what something is</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">dump</span><span class=\"p\">(</span><span class=\"n\">zero</span><span class=\"p\">)</span>\n<span class=\"n\">zero</span> <span class=\"p\">(</span><span class=\"k\">function</span> <span class=\"n\">of</span> <span class=\"n\">type</span> <span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">zero</span><span class=\"p\">))</span>\n</code></pre></div>",
+        "id": 261702292,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1637094599
+    },
+    {
+        "content": "<p>also, <code>?zero</code></p>",
+        "id": 261702370,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637094612
+    },
+    {
+        "content": "<p>in general, <code>?</code> followed by any symbol in the REPL will display the associated documentation (or an autogenerated one, if none exists)</p>",
+        "id": 261702421,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637094640
+    },
+    {
+        "content": "<p>Great - thanks.<br>\nI really appreciate this generous coaching !!</p>",
+        "id": 261702422,
+        "sender_full_name": "Peter Goodall",
+        "timestamp": 1637094641
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"427737\">Peter Goodall</span> has marked this topic as resolved.</p>",
+        "id": 261702537,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1637094687
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"269150\">@Mason Protter</span>  Now I get what you were showing me with closure/struct</p>",
+        "id": 261703785,
+        "sender_full_name": "Peter Goodall",
+        "timestamp": 1637095262
+    }
+]

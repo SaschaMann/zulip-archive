@@ -1,0 +1,32 @@
+[
+    {
+        "content": "<p>I have a long standing question. <br>\nSlicing arrays create copies. So in small examples it is usual that we use views to avoid the cost of making copies. Benchmarking with small arrays usually backs up this perception. However, in my real life code, where I usually work with 512x512x80x200 arrays, I think this might be detrimental, i.e. that the cost of repeatedly doing operations with data that is non-contiguous in memory (for example in the fourth dimension) might actually be costlier than makin a copy once and then operating on a slice that is now contiguous data. </p>\n<p>Is there a rule of thumb to decide when to use views and when to use regular slicing? For example, even unrolling a loop instead of creating slices could benefit from a copy if the data points are too far from each other, right?</p>",
+        "id": 240357914,
+        "sender_full_name": "Argel Ramírez Reyes",
+        "timestamp": 1622048894
+    },
+    {
+        "content": "<p>Not a performance guru here, but my guess would be it's related to caches. If something is not contiguous but in L1 or L2 cache, it might still be very fast. If you have to load many non contiguous elements from RAM, the overhead probably grows quite fast</p>",
+        "id": 240360560,
+        "sender_full_name": "Wolf Thomsen",
+        "timestamp": 1622050027
+    },
+    {
+        "content": "<p>Ah yeah, good question.. I guess it depends both on<br>\n1) how many times are you going to operate on a slice after extracting it<br>\n2) how far away in memory from each other are the relevant elements you want to make a slice of<br>\n3) how big are your caches</p>",
+        "id": 240370968,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1622054488
+    },
+    {
+        "content": "<p>There are also still corner cases where views may allocate, but that's the opposite end of the spectrum from what you're thinking about I guess</p>",
+        "id": 240371180,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1622054576
+    },
+    {
+        "content": "<p>I suppose also if the slice is small enough and cache management is smart enough, then the <code>view</code>'d element should stick around in your cache after the first time you get them, just like if you made a slice.  But if your slice is bigger than cache, then I suppose making the slice might be the only way to ensure subsequent accesses will be as fast as possible.</p>",
+        "id": 240371675,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1622054795
+    }
+]

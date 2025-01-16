@@ -1,0 +1,566 @@
+[
+    {
+        "content": "<p>I have a research code which does multivariate optimization which runs for ~30s for each data point in Python. The code has been too slow to be analyzed, so I ported it to Julia, only to find that it takes ~160s (I used <code>@time optimize(...)</code>, precompilation time was probably included?) in Julia using <a href=\"https://github.com/search?q=Optim.jl&amp;type=Repositories\">Optim.jl</a>!</p>\n<p>So I tried doing a benchmark comparing <a href=\"https://github.com/search?q=Optim.jl&amp;type=Repositories\">Optim.jl</a> with scipy.optimize using the simplest function, and found that <a href=\"https://github.com/search?q=Optim.jl&amp;type=Repositories\">Optim.jl</a> is much slower. Any idea on how to speed up <a href=\"https://github.com/search?q=Optim.jl&amp;type=Repositories\">Optim.jl</a>? My Julia version is 1.5.3, my Python version is 3.8.6. I'm on NixOS and have had trouble upgrading to the latest version of the OS, so can't try 1.6rc.</p>\n<p>My Julia code:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span> <span class=\"n\">Optim</span>\n\n<span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"p\">(</span><span class=\"mf\">1.0</span> <span class=\"o\">-</span> <span class=\"n\">x</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">])</span><span class=\"o\">^</span><span class=\"mi\">2</span> <span class=\"o\">+</span> <span class=\"mf\">100.0</span> <span class=\"o\">*</span> <span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">[</span><span class=\"mi\">2</span><span class=\"p\">]</span> <span class=\"o\">-</span> <span class=\"n\">x</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span><span class=\"o\">^</span><span class=\"mi\">2</span><span class=\"p\">)</span><span class=\"o\">^</span><span class=\"mi\">2</span>\n<span class=\"nd\">@time</span> <span class=\"n\">optimize</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"p\">[</span><span class=\"mf\">0.0</span><span class=\"p\">,</span> <span class=\"mf\">0.0</span><span class=\"p\">],</span> <span class=\"n\">LBFGS</span><span class=\"p\">())</span>\n</code></pre></div>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"o\">$</span> <span class=\"n\">time</span> <span class=\"n\">julia</span> <span class=\"n\">bench</span><span class=\"o\">.</span><span class=\"n\">jl</span>\n  <span class=\"mf\">2.475465</span> <span class=\"n\">seconds</span> <span class=\"p\">(</span><span class=\"mf\">4.23</span> <span class=\"n\">M</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mf\">217.432</span> <span class=\"n\">MiB</span><span class=\"p\">,</span> <span class=\"mf\">4.38</span><span class=\"o\">%</span> <span class=\"n\">gc</span> <span class=\"n\">time</span><span class=\"p\">)</span>\n<span class=\"n\">julia</span> <span class=\"n\">bench</span><span class=\"o\">.</span><span class=\"n\">jl</span>  <span class=\"mf\">10.81</span><span class=\"n\">s</span> <span class=\"n\">user</span> <span class=\"mf\">0.35</span><span class=\"n\">s</span> <span class=\"n\">system</span> <span class=\"mi\">99</span><span class=\"o\">%</span> <span class=\"n\">cpu</span> <span class=\"mf\">11.176</span> <span class=\"n\">total</span>\n</code></pre></div>\n<p>My Python code:</p>\n<div class=\"codehilite\" data-code-language=\"Python\"><pre><span></span><code><span class=\"kn\">import</span> <span class=\"nn\">time</span>\n<span class=\"kn\">from</span> <span class=\"nn\">scipy</span> <span class=\"kn\">import</span> <span class=\"n\">optimize</span>\n\n<span class=\"n\">f</span> <span class=\"o\">=</span> <span class=\"k\">lambda</span> <span class=\"n\">x</span><span class=\"p\">:</span> <span class=\"p\">(</span><span class=\"mf\">1.0</span> <span class=\"o\">-</span> <span class=\"n\">x</span><span class=\"p\">[</span><span class=\"mi\">0</span><span class=\"p\">])</span><span class=\"o\">**</span><span class=\"mi\">2</span> <span class=\"o\">+</span> <span class=\"mf\">100.0</span> <span class=\"o\">*</span> <span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span> <span class=\"o\">-</span> <span class=\"n\">x</span><span class=\"p\">[</span><span class=\"mi\">0</span><span class=\"p\">]</span><span class=\"o\">**</span><span class=\"mi\">2</span><span class=\"p\">)</span><span class=\"o\">**</span><span class=\"mi\">2</span>\n<span class=\"n\">tic</span> <span class=\"o\">=</span> <span class=\"n\">time</span><span class=\"o\">.</span><span class=\"n\">time</span><span class=\"p\">()</span>\n<span class=\"n\">optimize</span><span class=\"o\">.</span><span class=\"n\">minimize</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"p\">[</span><span class=\"mf\">0.0</span><span class=\"p\">,</span> <span class=\"mf\">0.0</span><span class=\"p\">],</span> <span class=\"n\">method</span><span class=\"o\">=</span><span class=\"s1\">'L-BFGS-B'</span><span class=\"p\">)</span>\n<span class=\"nb\">print</span><span class=\"p\">(</span><span class=\"s1\">'elapsed'</span><span class=\"p\">,</span> <span class=\"n\">time</span><span class=\"o\">.</span><span class=\"n\">time</span><span class=\"p\">()</span> <span class=\"o\">-</span> <span class=\"n\">tic</span><span class=\"p\">)</span>\n</code></pre></div>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"o\">$</span> <span class=\"n\">time</span> <span class=\"n\">python</span> <span class=\"n\">bench</span><span class=\"o\">.</span><span class=\"n\">py</span>\n<span class=\"n\">elapsed</span> <span class=\"mf\">0.0051517486572265625</span>\n<span class=\"n\">python</span> <span class=\"n\">bench</span><span class=\"o\">.</span><span class=\"n\">py</span>  <span class=\"mf\">0.86</span><span class=\"n\">s</span> <span class=\"n\">user</span> <span class=\"mf\">0.88</span><span class=\"n\">s</span> <span class=\"n\">system</span> <span class=\"mi\">205</span><span class=\"o\">%</span> <span class=\"n\">cpu</span> <span class=\"mf\">0.843</span> <span class=\"n\">total</span>\n</code></pre></div>",
+        "id": 227131559,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1613869559
+    },
+    {
+        "content": "<p>Mmm, I don't remember the optim defaults on derivatives, but, can you try</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">optimize</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"p\">[</span><span class=\"mf\">0.0</span><span class=\"p\">,</span><span class=\"mf\">0.0</span><span class=\"p\">],</span><span class=\"n\">LBFGS</span><span class=\"p\">(),</span><span class=\"n\">autodiff</span><span class=\"o\">=:</span><span class=\"n\">forward</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>?</p>",
+        "id": 227132618,
+        "sender_full_name": "Andrés Riedemann",
+        "timestamp": 1613870793
+    },
+    {
+        "content": "<p>With <code>autodiff=:forward</code> I got</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code>   <span class=\"mf\">3.208170</span> <span class=\"n\">seconds</span> <span class=\"p\">(</span><span class=\"mf\">6.03</span> <span class=\"n\">M</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mf\">308.185</span> <span class=\"n\">MiB</span><span class=\"p\">,</span> <span class=\"mf\">4.39</span><span class=\"o\">%</span> <span class=\"n\">gc</span> <span class=\"n\">time</span><span class=\"p\">)</span>\n<span class=\"n\">julia</span> <span class=\"n\">bench</span><span class=\"o\">.</span><span class=\"n\">jl</span>  <span class=\"mf\">11.42</span><span class=\"n\">s</span> <span class=\"n\">user</span> <span class=\"mf\">0.33</span><span class=\"n\">s</span> <span class=\"n\">system</span> <span class=\"mi\">99</span><span class=\"o\">%</span> <span class=\"n\">cpu</span> <span class=\"mf\">11.767</span> <span class=\"n\">total</span>\n</code></pre></div>",
+        "id": 227132817,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1613871080
+    },
+    {
+        "content": "<p>And what about the real problem?</p>",
+        "id": 227133036,
+        "sender_full_name": "Andrés Riedemann",
+        "timestamp": 1613871351
+    },
+    {
+        "content": "<p>OK, I will try on my real problem.</p>",
+        "id": 227133087,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1613871372
+    },
+    {
+        "content": "<p>That benchmark is measuring mainly the startup time of optim</p>",
+        "id": 227133092,
+        "sender_full_name": "Andrés Riedemann",
+        "timestamp": 1613871396
+    },
+    {
+        "content": "<p>With autodiff=forward, you are creating the exact derivative via AD, so the evaluation of the gradient is faster</p>",
+        "id": 227133116,
+        "sender_full_name": "Andrés Riedemann",
+        "timestamp": 1613871437
+    },
+    {
+        "content": "<p>I got this error:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">Optim</span><span class=\"o\">.</span><span class=\"n\">ConjugateGradient</span>\n<span class=\"n\">ERROR</span><span class=\"o\">:</span> <span class=\"kt\">LoadError</span><span class=\"o\">:</span> <span class=\"kt\">MethodError</span><span class=\"o\">:</span> <span class=\"n\">no</span> <span class=\"n\">method</span> <span class=\"n\">matching</span> <span class=\"kt\">Float64</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"n\">ForwardDiff</span><span class=\"o\">.</span><span class=\"n\">Dual</span><span class=\"p\">{</span><span class=\"n\">ForwardDiff</span><span class=\"o\">.</span><span class=\"n\">Tag</span><span class=\"p\">{</span><span class=\"n\">var</span><span class=\"s\">\"#_calc_U#16\"</span><span class=\"p\">{</span><span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">Any</span><span class=\"p\">,</span><span class=\"mi\">1</span><span class=\"p\">},</span><span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">Any</span><span class=\"p\">,</span><span class=\"mi\">1</span><span class=\"p\">},</span><span class=\"kt\">Int64</span><span class=\"p\">,</span><span class=\"kt\">Int64</span><span class=\"p\">,</span><span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">Any</span><span class=\"p\">,</span><span class=\"mi\">1</span><span class=\"p\">},</span><span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">Any</span><span class=\"p\">,</span><span class=\"mi\">1</span><span class=\"p\">},</span><span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">Float64</span><span class=\"p\">,</span><span class=\"mi\">1</span><span class=\"p\">},</span><span class=\"kt\">Int64</span><span class=\"p\">,</span><span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">Float64</span><span class=\"p\">,</span><span class=\"mi\">1</span><span class=\"p\">}},</span><span class=\"kt\">Float64</span><span class=\"p\">},</span><span class=\"kt\">Float64</span><span class=\"p\">,</span><span class=\"mi\">10</span><span class=\"p\">})</span>\n<span class=\"n\">Closest</span> <span class=\"n\">candidates</span> <span class=\"n\">are</span><span class=\"o\">:</span>\n  <span class=\"kt\">Float64</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Real</span><span class=\"p\">,</span> <span class=\"o\">::</span><span class=\"kt\">RoundingMode</span><span class=\"p\">)</span> <span class=\"n\">where</span> <span class=\"n\">T</span><span class=\"o\">&lt;:</span><span class=\"kt\">AbstractFloat</span> <span class=\"n\">at</span> <span class=\"n\">rounding</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">200</span>\n  <span class=\"kt\">Float64</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"n\">T</span><span class=\"p\">)</span> <span class=\"n\">where</span> <span class=\"n\">T</span><span class=\"o\">&lt;:</span><span class=\"kt\">Number</span> <span class=\"n\">at</span> <span class=\"n\">boot</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">716</span>\n  <span class=\"kt\">Float64</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Float32</span><span class=\"p\">)</span> <span class=\"n\">at</span> <span class=\"n\">float</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">255</span>\n</code></pre></div>\n<p>This is the line that calls the function:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code>        <span class=\"n\">result</span> <span class=\"o\">=</span> <span class=\"n\">Optim</span><span class=\"o\">.</span><span class=\"n\">optimize</span><span class=\"p\">(</span><span class=\"n\">fn</span><span class=\"p\">,</span> <span class=\"n\">lower</span><span class=\"p\">,</span> <span class=\"n\">upper</span><span class=\"p\">,</span> <span class=\"n\">xs0</span><span class=\"p\">,</span> <span class=\"n\">Optim</span><span class=\"o\">.</span><span class=\"n\">Fminbox</span><span class=\"p\">(</span><span class=\"n\">inner_optimizer</span><span class=\"p\">()),</span> <span class=\"n\">autodiff</span><span class=\"o\">=:</span><span class=\"n\">forward</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 227133298,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1613871697
+    },
+    {
+        "content": "<p>(What is the size of your input on the real problem? If it's too big, maybe using a reverse mode AD could speed up things significantly )</p>",
+        "id": 227133360,
+        "sender_full_name": "Andrés Riedemann",
+        "timestamp": 1613871766
+    },
+    {
+        "content": "<p>The size of <code>xs0</code> is 30.</p>",
+        "id": 227133381,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1613871804
+    },
+    {
+        "content": "<p>There is no option for <code>:reverse</code>, I only saw <code>:finite</code> and <code>:forward</code>.</p>",
+        "id": 227133441,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1613871877
+    },
+    {
+        "content": "<p>On the problem found, that happens because you have somewhere in your function the expression <code>a=Float64(b) </code></p>",
+        "id": 227133442,
+        "sender_full_name": "Andrés Riedemann",
+        "timestamp": 1613871885
+    },
+    {
+        "content": "<p>I grepped for the pattern <code>Float64(</code>, didn't find any.</p>",
+        "id": 227133465,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1613871923
+    },
+    {
+        "content": "<p>Optim doesn't have automatic reverse mode included, but at that size I think Forward is fine</p>",
+        "id": 227133468,
+        "sender_full_name": "Andrés Riedemann",
+        "timestamp": 1613871940
+    },
+    {
+        "content": "<p>or maybe in the function signature?</p>",
+        "id": 227133525,
+        "sender_full_name": "Andrés Riedemann",
+        "timestamp": 1613871975
+    },
+    {
+        "content": "<p><code>f(x::Float64) </code></p>",
+        "id": 227133532,
+        "sender_full_name": "Andrés Riedemann",
+        "timestamp": 1613871998
+    },
+    {
+        "content": "<p>The only place where the text <code>Float64</code> exists at all is in a mutable struct definition, e.g.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">mutable</span> <span class=\"k\">struct</span> <span class=\"n\">Firm</span> <span class=\"o\">&lt;:</span> <span class=\"n\">AbstractFirm</span>\n    <span class=\"n\">Eg</span><span class=\"o\">::</span><span class=\"kt\">Float64</span>\n    <span class=\"n\">E_greens</span><span class=\"o\">::</span><span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">Float64</span><span class=\"p\">,</span><span class=\"mi\">1</span><span class=\"p\">}</span>\n    <span class=\"n\">Eb</span><span class=\"o\">::</span><span class=\"kt\">Float64</span>\n    <span class=\"n\">E_browns</span><span class=\"o\">::</span><span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">Float64</span><span class=\"p\">,</span><span class=\"mi\">1</span><span class=\"p\">}</span>\n</code></pre></div>",
+        "id": 227133559,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1613872059
+    },
+    {
+        "content": "<p>(What a shame that I have to go back to Python again after convincing my collaborator to have 2-3 days to reimplementing in Julia)</p>",
+        "id": 227133640,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1613872167
+    },
+    {
+        "content": "<p>Do you mind putting the optimization problem here? , I cannot help much more without a working examole</p>",
+        "id": 227133709,
+        "sender_full_name": "Andrés Riedemann",
+        "timestamp": 1613872234
+    },
+    {
+        "content": "<p>Thanks a lot for that! I'm not allowed to share the code at this point until the paper has been published, but I can send you the code via PM.</p>",
+        "id": 227133803,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1613872330
+    },
+    {
+        "content": "<p>Ok</p>",
+        "id": 227133851,
+        "sender_full_name": "Andrés Riedemann",
+        "timestamp": 1613872436
+    },
+    {
+        "content": "<p>If you are running an optimization problem on each point, and your points are not related, you could try multithreading the calculation</p>",
+        "id": 227133943,
+        "sender_full_name": "Andrés Riedemann",
+        "timestamp": 1613872514
+    },
+    {
+        "content": "<p>I will post relevant details in this topic so others can benefit once we have pinpointed the problem. Unfortunately to optimize xs[i], it depends on all the values from xs[1] to xs[i-1], because it is a time evolution.</p>",
+        "id": 227134025,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1613872629
+    },
+    {
+        "content": "<p>Though my concern still stands. <a href=\"https://github.com/search?q=Optim.jl&amp;type=Repositories\">Optim.jl</a> is much slower than scipy.optimize even on the simplest example.</p>",
+        "id": 227134344,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1613873003
+    },
+    {
+        "content": "<p>Make sure that you are benchmarking things properly and not counting precompilation time. After that, try to share some minimum working example in both languages so that people can try to debug and help further.</p>",
+        "id": 227134399,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1613873058
+    },
+    {
+        "content": "<p>OK, nvm it's a precompilation problem.</p>",
+        "id": 227134400,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1613873058
+    },
+    {
+        "content": "<p>Yes, as usual <span aria-label=\"smile\" class=\"emoji emoji-1f642\" role=\"img\" title=\"smile\">:smile:</span></p>",
+        "id": 227134403,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1613873066
+    },
+    {
+        "content": "<p>Also, consider Julia v1.6-rc1, it is really flying compared to the current Julia v1.5</p>",
+        "id": 227134417,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1613873100
+    },
+    {
+        "content": "<p>To time the runtime of the optimize call from <a href=\"https://github.com/search?q=Optim.jl&amp;type=Repositories\">Optim.jl</a> you can start a Julia session and <code>include( \"MWE.jl\")</code> to introduce the definitions. After that you can <code>using BenchmarkTools</code> and <code>@btime optimize(...)</code></p>",
+        "id": 227134521,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1613873187
+    },
+    {
+        "content": "<p>OK, I will use <code>@btime</code> to avoid precompilation time.</p>",
+        "id": 227134543,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1613873235
+    },
+    {
+        "content": "<p>With btime.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code>  <span class=\"mf\">79.084</span> <span class=\"n\">μs</span> <span class=\"p\">(</span><span class=\"mi\">699</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mf\">32.27</span> <span class=\"n\">KiB</span><span class=\"p\">)</span>\n<span class=\"n\">julia</span> <span class=\"n\">bench</span><span class=\"o\">.</span><span class=\"n\">jl</span>  <span class=\"mf\">81.97</span><span class=\"n\">s</span> <span class=\"n\">user</span> <span class=\"mf\">3.43</span><span class=\"n\">s</span> <span class=\"n\">system</span> <span class=\"mi\">100</span><span class=\"o\">%</span> <span class=\"n\">cpu</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mf\">25.28</span> <span class=\"n\">total</span>\n</code></pre></div>",
+        "id": 227135434,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1613874264
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"284959\">@Andrés Riedemann</span> has provided feedback in PM (appreciate it a lot):</p>\n<ul>\n<li>I used lots of global variables without <code>const</code>. Specifying <code>const</code> shaved down the time to ~76s (originally ~160s)</li>\n<li>I created lots of empty arrays with <code>= []</code>. After specifying them to <code>Float64[]</code> or <code>Array{Float64,1}[]</code>, it's down to 64s.</li>\n</ul>\n<p>Note that the Scipy version is 30s.</p>",
+        "id": 227136943,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1613876508
+    },
+    {
+        "content": "<p>You can probably decrease it a bit more with a few code changes. I don't understand how you get a microsecond in Julia and a millisecond in Python and at the end your Python version is twice as fast? You said 64s vs 30s at the end right ?</p>",
+        "id": 227140200,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1613881002
+    },
+    {
+        "content": "<p>The millisecond vs microsecond is for the example code, which is already fully explained. The 64s vs 30s is the real code one.</p>",
+        "id": 227141098,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1613882311
+    },
+    {
+        "content": "<p>Did you make the real code fully non-allocating?</p>",
+        "id": 227161387,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1613906544
+    },
+    {
+        "content": "<p>and AD</p>",
+        "id": 227161397,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1613906587
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"278119\">Christopher Rackauckas</span> <a href=\"#narrow/stream/274208-helpdesk-(published)/topic/why.20is.20Optim.2Ejl.20so.20slow.3F/near/227161387\">said</a>:</p>\n<blockquote>\n<p>Did you make the real code fully non-allocating?</p>\n</blockquote>\n<p>Huh, TIL. I specified the model params as global <code>const</code>, and my functions read from these consts directly instead of receiving them from function arguments.</p>",
+        "id": 227161973,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1613907263
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"278119\">Christopher Rackauckas</span> <a href=\"#narrow/stream/274208-helpdesk-(published)/topic/why.20is.20Optim.2Ejl.20so.20slow.3F/near/227161397\">said</a>:</p>\n<blockquote>\n<p>and AD</p>\n</blockquote>\n<p>I assume <span class=\"user-mention silent\" data-user-id=\"284959\">Andrés Riedemann</span> 's suggestion to use <code>autodiff=:forward</code> is to enable AD?</p>",
+        "id": 227162001,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1613907353
+    },
+    {
+        "content": "<blockquote>\n<p>I assume Andrés Riedemann 's suggestion to use autodiff=:forward is to enable AD?</p>\n</blockquote>\n<p>yes</p>",
+        "id": 227162951,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1613908549
+    },
+    {
+        "content": "<p>so if you <code>@time</code> your objective function you get 0 allocs?</p>",
+        "id": 227162955,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1613908562
+    },
+    {
+        "content": "<p>Nope, currently not yet lol</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">Optim</span><span class=\"o\">.</span><span class=\"n\">ConjugateGradient</span>\n<span class=\"n\">elapsed</span><span class=\"o\">:</span> <span class=\"mf\">74.16639494895935</span>\n <span class=\"mf\">76.332368</span> <span class=\"n\">seconds</span> <span class=\"p\">(</span><span class=\"mf\">885.22</span> <span class=\"n\">M</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mf\">25.710</span> <span class=\"n\">GiB</span><span class=\"p\">,</span> <span class=\"mf\">6.79</span><span class=\"o\">%</span> <span class=\"n\">gc</span> <span class=\"n\">time</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 227164333,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1613910153
+    },
+    {
+        "content": "<p>no</p>",
+        "id": 227164355,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1613910201
+    },
+    {
+        "content": "<p>that's not your objective function</p>",
+        "id": 227164357,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1613910209
+    },
+    {
+        "content": "<p>Oh, ok let me try again.</p>",
+        "id": 227164506,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1613910391
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code> <span class=\"mf\">1.026235</span> <span class=\"n\">seconds</span> <span class=\"p\">(</span><span class=\"mf\">1.75</span> <span class=\"n\">M</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mf\">91.610</span> <span class=\"n\">MiB</span><span class=\"p\">,</span> <span class=\"mf\">1.96</span><span class=\"o\">%</span> <span class=\"n\">gc</span> <span class=\"n\">time</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>This is if I simply run my objective function on the initial condition.</p>",
+        "id": 227164547,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1613910481
+    },
+    {
+        "content": "<p>yeah so that's generating a ton. That's not good.</p>",
+        "id": 227164602,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1613910492
+    },
+    {
+        "content": "<p>What if you <code>@code_warntype</code> it?</p>",
+        "id": 227164608,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1613910504
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">ERROR</span><span class=\"o\">:</span> <span class=\"kt\">LoadError</span><span class=\"o\">:</span> <span class=\"kt\">LoadError</span><span class=\"o\">:</span> <span class=\"kt\">UndefVarError</span><span class=\"o\">:</span> <span class=\"nd\">@code_warntype</span> <span class=\"n\">not</span> <span class=\"n\">defined</span>\n</code></pre></div>\n<p>I assume that <code>@code_warntype</code> can only be used in the interpreter?</p>",
+        "id": 227164762,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1613910706
+    },
+    {
+        "content": "<p>it seems like you need a lot more help than that. You should learn a bit about the language first</p>",
+        "id": 227164821,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1613910759
+    },
+    {
+        "content": "<p>here's a tutorial that walks through a few things</p>",
+        "id": 227164824,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1613910767
+    },
+    {
+        "content": "<p><a href=\"https://mitmath.github.io/18337/lecture2/optimizing\">https://mitmath.github.io/18337/lecture2/optimizing</a></p>",
+        "id": 227164825,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1613910773
+    },
+    {
+        "content": "<p>or as a lecture</p>",
+        "id": 227164826,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1613910775
+    },
+    {
+        "content": "<p><a href=\"https://www.youtube.com/watch?v=M2i7sSRcSIw&amp;feature=youtu.be\">https://www.youtube.com/watch?v=M2i7sSRcSIw&amp;feature=youtu.be</a></p>\n<div class=\"youtube-video message_inline_image\"><a data-id=\"M2i7sSRcSIw\" href=\"https://www.youtube.com/watch?v=M2i7sSRcSIw&amp;feature=youtu.be\"><img src=\"https://i.ytimg.com/vi/M2i7sSRcSIw/default.jpg\"></a></div>",
+        "id": 227164827,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1613910780
+    },
+    {
+        "content": "<p><a href=\"https://www.youtube.com/watch?v=10_Ukm9wr9g&amp;feature=youtu.be\">https://www.youtube.com/watch?v=10_Ukm9wr9g&amp;feature=youtu.be</a></p>\n<div class=\"youtube-video message_inline_image\"><a data-id=\"10_Ukm9wr9g\" href=\"https://www.youtube.com/watch?v=10_Ukm9wr9g&amp;feature=youtu.be\"><img src=\"https://i.ytimg.com/vi/10_Ukm9wr9g/default.jpg\"></a></div>",
+        "id": 227164856,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1613910788
+    },
+    {
+        "content": "<blockquote>\n<p>I assume that @code_warntype can only be used in the interpreter?</p>\n</blockquote>",
+        "id": 227164868,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1613910803
+    },
+    {
+        "content": "<p>no</p>",
+        "id": 227164870,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1613910806
+    },
+    {
+        "content": "<p><code>using InteractiveUtils</code> or just do <code>Main.@code_warntype</code> as a quick check</p>",
+        "id": 227164874,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1613910827
+    },
+    {
+        "content": "<p>As a side note, it would be interesting to have a macro, something like <code>@error_if_allocate</code> which you can add to your mission critical function and it wouldn't run, until you fix it.</p>",
+        "id": 227164878,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1613910841
+    },
+    {
+        "content": "<p>If you want a more direct code optimization and profiling lecture, there's <a href=\"https://www.youtube.com/watch?v=h-xVBD2Pk9o&amp;feature=youtu.be\">https://www.youtube.com/watch?v=h-xVBD2Pk9o&amp;feature=youtu.be</a></p>\n<div class=\"youtube-video message_inline_image\"><a data-id=\"h-xVBD2Pk9o\" href=\"https://www.youtube.com/watch?v=h-xVBD2Pk9o&amp;feature=youtu.be\"><img src=\"https://i.ytimg.com/vi/h-xVBD2Pk9o/default.jpg\"></a></div>",
+        "id": 227164946,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1613910876
+    },
+    {
+        "content": "<blockquote>\n<p>As a side note, it would be interesting to have a macro, something like @error_if_allocate which you can add to your mission critical function and it wouldn't run, until you fix it.</p>\n</blockquote>\n<p>Sure, just do <code>@assert @allocated(y=f(x)) == 0</code></p>",
+        "id": 227164977,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1613910920
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"278119\">@Christopher Rackauckas</span> thank you for the pointers. I have about 1 or 2 days left to speed up the Julia code. I hope I will have enough time to go through the lecture and <a href=\"https://www.youtube.com/watch?v=h-xVBD2Pk9o&amp;feature=youtu.be\">https://www.youtube.com/watch?v=h-xVBD2Pk9o&amp;feature=youtu.be</a>.</p>\n<div class=\"youtube-video message_inline_image\"><a data-id=\"h-xVBD2Pk9o\" href=\"https://www.youtube.com/watch?v=h-xVBD2Pk9o&amp;feature=youtu.be\"><img src=\"https://i.ytimg.com/vi/h-xVBD2Pk9o/default.jpg\"></a></div>",
+        "id": 227165712,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1613911771
+    },
+    {
+        "content": "<p>Quick update. <span class=\"user-mention silent\" data-user-id=\"284959\">Andrés Riedemann</span> uncovered the reason why <code>method=:forward</code> autodiff causes error. It is because I use a mutable struct inside my objective functions, where:</p>\n<ol>\n<li>Its fields are restricted to <code>Float64</code>'s. This causes error because <code>ForwardDiff</code> wants to pass a Dual number containing information about the value and its derivatives. The fields need to be of a <code>Real</code> type.</li>\n<li>An array <code>push!</code> update also breaks autodiff, possibly due to the typing as well.</li>\n</ol>",
+        "id": 227257823,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1613996455
+    },
+    {
+        "content": "<p>Did you achieve the performance you wanted?</p>",
+        "id": 227695388,
+        "sender_full_name": "Florian Große",
+        "timestamp": 1614210516
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"383122\">@Florian Große</span> not yet. My concern is that without optimizations such as autodiff or 0-allocation, the Julia version shouldn't be slower than the Python version, since the Python version is also doing wasteful allocations and not using autodiff. I tried to profile using <a href=\"https://github.com/search?q=StatProfilerHTML.jl&amp;type=Repositories\">StatProfilerHTML.jl</a>, but the line-by-line time spent report is not complete. Not all the relevant lines are time. I wish there is something like Python's <a href=\"https://github.com/pyutils/line_profiler\">https://github.com/pyutils/line_profiler</a>.</p>",
+        "id": 227707965,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1614219320
+    },
+    {
+        "content": "<p>Agreed. Once you have the paper published and can share the code, it would probably good to open this discussion on Discourse again. If it requires a few tricks to make it run fast, it's probably good to have it there as an example. Either that or you find room for improvement in a julia package, which is also fine.</p>",
+        "id": 227716105,
+        "sender_full_name": "Florian Große",
+        "timestamp": 1614227439
+    },
+    {
+        "content": "<p>And maybe also #math-optimization, I don't think <span class=\"user-mention\" data-user-id=\"269196\">@Patrick Kofod Mogensen</span> is more active over there I believe</p>",
+        "id": 227737890,
+        "sender_full_name": "Nils",
+        "timestamp": 1614244242
+    },
+    {
+        "content": "<p>Yeah, hard to say much with the given information. First, I saw you used conjugate gradient descent in the only timing of the real problem I saw. That is really only going to be good (relatively speaking) on very large problems. However, 99% of the times I get these questions, the problem is in the objective function evaluation as <span class=\"user-mention\" data-user-id=\"278119\">@Christopher Rackauckas</span> also tried to guide the conversation towards :) You did not provide a side-by-side timing of your runtime for your objective from python and from julia. I'd like to see that before we can conclude this is related to <a href=\"https://github.com/search?q=Optim.jl&amp;type=Repositories\">Optim.jl</a> at all. Next, I'd ask you to print the progress, number of objective function evaluations, number of gradient function evaluations etc. I'm sure we'd be able to match the speed you see in Python, but if you're relatively new to Julia, 2-3 days to get optimal code is not a lot. Hope you get your paper through review, and I'm of course sad that <a href=\"https://github.com/search?q=Optim.jl&amp;type=Repositories\">Optim.jl</a> lost a citation over this  ;)</p>",
+        "id": 227840920,
+        "sender_full_name": "Patrick Kofod Mogensen",
+        "timestamp": 1614288017
+    },
+    {
+        "content": "<p>Yeah I could've been more direct haha. I was trying to slowly guide him to finding out that he likely needed to optimize the objective function that he wrote. But yes, in more direct terms, unless you show your model is non-allocating and type-stable, there is zero evidence to suggest <a href=\"https://github.com/search?q=Optim.jl&amp;type=Repositories\">Optim.jl</a> has an issue and so right now the onus is on the modeler.</p>",
+        "id": 227847407,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1614290822
+    },
+    {
+        "content": "<p>The speed of the optimization package itself has relatively little effect on the speed of optimization, other than in the number of steps it takes to get to the optimum. The speed is largely based on the way the user writes the objective (except in the limit of tiny <code>f</code>). A good optimization package takes less steps, which there hasn't been any discussion of \"<a href=\"https://github.com/search?q=Optim.jl&amp;type=Repositories\">Optim.jl</a> takes 2-3x as many steps\", which would be what points to Optim. Pure timings don't mean that.</p>",
+        "id": 227847527,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1614290878
+    },
+    {
+        "content": "<p>Update: the Julia version is now 2x faster! One major problem is that I defined a named function inside my objective function, to deduplicate some steps, and because the function uses variables local to the objective function (without being passed as arguments). Note: I also do this function-definition-inside-obj-fn in the Python version without much penalty?? Once I move out the function and pass in the local vars as arguments, there are a lot fewer allocations. The Python version takes 5 min 25 s. The Julia version now takes 2 min 12 s (sorry can't publish the code yet). I'm sure there is still room for improvement, but this is already a strong case to convince my collaborators to switch to Julia.</p>",
+        "id": 227867906,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1614302569
+    },
+    {
+        "content": "<p>Note: moving out this function to outside my objective function resulted in 4.5x speedup relative to the previous iteration.</p>",
+        "id": 227868143,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1614302720
+    },
+    {
+        "content": "<p>Before (@time, taken from my previous post)</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">Optim</span><span class=\"o\">.</span><span class=\"n\">ConjugateGradient</span>\n<span class=\"n\">elapsed</span><span class=\"o\">:</span> <span class=\"mf\">74.16639494895935</span>\n <span class=\"mf\">76.332368</span> <span class=\"n\">seconds</span> <span class=\"p\">(</span><span class=\"mf\">885.22</span> <span class=\"n\">M</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mf\">25.710</span> <span class=\"n\">GiB</span><span class=\"p\">,</span> <span class=\"mf\">6.79</span><span class=\"o\">%</span> <span class=\"n\">gc</span> <span class=\"n\">time</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>After (@time, including precompilation)</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">Optim</span><span class=\"o\">.</span><span class=\"n\">ConjugateGradient</span>\n<span class=\"n\">elapsed</span><span class=\"o\">:</span> <span class=\"mf\">15.73147702217102</span>\n <span class=\"mf\">17.780150</span> <span class=\"n\">seconds</span> <span class=\"p\">(</span><span class=\"mf\">97.40</span> <span class=\"n\">M</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mf\">9.558</span> <span class=\"n\">GiB</span><span class=\"p\">,</span> <span class=\"mf\">6.34</span><span class=\"o\">%</span> <span class=\"n\">gc</span> <span class=\"n\">time</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>After (@btime)</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">Optim</span><span class=\"o\">.</span><span class=\"n\">ConjugateGradient</span>\n<span class=\"n\">elapsed</span><span class=\"o\">:</span> <span class=\"mf\">12.357237100601196</span>\n  <span class=\"mf\">12.357</span> <span class=\"n\">s</span> <span class=\"p\">(</span><span class=\"mi\">92734943</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mf\">9.33</span> <span class=\"n\">GiB</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>Python version is ~30s.</p>",
+        "id": 227869591,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1614303764
+    },
+    {
+        "content": "<p>That sounds great. I of course have to ask: have you checked that the objective values/solution(minimizer) are comparable? There's always a chance that Optim stopped early for some reason. I still have a feeling you could get more performance out of your objective function, but without knowing your exact code it's hard to say. There are indeed a few pitfalls in Julia, and you need to know a little bit (Chris' links would be a great place to start) to get the most out of Julia. I think the function definition that closes over some variables might be a known issue that can sometimes surprise even me and others who are seasoned Julia users (I think you might be hitting this issue specifically <a href=\"https://github.com/JuliaLang/julia/issues/15276\">https://github.com/JuliaLang/julia/issues/15276</a> )</p>",
+        "id": 227892581,
+        "sender_full_name": "Patrick Kofod Mogensen",
+        "timestamp": 1614325331
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"207815\">@Rein Zustand</span>, do you mean that your previous approach was using a <em>closure</em>? I.e., something like below?</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n    <span class=\"n\">a</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">100</span><span class=\"p\">)</span>\n    <span class=\"n\">b</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">100</span><span class=\"p\">)</span>\n\n    <span class=\"k\">function</span> <span class=\"n\">aux</span><span class=\"p\">()</span>\n        <span class=\"n\">a</span> <span class=\"o\">.*</span> <span class=\"n\">b</span> <span class=\"o\">.+</span> <span class=\"n\">x</span>\n    <span class=\"k\">end</span>\n\n    <span class=\"n\">s</span> <span class=\"o\">=</span> <span class=\"n\">aux</span><span class=\"p\">()</span>\n    <span class=\"n\">t</span> <span class=\"o\">=</span> <span class=\"n\">aux</span><span class=\"p\">()</span>\n\n    <span class=\"n\">s</span> <span class=\"o\">.*</span> <span class=\"n\">t</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>And now you have changed it to something like this?</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">aux</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">,</span> <span class=\"n\">b</span><span class=\"p\">,</span> <span class=\"n\">c</span><span class=\"p\">)</span>\n    <span class=\"n\">a</span> <span class=\"o\">.*</span> <span class=\"n\">b</span> <span class=\"o\">.+</span> <span class=\"n\">c</span>\n<span class=\"k\">end</span>\n\n<span class=\"k\">function</span> <span class=\"n\">g</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n    <span class=\"n\">a</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">100</span><span class=\"p\">)</span>\n    <span class=\"n\">b</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">100</span><span class=\"p\">)</span>\n\n    <span class=\"n\">s</span> <span class=\"o\">=</span> <span class=\"n\">aux</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">,</span> <span class=\"n\">b</span><span class=\"p\">,</span> <span class=\"n\">x</span><span class=\"p\">)</span>\n    <span class=\"n\">t</span> <span class=\"o\">=</span> <span class=\"n\">aux</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">,</span> <span class=\"n\">b</span><span class=\"p\">,</span> <span class=\"n\">x</span><span class=\"p\">)</span>\n\n    <span class=\"n\">s</span> <span class=\"o\">.*</span> <span class=\"n\">t</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 227899866,
+        "sender_full_name": "Henrique Ferrolho",
+        "timestamp": 1614330239
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"364881\">@Henrique Ferrolho</span> yes, exactly.</p>",
+        "id": 227900562,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1614330598
+    },
+    {
+        "content": "<p>That is odd. I don't think it should make a difference in time or allocations. These are the results I get on my machine when I benchmark the snippets above:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">using</span> <span class=\"n\">BenchmarkTools</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">);</span>\n  <span class=\"mf\">456.736</span> <span class=\"n\">ns</span> <span class=\"p\">(</span><span class=\"mi\">5</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mf\">4.38</span> <span class=\"n\">KiB</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">g</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">);</span>\n  <span class=\"mf\">452.822</span> <span class=\"n\">ns</span> <span class=\"p\">(</span><span class=\"mi\">5</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mf\">4.38</span> <span class=\"n\">KiB</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 227900787,
+        "sender_full_name": "Henrique Ferrolho",
+        "timestamp": 1614330709
+    },
+    {
+        "content": "<p>I will try to provide a snippet that reproduces my situation more closely.</p>",
+        "id": 227901283,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1614330964
+    },
+    {
+        "content": "<p>Perhaps something else changed when you switched from one approach to the other? What I am trying to say is that the performance improvement you observe should not be due to the use of a closure. I'd be interested to know what the key change was, then.</p>",
+        "id": 227901418,
+        "sender_full_name": "Henrique Ferrolho",
+        "timestamp": 1614331053
+    },
+    {
+        "content": "<p>! Gotcha. I just checked my commit. I did turn a model parameter defined in a global setting into a const, together with the change that moved out the function to be outside of the objective commit, all within a single commit. My bad.</p>\n<p>I tried reverting by putting the function back inside my objective function, while keeping the variable a const, and I got the same allocation. I am very sorry for the false alarm.</p>",
+        "id": 227902402,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1614331641
+    },
+    {
+        "content": "<p>No need to apologise. So, the improvement was actually thanks to declaring a global variable as <code>const</code>.  Did I get that right?</p>",
+        "id": 227903364,
+        "sender_full_name": "Henrique Ferrolho",
+        "timestamp": 1614332279
+    },
+    {
+        "content": "<p>Yes, I have isolated the cause to be indeed setting the const. Reverting it back to without const slows down the btime by ~4x.</p>",
+        "id": 227903567,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1614332402
+    },
+    {
+        "content": "<p>Great! In general, it is best to avoid global variables. But if you do want to have a global variable, it is critical to make it <code>const</code>, otherwise the compiler assumes that its value and type can change at any point, and thus it is not able to specialise on one given type. This is mentioned in <a href=\"https://docs.julialang.org/en/v1/manual/performance-tips/#Avoid-global-variables\">Performance Tips &gt; Avoid global variables</a>. (The entire <em>Performance Tips</em> is gold. Do read it, if you haven't. <span aria-label=\"smiley\" class=\"emoji emoji-1f603\" role=\"img\" title=\"smiley\">:smiley:</span>)</p>",
+        "id": 227904066,
+        "sender_full_name": "Henrique Ferrolho",
+        "timestamp": 1614332679
+    },
+    {
+        "content": "<p>For that Performance tips article. It recommends <code>@time</code> instead of <code>@btime</code>. I suppose because <a href=\"https://github.com/search?q=BenchmarkTools.jl&amp;type=Repositories\">BenchmarkTools.jl</a> is an external tool, and so the official manual can't recommend it?</p>",
+        "id": 227906303,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1614334047
+    },
+    {
+        "content": "<p>Hmmm... At the end of the section <a href=\"https://docs.julialang.org/en/v1/manual/performance-tips/#Measure-performance-with-\u0002klzzwxh:0000\u0003-and-pay-attention-to-memory-allocation\">https://docs.julialang.org/en/v1/manual/performance-tips/#Measure-performance-with-<a href=\"mailto:@ref\">@time</a>-and-pay-attention-to-memory-allocation</a> there is a note \"For more serious benchmarking, consider the <a href=\"https://github.com/search?q=BenchmarkTools.jl&amp;type=Repositories\">BenchmarkTools.jl</a> package which among other things evaluates the function multiple times in order to reduce noise.\"</p>",
+        "id": 227906710,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1614334275
+    },
+    {
+        "content": "<p>I hit a new roadblock with Optim's conjugate gradient. The parameters for my objective function are bounded by 0 &lt;= x &lt;= 1. While <code>Optim.ConjugateGradient</code> is fast, sometimes I observe a discontinuous spike in my result. I observed similar spikes too in scipy, but at least in scipy, the spikes consistently disappear if I use <code>L-BFGS-B</code>. There is a <code>Optim.LBFGS</code> in <code>Optim</code>, but it is 7x slower than <code>Optim.ConjugateGradient</code> (so, in effect, Optim is 3.5x slower than scipy).</p>\n<p>By using <code>Optim.ConjugateGradient</code> I'm making my comparison closer to apple-to-apple with the scipy version. I have pre-allocated my mutable structs to reduce allocations, and this still doesn't improve the time spent significantly.</p>\n<p>Unfortunately, I'm short of time to investigate the cause further, and am forced to use the scipy version to continue my research. <span aria-label=\"oh no\" class=\"emoji emoji-1f615\" role=\"img\" title=\"oh no\">:oh_no:</span></p>",
+        "id": 228355951,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1614662897
+    },
+    {
+        "content": "<p>s/By using <code>Optim.ConjugateGradient</code>/By using <code>Optim.LBFGS</code>/. (I realized that zulip-archive doesn't handle message edits). test</p>",
+        "id": 228356316,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1614663190
+    },
+    {
+        "content": "<p>Are your allocations down to zero?</p>",
+        "id": 228357936,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614664633
+    },
+    {
+        "content": "<p>I.e. are you allocating new arrays in each iteration?</p>",
+        "id": 228357954,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614664656
+    },
+    {
+        "content": "<p>My allocations are not exactly zero, but they are about 33k now (used to be 6M). But then, the Python version is doing wasteful allocations. I'd expect the Julia version to be at worst comparable to the Python version (because I'm doing equivalent wasteful allocations in Python), and then progressively gets better when I reduce allocations. Is it wrong to think this way?</p>\n<p>Another degree of freedom to consider is that the default params of the LBFGS in each params might differ as <span class=\"user-mention silent\" data-user-id=\"269196\">Patrick Kofod Mogensen</span> stated in <a href=\"#narrow/stream/274208-helpdesk-%28published%29/topic/why.20is.20Optim.2Ejl.20so.20slow.3F/near/227892581\">https://julialang.zulipchat.com/#narrow/stream/274208-helpdesk-%28published%29/topic/why.20is.20Optim.2Ejl.20so.20slow.3F/near/227892581</a>.</p>",
+        "id": 228382038,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1614678866
+    },
+    {
+        "content": "<p>It's not only about number of allocation, but about there \"quality\".</p>\n<p>If for example you are slicing your array, you are making it's copy (and python uses analogue of Julia views).<br>\nSo, if you have something like </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">v1</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">1_000_000_000</span><span class=\"p\">)</span>\n<span class=\"n\">v2</span> <span class=\"o\">=</span> <span class=\"n\">v1</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">500_000_000</span><span class=\"p\">]</span>\n</code></pre></div>\n<p>you are doing maybe 2 or 3 allocations, but you are also copying half of your computer memory to a new place and as a result computations are slow.</p>\n<p>Also, if there are some issues with type stability, you also waste precious time on dynamical dispatch.</p>\n<p>If the following example</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">v</span> <span class=\"o\">=</span> <span class=\"kt\">Any</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"mi\">2</span><span class=\"p\">,</span> <span class=\"mi\">3</span><span class=\"p\">]</span>\n<span class=\"n\">c</span> <span class=\"o\">=</span> <span class=\"n\">v</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span> <span class=\"o\">+</span> <span class=\"mi\">1</span>\n</code></pre></div>\n<p>compiler spend 0.01 ns to make actual addition and 10ns to figure out the type of the <code>v[1]</code> variable (and also it has to pack <code>c</code> back to <code>Any</code>). So if this addition is a part of tight loop you can get huge slowdown. Since python usually vectorize such operation, it avoids this problem. I think in this case you can compare vectorization to function barriers, i.e. vector has rather bad type as an input, but inside the function it knows that all elements have some good type and do not waste time trying to figure out type of each element individually.</p>",
+        "id": 228383087,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1614679386
+    },
+    {
+        "content": "<p>Thank you for the elaboration. I have checked the allocations using <code>--track-allocation=user</code> and found no such copying. For the type stability issue, my <code>@code_warntype</code> output is mostly green and yellow (for the loop variable). I have to note though that in my case, I do regular loops in the Python version because the operation can't be vectorized (it's a time evolution), so surely Python must be doing regular <code>object</code> operations.</p>",
+        "id": 228385343,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1614680434
+    },
+    {
+        "content": "<p>Oh, those were meant only as examples. There can be other reasons why reasonably small number of allocations can have a large impact on the performance.</p>",
+        "id": 228386535,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1614680991
+    },
+    {
+        "content": "<p>s/mostly green and yellow/mostly green, but the rest is yellow/</p>",
+        "id": 228389365,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1614682326
+    },
+    {
+        "content": "<p>I'm down to only 1 allocation, which is due to <del><code>@assert length(xs) == length(Ts)</code></del> (hold up, it's not it, still investigating). Still about as slow. By process of elimination, the remaining uncertainty is in the LBFGS implementation of <code>Optim</code> vs <code>scipy.optimize</code>.</p>",
+        "id": 228394871,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1614684963
+    }
+]

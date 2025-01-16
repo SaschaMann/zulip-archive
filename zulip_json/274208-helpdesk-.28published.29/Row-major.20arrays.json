@@ -1,0 +1,26 @@
+[
+    {
+        "content": "<p>Hey all,<br>\nMy use-case with Julia is working with very large 3D/4D arrays of images. For example, a 3D array might have dimensions <code>(time, x, y)</code>. Generally these images will be processed individually so the ideal memory layout would be row-major, such that the pixels (floats) for each image will be stored contiguously.</p>\n<p>Since Julia's arrays are column-major I had the idea of reversing the dimensions, e.g. <code>(y, x, time)</code>, to have the right memory layout, and then maybe making a custom Array type that would automatically handle this inversion. So if a user creates a <code>RowMajorArray{Float32}(undef, 1, 2, 3)</code> it will actually create a <code>Array{Float32}(undef, 3, 2, 1)</code>, and indexing it at <code>A[1, :, :]</code> would turn into <code>A[:, :, 1]</code>. Does that sound like a good idea? I'd be interested to know if anyone else has done something like this.</p>\n<p>Relevant things I found while Googling:</p>\n<ul>\n<li><a href=\"https://github.com/JuliaLang/julia/issues/5932\">https://github.com/JuliaLang/julia/issues/5932</a></li>\n<li>PyCall uses this trick with <code>PyReverseDims()</code>: <a href=\"https://github.com/JuliaPy/PyCall.jl#from-julia-to-python\">https://github.com/JuliaPy/PyCall.jl#from-julia-to-python</a></li>\n</ul>",
+        "id": 267911054,
+        "sender_full_name": "James Wrigley",
+        "timestamp": 1642098775
+    },
+    {
+        "content": "<p><code>PermutedDimsArray</code> does this. <code>PermutedDimsArray(rand(1,2,3), (3,2,1))</code>.</p>",
+        "id": 267940925,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1642113153
+    },
+    {
+        "content": "<p>But why not work with column major arrays?<br>\nE.g., why not work with <code>y</code> x <code>x</code> x <code>time</code>, or permute to <code>x</code> x <code>y</code> x <code>time</code>?</p>",
+        "id": 267941114,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1642113251
+    },
+    {
+        "content": "<p>Oh neat, didn't know about <code>PermutedDimsArray</code>. I guess the main reason to avoid working with column-major arrays is to keep a similar interface to arrays from Numpy/C, which is what most people working with my code will be used to. But maybe I should try it anyway...</p>",
+        "id": 267997843,
+        "sender_full_name": "James Wrigley",
+        "timestamp": 1642157497
+    }
+]

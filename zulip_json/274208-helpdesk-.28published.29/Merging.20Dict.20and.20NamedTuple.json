@@ -1,0 +1,98 @@
+[
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">let</span>\n    <span class=\"n\">a</span> <span class=\"o\">=</span> <span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">=</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"n\">b</span><span class=\"o\">=</span><span class=\"mi\">2</span><span class=\"p\">)</span>\n    <span class=\"n\">b</span> <span class=\"o\">=</span> <span class=\"kt\">Dict</span><span class=\"p\">(</span><span class=\"ss\">:c</span><span class=\"o\">=&gt;</span><span class=\"mi\">3</span><span class=\"p\">,</span> <span class=\"ss\">:d</span><span class=\"o\">=&gt;</span><span class=\"mi\">4</span><span class=\"p\">)</span>\n    <span class=\"n\">merge</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">,</span> <span class=\"n\">b</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n\n<span class=\"p\">(</span><span class=\"n\">a</span> <span class=\"o\">=</span> <span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"n\">b</span> <span class=\"o\">=</span> <span class=\"mi\">2</span><span class=\"p\">,</span> <span class=\"n\">d</span> <span class=\"o\">=</span> <span class=\"mi\">4</span><span class=\"p\">,</span> <span class=\"n\">c</span> <span class=\"o\">=</span> <span class=\"mi\">3</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>but <code>merge(b, a)</code> fails with <code>MethodError</code>. Is the method simply not implemented, or am I missing why it's a bad idea?</p>",
+        "id": 276122440,
+        "sender_full_name": "mbaz",
+        "timestamp": 1647902026
+    },
+    {
+        "content": "<p>Dict keys don't have to be symbols, idk if that's the reason tho</p>",
+        "id": 276124212,
+        "sender_full_name": "jar",
+        "timestamp": 1647903381
+    },
+    {
+        "content": "<p>I think that's what I was missing. NamedTuple keys must be symbols.</p>",
+        "id": 276124445,
+        "sender_full_name": "mbaz",
+        "timestamp": 1647903565
+    },
+    {
+        "content": "<p>maybe this could be defined for <code>Dict{Symbol,T}</code> ? would that be a good idea?</p>",
+        "id": 276131863,
+        "sender_full_name": "pg.",
+        "timestamp": 1647909949
+    },
+    {
+        "content": "<p>As an alternative, I found that one can do</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">let</span>\n    <span class=\"n\">a</span> <span class=\"o\">=</span> <span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">=</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"n\">b</span><span class=\"o\">=</span><span class=\"mi\">2</span><span class=\"p\">)</span>\n    <span class=\"n\">b</span> <span class=\"o\">=</span> <span class=\"kt\">Dict</span><span class=\"p\">(</span><span class=\"ss\">:c</span><span class=\"o\">=&gt;</span><span class=\"mi\">3</span><span class=\"p\">,</span> <span class=\"ss\">:d</span><span class=\"o\">=&gt;</span><span class=\"mi\">4</span><span class=\"p\">)</span>\n    <span class=\"n\">merge</span><span class=\"p\">(</span><span class=\"kt\">NamedTuple</span><span class=\"p\">(</span><span class=\"n\">b</span><span class=\"p\">),</span> <span class=\"n\">a</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n<span class=\"p\">(</span><span class=\"n\">d</span> <span class=\"o\">=</span> <span class=\"mi\">4</span><span class=\"p\">,</span> <span class=\"n\">c</span> <span class=\"o\">=</span> <span class=\"mi\">3</span><span class=\"p\">,</span> <span class=\"n\">a</span> <span class=\"o\">=</span> <span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"n\">b</span> <span class=\"o\">=</span> <span class=\"mi\">2</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 276135186,
+        "sender_full_name": "mbaz",
+        "timestamp": 1647914132
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"345789\">mbaz</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Merging.20Dict.20and.20NamedTuple/near/276124445\">said</a>:</p>\n<blockquote>\n<p>I think that's what I was missing. NamedTuple keys must be symbols.</p>\n</blockquote>\n<p>I don't clearly see how this leads to <code>merge(::Dict, ::NamedTuple)</code> not being defined while the other way around is defined. </p>\n<p><code>merge</code> docs don't mention any asymmetry regarding key types - there's only \"If necessary, the types of the resulting collection will be promoted to   accommodate the types of the merged collections\". </p>\n<p>And if there is asymmetry, my mental model would be that the first argument's key type would be the \"primary\" one that the rest of them should adhere to - so if anything, <code>Dict</code> being the second argument should be the problematic case (if we're assuming asymmetry at all). </p>\n<p>I think (unless I'm missing something) it's just a missing implementation - something like <code>merge(itr, a::NamedTuple)  = merge(a::NamedTuple, itr)</code>.</p>",
+        "id": 277329426,
+        "sender_full_name": "Sundar R",
+        "timestamp": 1648755234
+    },
+    {
+        "content": "<p>I think this operation doesn't make sense. <code>getindex</code> and <code>getproperty</code> are different projectors. There could be a type that has both, with different values for the same key.</p>",
+        "id": 277334212,
+        "sender_full_name": "jar",
+        "timestamp": 1648757728
+    },
+    {
+        "content": "<p>I'm not so sure about the idea behind <code>merge</code> or even <code>pairs/keys/values</code> really.</p>",
+        "id": 277334670,
+        "sender_full_name": "jar",
+        "timestamp": 1648757980
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"423970\">@Sundar R</span> How could <code>Dict(\"1\"=&gt;\"V\")</code> be converted to a <code>NamedTuple</code>? A <code>NamedTuple</code> restricts the type of the keys, whereas a <code>Dict</code> doesn't.</p>",
+        "id": 277343275,
+        "sender_full_name": "mbaz",
+        "timestamp": 1648762502
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"423970\">@Sundar R</span> Maybe what <code>merge</code> should do is not to promote the keys, but to promote the resulting container so that it can accomodate all k,v pairs being merged.</p>",
+        "id": 277343868,
+        "sender_full_name": "mbaz",
+        "timestamp": 1648762908
+    },
+    {
+        "content": "<p>For example, the docs say</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">merge</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">NamedTuple</span><span class=\"p\">,</span> <span class=\"n\">iterable</span><span class=\"p\">)</span>\n\n  <span class=\"n\">Interpret</span> <span class=\"n\">an</span> <span class=\"n\">iterable</span> <span class=\"n\">of</span> <span class=\"n\">key</span><span class=\"o\">-</span><span class=\"n\">value</span> <span class=\"n\">pairs</span> <span class=\"n\">as</span> <span class=\"n\">a</span> <span class=\"n\">named</span> <span class=\"n\">tuple</span><span class=\"p\">,</span> <span class=\"n\">and</span> <span class=\"n\">perform</span> <span class=\"n\">a</span> <span class=\"n\">merge</span><span class=\"o\">.</span>\n</code></pre></div>\n<p>which seems to imply any iterable can be merged into a NamedTuple, but that's not the case:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">merge</span><span class=\"p\">((</span><span class=\"n\">a</span> <span class=\"o\">=</span> <span class=\"nb\">true</span><span class=\"p\">,),</span> <span class=\"kt\">Dict</span><span class=\"p\">(</span><span class=\"s\">\"1\"</span> <span class=\"o\">=&gt;</span> <span class=\"mf\">1.5</span><span class=\"p\">))</span>\n<span class=\"n\">ERROR</span><span class=\"o\">:</span> <span class=\"kt\">TypeError</span><span class=\"o\">:</span> <span class=\"k\">in</span> <span class=\"n\">typeassert</span><span class=\"p\">,</span> <span class=\"n\">expected</span> <span class=\"kt\">Symbol</span><span class=\"p\">,</span> <span class=\"n\">got</span> <span class=\"n\">a</span> <span class=\"n\">value</span> <span class=\"n\">of</span> <span class=\"n\">type</span> <span class=\"kt\">String</span>\n</code></pre></div>",
+        "id": 277343976,
+        "sender_full_name": "mbaz",
+        "timestamp": 1648762994
+    },
+    {
+        "content": "<p>This fails because it wants to return a <code>NamedTuple</code>, but it should (?) return a <code>Dict</code>.</p>",
+        "id": 277344148,
+        "sender_full_name": "mbaz",
+        "timestamp": 1648763131
+    },
+    {
+        "content": "<p>@jar Why do you think <code>merge</code> makes no sense? Sometimes you have two containers and want to combine them.</p>",
+        "id": 277344433,
+        "sender_full_name": "mbaz",
+        "timestamp": 1648763302
+    },
+    {
+        "content": "<p>Hit this recently and thought it was weird that it didn't just return a dict too.</p>",
+        "id": 277345158,
+        "sender_full_name": "Zachary P Christensen",
+        "timestamp": 1648763752
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"345789\">mbaz</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Merging.20Dict.20and.20NamedTuple/near/277343275\">said</a>:</p>\n<blockquote>\n<p><span class=\"user-mention silent\" data-user-id=\"423970\">Sundar R</span> How could <code>Dict(\"1\"=&gt;\"V\")</code> be converted to a <code>NamedTuple</code>? A <code>NamedTuple</code> restricts the type of the keys, whereas a <code>Dict</code> doesn't.</p>\n</blockquote>\n<p>Yeah, I understand that part, but if <code>merge</code> is symmetric between its arguments (i.e. treats them the same), then it shouldn't matter which order we send a <code>Dict</code> and <code>NamedTuple</code> in: either both <code>merge(::Dict, ::NamedTuple)</code> and <code>merge(::NamedTuple, ::Dict)</code> work, or neither does. Passing a non-Symbol keyed Dict as second argument currently throws a <code>TypeError</code>, and with <code>merge(itr, a::NamedTuple)  = merge(a::NamedTuple, itr)</code> it would do the exact same for the other way around too. </p>\n<p>It's weird to treat these cases differently and give different errors, which is what leads me to think it's an implementation oversight and not a conscious design decision.</p>",
+        "id": 277345736,
+        "sender_full_name": "Sundar R",
+        "timestamp": 1648764055
+    },
+    {
+        "content": "<p>Yeah -- the order of the arguments might be relevant (as it is now) to decide what to do in case of repeated keys, but not to decide on the type of the result.<br>\nI wonder if it's worth it to open an issue about it.</p>",
+        "id": 277346247,
+        "sender_full_name": "mbaz",
+        "timestamp": 1648764341
+    }
+]

@@ -1,0 +1,80 @@
+[
+    {
+        "content": "<p>I'm trying to work out how to exchange data between two (separate) Julia instances, and I was thinking a socket file + <code>serialize</code>/<code>deserialize</code> may be a nice solution. However, I can't quite work out how to get it to work. This is what I've got so far:</p>\n<p><strong>Julia 1</strong></p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">Sockets</span>\n<span class=\"n\">s</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">Sockets</span><span class=\"o\">.</span><span class=\"n\">listen</span><span class=\"p\">(</span><span class=\"s\">\"/run/user/1000/jltest.sock\"</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"c\"># =&gt; PipeServer</span>\n</code></pre></div>\n<p><strong>Julia 2</strong></p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">Sockets</span>\n<span class=\"n\">s</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">Sockets</span><span class=\"o\">.</span><span class=\"n\">connect</span><span class=\"p\">(</span><span class=\"s\">\"/run/user/1000/jltest.sock\"</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"c\"># =&gt; PipeEndpoint</span>\n</code></pre></div>\n<p>With \"Julia 2\" I can run <code>write(s, \"testing\")</code>, however I can't work out how to receive anything in \"Julia 1\". Furthermore, is there any way I might be able to make this bidirectional?</p>",
+        "id": 328393829,
+        "sender_full_name": "Timothy",
+        "timestamp": 1676615733
+    },
+    {
+        "content": "<p>as with any server/client, you first have to <code>accept</code> a connection on the server side</p>",
+        "id": 328398242,
+        "sender_full_name": "Sukera",
+        "timestamp": 1676618038
+    },
+    {
+        "content": "<p><strong>JL1</strong></p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">s</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">listen</span><span class=\"p\">(</span><span class=\"s\">\"/run/user/1000/jltest.sock\"</span><span class=\"p\">)</span>\n<span class=\"n\">Sockets</span><span class=\"o\">.</span><span class=\"n\">PipeServer</span><span class=\"p\">(</span><span class=\"kt\">RawFD</span><span class=\"p\">(</span><span class=\"mi\">20</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"n\">active</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">s</span>\n<span class=\"n\">Sockets</span><span class=\"o\">.</span><span class=\"n\">PipeServer</span><span class=\"p\">(</span><span class=\"kt\">RawFD</span><span class=\"p\">(</span><span class=\"mi\">20</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"n\">active</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">con</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">accept</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"p\">)</span>\n<span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">PipeEndpoint</span><span class=\"p\">(</span><span class=\"kt\">RawFD</span><span class=\"p\">(</span><span class=\"mi\">21</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"n\">open</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">0</span><span class=\"w\"> </span><span class=\"n\">bytes</span><span class=\"w\"> </span><span class=\"n\">waiting</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">readline</span><span class=\"p\">(</span><span class=\"n\">con</span><span class=\"p\">)</span>\n<span class=\"s\">\"hello!\"</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">println</span><span class=\"p\">(</span><span class=\"n\">con</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"s\">\"This is JL1\"</span><span class=\"p\">)</span>\n</code></pre></div>\n<p><strong>JL2</strong></p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">s</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">connect</span><span class=\"p\">(</span><span class=\"s\">\"/run/user/1000/jltest.sock\"</span><span class=\"p\">)</span>\n<span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">PipeEndpoint</span><span class=\"p\">(</span><span class=\"kt\">RawFD</span><span class=\"p\">(</span><span class=\"mi\">20</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"n\">open</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">0</span><span class=\"w\"> </span><span class=\"n\">bytes</span><span class=\"w\"> </span><span class=\"n\">waiting</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">println</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"s\">\"hello!\"</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">readline</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"p\">)</span>\n<span class=\"s\">\"This is JL1\"</span>\n</code></pre></div>",
+        "id": 328398377,
+        "sender_full_name": "Sukera",
+        "timestamp": 1676618098
+    },
+    {
+        "content": "<p>I use <a href=\"https://github.com/search?q=RemoteREPL.jl&amp;type=Repositories\">RemoteREPL.jl</a> for this. Despite’s the name, you dont need a REPL active. Its pretty nice, might be worth checking if it fits your needs</p>",
+        "id": 328398434,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1676618130
+    },
+    {
+        "content": "<p>As this opens a Unix Domain Socket (or a Named Socket on windows), this is already bidirectional - it's a pipe after all</p>",
+        "id": 328398566,
+        "sender_full_name": "Sukera",
+        "timestamp": 1676618197
+    },
+    {
+        "content": "<p>Does RemoteREPL actually support sending stuff between the instances?</p>",
+        "id": 328398642,
+        "sender_full_name": "Sukera",
+        "timestamp": 1676618253
+    },
+    {
+        "content": "<p>Yup</p>",
+        "id": 328398675,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1676618267
+    },
+    {
+        "content": "<p>I used it to move a multi gigabyte array of named tuples today actually</p>",
+        "id": 328398816,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1676618322
+    },
+    {
+        "content": "<p>Ah lovely, I might need to give RemoteREPL a look then.</p>",
+        "id": 328399322,
+        "sender_full_name": "Timothy",
+        "timestamp": 1676618612
+    },
+    {
+        "content": "<blockquote>\n<p>Transfer variables between processes with <code>@remote</code></p>\n</blockquote>\n<p><span aria-label=\"heart eyes\" class=\"emoji emoji-1f60d\" role=\"img\" title=\"heart eyes\">:heart_eyes:</span> this looks like exactly what I was working towards</p>",
+        "id": 328399435,
+        "sender_full_name": "Timothy",
+        "timestamp": 1676618651
+    },
+    {
+        "content": "<p>Ah, would be nice if it supported using socket files, oh well, I can probably pick and spare a port.</p>",
+        "id": 328399661,
+        "sender_full_name": "Timothy",
+        "timestamp": 1676618751
+    },
+    {
+        "content": "<p>Yeah. That’d be a nice feature addition to the package.</p>",
+        "id": 328520589,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1676653653
+    },
+    {
+        "content": "<p>Looks like there’s already an issue for it: <a href=\"https://github.com/c42f/RemoteREPL.jl/issues/31\">https://github.com/c42f/RemoteREPL.jl/issues/31</a></p>",
+        "id": 328520997,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1676653763
+    }
+]

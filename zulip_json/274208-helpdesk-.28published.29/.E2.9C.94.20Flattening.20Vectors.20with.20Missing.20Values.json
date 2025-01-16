@@ -1,0 +1,140 @@
+[
+    {
+        "content": "<h2>Is there a nice way to flatten vectors that might have missing values?</h2>\n<p>Suppose I have a vector that may contain values of type <code>Missing</code>, <code>Float64</code>, or <code>Vector{Float64}</code>.  As long as I don't have a missing value in such a vector, I can flatten it like this:</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">Iterators</span><span class=\"o\">.</span><span class=\"n\">flatten</span><span class=\"p\">([</span><span class=\"mf\">1.0</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mf\">2.0</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mf\">3.0</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mf\">4.0</span><span class=\"p\">]])</span><span class=\"w\"> </span><span class=\"o\">|&gt;</span><span class=\"w\"> </span><span class=\"n\">collect</span>\n<span class=\"go\">4-element Vector{Float64}:</span>\n<span class=\"go\"> 1.0</span>\n<span class=\"go\"> 2.0</span>\n<span class=\"go\"> 3.0</span>\n<span class=\"go\"> 4.0</span>\n</code></pre></div>\n<p>However, if the vector contains a missing value, it throws an exception.</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">Iterators</span><span class=\"o\">.</span><span class=\"n\">flatten</span><span class=\"p\">([</span><span class=\"mf\">1.0</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"nb\">missing</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mf\">3.0</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mf\">4.0</span><span class=\"p\">]])</span><span class=\"w\"> </span><span class=\"o\">|&gt;</span><span class=\"w\"> </span><span class=\"n\">collect</span>\n<span class=\"gr\">ERROR: MethodError: no method matching iterate(::Missing)</span>\n\n<span class=\"gr\">  ...</span>\n</code></pre></div>\n<h4>What do I have to do to get <code>[1.0, missing, 3.0, 4.0]</code> back?</h4>",
+        "id": 442670564,
+        "sender_full_name": "G Gundam",
+        "timestamp": 1717551281
+    },
+    {
+        "content": "<p>Sounds like a bug in <code>flatten</code>, it shouldn’t do that</p>",
+        "id": 442686052,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1717558925
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"269150\">@Mason Protter</span> :  I'm too new to Julia to feel qualified to say whether that's a bug or not.  It is kind of annoying that it didn't just do the seemingly obvious thing and let the missing value pass through.  In the meantime, I came up with a good enough solution.</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">foldl</span><span class=\"p\">([</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"nb\">missing</span><span class=\"p\">,[</span><span class=\"nb\">missing</span><span class=\"p\">,</span><span class=\"mi\">4</span><span class=\"p\">]];</span><span class=\"w\"> </span><span class=\"n\">init</span><span class=\"o\">=</span><span class=\"p\">[])</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"> </span><span class=\"n\">m</span><span class=\"p\">,</span><span class=\"n\">a</span>\n<span class=\"w\">           </span><span class=\"k\">if</span><span class=\"w\"> </span><span class=\"n\">a</span><span class=\"w\"> </span><span class=\"k\">isa</span><span class=\"w\"> </span><span class=\"kt\">Vector</span>\n<span class=\"w\">               </span><span class=\"n\">push!</span><span class=\"p\">(</span><span class=\"n\">m</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">a</span><span class=\"o\">...</span><span class=\"p\">)</span>\n<span class=\"w\">           </span><span class=\"k\">else</span>\n<span class=\"w\">               </span><span class=\"n\">push!</span><span class=\"p\">(</span><span class=\"n\">m</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">a</span><span class=\"p\">)</span>\n<span class=\"w\">           </span><span class=\"k\">end</span>\n<span class=\"w\">       </span><span class=\"k\">end</span>\n<span class=\"go\">4-element Vector{Any}:</span>\n<span class=\"go\"> 1</span>\n<span class=\"go\">  missing</span>\n<span class=\"go\">  missing</span>\n<span class=\"go\"> 4</span>\n</code></pre></div>",
+        "id": 442686412,
+        "sender_full_name": "G Gundam",
+        "timestamp": 1717559149
+    },
+    {
+        "content": "<p>Do you think I should report this as a bug in <code>Iterators.flatten</code>?</p>",
+        "id": 442687482,
+        "sender_full_name": "G Gundam",
+        "timestamp": 1717559713
+    },
+    {
+        "content": "<p>Yes</p>",
+        "id": 442687538,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1717559745
+    },
+    {
+        "content": "<p>Okay.  I'll do that now.  Thanks for advising.</p>",
+        "id": 442687631,
+        "sender_full_name": "G Gundam",
+        "timestamp": 1717559778
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"599001\">G Gundam</span> has marked this topic as resolved.</p>",
+        "id": 442688670,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1717560251
+    },
+    {
+        "content": "<p><a href=\"https://github.com/JuliaLang/julia/issues/54682\">https://github.com/JuliaLang/julia/issues/54682</a></p>",
+        "id": 442689887,
+        "sender_full_name": "G Gundam",
+        "timestamp": 1717560860
+    },
+    {
+        "content": "<blockquote>\n<p>In the meantime, I came up with a good enough solution.</p>\n</blockquote>\n<p>If you want this to be more efficient, here's how I'd write it:</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">BangBang</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"n\">push!!</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">append!!</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">foldl</span><span class=\"p\">([</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"nb\">missing</span><span class=\"p\">,[</span><span class=\"nb\">missing</span><span class=\"p\">,</span><span class=\"mi\">4</span><span class=\"p\">]];</span><span class=\"w\"> </span><span class=\"n\">init</span><span class=\"o\">=</span><span class=\"kt\">Union</span><span class=\"p\">{}[])</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"> </span><span class=\"n\">m</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">a</span>\n<span class=\"w\">           </span><span class=\"k\">if</span><span class=\"w\"> </span><span class=\"n\">a</span><span class=\"w\"> </span><span class=\"k\">isa</span><span class=\"w\"> </span><span class=\"kt\">Vector</span>\n<span class=\"w\">               </span><span class=\"n\">append!!</span><span class=\"p\">(</span><span class=\"n\">m</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">a</span><span class=\"p\">)</span>\n<span class=\"w\">           </span><span class=\"k\">else</span>\n<span class=\"w\">               </span><span class=\"n\">push!!</span><span class=\"p\">(</span><span class=\"n\">m</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">a</span><span class=\"p\">)</span>\n<span class=\"w\">           </span><span class=\"k\">end</span>\n<span class=\"w\">       </span><span class=\"k\">end</span>\n<span class=\"go\">4-element Vector{Union{Missing, Int64}}:</span>\n<span class=\"go\"> 1</span>\n<span class=\"go\">  missing</span>\n<span class=\"go\">  missing</span>\n<span class=\"go\"> 4</span>\n</code></pre></div>",
+        "id": 442690802,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1717561280
+    },
+    {
+        "content": "<p>I'm not familiar with BangBang, but I'll take a look.</p>",
+        "id": 442690943,
+        "sender_full_name": "G Gundam",
+        "timestamp": 1717561338
+    },
+    {
+        "content": "<p>This makes it so you get a concrete eltype array instead of a <code>Vector{Any}</code>, and it avoids doing <code>push!(m, a...)</code> which is slow</p>",
+        "id": 442690948,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1717561340
+    },
+    {
+        "content": "<p>Okay, I'll take easy speed ups like this.</p>",
+        "id": 442690993,
+        "sender_full_name": "G Gundam",
+        "timestamp": 1717561367
+    },
+    {
+        "content": "<p>(TBH, aside from startup speed, things are already way faster than I'm used to.)</p>",
+        "id": 442691392,
+        "sender_full_name": "G Gundam",
+        "timestamp": 1717561515
+    },
+    {
+        "content": "<p>The idea with BangBang is that when you write <code>push!!(m, a)</code> it basically checks if it's possible to do <code>push!(m, a)</code> and if it is possible, it does that. If it's not possible (because e.g. <code>m</code> has too narrow an <code>eltype</code>, then it'll widen the element type of <code>m</code></p>",
+        "id": 442691677,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1717561643
+    },
+    {
+        "content": "<p>e.g.</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">push!</span><span class=\"p\">(</span><span class=\"kt\">Int</span><span class=\"p\">[],</span><span class=\"w\"> </span><span class=\"s\">\"hi\"</span><span class=\"p\">)</span>\n<span class=\"gr\">ERROR: MethodError: Cannot `convert` an object of type String to an object of type Int64</span>\n</code></pre></div>\n<p>versus</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">push!!</span><span class=\"p\">(</span><span class=\"kt\">Int</span><span class=\"p\">[],</span><span class=\"w\"> </span><span class=\"s\">\"hi\"</span><span class=\"p\">)</span>\n<span class=\"go\">1-element Vector{Any}:</span>\n<span class=\"go\"> \"hi\"</span>\n</code></pre></div>\n<p>This means it only sometimes mutates the array, and sometimes it creates a new array though, so you need to be careful about that</p>",
+        "id": 442691910,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1717561780
+    },
+    {
+        "content": "<p>That last part is good to know.  I'll keep that in mind.  Thanks again.</p>",
+        "id": 442692066,
+        "sender_full_name": "G Gundam",
+        "timestamp": 1717561863
+    },
+    {
+        "content": "<p>I wouldn't say it's a bug. <code>flatten([[missing]])</code> should go to <code>[missing]</code>, but it's not clear to me what <code>flatten([missing])</code> would do: how many values should it expand to? I think it's ambiguous and so error is the best option.</p>",
+        "id": 442720327,
+        "sender_full_name": "jar",
+        "timestamp": 1717574644
+    },
+    {
+        "content": "<p>The behavior I expected was something similar to <a href=\"https://underscorejs.org/#flatten\">_.flatten(array)</a> from underscore.js.  It just works with what it sees, and <code>undefined</code> (the closest thing to <code>missing</code> in JS) is not a collection, so it resolves to one value while flattening.</p>\n<p>With that said, I'm OK with whatever the maintainers decide.  I already solved my problem without using <code>Iterators.flatten</code>, but its behavior did surprise me.</p>",
+        "id": 442753965,
+        "sender_full_name": "G Gundam",
+        "timestamp": 1717585109
+    },
+    {
+        "content": "<p><code>missing</code> in particular is often difficult to deal with generically</p>",
+        "id": 442759841,
+        "sender_full_name": "Sukera",
+        "timestamp": 1717586835
+    },
+    {
+        "content": "<p>the semantics of <code>missing</code> are a bit different from <code>undefined</code>, though in this case it really should just produce the <code>missing</code></p>",
+        "id": 442760125,
+        "sender_full_name": "Sukera",
+        "timestamp": 1717586920
+    },
+    {
+        "content": "<p>Wait. Is it really a bug? I thought <code>Iterators.flatten</code> was only supposed to flatten an iterator of iterators, and indeed that's what the docstring says. <code>Iterators.flatten([1.0, 2.0, [3.0, 4.0]])</code> working is basically an accident because numbers happen to be iterable. What happens when a <code>missing</code> or any other non-iterable value is included is actually more reasonable.</p>",
+        "id": 442780835,
+        "sender_full_name": "Adam non-jedi Beckmeyer",
+        "timestamp": 1717592548
+    },
+    {
+        "content": "<p>I think the (one-liner) way you're supposed to do something like this in just base Julia without third-party packages would look something like:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">Iterators</span><span class=\"o\">.</span><span class=\"n\">flatmap</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">-&gt;</span><span class=\"w\"> </span><span class=\"n\">ifelse</span><span class=\"p\">(</span><span class=\"n\">ismissing</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"nb\">missing</span><span class=\"p\">,),</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"p\">),[</span><span class=\"mf\">1.0</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"nb\">missing</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mf\">3.0</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mf\">4.0</span><span class=\"p\">]])</span><span class=\"w\"> </span><span class=\"o\">|&gt;</span><span class=\"w\"> </span><span class=\"n\">collect</span>\n</code></pre></div>",
+        "id": 442782888,
+        "sender_full_name": "Adam non-jedi Beckmeyer",
+        "timestamp": 1717593020
+    },
+    {
+        "content": "<p>Mhm, yeah my bad I had forgotten that <code>flatten</code> was only supposed to take iterators of iterators, I had thought it tried to be smart but misremembered</p>",
+        "id": 442792840,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1717595170
+    }
+]

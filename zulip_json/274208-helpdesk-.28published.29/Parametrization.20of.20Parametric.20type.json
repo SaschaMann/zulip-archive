@@ -1,0 +1,32 @@
+[
+    {
+        "content": "<p>while porting some array wrapper to a GPU, its quite nice to use <a href=\"https://github.com/search?q=Adapt.jl&amp;type=Repositories\">Adapt.jl</a> to adapt the underlying arrays. <br>\nHowever it feels a bit nasty to parametrize a struct on the full array type, lets say we have </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"kt\">Foo</span>\n    <span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">CuArray</span><span class=\"p\">{</span><span class=\"kt\">Bar</span><span class=\"p\">,</span><span class=\"mi\">1</span><span class=\"p\">}</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>in order to use <a href=\"https://github.com/search?q=Adapt.jl&amp;type=Repositories\">Adapt.jl</a> I'm currently doing</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"kt\">Foo</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span>\n    <span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">T</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>which would end up in e.g. <code>Foo{CuArray{Bar,1}}</code></p>\n<p>Is there a way to do something like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"kt\">Foo</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"o\">&lt;:</span><span class=\"kt\">AbstractArray</span><span class=\"p\">,</span><span class=\"kt\">arrtype</span><span class=\"p\">}</span>\n    <span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">T</span><span class=\"p\">{</span><span class=\"kt\">arrtype</span><span class=\"p\">,</span><span class=\"mi\">1</span><span class=\"p\">}</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>In order to get back to <code>Foo{Bar}</code>?</p>",
+        "id": 242890113,
+        "sender_full_name": "Max Köhler",
+        "timestamp": 1623854290
+    },
+    {
+        "content": "<p>had the idea, immediately after writing the post, but maybe it's also helpful for others. One possible solution is</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"kt\">Foo</span><span class=\"p\">{</span><span class=\"kt\">arrtype</span><span class=\"p\">,</span><span class=\"kt\">T</span><span class=\"o\">&lt;:</span><span class=\"kt\">DenseArray</span><span class=\"p\">{</span><span class=\"kt\">arrtype</span><span class=\"p\">,</span><span class=\"mi\">1</span><span class=\"p\">}}</span>\n    <span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">T</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>it's not <code>Foo{Bar}</code> but with this I can dispatch again on <code>Foo{Bar}</code></p>",
+        "id": 242890896,
+        "sender_full_name": "Max Köhler",
+        "timestamp": 1623854642
+    },
+    {
+        "content": "<p>It is, unfortunately, not possible to do \"computation\" in type parameters when defining a struct, so you can't ask it to \"extract\" some type parameters, if that makes sense</p>",
+        "id": 242891395,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1623854842
+    },
+    {
+        "content": "<p>But I'm not clear exactly what you're asking. If you want to obtain a <code>Foo{Bar}</code>, you can simply do <code>Foo(x::Bar)</code>, right?</p>",
+        "id": 242891566,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1623854902
+    },
+    {
+        "content": "<p>so, <code>T</code> should be always some type of Array, <code>CuArray</code> or when on device <code>CuDeviceArray</code>. Now I still want the underlying array element type as a parameter of <code>Foo</code>, but you're right I could just get it inside the function. Maybe that's still better than introducing another type parameter</p>",
+        "id": 242891841,
+        "sender_full_name": "Max Köhler",
+        "timestamp": 1623855007
+    }
+]

@@ -1,0 +1,80 @@
+[
+    {
+        "content": "<p>Seems that when one makes a deep enough nesting of types something which is seemingly type stable just stops being so. Something something union splitting?</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"kt\">AA</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span>\n<span class=\"w\">  </span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">T</span>\n<span class=\"k\">end</span>\n\n<span class=\"n\">ff</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">AA</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">ff</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">.</span><span class=\"n\">x</span><span class=\"p\">)</span>\n<span class=\"n\">ff</span><span class=\"p\">(</span><span class=\"n\">t</span><span class=\"o\">::</span><span class=\"kt\">Tuple</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">mapreduce</span><span class=\"p\">(</span><span class=\"n\">ff</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">max</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">t</span><span class=\"p\">;</span><span class=\"w\"> </span><span class=\"n\">init</span><span class=\"o\">=</span><span class=\"mi\">0</span><span class=\"p\">)</span>\n<span class=\"n\">ff</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">AbstractArray</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">mapreduce</span><span class=\"p\">(</span><span class=\"n\">ff</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">max</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">a</span><span class=\"p\">;</span><span class=\"w\"> </span><span class=\"n\">init</span><span class=\"o\">=</span><span class=\"mi\">0</span><span class=\"p\">)</span>\n<span class=\"n\">ff</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">Int</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">x</span>\n\n<span class=\"c\"># This is fine</span>\n<span class=\"k\">let</span>\n<span class=\"w\">    </span><span class=\"n\">aa</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">AA</span><span class=\"p\">(</span><span class=\"n\">AA</span><span class=\"p\">([</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">]))</span>\n<span class=\"w\">    </span><span class=\"nd\">@code_warntype</span><span class=\"w\"> </span><span class=\"n\">ff</span><span class=\"p\">(</span><span class=\"n\">aa</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n\n<span class=\"c\"># This too</span>\n<span class=\"k\">let</span>\n<span class=\"w\">    </span><span class=\"n\">aa</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">AA</span><span class=\"p\">((</span><span class=\"n\">AA</span><span class=\"p\">([</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">]),))</span>\n<span class=\"w\">    </span><span class=\"nd\">@code_warntype</span><span class=\"w\"> </span><span class=\"n\">ff</span><span class=\"p\">(</span><span class=\"n\">aa</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n<span class=\"c\"># This is not fine</span>\n<span class=\"k\">let</span>\n<span class=\"w\">    </span><span class=\"n\">aa</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">AA</span><span class=\"p\">((</span><span class=\"n\">AA</span><span class=\"p\">([</span><span class=\"n\">AA</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">AA</span><span class=\"p\">(</span><span class=\"mi\">2</span><span class=\"p\">)]),</span><span class=\"w\"> </span><span class=\"n\">AA</span><span class=\"p\">(</span><span class=\"mi\">3</span><span class=\"p\">)))</span>\n<span class=\"w\">    </span><span class=\"nd\">@code_warntype</span><span class=\"w\"> </span><span class=\"n\">ff</span><span class=\"p\">(</span><span class=\"n\">aa</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n<span class=\"c\"># This looks worse, but is still fine</span>\n<span class=\"k\">let</span>\n<span class=\"w\">   </span><span class=\"n\">aa</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">AA</span><span class=\"p\">((</span><span class=\"n\">AA</span><span class=\"p\">([</span><span class=\"n\">AA</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">AA</span><span class=\"p\">(</span><span class=\"mi\">2</span><span class=\"p\">)]),</span><span class=\"w\"> </span><span class=\"n\">AA</span><span class=\"p\">([</span><span class=\"mi\">3</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">4</span><span class=\"p\">])))</span>\n<span class=\"w\">  </span><span class=\"nd\">@code_warntype</span><span class=\"w\"> </span><span class=\"n\">ff</span><span class=\"p\">(</span><span class=\"n\">aa</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 356999971,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1683641910
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">aa2</span><span class=\"p\">)</span>\n<span class=\"go\">AA{Tuple{AA{Vector{AA{Int64}}}, AA{Int64}}}</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">aa3</span><span class=\"p\">)</span>\n<span class=\"go\">AA{Tuple{AA{Vector{AA{Int64}}}, AA{Vector{Int64}}}}</span>\n</code></pre></div>\n<p>I think the homogeneity of the 2nd level in the example that looks worse helps the compiler, but not sure how</p>",
+        "id": 357020756,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1683646053
+    },
+    {
+        "content": "<p>I did dive in with Cthulhu with remarks turned on. Saw some strange ones deeper in the stack. It may be worth exploring around with that yourself and maybe asking about this in a place where more of the compiler team hangs out.</p>",
+        "id": 357021320,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1683646134
+    },
+    {
+        "content": "<p>four methods for <code>ff</code>?  sounds like union splitting to me</p>",
+        "id": 357021631,
+        "sender_full_name": "Sukera",
+        "timestamp": 1683646194
+    },
+    {
+        "content": "<p>I can't even dive into this with Cthulhu on a somewhat recent master</p>",
+        "id": 357022142,
+        "sender_full_name": "Sukera",
+        "timestamp": 1683646273
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"nd\">@descend</span><span class=\"w\"> </span><span class=\"n\">ff</span><span class=\"p\">(</span><span class=\"n\">aa</span><span class=\"p\">)</span>\n<span class=\"n\">ERROR</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"n\">unhandled</span><span class=\"w\"> </span><span class=\"n\">LimitedAccuracy</span>\n<span class=\"n\">Stacktrace</span><span class=\"o\">:</span>\n</code></pre></div>",
+        "id": 357022214,
+        "sender_full_name": "Sukera",
+        "timestamp": 1683646282
+    },
+    {
+        "content": "<p>Even on 1.8 I see some lattice elements that don't look like they should be there (or anywhere, in a valid program). Suffice it to say that this would make a good Cthulhu bug report as well</p>",
+        "id": 357041881,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1683650156
+    },
+    {
+        "content": "<p>Don't think it's a cthulhu issue</p>",
+        "id": 357043347,
+        "sender_full_name": "Sukera",
+        "timestamp": 1683650470
+    },
+    {
+        "content": "<p>the  stacktrace points to type inference</p>",
+        "id": 357043375,
+        "sender_full_name": "Sukera",
+        "timestamp": 1683650475
+    },
+    {
+        "content": "<p>which makes kind of sense, since <code>@code_warntype</code> fell back to <code>Any</code> too</p>",
+        "id": 357043459,
+        "sender_full_name": "Sukera",
+        "timestamp": 1683650500
+    },
+    {
+        "content": "<p>Did this lead to any issues? I recently hit something similar.</p>",
+        "id": 410203869,
+        "sender_full_name": "Simone Carlo Surace",
+        "timestamp": 1703712654
+    },
+    {
+        "content": "<p>similar as in issues with Cthulhu, or do you mean the type stability thing?</p>",
+        "id": 410279095,
+        "sender_full_name": "Sukera",
+        "timestamp": 1703761759
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269183\">cormullion</span> has marked this topic as resolved.</p>",
+        "id": 410296537,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1703771599
+    }
+]

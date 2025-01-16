@@ -1,0 +1,110 @@
+[
+    {
+        "content": "<p>So we have this <a href=\"https://github.com/BioJulia/Automa.jl/issues/53\">tricky issue in Automa</a>. The short version is that <a href=\"https://github.com/search?q=Automa.jl&amp;type=Repositories\">Automa.jl</a> works by creating _very_ large machine-generated functions by computing some <code>Expr</code> objects, interpolating them in, and <code>eval</code>'ing the function. Currently, some expression are being interpolated many times in the function, which leads to excessively large code. That's bad for compilation, cache usage, you name it.</p>\n<p>I'd like to factor it out, and I can think of two ways of doing it.</p>\n<ol>\n<li>Take each expression and wrap it in a function. Interpolate those functions in once, then replace the old places where the code was interpolated in with function calls. The issue is that the code may access variables in the outer scope, and I worry this would be super inefficient. So here, I would need to have a way of creating \"functions without scopes\" - that is - literally just a block of code that can be jumped into and then out of again.</li>\n<li>Alternatively, I can manually manipulate the stack and add in <code>callq</code> and <code>popq</code> instructions. But then I would need to be able to specify \"push the memory location of this expression onto the stack\", and I don't think that is possible.</li>\n</ol>\n<p>Is this a solvable problem in Julia?</p>",
+        "id": 232176070,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1616947921
+    },
+    {
+        "content": "<p>Maybe I'm misunderstanding something, but does <a href=\"https://github.com/search?q=RuntimeGeneratedFunctions.jl&amp;type=Repositories\">RuntimeGeneratedFunctions.jl</a> work for you?</p>",
+        "id": 232176540,
+        "sender_full_name": "Robbie Rosati",
+        "timestamp": 1616948429
+    },
+    {
+        "content": "<p>I don't think so, sorry. We can construct the function alright (and we always do it at compiletime), the issue is code duplication within the function</p>",
+        "id": 232176676,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1616948536
+    },
+    {
+        "content": "<p>Ah, I see. Then you're really after some kind of common subexpression elimination (CSE)?</p>",
+        "id": 232176802,
+        "sender_full_name": "Robbie Rosati",
+        "timestamp": 1616948674
+    },
+    {
+        "content": "<p>Not quite. Here are the details:<br>\n<a href=\"https://github.com/search?q=Automa.jl&amp;type=Repositories\">Automa.jl</a> is a package for generating parsers, lexers and similar programs. The user inputs some regexes, and some Julia code (<code>Expr</code> objects) that should be executed at each regex. Automa then computes the optimal finite state machine that parses the given regexes, and then creates a function that parses the code and executes the input Expr objects.<br>\nThe issue is that while the user may specify a regex input once, that regex may correspond to many states in the state machine, and the result is that the input Expr object is interpolated many times into the large function</p>",
+        "id": 232176977,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1616948873
+    },
+    {
+        "content": "<p>If it's possible, I'd suggest avoiding updating the state by re-assigning to the variables in the outer scope (reading from outer scopes should be totally fine). That is to say, instead of</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">x</span> <span class=\"o\">=</span> <span class=\"mi\">0</span>\n<span class=\"n\">f</span><span class=\"p\">()</span> <span class=\"o\">=</span> <span class=\"n\">x</span> <span class=\"o\">+=</span> <span class=\"mi\">1</span>\n<span class=\"n\">f</span><span class=\"p\">()</span>\n</code></pre></div>\n<p>I suggest</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">x</span> <span class=\"o\">=</span> <span class=\"mi\">0</span>\n<span class=\"n\">g</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">x</span> <span class=\"o\">+</span> <span class=\"mi\">1</span>\n<span class=\"n\">x</span> <span class=\"o\">=</span> <span class=\"n\">g</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>if possible. It's a very efficient approach. Purity works great for the compiler. This is why <code>foldl</code>/<code>reduce</code>-based iteration that I use in <a href=\"https://github.com/search?q=Transducers.jl&amp;type=Repositories\">Transducers.jl</a> is so powerful. It wouldn't be possible to all that stuff if I modeled the iteration as <code>foreach</code> (i.e., equivalent to how <code>f</code> is used) instead of <code>foldl</code> (i.e., how <code>g</code> is used).</p>\n<p>Maybe you could use <code>Base.Experimental.@opaque</code> and hope that Keno will implement enough optimizations you need. But, if you control codegen, maybe it isn't worth the risk.</p>",
+        "id": 232194899,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1616967285
+    },
+    {
+        "content": "<p>That would be nice, but the content of these functions (the otherwise duplicated content) are supplied by the user. So to wrap them in ordinary scoped functions, I would need to, given some input <code>Expr</code> object, calculate all the variables accessed (for the function signature), and the variables modified (for the return statement), which I think is really hard, no?</p>",
+        "id": 232232553,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1617005546
+    },
+    {
+        "content": "<p>Just to clarify my understanding: when you say \"functions without scope\" you mean those should just evaluate as if the body was in place of the function call, right? Or did you mean a function that has no access to any outer scope?</p>",
+        "id": 232240052,
+        "sender_full_name": "Florian Große",
+        "timestamp": 1617010087
+    },
+    {
+        "content": "<p>The former</p>",
+        "id": 232240599,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1617010376
+    },
+    {
+        "content": "<p>Pretty sure <a href=\"https://github.com/search?q=Pluto.jl&amp;type=Repositories\">Pluto.jl</a> has all the requisite tooling for that, considering it can wrap cells in functions automatically</p>",
+        "id": 232240868,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1617010494
+    },
+    {
+        "content": "<p>Maybe restrict somehow user interface? Force user to provide all necessary information for input and output variables.</p>\n<p>You can use this function later, even when you would be able to get information automatically.</p>",
+        "id": 232241302,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1617010712
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"208845\">@Sebastian Pfitzner</span> <a href=\"https://github.com/search?q=Pluto.jl&amp;type=Repositories\">Pluto.jl</a> - yeah. that looks right. I'll look into it.<br>\nI'm a bit wary of changing the interface, since that would break all the code ever written for Automa <span aria-label=\"sweat smile\" class=\"emoji emoji-1f605\" role=\"img\" title=\"sweat smile\">:sweat_smile:</span></p>",
+        "id": 232241438,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1617010796
+    },
+    {
+        "content": "<p>This way it would be possible to focus on internal implementation details and get proof of concept that the whole restructuring make sense, get some profiling and what's not.</p>",
+        "id": 232241559,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1617010832
+    },
+    {
+        "content": "<p>The former sounds like you could pull this off with the gotos you're already using. Like the stack thing you mentioned but you don't keep an actual function stack but you just label all the occasions where a \"function\" is called and insert some makeshift return-to-callside logic in each function. I don't know how easy that would be. Do you know all the places where each of those functions may be called before? </p>\n<p>Idea:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"c\"># keep a stack of callsides</span>\n<span class=\"n\">push!</span><span class=\"p\">(</span><span class=\"n\">stack</span><span class=\"p\">,</span> <span class=\"o\">:</span><span class=\"n\">fun_A_caller1</span><span class=\"p\">)</span>\n<span class=\"nd\">@goto</span> <span class=\"n\">fun_A</span>\n<span class=\"nd\">@label</span> <span class=\"n\">fun_A_caller1</span>\n<span class=\"o\">.</span>\n<span class=\"o\">.</span>\n<span class=\"n\">push!</span><span class=\"p\">(</span><span class=\"n\">stack</span><span class=\"p\">,</span> <span class=\"o\">:</span><span class=\"n\">fun_A_caller2</span><span class=\"p\">)</span>\n<span class=\"nd\">@goto</span> <span class=\"n\">fun_A</span>\n<span class=\"nd\">@label</span> <span class=\"n\">fun_A_caller2</span>\n<span class=\"o\">.</span>\n<span class=\"o\">.</span>\n<span class=\"c\"># function A</span>\n<span class=\"nd\">@label</span> <span class=\"n\">fun_A</span>\n<span class=\"o\">...</span> <span class=\"k\">do</span> <span class=\"n\">work</span> <span class=\"o\">...</span>\n<span class=\"c\"># return logic that would have to be generated</span>\n<span class=\"n\">caller</span> <span class=\"o\">=</span> <span class=\"n\">pop!</span><span class=\"p\">(</span><span class=\"n\">stack</span><span class=\"p\">)</span>\n<span class=\"n\">caller</span> <span class=\"o\">===</span> <span class=\"o\">:</span><span class=\"n\">fun_A_caller1</span> <span class=\"o\">&amp;&amp;</span> <span class=\"nd\">@goto</span> <span class=\"n\">fun_A_caller1</span>\n<span class=\"n\">caller</span> <span class=\"o\">===</span> <span class=\"o\">:</span><span class=\"n\">fun_A_caller2</span> <span class=\"o\">&amp;&amp;</span> <span class=\"nd\">@goto</span> <span class=\"n\">fun_A_caller2</span>\n</code></pre></div>\n<p>Although I have no clue if this would please the compiler or not.</p>",
+        "id": 232241689,
+        "sender_full_name": "Florian Große",
+        "timestamp": 1617010895
+    },
+    {
+        "content": "<p>Ah yes, I could totally do it with <code>@goto</code>, a manual stack, and some symbols (or perhaps integers) for figuring out where to jump. It's not quite as efficient I suppose, but maybe it'll be fine.</p>",
+        "id": 232242004,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1617011038
+    },
+    {
+        "content": "<p>Ah, but then the problem is that executing the function would lead to allocating a vector for the stack, and some people have already used Automa to build functions with runtimes that are a few tens of nanoseconds.</p>",
+        "id": 232242320,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1617011172
+    },
+    {
+        "content": "<p>That's true, it'd be a huge overhead for those but alleviate the scaling problems for larger things.<br>\nYou should probably consider ripping Pluto's internals out and bathing in it's glory before you try that out :D</p>",
+        "id": 232242674,
+        "sender_full_name": "Florian Große",
+        "timestamp": 1617011350
+    },
+    {
+        "content": "<p>Good luck</p>",
+        "id": 232242683,
+        "sender_full_name": "Florian Große",
+        "timestamp": 1617011361
+    }
+]

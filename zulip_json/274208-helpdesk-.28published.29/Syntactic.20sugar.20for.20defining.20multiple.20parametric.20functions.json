@@ -1,0 +1,254 @@
+[
+    {
+        "content": "<p>Hi,</p>\n<p>The following is not possible:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">let</span> <span class=\"kt\">T</span> <span class=\"o\">&lt;:</span> <span class=\"kt\">Real</span>\n       <span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"n\">t</span><span class=\"o\">::</span><span class=\"kt\">T</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">t</span> <span class=\"o\">+</span> <span class=\"n\">t</span>\n       <span class=\"n\">bar</span><span class=\"p\">(</span><span class=\"n\">t</span><span class=\"o\">::</span><span class=\"kt\">T</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">t</span> <span class=\"o\">-</span> <span class=\"n\">t</span>\n       <span class=\"n\">baz</span><span class=\"p\">(</span><span class=\"n\">t</span><span class=\"o\">::</span><span class=\"kt\">T</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">t</span> <span class=\"o\">*</span> <span class=\"n\">t</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>Is there a way to avoid writing the same type parameter restrictions again and again for each function?</p>",
+        "id": 260655275,
+        "sender_full_name": "Jesper Stemann Andersen",
+        "timestamp": 1636377583
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">let</span> <span class=\"n\">X</span> <span class=\"o\">=</span> <span class=\"n\">T</span> <span class=\"k\">where</span> <span class=\"kt\">T</span> <span class=\"o\">&lt;:</span> <span class=\"kt\">Real</span>\n           <span class=\"k\">global</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">X</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">x</span>\n           <span class=\"k\">global</span> <span class=\"n\">g</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">X</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">x</span>\n       <span class=\"k\">end</span>\n<span class=\"n\">g</span> <span class=\"p\">(</span><span class=\"n\">generic</span> <span class=\"k\">function</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">)</span>\n<span class=\"mi\">1</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">g</span><span class=\"p\">(</span><span class=\"mf\">2.0</span><span class=\"p\">)</span>\n<span class=\"mf\">2.0</span>\n</code></pre></div>",
+        "id": 260659656,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1636379928
+    },
+    {
+        "content": "<p>Thanks! :-)</p>",
+        "id": 260661850,
+        "sender_full_name": "Jesper Stemann Andersen",
+        "timestamp": 1636380965
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"272644\">Fredrik Ekre</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Syntactic.20sugar.20for.20defining.20multiple.20parametric.20functions/near/260659656\">said</a>:</p>\n<blockquote>\n<p><div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">let</span> <span class=\"n\">X</span> <span class=\"o\">=</span> <span class=\"n\">T</span> <span class=\"k\">where</span> <span class=\"kt\">T</span> <span class=\"o\">&lt;:</span> <span class=\"kt\">Real</span>\n</code></pre></div><br>\n</p>\n</blockquote>\n<p>Which in this case is equivalent to <code>let X = Real</code>.</p>",
+        "id": 260662150,
+        "sender_full_name": "Philipp Gabler",
+        "timestamp": 1636381082
+    },
+    {
+        "content": "<p>So... how to define blocks with sets of dependent parametric types - e.g. <code>(T1, T2) where {T1 &lt;: Number,T2 &lt;: AbstractVector{T1}}</code>?</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"k\">let</span> <span class=\"n\">T</span> <span class=\"o\">=</span> <span class=\"n\">T1</span> <span class=\"k\">where</span> <span class=\"p\">{</span><span class=\"kt\">T1</span> <span class=\"o\">&lt;:</span> <span class=\"kt\">Number</span><span class=\"p\">},</span> <span class=\"n\">TVector</span> <span class=\"o\">=</span> <span class=\"n\">T2</span> <span class=\"k\">where</span> <span class=\"p\">{</span><span class=\"kt\">T2</span> <span class=\"o\">&lt;:</span> <span class=\"kt\">AbstractVector</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}}</span>\n       <span class=\"k\">global</span> <span class=\"k\">function</span> <span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">T</span><span class=\"p\">)</span>\n           <span class=\"nd\">@show</span> <span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n       <span class=\"k\">end</span>\n       <span class=\"k\">global</span> <span class=\"k\">function</span> <span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"o\">::</span><span class=\"kt\">TVector</span><span class=\"p\">)</span>\n           <span class=\"nd\">@show</span> <span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"p\">)</span>\n       <span class=\"k\">end</span>\n       <span class=\"k\">end</span>\n       <span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"mi\">2</span><span class=\"p\">)</span>\n       <span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"mf\">2.0</span><span class=\"p\">)</span>\n       <span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"n\">vec</span><span class=\"p\">([</span><span class=\"mi\">1</span> <span class=\"mi\">2</span> <span class=\"mi\">3</span><span class=\"p\">]))</span>\n<span class=\"go\">typeof(x) = Int64</span>\n<span class=\"go\">typeof(x) = Float64</span>\n<span class=\"gr\">ERROR: MethodError: no method matching foo(::Vector{Int64})</span>\n<span class=\"gr\">Closest candidates are:</span>\n<span class=\"gr\">  foo(::Number) at REPL[36]:3</span>\n<span class=\"gr\">  foo(::AbstractVector{Number}) at REPL[36]:6</span>\n</code></pre></div>\n<p>Letting <code>TVector = AbstractVector</code> (without the parameterization on <code>T</code>), and defining <code>foo(v::TVector{T})</code> also does not define <code>foo</code> for <code>::Vector{Int64}</code>.</p>",
+        "id": 262292928,
+        "sender_full_name": "Jesper Stemann Andersen",
+        "timestamp": 1637571510
+    },
+    {
+        "content": "<p>Note that </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Int</span><span class=\"p\">}</span> <span class=\"o\">&lt;:</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Real</span><span class=\"p\">}</span>\n<span class=\"nb\">false</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Int</span><span class=\"p\">}</span> <span class=\"o\">&lt;:</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"o\">&lt;:</span><span class=\"kt\">Real</span><span class=\"p\">}</span>\n<span class=\"nb\">true</span>\n</code></pre></div>\n<p>see <a href=\"https://docs.julialang.org/en/v1/manual/types/#man-parametric-composite-types\">https://docs.julialang.org/en/v1/manual/types/#man-parametric-composite-types</a></p>",
+        "id": 262293332,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1637571703
+    },
+    {
+        "content": "<p>Let me answer myself...</p>\n<p>This works at least (the generic function must have a <code>where T</code>):</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">let</span> <span class=\"n\">T</span> <span class=\"o\">=</span> <span class=\"kt\">Number</span><span class=\"p\">,</span> <span class=\"n\">TVector</span> <span class=\"o\">=</span> <span class=\"kt\">AbstractVector</span>\n    <span class=\"k\">global</span> <span class=\"k\">function</span> <span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">T</span><span class=\"p\">)</span>\n        <span class=\"nd\">@show</span> <span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n    <span class=\"k\">end</span>\n    <span class=\"k\">global</span> <span class=\"k\">function</span> <span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"o\">::</span><span class=\"kt\">TVector</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">})</span> <span class=\"k\">where</span> <span class=\"kt\">T</span>\n        <span class=\"nd\">@show</span> <span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"p\">)</span>\n    <span class=\"k\">end</span>\n<span class=\"k\">end</span>\n\n<span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"mi\">2</span><span class=\"p\">)</span>\n<span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"mf\">2.0</span><span class=\"p\">)</span>\n<span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"n\">vec</span><span class=\"p\">([</span><span class=\"mi\">1</span> <span class=\"mi\">2</span> <span class=\"mi\">3</span><span class=\"p\">]))</span>\n</code></pre></div>",
+        "id": 262293906,
+        "sender_full_name": "Jesper Stemann Andersen",
+        "timestamp": 1637572046
+    },
+    {
+        "content": "<p>... but all I achieved for <code>AbstractVector</code>/<code>TVector</code> was temporarily renaming it...</p>",
+        "id": 262295466,
+        "sender_full_name": "Jesper Stemann Andersen",
+        "timestamp": 1637573105
+    },
+    {
+        "content": "<p>parametric types in julia are invariant (except tuples)</p>",
+        "id": 262295653,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637573232
+    },
+    {
+        "content": "<p>what would you like to achieve?</p>",
+        "id": 262295661,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637573237
+    },
+    {
+        "content": "<p>if you want to define a function that takes vectors with elements of any number type, you can define <code>foo(v::AbstractVector{&lt;: Number})</code></p>",
+        "id": 262295751,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637573290
+    },
+    {
+        "content": "<p>I would just like to avoid writing the same <code>where {T1 &lt;: AbstractT1, T2 &lt;: AbstractT2{T1}}</code> over and over for a block of methods.</p>",
+        "id": 262296034,
+        "sender_full_name": "Jesper Stemann Andersen",
+        "timestamp": 1637573459
+    },
+    {
+        "content": "<p>do you actually require <code>T2</code> in the method?</p>",
+        "id": 262296096,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637573501
+    },
+    {
+        "content": "<p>if not, the way I've written it above is equvialent</p>",
+        "id": 262296117,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637573512
+    },
+    {
+        "content": "<p>Yes, I think so - see for a very simple example the two functions for SerializationTypeSerializer: <a href=\"https://github.com/IHPSystems/TypeSerializers.jl/blob/main/src/TypeSerializers.jl\">https://github.com/IHPSystems/TypeSerializers.jl/blob/main/src/TypeSerializers.jl</a></p>",
+        "id": 262296615,
+        "sender_full_name": "Jesper Stemann Andersen",
+        "timestamp": 1637573768
+    },
+    {
+        "content": "<p>those don't use <code>TSerializer</code> in the method itself though, only <code>T</code></p>",
+        "id": 262296707,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637573830
+    },
+    {
+        "content": "<p>in which case <code>foo(s::SerializationTypeSerializer{T})::T where T</code> should be the same</p>",
+        "id": 262296773,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637573875
+    },
+    {
+        "content": "<p>or more concrete for your example <code>::Type{&lt;:SerializationTypeSerializer{T}}</code>, I think</p>",
+        "id": 262296905,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637573960
+    },
+    {
+        "content": "<p>This is what got me started (using those \"type serializers\"):<br>\n<a href=\"https://github.com/IHPSystems/SerializingChannels.jl/blob/main/src/SerializingChannels.jl\">https://github.com/IHPSystems/SerializingChannels.jl/blob/main/src/SerializingChannels.jl</a></p>",
+        "id": 262296942,
+        "sender_full_name": "Jesper Stemann Andersen",
+        "timestamp": 1637573992
+    },
+    {
+        "content": "<p>(though intuitively, to me that already reads like relying a lot of type hierarchies, complicating things)</p>",
+        "id": 262296952,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637574000
+    },
+    {
+        "content": "<p>if you're already restricting the type at construction, why check for the same requirement on method definition as well?</p>",
+        "id": 262297107,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637574075
+    },
+    {
+        "content": "<p>e.g., the struct and the first function should be equivalent to this</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"kt\">SerializingChannel</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">,</span> <span class=\"kt\">TChannel</span> <span class=\"o\">&lt;:</span> <span class=\"kt\">AbstractChannel</span><span class=\"p\">{</span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">UInt8</span><span class=\"p\">}},</span> <span class=\"o\">&lt;:</span> <span class=\"kt\">AbstractTypeSerializer</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}}</span>\n    <span class=\"n\">channel</span><span class=\"o\">::</span><span class=\"kt\">TChannel</span>\n<span class=\"k\">end</span>\n\n<span class=\"k\">function</span> <span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">put!</span><span class=\"p\">(</span><span class=\"n\">channel</span><span class=\"o\">::</span><span class=\"kt\">SerializingChannel</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">,</span> <span class=\"kt\">_</span><span class=\"p\">,</span> <span class=\"kt\">TSerializer</span><span class=\"p\">},</span> <span class=\"n\">value</span><span class=\"o\">::</span><span class=\"kt\">T</span><span class=\"p\">)</span> <span class=\"k\">where</span> <span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">,</span> <span class=\"kt\">TSerializer</span><span class=\"p\">}</span>\n    <span class=\"n\">stream</span> <span class=\"o\">=</span> <span class=\"n\">serialize</span><span class=\"p\">(</span><span class=\"n\">TSerializer</span><span class=\"p\">,</span> <span class=\"n\">value</span><span class=\"p\">)</span>\n    <span class=\"n\">data</span> <span class=\"o\">=</span> <span class=\"n\">take!</span><span class=\"p\">(</span><span class=\"n\">stream</span><span class=\"p\">)</span>\n    <span class=\"n\">put!</span><span class=\"p\">(</span><span class=\"n\">channel</span><span class=\"o\">.</span><span class=\"n\">channel</span><span class=\"p\">,</span> <span class=\"n\">data</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>if I'm not mistaken</p>",
+        "id": 262297316,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637574188
+    },
+    {
+        "content": "<p>you don't have to give things a name if you're not going to use them in the function</p>",
+        "id": 262297359,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637574238
+    },
+    {
+        "content": "<p>Ah yes - I see. Thanks a lot!</p>",
+        "id": 262297695,
+        "sender_full_name": "Jesper Stemann Andersen",
+        "timestamp": 1637574454
+    },
+    {
+        "content": "<p>you're welcome!</p>",
+        "id": 262297995,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637574613
+    },
+    {
+        "content": "<p>also, if you want to avoid allocations, you may want to pass in an <code>IO</code> object instead of constructing one in <code>serialize</code>, only for it to be destroyed immediately again :)</p>",
+        "id": 262298051,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637574660
+    },
+    {
+        "content": "<p>though that may be harder to work into your current design, since you have a channel of <code>Vector{UInt8}</code></p>",
+        "id": 262298104,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637574695
+    },
+    {
+        "content": "<p>(I'm also only speculating here, so may not be applicable to your situation)</p>",
+        "id": 262298120,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637574714
+    },
+    {
+        "content": "<p>But I guess the programmer is still left to repetitive type constraints in the general case? I.e. where the type parameterization include abstract parametric types - like in the <code>Number, AbstractVector{&lt;:Number}</code> example above.</p>",
+        "id": 262299551,
+        "sender_full_name": "Jesper Stemann Andersen",
+        "timestamp": 1637575513
+    },
+    {
+        "content": "<p>you mean across methods?</p>",
+        "id": 262299781,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637575669
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"306754\">Sukera</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Syntactic.20sugar.20for.20defining.20multiple.20parametric.20functions/near/262298051\">said</a>:</p>\n<blockquote>\n<p>also, if you want to avoid allocations, you may want to pass in an <code>IO</code> object instead of constructing one in <code>serialize</code>, only for it to be destroyed immediately again :)</p>\n</blockquote>\n<p>Yeah - might be possible. It's highly targeted on being able to use <code>FlatBuffers</code> for serialization and <code>Zmq</code> as a transport.</p>\n<p>It was also a bit of a struggle to make it play nice with the <code>Serialization</code> module...</p>",
+        "id": 262299852,
+        "sender_full_name": "Jesper Stemann Andersen",
+        "timestamp": 1637575717
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">const</span> <span class=\"n\">T</span> <span class=\"o\">=</span> <span class=\"kt\">Number</span>\n<span class=\"kt\">Number</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">const</span> <span class=\"n\">TVec</span> <span class=\"o\">=</span> <span class=\"kt\">AbstractVector</span><span class=\"p\">{</span><span class=\"o\">&lt;:</span><span class=\"kt\">T</span><span class=\"p\">}</span>\n<span class=\"kt\">AbstractVector</span><span class=\"p\">{</span><span class=\"o\">&lt;:</span><span class=\"kt\">Number</span><span class=\"p\">}</span> <span class=\"p\">(</span><span class=\"n\">alias</span> <span class=\"k\">for</span> <span class=\"kt\">AbstractArray</span><span class=\"p\">{</span><span class=\"o\">&lt;:</span><span class=\"kt\">Number</span><span class=\"p\">,</span> <span class=\"mi\">1</span><span class=\"p\">})</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"o\">::</span><span class=\"kt\">TVec</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"s\">\"nope\"</span>\n<span class=\"n\">foo</span> <span class=\"p\">(</span><span class=\"n\">generic</span> <span class=\"k\">function</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"kt\">Int</span><span class=\"p\">[])</span>\n<span class=\"s\">\"nope\"</span>\n</code></pre></div>",
+        "id": 262299892,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637575744
+    },
+    {
+        "content": "<p>though that only works when you don't have interdependencies between two types in a signature</p>",
+        "id": 262299959,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637575790
+    },
+    {
+        "content": "<p>so if you require one type parameter of one type and another of another type to be the same, you _will_ need that <code>where</code></p>",
+        "id": 262300025,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637575815
+    },
+    {
+        "content": "<p>there's no way to express two different types having the same \"slot\" without specifying in which method that should apply</p>",
+        "id": 262300065,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637575852
+    },
+    {
+        "content": "<p>(i.e. there's no real dependent typing in julia)</p>",
+        "id": 262300098,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637575876
+    },
+    {
+        "content": "<p>also note that those <code>const T</code> are really only constant aliases - they're _not_ their own \"versions\" of that type</p>",
+        "id": 262300186,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637575924
+    },
+    {
+        "content": "<blockquote>\n<p>It's highly targeted on being able to use <code>FlatBuffers</code> for serialization</p>\n</blockquote>\n<p>well right now our <code>serialize</code> is always allocating an <code>IOBuffer</code> with its corresponding internal <code>Vector{UInt8}</code>, right?</p>",
+        "id": 262300273,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637576002
+    },
+    {
+        "content": "<p>so my guess would be that it would be more efficient to directly write to the FlatBuffer instead of having those intermediary stores</p>",
+        "id": 262300313,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637576031
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"306754\">Sukera</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Syntactic.20sugar.20for.20defining.20multiple.20parametric.20functions/near/262299892\">said</a>:</p>\n<blockquote>\n<p><div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">const</span> <span class=\"n\">T</span> <span class=\"o\">=</span> <span class=\"kt\">Number</span>\n<span class=\"kt\">Number</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">const</span> <span class=\"n\">TVec</span> <span class=\"o\">=</span> <span class=\"kt\">AbstractVector</span><span class=\"p\">{</span><span class=\"o\">&lt;:</span><span class=\"kt\">T</span><span class=\"p\">}</span>\n<span class=\"kt\">AbstractVector</span><span class=\"p\">{</span><span class=\"o\">&lt;:</span><span class=\"kt\">Number</span><span class=\"p\">}</span> <span class=\"p\">(</span><span class=\"n\">alias</span> <span class=\"k\">for</span> <span class=\"kt\">AbstractArray</span><span class=\"p\">{</span><span class=\"o\">&lt;:</span><span class=\"kt\">Number</span><span class=\"p\">,</span> <span class=\"mi\">1</span><span class=\"p\">})</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"o\">::</span><span class=\"kt\">TVec</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"s\">\"nope\"</span>\n<span class=\"n\">foo</span> <span class=\"p\">(</span><span class=\"n\">generic</span> <span class=\"k\">function</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"kt\">Int</span><span class=\"p\">[])</span>\n<span class=\"s\">\"nope\"</span>\n</code></pre></div><br>\n</p>\n</blockquote>\n<p>Excellent. A bit puzzled though, that I did not manage to make those <code>T, TVec</code> definitions work in a <code>let</code> block...<br>\nShould they just be nested <code>let</code> blocks? And how then to <code>global</code>'ize the method definitions?</p>",
+        "id": 262300740,
+        "sender_full_name": "Jesper Stemann Andersen",
+        "timestamp": 1637576360
+    },
+    {
+        "content": "<p>Why doesn't it work with <code>let</code>?</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">let</span> <span class=\"n\">T</span> <span class=\"o\">=</span> <span class=\"kt\">Number</span><span class=\"p\">,</span> <span class=\"n\">TVec</span> <span class=\"o\">=</span> <span class=\"kt\">AbstractVector</span><span class=\"p\">{</span><span class=\"o\">&lt;:</span><span class=\"kt\">T</span><span class=\"p\">}</span>\n           <span class=\"k\">global</span> <span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">TVec</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"s\">\"nope\"</span>\n       <span class=\"k\">end</span>\n<span class=\"n\">foo</span> <span class=\"p\">(</span><span class=\"n\">generic</span> <span class=\"k\">function</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"kt\">Int</span><span class=\"p\">[])</span>\n<span class=\"s\">\"nope\"</span>\n</code></pre></div>",
+        "id": 262300962,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1637576519
+    },
+    {
+        "content": "<p>Ah - it was probably just the parametric type invariance that I messed up (defining <code>TVec = AbstractVector{T}</code> instead of <code>TVec = AbstractVector{&lt;:T}</code>).</p>\n<p>Thanks again :-)</p>",
+        "id": 262301557,
+        "sender_full_name": "Jesper Stemann Andersen",
+        "timestamp": 1637576879
+    }
+]

@@ -1,0 +1,392 @@
+[
+    {
+        "content": "<p>Is there any way to detect or get a callback when the world age is advanced?</p>\n<p>Context is that I'm generating struct definitions from serialized data. I was previously using <code>Dicts</code> but users complained it was too slow. It is workable as is with either caveat that the user is responsible for hitting top level or using <code>Base.invokelatest</code>, but the former is not so user friendly and the latter has significant overhead (e.g 100 ns becomes 300 ns).</p>\n<p>Ideally I would like to either hide the defined structs until the world age advances (or if there is some other trigger for when they are available) or (preferably) have some hook which removes <code>Base.invokelatest</code>when the world age has advanced.</p>",
+        "id": 288948123,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1657290838
+    },
+    {
+        "content": "<p>Not that I know of</p>",
+        "id": 288948226,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657290878
+    },
+    {
+        "content": "<blockquote>\n<p>generating struct definitions from serialized data</p>\n</blockquote>\n<p>Are you certain that you need to generate the <em>definitions</em> at runtime, not just parse them into existing structs?</p>",
+        "id": 288948261,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657290907
+    },
+    {
+        "content": "<p>Unfortunately yes :(</p>",
+        "id": 288948409,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1657290966
+    },
+    {
+        "content": "<p>It is a horrible format where the struct definitions are embedded in the data</p>",
+        "id": 288948457,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1657290988
+    },
+    {
+        "content": "<p>So the approach is to take a pass over the data and generate the struct definitions.</p>",
+        "id": 288948595,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1657291063
+    },
+    {
+        "content": "<p>I.. uh.. huh.</p>",
+        "id": 288948618,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657291072
+    },
+    {
+        "content": "<p>I'd advise to run, but that doesn't sound like an option</p>",
+        "id": 288948676,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657291085
+    },
+    {
+        "content": "<p>is the format really undefined, or \"just\" arbitrarily nested, but consisting of some simple base blocks everything is built out of?</p>",
+        "id": 288948754,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657291127
+    },
+    {
+        "content": "<p>Nope, it is basically C structs (unions, dynamically sized arrays, the whole shebang) with the struct definition basically embedded in a header</p>",
+        "id": 288948990,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1657291238
+    },
+    {
+        "content": "<p>dynamically sized arrays stored inline in the struct? hoh boy</p>",
+        "id": 288949200,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657291332
+    },
+    {
+        "content": "<p>do you have a concrete example?</p>",
+        "id": 288949314,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657291394
+    },
+    {
+        "content": "<p>Maybe dynamic sized is sloppy terminology. What i mean is that the size is not a hardcoded constant but is instead given as a member of the struct (which ofc must be placed before the array or else the struct would be unreadble even in C I guess).</p>",
+        "id": 288949604,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1657291537
+    },
+    {
+        "content": "<p>but is the array actually stored inline in the C struct or rather as a pointer to a block of memory of the correct size?</p>",
+        "id": 288949706,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657291569
+    },
+    {
+        "content": "<p>No idea, but in the versions I have a serialized so all data is in a consecutive stream</p>",
+        "id": 288949798,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1657291618
+    },
+    {
+        "content": "<p>that sounds like a serialization strategy, rather than actually how the data is laid out in memory in C</p>",
+        "id": 288949889,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657291657
+    },
+    {
+        "content": "<p>you don't want to serialize pointers for someone else to consume - they can't do anything with your pointers after all</p>",
+        "id": 288949912,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657291677
+    },
+    {
+        "content": "<p>Writing the decoding was pretty straight forward. Main problem is that nested Dicts turned out too slow. I have considered NamedTuples, but I'd like to be able to dispatch on the result so I though I should go all the way and generate structs.</p>",
+        "id": 288949960,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1657291691
+    },
+    {
+        "content": "<p>ok, let me ask differently - are the number of fields in the C structs fixed?</p>",
+        "id": 288950005,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657291717
+    },
+    {
+        "content": "<p>on a per-struct basis</p>",
+        "id": 288950031,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657291729
+    },
+    {
+        "content": "<blockquote>\n<p>that sounds like a serialization strategy, rather than actually how the data is laid out in memory in C</p>\n</blockquote>\n<p>Yes, I don't care how the data is layed out in the C application.</p>",
+        "id": 288950054,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1657291742
+    },
+    {
+        "content": "<blockquote>\n<p>Yes, I don't care how the data is layed out in the C application.</p>\n</blockquote>\n<p>but julia does, since that's probably what you want to mimic for deserializing (albeit not 1:1, since it sounds like you want to parse an array of known length and just have a struct with a <code>Vector</code> typed field, instead of a <code>Ptr</code>)</p>",
+        "id": 288950123,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657291786
+    },
+    {
+        "content": "<blockquote>\n<p>ok, let me ask differently - are the number of fields in the C structs fixed?</p>\n</blockquote>\n<p>Yes, for a certain type of a struct. There are different types and even different versions of the same type (e.g. one form rev A of the software and then the same struct in rev B of the software).</p>",
+        "id": 288950256,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1657291828
+    },
+    {
+        "content": "<p>ok, then that's all you need for the structs on the julia side, no?</p>",
+        "id": 288950309,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657291860
+    },
+    {
+        "content": "<blockquote>\n<p>but julia does, since that's probably what you want to mimic for deserializing</p>\n</blockquote>\n<p>Absolutely, and that part I have gotten down already.</p>",
+        "id": 288950337,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1657291874
+    },
+    {
+        "content": "<blockquote>\n<p>ok, then that's all you need for the structs on the julia side, no?</p>\n</blockquote>\n<p>Yup, that is what the current code does.</p>",
+        "id": 288950363,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1657291892
+    },
+    {
+        "content": "<p>for any given revision, the number of fields and their sizes is known</p>",
+        "id": 288950364,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657291892
+    },
+    {
+        "content": "<p>what I'm saying is that you can generate the structs for each version <em>ahead of time</em>, since their sizes are known</p>",
+        "id": 288950461,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657291926
+    },
+    {
+        "content": "<blockquote>\n<p>for any given revision, the number of fields and their sizes is known</p>\n</blockquote>\n<p>Sure. For example, in the current code I cache the struct definitions based on revision and identity so the number of struct definitions is much smaller than the total number of structs I need to deserialize.</p>",
+        "id": 288950522,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1657291958
+    },
+    {
+        "content": "<p>as in, the bit sizes. That the arras are of arbitrary length doesn't really matter, since they're (from what you told me) not stored inline with the struct itself</p>",
+        "id": 288950536,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657291964
+    },
+    {
+        "content": "<blockquote>\n<p>what I'm saying is that you can generate the structs for each version ahead of time, since their sizes are known</p>\n</blockquote>\n<p>Yes, this is what I'm doing now. I'm investigating if there is some way I can improve the user experience here since I guarantee that the first thing a user will do when I release this improvement is to call both the struct generating call as well as the deserialization call in the same function.</p>",
+        "id": 288950798,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1657292056
+    },
+    {
+        "content": "<p>Why are you insisting on generating the struct when the user requests it, instead of ahead of time, before the user even gets your code?</p>",
+        "id": 288950870,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657292096
+    },
+    {
+        "content": "<p>You seemingly know the library &amp; the struct sizes that are possible, can't you generate the struct definitions way before then and just load them as regular julia source code?</p>",
+        "id": 288950945,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657292127
+    },
+    {
+        "content": "<blockquote>\n<p>Why are you insisting on generating the struct when the user requests it, instead of ahead of time, before the user even gets your code?</p>\n</blockquote>\n<p>There are way too many different possible structs and software revisions to do this practically.</p>",
+        "id": 288950986,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1657292148
+    },
+    {
+        "content": "<p>Are your users expected to work with two different revisions of the software at the same time?</p>",
+        "id": 288951105,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657292199
+    },
+    {
+        "content": "<p>Yes. In particular they are expected to get a blob of data to analyze without any knowledge about which version of the software generated it.</p>",
+        "id": 288951239,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1657292258
+    },
+    {
+        "content": "<p>..Oo</p>",
+        "id": 288951339,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657292293
+    },
+    {
+        "content": "<p>short of generating a lookup table based on some version identifier early on in the stream, I can't think of how you'd even do that in any language</p>",
+        "id": 288951421,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657292333
+    },
+    {
+        "content": "<p>dynamic languages  like julia or python have an advantage in that they don't generally have to care about the layout of stuff in memory (\"just type it <code>Any</code> and look it up at runtime\"), but that leads to bad performance, as you found out</p>",
+        "id": 288951534,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657292386
+    },
+    {
+        "content": "<p>I agree. I guess <code>Base.invokelatest</code> still gives me about a 200 or so times speedup compared to the <code>Dict</code> approach so it is a decent fallback.</p>",
+        "id": 288951633,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1657292413
+    },
+    {
+        "content": "<p>What you're describing is more or less arbitrary ABI conversion, which in general is not possible without a stringent contract about the stream of data and being VERY CAREFUL not to have incompatible regressions.</p>",
+        "id": 288951701,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657292448
+    },
+    {
+        "content": "<p>Are there any statically compiled libraries doing the same task you're trying to do?</p>",
+        "id": 288951721,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657292460
+    },
+    {
+        "content": "<p>They'll generally have the same limitations as julia here, if you want performance.</p>",
+        "id": 288951746,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657292468
+    },
+    {
+        "content": "<p>Yes, but they are doing it in runtime as well and are about 1000 times slower than my package</p>",
+        "id": 288951811,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1657292492
+    },
+    {
+        "content": "<p>Either way, I'd suggest structuring your code in such a way that users themselves don't have to run either <code>invokelatest</code> nor generate the types themselves.</p>",
+        "id": 288951849,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657292505
+    },
+    {
+        "content": "<blockquote>\n<p>Yes, but they are doing it in runtime as well and are about 1000 times slower than my package</p>\n</blockquote>\n<p>Then you're running into fundamentally unsolved problems in computer engineering, I'm afraid</p>",
+        "id": 288951970,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657292542
+    },
+    {
+        "content": "<p>you can consider yourself lucky that the approach is already as fast as it is</p>",
+        "id": 288952003,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657292557
+    },
+    {
+        "content": "<p>I'm fully aware that there is no magic to get the types known at runtime.</p>\n<p>The thing that annoys me just a little bit is that 99% users will run it like this from the REPL</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">result</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">readfile</span><span class=\"p\">(</span><span class=\"s\">\"somefile.blob\"</span><span class=\"p\">)</span><span class=\"w\"></span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">plot</span><span class=\"p\">(</span><span class=\"n\">get</span><span class=\"p\">(</span><span class=\"n\">result</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"ss\">:thisOrThatStruct</span><span class=\"o\">.</span><span class=\"n\">somedata</span><span class=\"p\">)</span><span class=\"w\"></span>\n</code></pre></div>\n<p>Where generating the structs during <code>readfile</code> but not using them until <code>get</code> is called would work without performance penalty.</p>",
+        "id": 288952176,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1657292654
+    },
+    {
+        "content": "<p>I am very lucky indeed. Just as the Julia creators I'm also greedy :)</p>",
+        "id": 288952228,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1657292691
+    },
+    {
+        "content": "<p>is <code>readfile</code> your function?</p>",
+        "id": 288952274,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657292712
+    },
+    {
+        "content": "<p>if not, I'd suggest putting the generation code there</p>",
+        "id": 288952294,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657292720
+    },
+    {
+        "content": "<p>Yes, bad name example maybe. Real function has a more obtuse name</p>",
+        "id": 288952324,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1657292735
+    },
+    {
+        "content": "<p>either way, you will not get around world age</p>",
+        "id": 288952416,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657292765
+    },
+    {
+        "content": "<p>there is no world age callback because the increased world age is only visible to existing code once you return to top level scope</p>",
+        "id": 288952461,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657292792
+    },
+    {
+        "content": "<p>so even if you define new structs with <code>eval</code>, no existing code will ever be able to call that, unless you go the <code>invokelatest</code> route or return to top level scope</p>",
+        "id": 288952503,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657292816
+    },
+    {
+        "content": "<p>if we had a callback like that, we'd more or less have to allow arbitrary code to run at each <code>eval</code>.. which would be very scary and a great source of indeterminism</p>",
+        "id": 288952679,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657292892
+    },
+    {
+        "content": "<p>Yeah, I realize there might be some hard constraints here to what looks like a solveable problem from the outside. I mean, someone must know the world age or else it would not be possible to assert on it. </p>\n<p>An ugly solution I have thought about is to just have a try catch, maybe come up with some way to cache the result of the try-catch from the entry point if possible.</p>",
+        "id": 288953038,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1657293037
+    },
+    {
+        "content": "<p>that would not help you - you'd have to return to the top level again or call <code>invokelatest</code> in the <code>catch</code> block (which is going to be slower than just calling <code>invokelatest</code> directly, since you have to <code>try</code> first, only offering a speedup when you have the struct already)</p>",
+        "id": 288953778,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657293373
+    },
+    {
+        "content": "<p>if you want a taste for why this is a difficult problem and are not afraid of dissertations, I can recommend Jeff Bezanson's Phd thesis and another paper that's formalized the world age mechanism into a calculus</p>",
+        "id": 288953958,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657293452
+    },
+    {
+        "content": "<p>It would help me in the 99% of cases when people do as above. For the remaining 1% I could print a warning that things might be a bit slower than they have to be. Fully aware that I can't cheat the wordage here. </p>\n<p>Anyways, I think I can work with what I have here. Maybe just have a manual command to clean out <code>invokelatest</code> will be just good enough.</p>",
+        "id": 288955653,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1657294222
+    },
+    {
+        "content": "<p>Couldn't you also use named tuples everywhere?</p>",
+        "id": 288968552,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1657300513
+    },
+    {
+        "content": "<p>I imagine that would prevent convenient dispatch</p>",
+        "id": 288969905,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657301278
+    },
+    {
+        "content": "<blockquote>\n<p>I imagine that would prevent convenient dispatch</p>\n</blockquote>\n<p>This is indeed the main reason why I didn't go for them. I was also abit worried by exploding compile times (I have seen structs which cover a few pages when fully unrolled) but TBH I don't know if structs really have an advantage over tuples w.r.t this. I think the generation code I have can be easily converted to making a named tuple so I should perhaps just give it a shot. That will have to be an exercise for monday though...</p>",
+        "id": 288971398,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1657302132
+    },
+    {
+        "content": "<p>at some point, large structs do perform better than the equivalent tuple would, I think</p>",
+        "id": 288971552,
+        "sender_full_name": "Sukera",
+        "timestamp": 1657302229
+    },
+    {
+        "content": "<p>Fwiw, I ended up doing this for now:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"w\">    </span><span class=\"n\">currentworld</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"k\">ccall</span><span class=\"p\">(</span><span class=\"ss\">:jl_get_tls_world_age</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">UInt</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">())</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"n\">all</span><span class=\"p\">(</span><span class=\"n\">methods</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">))</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"> </span><span class=\"n\">fmethod</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"n\">fmethod</span><span class=\"o\">.</span><span class=\"n\">primary_world</span><span class=\"w\"> </span><span class=\"o\">&lt;=</span><span class=\"w\"> </span><span class=\"n\">currentworld</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"k\">end</span><span class=\"w\"></span>\n</code></pre></div>\n<p>Context: Firstly, this was never about trying to cheat the world age boundary. Its just providing convenience to end users so I don't need to educate them about world ages. Previously the cost of this was perpetual slow speed, and now it is me having to maintain things like the above shenanigans which seems like a good tradeoff for the speed improvement I got.</p>\n<p>The above code is only called for functions wrapped in another callable struct. Due to the nature of the problem, I maintain a cache of metadata to struct constructors so as soon as the expression above returns true, the constructors in the cache are unwrapped. If the check fails, it does <code>Base.invokelatest</code>. </p>\n<p>There is also a way to call the constructors in the wrapped struct so that the above check is bypassed. Some mock examples:</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">result</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">read_horrible_struct_format_file</span><span class=\"p\">(</span><span class=\"s\">\"some.file\"</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"c\"># this generates struct definitions</span><span class=\"w\"></span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\">  </span><span class=\"n\">plot</span><span class=\"p\">(</span><span class=\"n\">get</span><span class=\"p\">(</span><span class=\"n\">result</span><span class=\"o\">.</span><span class=\"n\">someData</span><span class=\"p\">))</span><span class=\"w\"> </span><span class=\"c\"># Will do the above world age check, and unwrap all constructors in the cache</span><span class=\"w\"></span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">plot</span><span class=\"p\">(</span><span class=\"n\">get</span><span class=\"p\">(</span><span class=\"n\">result</span><span class=\"o\">.</span><span class=\"n\">someOtherData</span><span class=\"p\">))</span><span class=\"w\"> </span><span class=\"c\"># No checks performed, call constructor directly</span><span class=\"w\"></span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">readandplot</span><span class=\"p\">(</span><span class=\"n\">file</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">             </span><span class=\"n\">result</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">read_horrible_struct_format_file</span><span class=\"p\">(</span><span class=\"n\">file</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">             </span><span class=\"n\">plot</span><span class=\"p\">(</span><span class=\"n\">get</span><span class=\"p\">(</span><span class=\"n\">result</span><span class=\"o\">.</span><span class=\"n\">someData</span><span class=\"p\">))</span><span class=\"w\"> </span><span class=\"c\"># Warns the user about slow speed, including some tips for mitigation, then does Base.invokelatest</span><span class=\"w\"></span>\n<span class=\"w\">             </span><span class=\"n\">plot</span><span class=\"p\">(</span><span class=\"n\">get</span><span class=\"p\">(</span><span class=\"n\">NoWorldCheck</span><span class=\"p\">(),</span><span class=\"w\"> </span><span class=\"n\">result</span><span class=\"o\">.</span><span class=\"n\">someData</span><span class=\"p\">))</span><span class=\"w\"> </span><span class=\"c\"># Just calls Base.invokelatest</span><span class=\"w\"></span>\n<span class=\"w\">       </span><span class=\"k\">end</span><span class=\"w\"></span>\n</code></pre></div>\n<p>The package which does this is pretty much a \"leaf\" package meant for interactive analysis, so the first example above is how almost all users use it.</p>",
+        "id": 289166944,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1657532492
+    }
+]

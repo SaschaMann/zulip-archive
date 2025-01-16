@@ -1,0 +1,68 @@
+[
+    {
+        "content": "<p>Hello Coders: </p>\n<p>I have two tables. Table 1: </p>\n<p>T1.A = [1,2,3,4,5]<br>\nT1.B = [\"Fri\", \"Sat\", \"Wed\", \"Fri\", \"Mon\"]</p>\n<p>And Table 2:</p>\n<p>T2.A = [\"Monday\", \"Tuesday\", \"Wednesday\", <br>\n              \"Thursday\", \"Friday\", \"Saturday\", \"Sunday\"]<br>\nT2.B = [0.25, 0.35, 0.50, 0.15, 0.30, 0.75, 0.65]</p>\n<p>How can I create a new column in T1 as T1.C that <br>\nis populated with T2.B values where T1.B matches?</p>\n<p>The general <a href=\"https://github.com/search?q=Query.jl&amp;type=Repositories\">Query.jl</a> approach might be: </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">T1</span><span class=\"o\">.</span><span class=\"n\">C</span> <span class=\"o\">=</span> <span class=\"nd\">@from</span> <span class=\"n\">i</span> <span class=\"kp\">in</span> <span class=\"n\">T1</span> <span class=\"k\">begin</span>\n              <span class=\"nd\">@join</span> <span class=\"n\">j</span> <span class=\"kp\">in</span> <span class=\"n\">T2</span> <span class=\"n\">on</span> <span class=\"n\">i</span><span class=\"o\">.</span><span class=\"n\">a</span> <span class=\"n\">T1</span><span class=\"o\">.</span><span class=\"n\">B</span>  <span class=\"n\">equals</span> <span class=\"n\">startswith</span><span class=\"p\">(</span><span class=\"n\">T2</span><span class=\"o\">.</span><span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"n\">i</span><span class=\"p\">,</span> <span class=\"n\">n</span><span class=\"o\">=</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">3</span><span class=\"p\">)</span>\n              <span class=\"nd\">@select</span> <span class=\"p\">{</span><span class=\"n\">T1</span><span class=\"o\">.</span><span class=\"n\">A</span><span class=\"p\">,</span><span class=\"n\">T1</span><span class=\"o\">.</span><span class=\"n\">B</span><span class=\"p\">,</span><span class=\"n\">T2</span><span class=\"o\">.</span><span class=\"n\">A</span><span class=\"p\">,</span><span class=\"n\">T2</span><span class=\"o\">.</span><span class=\"n\">B</span><span class=\"p\">}</span>\n              <span class=\"nd\">@collect</span> <span class=\"n\">Dataframe</span>\n</code></pre></div>\n<p>Is there a way to execute this using DataFrames<br>\nand or some higher-order function? </p>\n<p>Thank you,</p>",
+        "id": 229263774,
+        "sender_full_name": "QuBit",
+        "timestamp": 1615192276
+    },
+    {
+        "content": "<p>Best way to proceed is to build temporary  column and join on it.</p>\n<p>DataFrames documentation do not have information about joining with random conditions. And it is considered bad practice anyway, since it generates nested loops.</p>",
+        "id": 229273790,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1615197780
+    },
+    {
+        "content": "<p>Thank you for this <span class=\"user-mention\" data-user-id=\"272771\">@Andrey Oskin</span> . <br>\nDid you examine the <a href=\"https://github.com/search?q=Query.jl&amp;type=Repositories\">Query.jl</a> SQL-LINQ <br>\ncode I provided?</p>",
+        "id": 229311186,
+        "sender_full_name": "QuBit",
+        "timestamp": 1615215331
+    },
+    {
+        "content": "<p>Nope, but I suppose they went cross-join + filter road. It's not much you can do, if you have no information about keys.</p>",
+        "id": 229312113,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1615215685
+    },
+    {
+        "content": "<p>Standard way to join is sorting over keys with the following double cursor iteration.</p>",
+        "id": 229312310,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1615215746
+    },
+    {
+        "content": "<p>So it is <code>O(n log(n))</code></p>",
+        "id": 229312348,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1615215765
+    },
+    {
+        "content": "<p>If you do not know anything in advance, then you have to take all possible pairs and it is <code>O(n^2)</code> operations (assuming that dataframes has roughly the same size).</p>",
+        "id": 229312497,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1615215824
+    },
+    {
+        "content": "<p>So it is either speed or convenience.</p>",
+        "id": 229312648,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1615215872
+    },
+    {
+        "content": "<p>So, you can do something like this</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span> <span class=\"n\">DataFrames</span>\n<span class=\"k\">using</span> <span class=\"n\">Chain</span>\n\n<span class=\"n\">T1</span> <span class=\"o\">=</span> <span class=\"n\">DataFrame</span><span class=\"p\">(</span><span class=\"s\">\"A\"</span> <span class=\"o\">=&gt;</span> <span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"mi\">3</span><span class=\"p\">,</span><span class=\"mi\">4</span><span class=\"p\">,</span><span class=\"mi\">5</span><span class=\"p\">],</span> <span class=\"s\">\"B\"</span> <span class=\"o\">=&gt;</span> <span class=\"p\">[</span><span class=\"s\">\"Fri\"</span><span class=\"p\">,</span> <span class=\"s\">\"Sat\"</span><span class=\"p\">,</span> <span class=\"s\">\"Wed\"</span><span class=\"p\">,</span> <span class=\"s\">\"Fri\"</span><span class=\"p\">,</span> <span class=\"s\">\"Mon\"</span><span class=\"p\">])</span>\n<span class=\"n\">T2</span> <span class=\"o\">=</span> <span class=\"n\">DataFrame</span><span class=\"p\">(</span><span class=\"s\">\"A\"</span> <span class=\"o\">=&gt;</span> <span class=\"p\">[</span><span class=\"s\">\"Monday\"</span><span class=\"p\">,</span> <span class=\"s\">\"Tuesday\"</span><span class=\"p\">,</span> <span class=\"s\">\"Wednesday\"</span><span class=\"p\">,</span> <span class=\"s\">\"Thursday\"</span><span class=\"p\">,</span> <span class=\"s\">\"Friday\"</span><span class=\"p\">,</span> <span class=\"s\">\"Saturday\"</span><span class=\"p\">,</span> <span class=\"s\">\"Sunday\"</span><span class=\"p\">],</span> <span class=\"s\">\"B\"</span> <span class=\"o\">=&gt;</span> <span class=\"p\">[</span><span class=\"mf\">0.25</span><span class=\"p\">,</span> <span class=\"mf\">0.35</span><span class=\"p\">,</span> <span class=\"mf\">0.50</span><span class=\"p\">,</span> <span class=\"mf\">0.15</span><span class=\"p\">,</span> <span class=\"mf\">0.30</span><span class=\"p\">,</span> <span class=\"mf\">0.75</span><span class=\"p\">,</span> <span class=\"mf\">0.65</span><span class=\"p\">])</span>\n\n<span class=\"nd\">@chain</span> <span class=\"n\">T2</span> <span class=\"k\">begin</span>\n    <span class=\"n\">transform</span><span class=\"p\">(</span><span class=\"o\">:</span><span class=\"n\">A</span> <span class=\"o\">=&gt;</span> <span class=\"p\">(</span><span class=\"n\">y</span> <span class=\"o\">-&gt;</span> <span class=\"p\">(</span><span class=\"n\">x</span> <span class=\"o\">-&gt;</span> <span class=\"n\">x</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">3</span><span class=\"p\">])</span><span class=\"o\">.</span><span class=\"p\">(</span><span class=\"n\">y</span><span class=\"p\">))</span> <span class=\"o\">=&gt;</span> <span class=\"o\">:</span><span class=\"n\">A3</span><span class=\"p\">)</span>\n    <span class=\"n\">innerjoin</span><span class=\"p\">(</span><span class=\"n\">T1</span><span class=\"p\">,</span> <span class=\"n\">on</span> <span class=\"o\">=</span> <span class=\"p\">[</span><span class=\"o\">:</span><span class=\"n\">A3</span> <span class=\"o\">=&gt;</span> <span class=\"o\">:</span><span class=\"n\">B</span><span class=\"p\">],</span> <span class=\"n\">makeunique</span> <span class=\"o\">=</span> <span class=\"kc\">true</span><span class=\"p\">)</span>\n    <span class=\"n\">select</span><span class=\"p\">([</span><span class=\"s\">\"A_1\"</span><span class=\"p\">,</span> <span class=\"s\">\"A3\"</span><span class=\"p\">,</span> <span class=\"s\">\"A\"</span><span class=\"p\">,</span> <span class=\"s\">\"B\"</span><span class=\"p\">])</span>\n    <span class=\"n\">rename</span><span class=\"p\">(</span><span class=\"s\">\"A_1\"</span> <span class=\"o\">=&gt;</span> <span class=\"s\">\"T1A\"</span><span class=\"p\">,</span> <span class=\"s\">\"A3\"</span> <span class=\"o\">=&gt;</span> <span class=\"s\">\"T1B\"</span><span class=\"p\">,</span> <span class=\"s\">\"A\"</span> <span class=\"o\">=&gt;</span> <span class=\"s\">\"T2A\"</span><span class=\"p\">,</span> <span class=\"s\">\"B\"</span> <span class=\"o\">=&gt;</span> <span class=\"s\">\"T2B\"</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n\n<span class=\"mi\">5</span><span class=\"n\">×4</span> <span class=\"n\">DataFrame</span>\n <span class=\"n\">Row</span> <span class=\"n\">│</span> <span class=\"n\">T1A</span>    <span class=\"n\">T1B</span>     <span class=\"n\">T2A</span>        <span class=\"n\">T2B</span>\n     <span class=\"n\">│</span> <span class=\"kt\">Int64</span>  <span class=\"n\">String</span>  <span class=\"n\">String</span>     <span class=\"kt\">Float64</span>\n<span class=\"n\">─────┼───────────────────────────────────</span>\n   <span class=\"mi\">1</span> <span class=\"n\">│</span>     <span class=\"mi\">5</span>  <span class=\"n\">Mon</span>     <span class=\"n\">Monday</span>        <span class=\"mf\">0.25</span>\n   <span class=\"mi\">2</span> <span class=\"n\">│</span>     <span class=\"mi\">3</span>  <span class=\"n\">Wed</span>     <span class=\"n\">Wednesday</span>     <span class=\"mf\">0.5</span>\n   <span class=\"mi\">3</span> <span class=\"n\">│</span>     <span class=\"mi\">1</span>  <span class=\"n\">Fri</span>     <span class=\"n\">Friday</span>        <span class=\"mf\">0.3</span>\n   <span class=\"mi\">4</span> <span class=\"n\">│</span>     <span class=\"mi\">4</span>  <span class=\"n\">Fri</span>     <span class=\"n\">Friday</span>        <span class=\"mf\">0.3</span>\n   <span class=\"mi\">5</span> <span class=\"n\">│</span>     <span class=\"mi\">2</span>  <span class=\"n\">Sat</span>     <span class=\"n\">Saturday</span>      <span class=\"mf\">0.75</span>\n</code></pre></div>",
+        "id": 229314776,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1615216679
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"272771\">Andrey Oskin</span> <a href=\"#narrow/stream/274208-helpdesk-(published)/topic/Index.20Matching.20.2B.20List.20Comprehension/near/229312113\">said</a>:</p>\n<blockquote>\n<p>Nope, but I suppose they went cross-join + filter road. It's not much you can do, if you have no information about keys.</p>\n</blockquote>\n<p>Yes -- this was my code. However,  the startswith() method does not work <br>\nin its current placement. I am glad to some level it could convey the issue.</p>",
+        "id": 229348765,
+        "sender_full_name": "QuBit",
+        "timestamp": 1615227853
+    },
+    {
+        "content": "<p>Yes -- this is excellent <span class=\"user-mention\" data-user-id=\"272771\">@Andrey Oskin</span> .  <br>\nThank you.</p>\n<p><span class=\"user-mention\" data-user-id=\"272771\">@Andrey Oskin</span> <br>\nIn this example, what does the @transform line do?</p>\n<p>And how did A mutate to A_1?</p>",
+        "id": 229349389,
+        "sender_full_name": "QuBit",
+        "timestamp": 1615228098
+    }
+]

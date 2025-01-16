@@ -1,0 +1,38 @@
+[
+    {
+        "content": "<p>In a <a href=\"https://github.com/JuliaActuary/Yields.jl/pull/151\">rewrite of a package</a>, part of what I'm trying to do is to define a generic interface that looks like <code>fit(type_of_struct_to_solve_for,data)</code> and then I use multiple dispatch to define the different logic for different combinations of arguments. </p>\n<p>I'm trying to design for the case where <code>type_of_struct_to_solve_for</code> looks like:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"kt\">Params</span><span class=\"p\">{</span><span class=\"kt\">A</span><span class=\"p\">,</span><span class=\"kt\">B</span><span class=\"p\">,</span><span class=\"kt\">C</span><span class=\"p\">}</span>\n<span class=\"w\">   </span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">A</span>\n<span class=\"w\">   </span><span class=\"n\">b</span><span class=\"o\">::</span><span class=\"kt\">B</span>\n<span class=\"w\">  </span><span class=\"n\">c</span><span class=\"o\">::</span><span class=\"kt\">C</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>and <code>C</code> is an abstract type with three subtypes <code>X</code>, <code>Y</code>, and <code>Z</code>.</p>\n<p>What I am thinking about is that fitting this object would look like:</p>\n<p><code>fit(Params(1.,1.,X),data)</code> where <code>X</code> is the <em>type</em> X instead of an initialized <code>X(...)</code></p>\n<p>I'm curious if anyone has thoughts or advice on the matter?</p>",
+        "id": 365726690,
+        "sender_full_name": "Alec",
+        "timestamp": 1686626334
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"272612\">Alec</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Advice.20on.20signaling.20which.20part.20of.20struct.20to.20solve.20for.3F/near/365726690\">said</a>:</p>\n<blockquote>\n<p>and <code>C</code> is an abstract type</p>\n</blockquote>\n<p>Then <code>Params</code> can never be statically known in size, and performance may be an issue in some cases. Otherwise, seems fine?</p>",
+        "id": 365729079,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1686627634
+    },
+    {
+        "content": "<p>Hmm, after fitting I would want to use <code>Params</code> in high performance contexts. After fitting I would return a<code>Params</code> where <code>C</code> is concrete for further use. Does that avoid the performance problems downstream? Or is the point you are making that <code>fit </code> will have to sacrifice performance as a result?</p>",
+        "id": 365730755,
+        "sender_full_name": "Alec",
+        "timestamp": 1686628606
+    },
+    {
+        "content": "<p>For performance, write </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"kt\">Params</span><span class=\"p\">{</span><span class=\"kt\">A</span><span class=\"p\">,</span><span class=\"kt\">B</span><span class=\"p\">,</span><span class=\"kt\">C</span><span class=\"o\">&lt;:</span><span class=\"kt\">AbstractC</span><span class=\"p\">}</span>\n<span class=\"w\">    </span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">A</span>\n<span class=\"w\">    </span><span class=\"n\">b</span><span class=\"o\">::</span><span class=\"kt\">B</span>\n<span class=\"w\">    </span><span class=\"n\">c</span><span class=\"o\">::</span><span class=\"kt\">C</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>So that the type is parameterized by the concrete subtype X, Y or Z (assuming the abstract type is named <code>AbstractC</code> and <code>C</code> is just the placeholder). As for the <code>fit</code> function, you can dispatch on a type (with <code>::Type{T} where T</code> or <code>::Type{Params{A, B, C} where {A, B, C}</code>), but you can't mix values and subtypes in an instance in that way directly. I'd suggest passing a, b and C as arguments to fit and build Params there or defining an initializer structure, eg</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"kt\">ParamsInitializer</span><span class=\"p\">{</span><span class=\"kt\">C</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">A</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">B</span><span class=\"p\">}</span>\n<span class=\"w\">    </span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">A</span>\n<span class=\"w\">    </span><span class=\"n\">b</span><span class=\"o\">::</span><span class=\"kt\">B</span>\n<span class=\"w\">    </span><span class=\"kt\">ParamsInitializer</span><span class=\"p\">{</span><span class=\"kt\">C</span><span class=\"p\">}(</span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">A</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">b</span><span class=\"o\">::</span><span class=\"kt\">B</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">where</span><span class=\"w\"> </span><span class=\"p\">{</span><span class=\"kt\">A</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">B</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">C</span><span class=\"p\">}</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">new</span><span class=\"p\">{</span><span class=\"kt\">C</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">A</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">B</span><span class=\"p\">}(</span><span class=\"n\">a</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">b</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>and then fetch the specific subtypes in the dispatch.</p>",
+        "id": 365779328,
+        "sender_full_name": "Daniel González",
+        "timestamp": 1686644062
+    },
+    {
+        "content": "<p>I admit I don't fully understand the usecase, but sounds generally similar to what <a href=\"https://github.com/search?q=Accessors.jl&amp;type=Repositories\">Accessors.jl</a> do.  See <a href=\"https://discourse.julialang.org/t/ann-accessibleoptimization-optimization-with-arbitrary-objects-instead-of-vectors/99695\">AccessibleOptimization</a> as a recent example of how it allows specifying parts of a struct to vary in fitting.</p>",
+        "id": 365788173,
+        "sender_full_name": "aplavin",
+        "timestamp": 1686645899
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"373536\">@Alexander</span> AccessibleOptimizaiton looks awesome! I think it will provide the functionality I'm looking to expose in my package. I'm experimenting with it and have a question about nonbounded solvers. I created an issue on the repo with a MWE.</p>",
+        "id": 366200734,
+        "sender_full_name": "Alec",
+        "timestamp": 1686752454
+    }
+]

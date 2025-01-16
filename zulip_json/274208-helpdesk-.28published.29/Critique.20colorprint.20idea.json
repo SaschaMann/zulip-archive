@@ -1,0 +1,218 @@
+[
+    {
+        "content": "<p>Hi!</p>\n<p>I want to ask to critique my idea of colorprinting. Maybe it's too complicated, maybe solution already exists in Julia, may be it's ok, but can be done better.</p>\n<h2>Problem</h2>\n<p>Sometimes we need colorful output, but current printing facilities like <code>printstyled</code> or <a href=\"https://github.com/search?q=Crayons.jl&amp;type=Repositories\">Crayons.jl</a> are too low level, verbose and inflexible. By inflexible, I mean that it is very hard to change colorscheme for example, because everything is hard coded. And low level means, that by looking at code it's hard to understand how final output will look like.</p>\n<h2>Proposal</h2>\n<p>Make a macro, which accepts following arguments: <code>io</code>, <code>colorscheme</code> and <code>string</code> where <code>string</code> encodes colors inside itself. Example:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"nd\">@colorprint</span> <span class=\"n\">io</span> <span class=\"n\">colorscheme</span> <span class=\"s\">\"{The quick brown fox}:fox jumps over the lazy dog:dog\"</span>\n</code></pre></div>\n<p>Here colorscheme is a <code>Dict</code> of the form <code>Dict(:fox =&gt; :brown, :dog =&gt; :yellow)</code></p>\n<p>When this macro parse this string, it do one of two things:</p>\n<ol>\n<li>If it encounters <code>{...}:&lt;color&gt;</code> group, then color applies to all group</li>\n<li>If it encounters <code>word:&lt;color&gt;</code> then color applies only to the word.</li>\n</ol>\n<p>So, this string will turn into this:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">printstyled</span><span class=\"p\">(</span><span class=\"n\">io</span><span class=\"p\">,</span> <span class=\"s\">\"The quick brown fox\"</span><span class=\"p\">,</span> <span class=\"n\">color</span> <span class=\"o\">=</span> <span class=\"kt\">Dict</span><span class=\"p\">[</span><span class=\"ss\">:fox</span><span class=\"p\">])</span>\n<span class=\"n\">printstyled</span><span class=\"p\">(</span><span class=\"n\">io</span><span class=\"p\">,</span> <span class=\"s\">\" jumps over the lazy \"</span><span class=\"p\">)</span>\n<span class=\"n\">printstyled</span><span class=\"p\">(</span><span class=\"n\">io</span><span class=\"p\">,</span> <span class=\"s\">\"dog\"</span><span class=\"p\">,</span> <span class=\"n\">color</span> <span class=\"o\">=</span> <span class=\"kt\">Dict</span><span class=\"p\">[</span><span class=\"ss\">:dog</span><span class=\"p\">])</span>\n</code></pre></div>\n<p>With this approach, we can get </p>\n<ol>\n<li>readable printing string (i think that small color tags <code>:fox</code> wouldn't make it less readable)</li>\n<li>flexible colorscheme, because it's enough to change one <code>Dict</code> with colors to another to get new output.</li>\n</ol>\n<p>Of course, it is more limited then <code>printstyled</code> or Crayons, but if it covers more than 50% usecases I am fine with that.</p>\n<p>And of course there is problem of <code>bold</code> etc, but it can be easily solved by changing<code>Dict</code> to <code>Dict(:fox =&gt; (; color = :brown, bold = true, underline = false))</code> and splatting in <code>printstyled</code>.</p>",
+        "id": 272983389,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1645637814
+    },
+    {
+        "content": "<p>That sounds pretty good to me.  I have two suggestions</p>\n<ul>\n<li>Is there a more standard syntax?  It's good to avoid custom parsers wherever possible, though I don't know of any good options for this.</li>\n<li>It would be nice to have a <code>@color_str</code> macro which returns and object that when <code>print</code>ed does what you'd expect.</li>\n</ul>\n<p>If you develop this I'm likely to use it.  It never ceases to amaze me how hard it is to print things nicely.  My own most recent attempt (which I consider a failure, too hard to use) was <a href=\"https://gitlab.com/ExpandingMan/ShowCases.jl\">ShowCases.jl</a></p>",
+        "id": 272984844,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1645638300
+    },
+    {
+        "content": "<p>To expand on my comment about <code>@color_str</code>, it makes a better API to have \"shallow\" macros, though in this case I'm not entirely sure it's possible to do it that way and get performance as good as a macro that converts directly to <code>printstyled</code> calls.</p>",
+        "id": 272985260,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1645638459
+    },
+    {
+        "content": "<p>I like the idea of <code>@color_str</code> macro. But since I still want to support colorschemes, resulting interface looks like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">print</span><span class=\"p\">(</span><span class=\"n\">colorscheme</span><span class=\"p\">,</span> <span class=\"sa\">color</span><span class=\"s\">\"{The quick brown fox}:fox jumps over the lazy dog:dog\"</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>Of course, I can make default dict with relation <code>:black =&gt; :black</code>, so one can use default color's naming and get colorized output.</p>",
+        "id": 273002924,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1645646169
+    },
+    {
+        "content": "<p>As for the first question, I do not know any standard syntax (that was part of the question, actually). It is possible to use colors in markdown, but it looks long and verbose. I've used similar syntax in few packages already (e.g. <a href=\"https://github.com/JuliaLogging/MiniLoggers.jl\">https://github.com/JuliaLogging/MiniLoggers.jl</a>), so it looks reasonable enough for me, but I am biased.</p>",
+        "id": 273003280,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1645646332
+    },
+    {
+        "content": "<p>Yeah, it looks reasonable to me to.  Maybe there isn't a standard alternative, I don't know</p>",
+        "id": 273003772,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1645646546
+    },
+    {
+        "content": "<p>Personally I think it would be clearer if the color came first.</p>",
+        "id": 273004131,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1645646723
+    },
+    {
+        "content": "<p>color\"fox:{The quick brown fox} jumps over the lazy dog:dog\"?</p>",
+        "id": 273005985,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1645647602
+    },
+    {
+        "content": "<p>Ha, <code>dog</code> is a bad example :-)</p>",
+        "id": 273006176,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1645647682
+    },
+    {
+        "content": "<p>Or <code>color\"{blue:this text is blue} this is default\"</code></p>",
+        "id": 273006232,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1645647717
+    },
+    {
+        "content": "<p>Ah, I see.<br>\nYeah, it's like active voice.<br>\n\"apply action\" to \"something\", instead of \"something\" \"acted upon\"</p>",
+        "id": 273006706,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1645647937
+    },
+    {
+        "content": "<p>Yeah, this is good.</p>",
+        "id": 273006714,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1645647942
+    },
+    {
+        "content": "<p>I think parsing should be more or less the same.</p>",
+        "id": 273006788,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1645647972
+    },
+    {
+        "content": "<p>I don't really like the color inside of the brackets because <code>blue:this text is blue</code> looks like it only applies to <code>this</code></p>",
+        "id": 273007323,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1645648260
+    },
+    {
+        "content": "<p>You could maybe go a simplified latex route <code>{\\blue this text is blue} this text is default</code></p>",
+        "id": 273007419,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1645648305
+    },
+    {
+        "content": "<p>I just feel like I have seen the syntax I suggested somewhere.</p>",
+        "id": 273007587,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1645648371
+    },
+    {
+        "content": "<p>And something like <code>{\\blue\\bold this text is blue and bold} this text is default</code>, is it readable?</p>",
+        "id": 273007629,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1645648397
+    },
+    {
+        "content": "<p>Hm, and I immediately run into the problem</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">s</span>\n<span class=\"k\">macro</span> <span class=\"n\">foo_str</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"p\">)</span>\n    <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n\n<span class=\"n\">x</span> <span class=\"o\">=</span> <span class=\"mi\">1</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"sa\">foo</span><span class=\"s\">\"_</span><span class=\"si\">$x_</span><span class=\"s\">\"</span>\n<span class=\"s\">\"_</span><span class=\"se\">\\$</span><span class=\"s\">x_\"</span>\n</code></pre></div>\n<p>Is it possible to interpolate string, which is used in macro?</p>",
+        "id": 273007803,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1645648507
+    },
+    {
+        "content": "<p>Otherwise this idea lose 50% of it's usefulness.</p>",
+        "id": 273007850,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1645648535
+    },
+    {
+        "content": "<p>You have to implement the interpolation yourself.</p>",
+        "id": 273007991,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1645648624
+    },
+    {
+        "content": "<p>Any references how to do it? I do not know where to start.</p>",
+        "id": 273008035,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1645648652
+    },
+    {
+        "content": "<p>Ah, ok, <code>dump</code> it is.</p>",
+        "id": 273008268,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1645648778
+    },
+    {
+        "content": "<p>I am sure there are better examples, but here is one: <a href=\"https://github.com/JuliaWeb/HTTP.jl/blob/99d46a0f93215eb1d235f82eab432774ff74fcee/src/access_log.jl#L41\">search for $</a> then parse an <a href=\"https://github.com/JuliaWeb/HTTP.jl/blob/99d46a0f93215eb1d235f82eab432774ff74fcee/src/access_log.jl#L50\">identifier</a>.</p>",
+        "id": 273008440,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1645648857
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"272771\">Andrey Oskin</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea/near/273007629\">said</a>:</p>\n<blockquote>\n<p>And something like <code>{\\blue\\bold this text is blue and bold} this text is default</code>, is it readable?</p>\n</blockquote>\n<p>To me yes, but that probably says a lot more about how much of my life I've spent looking at latex than how many people are likely to find it readable</p>",
+        "id": 273010105,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1645649686
+    },
+    {
+        "content": "<p>Well, the only problem I see is that backslash interfere with other backslash usage. \"\\b\" is bell as far as I remember, \"\\n\" is caret return and so on. So it's better to use other direction \"/blue/bold\"</p>",
+        "id": 273011990,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1645650655
+    },
+    {
+        "content": "<p>But at this point maybe colon is ok too :)</p>",
+        "id": 273012009,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1645650667
+    },
+    {
+        "content": "<p>Can the colour dictionary be inserted into <code>io</code>? </p>\n<p>One nice thing about colours after the text is that string macros can take a flag at the end, so you could allow a format without the extra brackets: </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">ioc</span> <span class=\"o\">=</span> <span class=\"kt\">IOContext</span><span class=\"p\">(</span><span class=\"n\">io</span><span class=\"p\">,</span> <span class=\"n\">color</span> <span class=\"o\">=</span> <span class=\"kt\">Dict</span><span class=\"p\">(</span><span class=\"ss\">:fox</span> <span class=\"o\">=&gt;</span> <span class=\"ss\">:brown</span><span class=\"p\">,</span> <span class=\"ss\">:dog</span> <span class=\"o\">=&gt;</span> <span class=\"ss\">:yellow</span><span class=\"p\">))</span>\n<span class=\"n\">print</span><span class=\"p\">(</span><span class=\"n\">ioc</span><span class=\"p\">,</span> <span class=\"sa\">c</span><span class=\"s\">\"this text is blue\"</span><span class=\"sa\">blue</span><span class=\"p\">,</span> <span class=\"s\">\" and \"</span><span class=\"p\">,</span> <span class=\"sa\">c</span><span class=\"s\">\"{The quick brown fox}:fox jumps over the lazy dog:dog\"</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>Very seldom have I wanted to print colour without interpolating some data or objects, too, so that deserves thought. Should I be able to put <code>:dollar =&gt; :red</code> or something in the dictionary? <code>:code =&gt; blue</code> for things in backticks?</p>",
+        "id": 273016669,
+        "sender_full_name": "Michael Abbott",
+        "timestamp": 1645653414
+    },
+    {
+        "content": "<p>Ok, here is some preliminary details. Of course, there are some bugs which should be fixed, but I think that these preliminary details are already rather good.</p>\n<ol>\n<li>Colorschemes are working through <code>IOContext</code>, but can be used without it. Depends on how you prefer to work.</li>\n<li>Color strings supports nesting. Here is an example</li>\n</ol>\n<p><a href=\"/user_uploads/7178/2YP2tWcSKU1bynYKFQvh6bNB/flameshot-2022-03-13T23-54-37.png\">flameshot-2022-03-13T23-54-37.png</a></p>\n<div class=\"message_inline_image\"><a href=\"/user_uploads/7178/2YP2tWcSKU1bynYKFQvh6bNB/flameshot-2022-03-13T23-54-37.png\" title=\"flameshot-2022-03-13T23-54-37.png\"><img src=\"/user_uploads/7178/2YP2tWcSKU1bynYKFQvh6bNB/flameshot-2022-03-13T23-54-37.png\"></a></div><p><a href=\"/user_uploads/7178/3ZU9kMD19vNDrXl8x8UljjVk/flameshot-2022-03-13T23-54-50.png\">flameshot-2022-03-13T23-54-50.png</a></p>\n<div class=\"message_inline_image\"><a href=\"/user_uploads/7178/3ZU9kMD19vNDrXl8x8UljjVk/flameshot-2022-03-13T23-54-50.png\" title=\"flameshot-2022-03-13T23-54-50.png\"><img src=\"/user_uploads/7178/3ZU9kMD19vNDrXl8x8UljjVk/flameshot-2022-03-13T23-54-50.png\"></a></div>",
+        "id": 275176962,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1647208524
+    },
+    {
+        "content": "<ol start=\"3\">\n<li>It supports interpolation</li>\n<li>It supports unicode</li>\n</ol>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span> <span class=\"n\">Statistics</span>\n<span class=\"n\">v</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">100</span><span class=\"p\">);</span>\n<span class=\"n\">cs</span> <span class=\"o\">=</span> <span class=\"n\">ColorScheme</span><span class=\"p\">(</span><span class=\"ss\">:median</span> <span class=\"o\">=&gt;</span> <span class=\"ss\">:red</span><span class=\"p\">,</span> <span class=\"ss\">:δ</span> <span class=\"o\">=&gt;</span> <span class=\"ss\">:yellow</span><span class=\"p\">)</span>\n\n<span class=\"n\">s</span> <span class=\"o\">=</span> <span class=\"sa\">c</span><span class=\"s\">\"\"\"</span>\n<span class=\"s\">Median: :median{</span><span class=\"si\">$</span><span class=\"p\">(</span><span class=\"n\">median</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"p\">))</span><span class=\"s\">}</span>\n<span class=\"s\">Standard deviation: :δ{</span><span class=\"si\">$</span><span class=\"p\">(</span><span class=\"n\">std</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"p\">))</span><span class=\"s\">}</span>\n<span class=\"s\">\"\"\"</span>\n\n<span class=\"n\">print</span><span class=\"p\">(</span><span class=\"n\">cs</span><span class=\"p\">,</span> <span class=\"n\">s</span><span class=\"p\">)</span>\n</code></pre></div>\n<p><a href=\"/user_uploads/7178/1fmwY2r5M528QHVGj1O9omTt/flameshot-2022-03-13T23-56-59.png\">flameshot-2022-03-13T23-56-59.png</a></p>\n<div class=\"message_inline_image\"><a href=\"/user_uploads/7178/1fmwY2r5M528QHVGj1O9omTt/flameshot-2022-03-13T23-56-59.png\" title=\"flameshot-2022-03-13T23-56-59.png\"><img src=\"/user_uploads/7178/1fmwY2r5M528QHVGj1O9omTt/flameshot-2022-03-13T23-56-59.png\"></a></div>",
+        "id": 275177044,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1647208644
+    },
+    {
+        "content": "<p>I use <code>:</code> because latex <code>\\</code> interfere with escape symbol. But it can be changed to anything of course.</p>",
+        "id": 275177117,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1647208741
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"272550\">Michael Abbott</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea/near/273016669\">said</a>:</p>\n<blockquote>\n<p>Should I be able to put <code>:dollar =&gt; :red</code> or something in the dictionary? <code>:code =&gt; blue</code> for things in backticks?</p>\n</blockquote>\n<p>Well, if you want automated resolution of <code>$</code> or code, then I think it's too complicated. Best way to achieve it is by merging somehow current approach and <a href=\"https://github.com/search?q=JuliaParser.jl&amp;type=Repositories\">JuliaParser.jl</a> I think. This is an interesting experiment on it's own, I should give it a thought.</p>",
+        "id": 275177281,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1647208892
+    },
+    {
+        "content": "<p>If anyone is interested, you can find this experimental package in <a href=\"https://github.com/Arkoniak/ColorPrinting.jl\">https://github.com/Arkoniak/ColorPrinting.jl</a></p>",
+        "id": 275177451,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1647209066
+    },
+    {
+        "content": "<p>It is unregistered of course.</p>",
+        "id": 275177465,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1647209088
+    },
+    {
+        "content": "<p>I didn't go through all the discussion but have you had a look in <a href=\"https://github.com/search?q=Term.jl&amp;type=Repositories\">Term.jl</a> ?</p>",
+        "id": 276648465,
+        "sender_full_name": "Filippos Christou",
+        "timestamp": 1648227383
+    },
+    {
+        "content": "<p>It has a very similar syntaxes with the one you suggested. Inspired from the python <code>rich</code> lib.</p>",
+        "id": 276648582,
+        "sender_full_name": "Filippos Christou",
+        "timestamp": 1648227439
+    },
+    {
+        "content": "<p>Ah, it's nice, but not quite what I want.</p>\n<ol>\n<li>Markup tags are rather heavy</li>\n<li>There is no colorscheme support (you can do one by providing custom names, but it is always user responsibility)</li>\n</ol>\n<p>Thank you for the reference anyway, I can see how this package can be quite popular.</p>",
+        "id": 276996016,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1648556200
+    }
+]

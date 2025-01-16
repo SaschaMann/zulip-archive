@@ -1,0 +1,116 @@
+[
+    {
+        "content": "<p>I've recently noticed a significant slow down in loading images. This is hard to MWE because it depends on the image and the machine in question, but does this sound right to you:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"p\">(</span><span class=\"n\">tmp</span><span class=\"p\">)</span> <span class=\"n\">pkg</span><span class=\"o\">&gt;</span> <span class=\"n\">status</span>\n      <span class=\"n\">Status</span> <span class=\"sb\">`~/tmp/Project.toml`</span>\n  <span class=\"p\">[</span><span class=\"mf\">5789e2</span><span class=\"n\">e9</span><span class=\"p\">]</span> <span class=\"n\">FileIO</span> <span class=\"n\">v1</span><span class=\"mf\">.11.2</span>\n  <span class=\"p\">[</span><span class=\"mi\">6218</span><span class=\"n\">d12a</span><span class=\"p\">]</span> <span class=\"n\">ImageMagick</span> <span class=\"n\">v1</span><span class=\"mf\">.2.2</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">versioninfo</span><span class=\"p\">()</span>\n<span class=\"n\">Julia</span> <span class=\"n\">Version</span> <span class=\"mf\">1.7.0</span>\n<span class=\"n\">Commit</span> <span class=\"mi\">3</span><span class=\"n\">bf9d17731</span> <span class=\"p\">(</span><span class=\"mi\">2021</span><span class=\"o\">-</span><span class=\"mi\">11</span><span class=\"o\">-</span><span class=\"mi\">30</span> <span class=\"mi\">12</span><span class=\"o\">:</span><span class=\"mi\">12</span> <span class=\"n\">UTC</span><span class=\"p\">)</span>\n<span class=\"n\">Platform</span> <span class=\"n\">Info</span><span class=\"o\">:</span>\n  <span class=\"n\">OS</span><span class=\"o\">:</span> <span class=\"n\">Linux</span> <span class=\"p\">(</span><span class=\"n\">x86_64</span><span class=\"o\">-</span><span class=\"n\">linux</span><span class=\"o\">-</span><span class=\"n\">gnu</span><span class=\"p\">)</span>\n  <span class=\"n\">CPU</span><span class=\"o\">:</span> <span class=\"n\">AMD</span> <span class=\"n\">Ryzen</span> <span class=\"n\">Threadripper</span> <span class=\"mi\">2950</span><span class=\"n\">X</span> <span class=\"mi\">16</span><span class=\"o\">-</span><span class=\"n\">Core</span> <span class=\"n\">Processor</span>\n  <span class=\"n\">WORD_SIZE</span><span class=\"o\">:</span> <span class=\"mi\">64</span>\n  <span class=\"n\">LIBM</span><span class=\"o\">:</span> <span class=\"n\">libopenlibm</span>\n  <span class=\"n\">LLVM</span><span class=\"o\">:</span> <span class=\"n\">libLLVM</span><span class=\"o\">-</span><span class=\"mf\">12.0.1</span> <span class=\"p\">(</span><span class=\"n\">ORCJIT</span><span class=\"p\">,</span> <span class=\"n\">znver1</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">img</span> <span class=\"o\">=</span> <span class=\"n\">load</span><span class=\"p\">(</span><span class=\"n\">file</span><span class=\"p\">);</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">size</span><span class=\"p\">(</span><span class=\"n\">img</span><span class=\"p\">)</span>\n<span class=\"p\">(</span><span class=\"mi\">1440</span><span class=\"p\">,</span> <span class=\"mi\">2560</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">filesize</span><span class=\"p\">(</span><span class=\"n\">file</span><span class=\"p\">)</span>\n<span class=\"mi\">636254</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">load</span><span class=\"p\">(</span><span class=\"n\">file</span><span class=\"p\">);</span>\n  <span class=\"mf\">1.307</span> <span class=\"n\">s</span> <span class=\"p\">(</span><span class=\"mi\">44236893</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mf\">1.51</span> <span class=\"n\">GiB</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>Should a 1440x2560 pixels 600 KB image take 1.3 seconds to load?</p>",
+        "id": 264981458,
+        "sender_full_name": "Yakir Luc Gagnon",
+        "timestamp": 1639559333
+    },
+    {
+        "content": "<p>It doesn't sound right</p>",
+        "id": 264982250,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1639559811
+    },
+    {
+        "content": "<p>What is <code>file</code> here?</p>",
+        "id": 264982312,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1639559862
+    },
+    {
+        "content": "<p>Some <code>IO</code> object?</p>",
+        "id": 264982350,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1639559883
+    },
+    {
+        "content": "<p>No, <code>file</code> is just the string of the path to the image file (a jpg). I can upload an image so we all use the same exact file, but it's arbitrary, I get this kind of performance no matter what image file I use.</p>",
+        "id": 264982843,
+        "sender_full_name": "Yakir Luc Gagnon",
+        "timestamp": 1639560193
+    },
+    {
+        "content": "<p>where is the image loaded from? is it on an NFS?</p>",
+        "id": 264986002,
+        "sender_full_name": "Sukera",
+        "timestamp": 1639562167
+    },
+    {
+        "content": "<p>No no, it's just an image file on my hard-disk (HDD).</p>\n<p>I've built a MWE to clarify my previous example:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span> <span class=\"n\">FileIO</span><span class=\"p\">,</span> <span class=\"n\">Colors</span>\n<span class=\"n\">img</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"n\">RGB</span><span class=\"p\">,</span> <span class=\"mi\">1440</span><span class=\"p\">,</span> <span class=\"mi\">2560</span><span class=\"p\">)</span>\n<span class=\"n\">file</span> <span class=\"o\">=</span> <span class=\"s\">\"img.jpg\"</span>\n<span class=\"n\">save</span><span class=\"p\">(</span><span class=\"n\">file</span><span class=\"p\">,</span> <span class=\"n\">img</span><span class=\"p\">)</span>\n\n<span class=\"k\">using</span> <span class=\"n\">BenchmarkTools</span>\n<span class=\"n\">filesize</span><span class=\"p\">(</span><span class=\"n\">file</span><span class=\"p\">)</span> <span class=\"c\"># 6422686 bytes</span>\n<span class=\"nd\">@btime</span> <span class=\"n\">load</span><span class=\"p\">(</span><span class=\"n\">file</span><span class=\"p\">);</span> <span class=\"c\">#  1.478 s (44236892 allocations: 1.51 GiB)</span>\n</code></pre></div>",
+        "id": 264999525,
+        "sender_full_name": "Yakir Luc Gagnon",
+        "timestamp": 1639569922
+    },
+    {
+        "content": "<p>That takes at most 200 ms on my laptop</p>",
+        "id": 265013058,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1639576671
+    },
+    {
+        "content": "<p>So strange: I tried using <code>ProfileView</code> like this:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span> <span class=\"n\">ProfileView</span>\n<span class=\"k\">using</span> <span class=\"n\">FileIO</span>\n\n<span class=\"n\">file</span> <span class=\"o\">=</span> <span class=\"s\">\"img.jpg\"</span>\n<span class=\"k\">function</span> <span class=\"n\">profile_test</span><span class=\"p\">(</span><span class=\"n\">n</span><span class=\"p\">)</span>\n  <span class=\"k\">for</span> <span class=\"n\">_</span> <span class=\"k\">in</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">n</span>\n    <span class=\"n\">load</span><span class=\"p\">(</span><span class=\"n\">file</span><span class=\"p\">)</span>\n  <span class=\"k\">end</span>\n<span class=\"k\">end</span>\n\n<span class=\"nd\">@profview</span> <span class=\"n\">profile_test</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>but it just stalled, got stuck, forever, <strong>which is weird in and of itself</strong>...</p>\n<p>But this:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span> <span class=\"n\">ProfileView</span>\n<span class=\"k\">using</span> <span class=\"n\">FileIO</span>\n\n<span class=\"n\">file</span> <span class=\"o\">=</span> <span class=\"s\">\"img.jpg\"</span>\n<span class=\"n\">load</span><span class=\"p\">(</span><span class=\"n\">file</span><span class=\"p\">);</span>\n\n<span class=\"nd\">@profview</span> <span class=\"n\">load</span><span class=\"p\">(</span><span class=\"n\">file</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>resulted in <br>\n<a href=\"/user_uploads/7178/AT96NtFQw7rYw-q_xTqZrqmd/screenshot_2021-12-15_154550.jpg\">screenshot_2021-12-15_154550.jpg</a> </p>\n<div class=\"message_inline_image\"><a href=\"/user_uploads/7178/AT96NtFQw7rYw-q_xTqZrqmd/screenshot_2021-12-15_154550.jpg\" title=\"screenshot_2021-12-15_154550.jpg\"><img src=\"/user_uploads/7178/AT96NtFQw7rYw-q_xTqZrqmd/screenshot_2021-12-15_154550.jpg\"></a></div><p>where the long green bar is <code>wait</code> in <code>task.jl</code>. </p>\n<p>I have attached the <code>jlprof</code> file as well, if you want to take a look with:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">using</span> <span class=\"n\">ProfileView</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">ProfileView</span><span class=\"o\">.</span><span class=\"n\">view</span><span class=\"p\">(</span><span class=\"nb\">nothing</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>and then press the load button and choose the attached <br>\n<a href=\"/user_uploads/7178/GC6J9l_LuYmKnvi8gaC1TFZF/load_image.jlprof\">load_image.jlprof</a>.</p>",
+        "id": 265020803,
+        "sender_full_name": "Yakir Luc Gagnon",
+        "timestamp": 1639580049
+    },
+    {
+        "content": "<p>Is it possible that it's spending all the time waiting for the underlying JPEG library, which perhaps uses a slow fallback on your system?</p>",
+        "id": 265030327,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1639583747
+    },
+    {
+        "content": "<p>Perhaps try reinstalling ImageMagick or whatever backend your FileIO uses for JPEG</p>",
+        "id": 265030482,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1639583785
+    },
+    {
+        "content": "<p>I mean, whenever I try to <code>load</code> an (specifically jpg) image I get:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"kt\">ArgumentError</span><span class=\"o\">:</span> <span class=\"n\">Package</span> <span class=\"n\">ImageMagick</span> <span class=\"p\">[</span><span class=\"mi\">6218</span><span class=\"n\">d12a</span><span class=\"o\">-</span><span class=\"mi\">5</span><span class=\"n\">da1</span><span class=\"o\">-</span><span class=\"mi\">5696</span><span class=\"o\">-</span><span class=\"n\">b52f</span><span class=\"o\">-</span><span class=\"n\">db25d2ecc6d1</span><span class=\"p\">]</span> <span class=\"n\">is</span> <span class=\"n\">required</span> <span class=\"n\">but</span> <span class=\"n\">does</span> <span class=\"n\">not</span> <span class=\"n\">seem</span> <span class=\"n\">to</span> <span class=\"n\">be</span> <span class=\"n\">installed</span><span class=\"o\">:</span>\n <span class=\"o\">-</span> <span class=\"n\">Run</span> <span class=\"sb\">`Pkg.instantiate()`</span> <span class=\"n\">to</span> <span class=\"n\">install</span> <span class=\"n\">all</span> <span class=\"n\">recorded</span> <span class=\"n\">dependencies</span><span class=\"o\">.</span>\n</code></pre></div>\n<p>So I add <code>ImageMagick</code>, that's why the environment I have in my MWE includes <code>ImageMagick</code>:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"p\">(</span><span class=\"n\">tmp</span><span class=\"p\">)</span> <span class=\"n\">pkg</span><span class=\"o\">&gt;</span> <span class=\"n\">st</span>\n      <span class=\"n\">Status</span> <span class=\"sb\">`~/tmp/Project.toml`</span>\n  <span class=\"p\">[</span><span class=\"mi\">5</span><span class=\"n\">ae59095</span><span class=\"p\">]</span> <span class=\"n\">Colors</span> <span class=\"n\">v0</span><span class=\"mf\">.12.8</span>\n  <span class=\"p\">[</span><span class=\"mf\">5789e2</span><span class=\"n\">e9</span><span class=\"p\">]</span> <span class=\"n\">FileIO</span> <span class=\"n\">v1</span><span class=\"mf\">.11.2</span>\n  <span class=\"p\">[</span><span class=\"mi\">6218</span><span class=\"n\">d12a</span><span class=\"p\">]</span> <span class=\"n\">ImageMagick</span> <span class=\"n\">v1</span><span class=\"mf\">.2.2</span>\n</code></pre></div>\n<p>which is the latest version. So I'm not sure what else I could be doing?</p>",
+        "id": 265075114,
+        "sender_full_name": "Yakir Luc Gagnon",
+        "timestamp": 1639602428
+    },
+    {
+        "content": "<p>I just tested my MWE on my home laptop, and .. I got the same slow down!</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">load</span><span class=\"p\">(</span><span class=\"n\">file</span><span class=\"p\">);</span>\n  <span class=\"mf\">3.459</span> <span class=\"n\">s</span> <span class=\"p\">(</span><span class=\"mi\">44236892</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mf\">1.51</span> <span class=\"n\">GiB</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>What is going on...?!</p>",
+        "id": 265075712,
+        "sender_full_name": "Yakir Luc Gagnon",
+        "timestamp": 1639602800
+    },
+    {
+        "content": "<p>Not sure - I used a different MacOS only backend to check</p>",
+        "id": 265114901,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1639633663
+    },
+    {
+        "content": "<p>I'll open an issue...</p>",
+        "id": 265117135,
+        "sender_full_name": "Yakir Luc Gagnon",
+        "timestamp": 1639636502
+    },
+    {
+        "content": "<p>I reproduced it on 1.7 - it doesn't happen on 1.6...</p>",
+        "id": 265120439,
+        "sender_full_name": "Gerhard Aigner",
+        "timestamp": 1639640278
+    },
+    {
+        "content": "<p>It has already been reported: <br>\n<a href=\"https://github.com/JuliaIO/ImageMagick.jl/issues/208\">https://github.com/JuliaIO/ImageMagick.jl/issues/208</a></p>",
+        "id": 265120540,
+        "sender_full_name": "Gerhard Aigner",
+        "timestamp": 1639640394
+    },
+    {
+        "content": "<p>Awesome <span class=\"user-mention\" data-user-id=\"278033\">@Gerhard Aigner</span>, I added my experience to that issue as well.</p>",
+        "id": 265123524,
+        "sender_full_name": "Yakir Luc Gagnon",
+        "timestamp": 1639642798
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"272632\">Yakir Luc Gagnon</span> has marked this topic as resolved.</p>",
+        "id": 265123567,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1639642804
+    }
+]

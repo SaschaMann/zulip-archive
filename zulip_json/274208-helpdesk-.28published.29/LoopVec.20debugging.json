@@ -1,0 +1,128 @@
+[
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"284680\">chriselrod</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia/near/254794323\">said</a>:</p>\n<blockquote>\n<p>If you're willing to debug, maybe we can find out why.<br>\nBut, --</p>\n</blockquote>\n<p>Sure, lemme know what to run</p>",
+        "id": 254800700,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1632537675
+    },
+    {
+        "content": "<p>Here's one problem I've noticed:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">let</span> <span class=\"n\">A</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">2048</span><span class=\"p\">,</span> <span class=\"mi\">2408</span><span class=\"p\">),</span> <span class=\"n\">B</span> <span class=\"o\">=</span> <span class=\"n\">similar</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">)</span>\n           <span class=\"nd\">@btime</span> <span class=\"o\">$</span><span class=\"n\">B</span> <span class=\"o\">.=</span> <span class=\"o\">$</span><span class=\"n\">A</span>\n           <span class=\"nd\">@btime</span> <span class=\"n\">copyto_turbo!</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">B</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">)</span>\n           <span class=\"nd\">@btime</span> <span class=\"n\">copyto_tturbo!</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">B</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">)</span>\n       <span class=\"k\">end</span><span class=\"p\">;</span>\n  <span class=\"mf\">2.410</span> <span class=\"n\">ms</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n  <span class=\"mf\">4.465</span> <span class=\"n\">ms</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n  <span class=\"mf\">3.399</span> <span class=\"n\">ms</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 254800963,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1632537946
+    },
+    {
+        "content": "<p>Apparently <code>__memcpy_avx_unaligned_erms</code> is fast.<br>\nHow does a simple loop compare?<br>\nNote that <code>B .= A</code> forwards to <code>copyto!</code>, which calls <code>memcpy</code>.</p>\n<p>I don't see a difference as extreme as you (and <code>tturbo</code> is fastest), but it'd be interesting to find out what exactly <code>memcpy</code> is doing to be so fast. Seems like an obviously memory bound problem.</p>",
+        "id": 254801416,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1632538332
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">function</span> <span class=\"n\">copyto_loop!</span><span class=\"p\">(</span><span class=\"n\">B</span><span class=\"o\">::</span><span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">},</span> <span class=\"n\">A</span><span class=\"o\">::</span><span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">})</span> <span class=\"k\">where</span> <span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span>\n           <span class=\"k\">for</span> <span class=\"n\">i</span> <span class=\"k\">in</span> <span class=\"n\">eachindex</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"n\">B</span><span class=\"p\">)</span>\n               <span class=\"n\">B</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span> <span class=\"o\">=</span> <span class=\"n\">A</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span>\n           <span class=\"k\">end</span>\n           <span class=\"n\">B</span>\n       <span class=\"k\">end</span>\n<span class=\"n\">copyto_loop!</span> <span class=\"p\">(</span><span class=\"n\">generic</span> <span class=\"k\">function</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">let</span> <span class=\"n\">A</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">2048</span><span class=\"p\">,</span> <span class=\"mi\">2408</span><span class=\"p\">),</span> <span class=\"n\">B</span> <span class=\"o\">=</span> <span class=\"n\">similar</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">)</span>\n           <span class=\"nd\">@btime</span> <span class=\"n\">copyto_loop!</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">B</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">)</span>\n       <span class=\"k\">end</span><span class=\"p\">;</span>\n<span class=\"mf\">5.035</span> <span class=\"n\">ms</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 254803728,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1632540678
+    },
+    {
+        "content": "<p>With <code>@inbounds</code>?<br>\nAnyone know where I can find the code for Julia's <code>memmove</code>?</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">unsafe_copyto!</span><span class=\"p\">(</span><span class=\"n\">dest</span><span class=\"o\">::</span><span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">},</span> <span class=\"n\">doffs</span><span class=\"p\">,</span> <span class=\"n\">src</span><span class=\"o\">::</span><span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">},</span> <span class=\"n\">soffs</span><span class=\"p\">,</span> <span class=\"n\">n</span><span class=\"p\">)</span> <span class=\"k\">where</span> <span class=\"kt\">T</span>\n    <span class=\"n\">t1</span> <span class=\"o\">=</span> <span class=\"nd\">@_gc_preserve_begin</span> <span class=\"n\">dest</span>\n    <span class=\"n\">t2</span> <span class=\"o\">=</span> <span class=\"nd\">@_gc_preserve_begin</span> <span class=\"n\">src</span>\n    <span class=\"n\">destp</span> <span class=\"o\">=</span> <span class=\"n\">pointer</span><span class=\"p\">(</span><span class=\"n\">dest</span><span class=\"p\">,</span> <span class=\"n\">doffs</span><span class=\"p\">)</span>\n    <span class=\"n\">srcp</span> <span class=\"o\">=</span> <span class=\"n\">pointer</span><span class=\"p\">(</span><span class=\"n\">src</span><span class=\"p\">,</span> <span class=\"n\">soffs</span><span class=\"p\">)</span>\n    <span class=\"k\">if</span> <span class=\"o\">!</span><span class=\"n\">allocatedinline</span><span class=\"p\">(</span><span class=\"n\">T</span><span class=\"p\">)</span>\n        <span class=\"k\">ccall</span><span class=\"p\">(</span><span class=\"ss\">:jl_array_ptr_copy</span><span class=\"p\">,</span> <span class=\"kt\">Cvoid</span><span class=\"p\">,</span> <span class=\"p\">(</span><span class=\"kt\">Any</span><span class=\"p\">,</span> <span class=\"kt\">Ptr</span><span class=\"p\">{</span><span class=\"kt\">Cvoid</span><span class=\"p\">},</span> <span class=\"kt\">Any</span><span class=\"p\">,</span> <span class=\"kt\">Ptr</span><span class=\"p\">{</span><span class=\"kt\">Cvoid</span><span class=\"p\">},</span> <span class=\"kt\">Int</span><span class=\"p\">),</span>\n              <span class=\"n\">dest</span><span class=\"p\">,</span> <span class=\"n\">destp</span><span class=\"p\">,</span> <span class=\"n\">src</span><span class=\"p\">,</span> <span class=\"n\">srcp</span><span class=\"p\">,</span> <span class=\"n\">n</span><span class=\"p\">)</span>\n    <span class=\"k\">elseif</span> <span class=\"n\">isbitstype</span><span class=\"p\">(</span><span class=\"n\">T</span><span class=\"p\">)</span>\n        <span class=\"k\">ccall</span><span class=\"p\">(</span><span class=\"ss\">:memmove</span><span class=\"p\">,</span> <span class=\"kt\">Ptr</span><span class=\"p\">{</span><span class=\"kt\">Cvoid</span><span class=\"p\">},</span> <span class=\"p\">(</span><span class=\"kt\">Ptr</span><span class=\"p\">{</span><span class=\"kt\">Cvoid</span><span class=\"p\">},</span> <span class=\"kt\">Ptr</span><span class=\"p\">{</span><span class=\"kt\">Cvoid</span><span class=\"p\">},</span> <span class=\"kt\">Csize_t</span><span class=\"p\">),</span>\n              <span class=\"n\">destp</span><span class=\"p\">,</span> <span class=\"n\">srcp</span><span class=\"p\">,</span> <span class=\"n\">n</span> <span class=\"o\">*</span> <span class=\"n\">aligned_sizeof</span><span class=\"p\">(</span><span class=\"n\">T</span><span class=\"p\">))</span>\n    <span class=\"k\">elseif</span> <span class=\"n\">isbitsunion</span><span class=\"p\">(</span><span class=\"n\">T</span><span class=\"p\">)</span>\n        <span class=\"k\">ccall</span><span class=\"p\">(</span><span class=\"ss\">:memmove</span><span class=\"p\">,</span> <span class=\"kt\">Ptr</span><span class=\"p\">{</span><span class=\"kt\">Cvoid</span><span class=\"p\">},</span> <span class=\"p\">(</span><span class=\"kt\">Ptr</span><span class=\"p\">{</span><span class=\"kt\">Cvoid</span><span class=\"p\">},</span> <span class=\"kt\">Ptr</span><span class=\"p\">{</span><span class=\"kt\">Cvoid</span><span class=\"p\">},</span> <span class=\"kt\">Csize_t</span><span class=\"p\">),</span>\n              <span class=\"n\">destp</span><span class=\"p\">,</span> <span class=\"n\">srcp</span><span class=\"p\">,</span> <span class=\"n\">n</span> <span class=\"o\">*</span> <span class=\"n\">aligned_sizeof</span><span class=\"p\">(</span><span class=\"n\">T</span><span class=\"p\">))</span>\n        <span class=\"c\"># copy selector bytes</span>\n        <span class=\"k\">ccall</span><span class=\"p\">(</span><span class=\"ss\">:memmove</span><span class=\"p\">,</span> <span class=\"kt\">Ptr</span><span class=\"p\">{</span><span class=\"kt\">Cvoid</span><span class=\"p\">},</span> <span class=\"p\">(</span><span class=\"kt\">Ptr</span><span class=\"p\">{</span><span class=\"kt\">Cvoid</span><span class=\"p\">},</span> <span class=\"kt\">Ptr</span><span class=\"p\">{</span><span class=\"kt\">Cvoid</span><span class=\"p\">},</span> <span class=\"kt\">Csize_t</span><span class=\"p\">),</span>\n              <span class=\"k\">ccall</span><span class=\"p\">(</span><span class=\"ss\">:jl_array_typetagdata</span><span class=\"p\">,</span> <span class=\"kt\">Ptr</span><span class=\"p\">{</span><span class=\"kt\">UInt8</span><span class=\"p\">},</span> <span class=\"p\">(</span><span class=\"kt\">Any</span><span class=\"p\">,),</span> <span class=\"n\">dest</span><span class=\"p\">)</span> <span class=\"o\">+</span> <span class=\"n\">doffs</span> <span class=\"o\">-</span> <span class=\"mi\">1</span><span class=\"p\">,</span>\n              <span class=\"k\">ccall</span><span class=\"p\">(</span><span class=\"ss\">:jl_array_typetagdata</span><span class=\"p\">,</span> <span class=\"kt\">Ptr</span><span class=\"p\">{</span><span class=\"kt\">UInt8</span><span class=\"p\">},</span> <span class=\"p\">(</span><span class=\"kt\">Any</span><span class=\"p\">,),</span> <span class=\"n\">src</span><span class=\"p\">)</span> <span class=\"o\">+</span> <span class=\"n\">soffs</span> <span class=\"o\">-</span> <span class=\"mi\">1</span><span class=\"p\">,</span>\n              <span class=\"n\">n</span><span class=\"p\">)</span>\n    <span class=\"k\">else</span>\n        <span class=\"n\">_unsafe_copyto!</span><span class=\"p\">(</span><span class=\"n\">dest</span><span class=\"p\">,</span> <span class=\"n\">doffs</span><span class=\"p\">,</span> <span class=\"n\">src</span><span class=\"p\">,</span> <span class=\"n\">soffs</span><span class=\"p\">,</span> <span class=\"n\">n</span><span class=\"p\">)</span>\n    <span class=\"k\">end</span>\n    <span class=\"nd\">@_gc_preserve_end</span> <span class=\"n\">t2</span>\n    <span class=\"nd\">@_gc_preserve_end</span> <span class=\"n\">t1</span>\n    <span class=\"k\">return</span> <span class=\"n\">dest</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>And, also which <code>memmove</code> is this/where does it come from?</p>",
+        "id": 254804216,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1632541172
+    },
+    {
+        "content": "<p>Oops, here it is with the inbounds</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">function</span> <span class=\"n\">copyto_loop!</span><span class=\"p\">(</span><span class=\"n\">B</span><span class=\"o\">::</span><span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">},</span> <span class=\"n\">A</span><span class=\"o\">::</span><span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">})</span> <span class=\"k\">where</span> <span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span>\n           <span class=\"nd\">@inbounds</span> <span class=\"k\">for</span> <span class=\"n\">i</span> <span class=\"k\">in</span> <span class=\"n\">eachindex</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"n\">B</span><span class=\"p\">)</span>\n               <span class=\"n\">B</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span> <span class=\"o\">=</span> <span class=\"n\">A</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span>\n           <span class=\"k\">end</span>\n           <span class=\"n\">B</span>\n       <span class=\"k\">end</span>\n<span class=\"n\">copyto_loop!</span> <span class=\"p\">(</span><span class=\"n\">generic</span> <span class=\"k\">function</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">let</span> <span class=\"n\">A</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">2048</span><span class=\"p\">,</span> <span class=\"mi\">2408</span><span class=\"p\">),</span> <span class=\"n\">B</span> <span class=\"o\">=</span> <span class=\"n\">similar</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">)</span>\n           <span class=\"nd\">@btime</span> <span class=\"n\">copyto_loop!</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">B</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">)</span>\n       <span class=\"k\">end</span><span class=\"p\">;</span>\n  <span class=\"mf\">4.588</span> <span class=\"n\">ms</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 254804697,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1632541662
+    },
+    {
+        "content": "<p>Thanks, so at least it isn't doing seem to do worse than LLVM, but it's obviously missing out on something pretty clever.</p>",
+        "id": 254805305,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1632542218
+    },
+    {
+        "content": "<p>Maybe it's just using nontemporal stores?<br>\nCould you try <code>@btime vmapnt!(identity, $B, $A)</code>?</p>\n<p>This is fast for me.</p>",
+        "id": 254805556,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1632542428
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"284680\">chriselrod</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/LoopVec.20debugging/near/254805305\">said</a>:</p>\n<blockquote>\n<p>Thanks, so at least it isn't doing seem to do worse than LLVM, but it's obviously missing out on something pretty clever.</p>\n</blockquote>\n<p>Well, it's a lot slower than broadcast</p>",
+        "id": 254805681,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1632542549
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"nd\">@btime</span> <span class=\"o\">$</span><span class=\"n\">B</span> <span class=\"o\">.=</span> <span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">;</span>\n<span class=\"go\">  2.625 ms (0 allocations: 0 bytes)</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"nd\">@btime</span> <span class=\"nd\">@turbo</span> <span class=\"o\">$</span><span class=\"n\">B</span> <span class=\"o\">.=</span> <span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">;</span>\n<span class=\"go\">  3.223 ms (0 allocations: 0 bytes)</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">vmapnt!</span><span class=\"p\">(</span><span class=\"n\">identity</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">B</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">);</span> <span class=\"c\"># use non-temporal stores</span>\n<span class=\"go\">  2.481 ms (0 allocations: 0 bytes)</span>\n</code></pre></div>",
+        "id": 254805699,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1632542585
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/LoopVec.20debugging/near/254805681\">said</a>:</p>\n<blockquote>\n<p>Well, it's a lot slower than broadcast</p>\n</blockquote>\n<p>The broadcast is <code>ccall</code>-ing <code>memmove</code>.</p>",
+        "id": 254805726,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1632542616
+    },
+    {
+        "content": "<p>Gotcha</p>",
+        "id": 254805755,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1632542632
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">let</span> <span class=\"n\">A</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">2048</span><span class=\"p\">,</span> <span class=\"mi\">2408</span><span class=\"p\">),</span> <span class=\"n\">B</span> <span class=\"o\">=</span> <span class=\"n\">similar</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">)</span>\n           <span class=\"nd\">@btime</span> <span class=\"n\">vmapnt!</span><span class=\"p\">(</span><span class=\"n\">identity</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">B</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">)</span>\n       <span class=\"k\">end</span>\n  <span class=\"mf\">2.679</span> <span class=\"n\">ms</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 254805837,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1632542712
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"284680\">chriselrod</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/LoopVec.20debugging/near/254804216\">said</a>:</p>\n<blockquote>\n<p>Anyone know where I can find the code for Julia's <code>memmove</code>?</p>\n</blockquote>\n<p><code>gdb</code> tells me this</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"p\">(</span><span class=\"n\">gdb</span><span class=\"p\">)</span> <span class=\"n\">b</span> <span class=\"n\">memmove</span>\n<span class=\"n\">Breakpoint</span> <span class=\"mi\">2</span> <span class=\"n\">at</span> <span class=\"mh\">0x7ffff765db70</span><span class=\"o\">:</span> <span class=\"n\">file</span> <span class=\"o\">../</span><span class=\"n\">sysdeps</span><span class=\"o\">/</span><span class=\"n\">x86_64</span><span class=\"o\">/</span><span class=\"n\">multiarch</span><span class=\"o\">/</span><span class=\"n\">ifunc</span><span class=\"o\">-</span><span class=\"n\">memmove</span><span class=\"o\">.</span><span class=\"n\">h</span><span class=\"p\">,</span> <span class=\"n\">line</span> <span class=\"mf\">44.</span>\n</code></pre></div>",
+        "id": 254806268,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1632543161
+    },
+    {
+        "content": "<p>So somewhere in here? <a href=\"https://github.com/bminor/glibc/blob/master/sysdeps/x86_64/multiarch/ifunc-memmove.h\">https://github.com/bminor/glibc/blob/master/sysdeps/x86_64/multiarch/ifunc-memmove.h</a></p>",
+        "id": 254806364,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1632543261
+    },
+    {
+        "content": "<p>Thanks. I need to learn gdb (and rr) at some point to find out things like that.<br>\nFor now, I'm looking at:<br>\n<a href=\"https://squadrick.dev/journal/going-faster-than-memcpy.html\">https://squadrick.dev/journal/going-faster-than-memcpy.html</a><br>\nSomehow, I hadn't learned about nontemporal loads before. <a href=\"https://www.felixcloutier.com/x86/movntdqa\">https://www.felixcloutier.com/x86/movntdqa</a></p>",
+        "id": 254806433,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1632543361
+    },
+    {
+        "content": "<p>Also, I need to add a fence instruction to <code>vmapnt(t)!</code>.</p>",
+        "id": 254806611,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1632543536
+    },
+    {
+        "content": "<p>That article used <code>sfence</code>, but I can only get <code>mfence</code> through the llvm <code>fence</code> instruction (and <code>mfence</code> is already available through <code>Threads.atomic_fence()</code>).</p>",
+        "id": 254806959,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1632543880
+    },
+    {
+        "content": "<p>But this doesn't sound right:</p>\n<blockquote>\n<p>Orders processor execution relative to all memory stores prior to the SFENCE instruction. The processor ensures that every store prior to SFENCE is globally visible before any store after SFENCE becomes globally visible. The SFENCE instruction is ordered with respect to memory stores, other SFENCE instructions, MFENCE instructions, and any serializing instructions (such as the CPUID instruction). It is not ordered with respect to memory loads or the LFENCE instruction.</p>\n</blockquote>\n<p><a href=\"https://www.felixcloutier.com/x86/sfence\">https://www.felixcloutier.com/x86/sfence</a><br>\nDon't I care about the ordering of loads and stores? I.e., I'd want all loads after the sfence to correctly load from any stores before the sfence to that same memory address.<br>\nIf this doesn't guarantee that, then I do need mfence?</p>",
+        "id": 254807098,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1632544054
+    },
+    {
+        "content": "<p>Maybe the idea is that, if you are doing concurrent programming, there will be atomic release store of a flag after the sfence? The happens-before edge would be established through this flag, but you'd need that the store to this flag is visible after the stores of the big buffer you just copied.</p>",
+        "id": 254807702,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1632544715
+    },
+    {
+        "content": "<p>I wonder if this is a peculiarity of x86's TSO guarantee. In x86, release store is free (normal mov) because the memory model is very strong. But then you'd need something extra for treating very weak operations like nontemporal store...?</p>",
+        "id": 254807934,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1632545003
+    }
+]

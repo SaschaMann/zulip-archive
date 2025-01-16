@@ -1,0 +1,188 @@
+[
+    {
+        "content": "<p>So I want to intercept everything that's printed to stdout, and each time something is printed, I want to first put that output into a file, and then also continue printing to <code>stdout</code>. </p>\n<p>I know I can do</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">open</span><span class=\"p\">(</span><span class=\"n\">filepath</span><span class=\"p\">,</span> <span class=\"s\">\"w+\"</span><span class=\"p\">)</span> <span class=\"k\">do</span> <span class=\"n\">io</span>\n    <span class=\"n\">redirect_stdout</span><span class=\"p\">(</span><span class=\"n\">myio</span><span class=\"p\">)</span> <span class=\"k\">do</span>\n        <span class=\"n\">f</span><span class=\"p\">()</span> <span class=\"c\"># some code I have no control over which prints</span>\n    <span class=\"k\">end</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>but this will <strong>only</strong> log to the file. I want to send the output to the file concurrently with stuff also being printed in the usual way. Anyone have any ideas as to how I can do this?</p>",
+        "id": 279615902,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1650496889
+    },
+    {
+        "content": "<p>Not exactly what you're asking, but in <a href=\"https://github.com/search?q=BinaryBuilder.jl&amp;type=Repositories\">BinaryBuilder.jl</a> we use <a href=\"https://github.com/JuliaPackaging/OutputCollectors.jl\">https://github.com/JuliaPackaging/OutputCollectors.jl</a> to collect stdout and stderr from subprocesses and print to screen and log to file at the same time</p>",
+        "id": 279620821,
+        "sender_full_name": "Mosè Giordano",
+        "timestamp": 1650500623
+    },
+    {
+        "content": "<p>I wonder if logging can be used for this: <a href=\"https://julialogging.github.io/reference/loggingextras/#LoggingExtras.TeeLogger-Tuple{Vararg{Base.CoreLogging.AbstractLogger}}\">https://julialogging.github.io/reference/loggingextras/#LoggingExtras.TeeLogger-Tuple{Vararg{Base.CoreLogging.AbstractLogger}}</a></p>",
+        "id": 279620950,
+        "sender_full_name": "mbaz",
+        "timestamp": 1650500715
+    },
+    {
+        "content": "<p>Perhaps there's a package with some <code>TeeIO</code> type, but if not <a href=\"https://discourse.julialang.org/t/write-to-file-and-stdout/35042/3\">https://discourse.julialang.org/t/write-to-file-and-stdout/35042/3</a> looks pretty short.</p>",
+        "id": 279622532,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1650502147
+    },
+    {
+        "content": "<p>Ah thank you Brian, that’s nice because I’m trying to avoid dependencies where possible here.</p>",
+        "id": 279702285,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1650557497
+    },
+    {
+        "content": "<p>Is there any documentation out there on what the expected interface for an <code>IO</code> type is?</p>",
+        "id": 279702411,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1650557533
+    },
+    {
+        "content": "<p>I wrote <a href=\"https://github.com/search?q=TeeStreams.jl&amp;type=Repositories\">TeeStreams.jl</a>, but doesn't work with <code>redirect_stdio</code> so you would need to pass the <code>io</code> to any write functions. Perhaps there is a way to fix that though, not sure.</p>",
+        "id": 279704554,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1650558452
+    },
+    {
+        "content": "<p>Hm yeah, rewriting the functions is not an option unfortunately</p>",
+        "id": 279725020,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1650567828
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"272644\">@Fredrik Ekre</span> okay, I was screwing around with the internals of Logging2 by <span class=\"user-mention\" data-user-id=\"269205\">@Chris Foster</span>  and I found a way to get <code>redirect_stdio</code> working on your <code>TeeStreams</code>. </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span> <span class=\"n\">TeeStreams</span>\n<span class=\"k\">using</span> <span class=\"n\">Logging2</span><span class=\"o\">:</span> <span class=\"n\">LineBufferedIO</span>\n\n<span class=\"c\"># adapted from Logging2.jl</span>\n<span class=\"k\">function</span> <span class=\"p\">(</span><span class=\"n\">redirect_func</span><span class=\"o\">::</span><span class=\"kt\">Base</span><span class=\"o\">.</span><span class=\"n\">RedirectStdStream</span><span class=\"p\">)(</span><span class=\"n\">f</span><span class=\"o\">::</span><span class=\"kt\">Function</span><span class=\"p\">,</span> <span class=\"n\">io</span><span class=\"o\">::</span><span class=\"kt\">TeeStream</span><span class=\"p\">)</span>\n    <span class=\"n\">prev_stream</span><span class=\"p\">,</span> <span class=\"n\">stream_name</span> <span class=\"o\">=</span>\n        <span class=\"n\">redirect_func</span><span class=\"o\">.</span><span class=\"n\">unix_fd</span> <span class=\"o\">==</span> <span class=\"mi\">0</span> <span class=\"o\">?</span> <span class=\"p\">(</span><span class=\"nb\">stdin</span><span class=\"p\">,</span> <span class=\"ss\">:stdin</span><span class=\"p\">)</span> <span class=\"o\">:</span>\n        <span class=\"n\">redirect_func</span><span class=\"o\">.</span><span class=\"n\">unix_fd</span> <span class=\"o\">==</span> <span class=\"mi\">1</span> <span class=\"o\">?</span> <span class=\"p\">(</span><span class=\"nb\">stdout</span><span class=\"p\">,</span> <span class=\"ss\">:stdout</span><span class=\"p\">)</span> <span class=\"o\">:</span>\n        <span class=\"n\">redirect_func</span><span class=\"o\">.</span><span class=\"n\">unix_fd</span> <span class=\"o\">==</span> <span class=\"mi\">2</span> <span class=\"o\">?</span> <span class=\"p\">(</span><span class=\"nb\">stderr</span><span class=\"p\">,</span> <span class=\"ss\">:stderr</span><span class=\"p\">)</span> <span class=\"o\">:</span>\n        <span class=\"n\">throw</span><span class=\"p\">(</span><span class=\"kt\">ArgumentError</span><span class=\"p\">(</span><span class=\"s\">\"Not implemented to get old handle of fd except for stdio\"</span><span class=\"p\">))</span>\n\n    <span class=\"n\">result</span> <span class=\"o\">=</span> <span class=\"nb\">nothing</span>\n\n    <span class=\"n\">output</span> <span class=\"o\">=</span> <span class=\"n\">LineBufferedIO</span><span class=\"p\">(</span><span class=\"n\">io</span><span class=\"p\">)</span>\n    <span class=\"n\">rd</span><span class=\"p\">,</span> <span class=\"n\">rw</span> <span class=\"o\">=</span> <span class=\"n\">redirect_func</span><span class=\"p\">()</span>\n    <span class=\"k\">try</span>\n        <span class=\"nd\">@sync</span> <span class=\"k\">begin</span>\n            <span class=\"k\">try</span>\n                <span class=\"n\">Threads</span><span class=\"o\">.</span><span class=\"nd\">@spawn</span> <span class=\"n\">write</span><span class=\"p\">(</span><span class=\"n\">output</span><span class=\"p\">,</span> <span class=\"n\">rd</span><span class=\"p\">)</span> <span class=\"c\"># loops while !eof(rd)</span>\n                <span class=\"n\">result</span> <span class=\"o\">=</span> <span class=\"n\">f</span><span class=\"p\">()</span>\n            <span class=\"k\">finally</span>\n                <span class=\"c\"># To close the read side of the pipe, we must close *all*</span>\n                <span class=\"c\"># writers. This includes `rw`, but *also* the dup'd fd</span>\n                <span class=\"c\"># created behind the scenes by redirect_func(). (To close</span>\n                <span class=\"c\"># that, must call redirect_func() here with the prev stream.)</span>\n                <span class=\"n\">close</span><span class=\"p\">(</span><span class=\"n\">rw</span><span class=\"p\">)</span>\n                <span class=\"n\">redirect_func</span><span class=\"p\">(</span><span class=\"n\">prev_stream</span><span class=\"p\">)</span>\n            <span class=\"k\">end</span>\n        <span class=\"k\">end</span>\n    <span class=\"k\">finally</span>\n        <span class=\"n\">close</span><span class=\"p\">(</span><span class=\"n\">rd</span><span class=\"p\">)</span>\n        <span class=\"n\">close</span><span class=\"p\">(</span><span class=\"n\">output</span><span class=\"p\">)</span>\n    <span class=\"k\">end</span>\n    <span class=\"k\">return</span> <span class=\"n\">result</span>\n<span class=\"k\">end</span>\n\n<span class=\"p\">(</span><span class=\"n\">f</span><span class=\"o\">::</span><span class=\"kt\">Base</span><span class=\"o\">.</span><span class=\"n\">RedirectStdStream</span><span class=\"p\">)(</span><span class=\"n\">io</span><span class=\"o\">::</span><span class=\"kt\">TeeStream</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">f</span><span class=\"p\">(()</span> <span class=\"o\">-&gt;</span> <span class=\"nb\">nothing</span><span class=\"p\">,</span> <span class=\"n\">io</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>Now</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">file</span> <span class=\"o\">=</span> <span class=\"n\">tempname</span><span class=\"p\">()</span>\n<span class=\"s\">\"/var/folders/8j/wwv2d08x00v_5ss1g4dq6f2r0000gn/T/jl_3gEtIl\"</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">open</span><span class=\"p\">(</span><span class=\"n\">file</span><span class=\"p\">,</span> <span class=\"s\">\"w+\"</span><span class=\"p\">)</span> <span class=\"k\">do</span> <span class=\"n\">io</span>\n           <span class=\"n\">tio</span> <span class=\"o\">=</span> <span class=\"n\">TeeStream</span><span class=\"p\">(</span><span class=\"n\">io</span><span class=\"p\">,</span> <span class=\"nb\">stdout</span><span class=\"p\">)</span>\n           <span class=\"n\">redirect_stderr</span><span class=\"p\">(</span><span class=\"n\">tio</span><span class=\"p\">)</span> <span class=\"k\">do</span>\n               <span class=\"n\">redirect_stdout</span><span class=\"p\">(</span><span class=\"n\">tio</span><span class=\"p\">)</span> <span class=\"k\">do</span>\n                   <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"s\">\"hi\"</span><span class=\"p\">)</span>\n                   <span class=\"nd\">@warn</span> <span class=\"s\">\"bye\"</span>\n               <span class=\"k\">end</span>\n           <span class=\"k\">end</span>\n       <span class=\"k\">end</span>\n<span class=\"n\">hi</span>\n<span class=\"n\">┌</span> <span class=\"n\">Warning</span><span class=\"o\">:</span> <span class=\"n\">bye</span>\n<span class=\"n\">└</span> <span class=\"err\">@</span> <span class=\"n\">Main</span> <span class=\"n\">REPL</span><span class=\"p\">[</span><span class=\"mi\">21</span><span class=\"p\">]</span><span class=\"o\">:</span><span class=\"mi\">6</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">read</span><span class=\"p\">(</span><span class=\"n\">file</span><span class=\"p\">,</span> <span class=\"kt\">String</span><span class=\"p\">)</span>\n<span class=\"s\">\"hi</span><span class=\"se\">\\n</span><span class=\"s\">┌ Warning: bye</span><span class=\"se\">\\n</span><span class=\"s\">└ @ Main REPL[21]:6</span><span class=\"se\">\\n</span><span class=\"s\">\"</span>\n</code></pre></div>",
+        "id": 279736931,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1650573599
+    },
+    {
+        "content": "<p>For some reason I couldn't get <code>redirect_stdio</code> to work and instead had to nest <code>redirect_stdout</code> with <code>redirect_stderr</code>, but it seems to work. </p>\n<p>I wonder if there's a way we can get this into TeeStreams?</p>",
+        "id": 279737037,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1650573656
+    },
+    {
+        "content": "<p>Nice. Why is <code>LineBufferedIO</code> needed?</p>",
+        "id": 279742072,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1650576282
+    },
+    {
+        "content": "<p>I couldn’t find any other io construct that worked unfortunately</p>",
+        "id": 279746236,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1650579080
+    },
+    {
+        "content": "<p>Maybe <span class=\"user-mention\" data-user-id=\"269205\">@Chris Foster</span> knows why?</p>",
+        "id": 279746283,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1650579097
+    },
+    {
+        "content": "<p>I guess it’s maybe a thread safety issue?</p>",
+        "id": 279746310,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1650579113
+    },
+    {
+        "content": "<p>Your example works for me without it though</p>",
+        "id": 279746842,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1650579428
+    },
+    {
+        "content": "<p>Really? It crashes for me</p>",
+        "id": 279749228,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1650580882
+    },
+    {
+        "content": "<p>What did you replace <code>LineBufferIO(io)</code> with? just <code>io</code>?</p>",
+        "id": 279749258,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1650580901
+    },
+    {
+        "content": "<p>Yea, and dropped the close of it.</p>",
+        "id": 279751563,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1650582630
+    },
+    {
+        "content": "<p>Yep, that would have been smart to drop</p>",
+        "id": 279757024,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1650586738
+    },
+    {
+        "content": "<p>Cool you found that code in <a href=\"https://github.com/search?q=Logging2.jl&amp;type=Repositories\">Logging2.jl</a> and were able to reuse it <span aria-label=\"+1\" class=\"emoji emoji-1f44d\" role=\"img\" title=\"+1\">:+1:</span> That stuff I did with testing <code>redirect_func.unix_fd</code> is super ugly, but I think there's a missing abstraction in <code>Base</code> which forced me into it.  (I didn't figure out exactly what Base should be doing though.)  BTW, this will also fail on Julia 1.6 as Base appears to have had unintentional breaking changes in 1.7 (oh, I see <span class=\"user-mention silent\" data-user-id=\"272644\">Fredrik Ekre</span> noticed that and fixed it already :) )</p>",
+        "id": 281403314,
+        "sender_full_name": "c42f",
+        "timestamp": 1651822203
+    },
+    {
+        "content": "<p>Yeah, I also encountered that code in base and didn't even understand it well enough to copy it the way you did. I had to copy your copy <span aria-label=\"laughing\" class=\"emoji emoji-1f606\" role=\"img\" title=\"laughing\">:laughing:</span></p>",
+        "id": 281472033,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1651859227
+    },
+    {
+        "content": "<p>It definitely feels like a missing abstraction that there's no clean way to implement <code>redirect</code> functions without resorting to this stuff</p>",
+        "id": 281472116,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1651859282
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"269205\">@Chris Foster</span> do you know what it would take with this to support color and other IOContext stuff in the redirects? I've looked through the Base code and I don't see what it's doing that yours doesn't in terms of color stuff</p>",
+        "id": 281900056,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652225651
+    },
+    {
+        "content": "<p>E.g. this loses color info</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">Logging</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">Logging2</span><span class=\"w\"></span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">logger</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">current_logger</span><span class=\"p\">();</span><span class=\"w\"></span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">redirect_stdout</span><span class=\"p\">(</span><span class=\"n\">logger</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"n\">printstyled</span><span class=\"p\">(</span><span class=\"s\">\"Hello</span><span class=\"se\">\\n</span><span class=\"s\">\"</span><span class=\"p\">;</span><span class=\"w\"> </span><span class=\"n\">color</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"ss\">:blue</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">       </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"p\">[</span><span class=\"w\"> </span><span class=\"n\">Info</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"n\">Hello</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 281900103,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652225709
+    },
+    {
+        "content": "<p>That might be tricky.</p>\n<p>For printstyled to work like that, we'd need to have <code>get(stdout, :color, nothing) == true</code> within the <code>redirect_stdout</code> block.  So ideally we'd have <code>stdout</code> be an <code>IOContext</code> or something to capture the settings of the original stdout.</p>\n<p>But the internal function <code>Logging2._redirect_to_logger</code> uses a <code>PipeEndpoint</code> to capture stdout in a reliable way. And I think it's necessary to use an operating system construct here (with an underlying file descriptor) for it to be possible to really capture stdout from the whole process, including from libc and not just from the Julia runtime.</p>",
+        "id": 281934919,
+        "sender_full_name": "c42f",
+        "timestamp": 1652258951
+    },
+    {
+        "content": "<p><code>stdout</code> per se has no notion of color - that's always a property of where the resulting text is then displayed after all</p>",
+        "id": 281935126,
+        "sender_full_name": "Sukera",
+        "timestamp": 1652259079
+    },
+    {
+        "content": "<p>all ANSI color codes are a in-band code to whatever is interpreting the bytestream, having <code>stdout</code> switch which it is requires knowing where it will end up</p>",
+        "id": 281935200,
+        "sender_full_name": "Sukera",
+        "timestamp": 1652259125
+    },
+    {
+        "content": "<p>I was more thinking in the coxtext of <a href=\"https://github.com/search?q=TeeStreams.jl&amp;type=Repositories\">TeeStreams.jl</a> but trying to adapt the question to logging parlance</p>",
+        "id": 282000824,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652290409
+    },
+    {
+        "content": "<p>Basically, this works for embedding colors into a file:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">open</span><span class=\"p\">(</span><span class=\"n\">file</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"s\">\"w+\"</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"> </span><span class=\"n\">io</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"n\">io</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">IOContext</span><span class=\"p\">(</span><span class=\"n\">io</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"ss\">:color</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"nb\">true</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"n\">redirect_stderr</span><span class=\"p\">(</span><span class=\"n\">io</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"></span>\n<span class=\"w\">               </span><span class=\"n\">redirect_stdout</span><span class=\"p\">(</span><span class=\"n\">io</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"></span>\n<span class=\"w\">                   </span><span class=\"n\">println</span><span class=\"p\">(</span><span class=\"s\">\"hi\"</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">                   </span><span class=\"nd\">@warn</span><span class=\"w\"> </span><span class=\"s\">\"bye\"</span><span class=\"w\"></span>\n<span class=\"w\">               </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"w\">       </span><span class=\"k\">end</span><span class=\"w\"></span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">read</span><span class=\"p\">(</span><span class=\"n\">file</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">String</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"s\">\"hi</span><span class=\"se\">\\n</span><span class=\"s\">\\e[33m\\e[1m┌ \\e[22m\\e[39m\\e[33m\\e[1mWarning: \\e[22m\\e[39mbye</span><span class=\"se\">\\n</span><span class=\"s\">\\e[33m\\e[1m└ \\e[22m\\e[39m\\e[90m@ Main REPL[46]:6\\e[39m</span><span class=\"se\">\\n</span><span class=\"s\">\"</span><span class=\"w\"></span>\n</code></pre></div>\n<p>And I was trying to get <code>IOContext</code> to work with a <code>TeeStream</code> like this:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"nd\">@eval</span><span class=\"w\"> </span><span class=\"n\">TeeStreams</span><span class=\"w\"> </span><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">redirect_func</span><span class=\"o\">::</span><span class=\"kt\">Base</span><span class=\"o\">.</span><span class=\"n\">RedirectStdStream</span><span class=\"p\">)(</span><span class=\"n\">f</span><span class=\"o\">::</span><span class=\"kt\">Function</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">io</span><span class=\"o\">::</span><span class=\"kt\">IOContext</span><span class=\"p\">{</span><span class=\"o\">&lt;:</span><span class=\"kt\">TeeStream</span><span class=\"p\">})</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"n\">prev_stream</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"n\">redirect_func</span><span class=\"o\">.</span><span class=\"n\">unix_fd</span><span class=\"w\"> </span><span class=\"o\">==</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"w\"> </span><span class=\"o\">?</span><span class=\"w\"> </span><span class=\"nb\">stdout</span><span class=\"w\"> </span><span class=\"o\">:</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"n\">redirect_func</span><span class=\"o\">.</span><span class=\"n\">unix_fd</span><span class=\"w\"> </span><span class=\"o\">==</span><span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"w\"> </span><span class=\"o\">?</span><span class=\"w\"> </span><span class=\"nb\">stderr</span><span class=\"w\"> </span><span class=\"o\">:</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"n\">throw</span><span class=\"p\">(</span><span class=\"kt\">ArgumentError</span><span class=\"p\">(</span><span class=\"s\">\"Can only redirect stdout and stderr to TeeStream.\"</span><span class=\"p\">))</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"k\">return</span><span class=\"w\"> </span><span class=\"n\">_redirect_internal</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">io</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">redirect_func</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">prev_stream</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"k\">end</span><span class=\"w\"></span>\n</code></pre></div>\n<p>but the colors just get ignored:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">open</span><span class=\"p\">(</span><span class=\"n\">file</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"s\">\"w+\"</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"> </span><span class=\"n\">io</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"n\">tio</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">IOContext</span><span class=\"p\">(</span><span class=\"n\">TeeStream</span><span class=\"p\">(</span><span class=\"n\">io</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"nb\">stdout</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"ss\">:color</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"nb\">true</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"n\">redirect_stderr</span><span class=\"p\">(</span><span class=\"n\">tio</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"></span>\n<span class=\"w\">               </span><span class=\"n\">redirect_stdout</span><span class=\"p\">(</span><span class=\"n\">tio</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"></span>\n<span class=\"w\">                   </span><span class=\"n\">println</span><span class=\"p\">(</span><span class=\"s\">\"hi\"</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">                   </span><span class=\"nd\">@warn</span><span class=\"w\"> </span><span class=\"s\">\"bye\"</span><span class=\"w\"></span>\n<span class=\"w\">               </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"w\">       </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"n\">┌</span><span class=\"w\"> </span><span class=\"n\">Warning</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"n\">bye</span><span class=\"w\"></span>\n<span class=\"n\">└</span><span class=\"w\"> </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">Main</span><span class=\"w\"> </span><span class=\"n\">REPL</span><span class=\"p\">[</span><span class=\"mi\">52</span><span class=\"p\">]</span><span class=\"o\">:</span><span class=\"mi\">6</span><span class=\"w\"></span>\n<span class=\"n\">hi</span><span class=\"w\"></span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">read</span><span class=\"p\">(</span><span class=\"n\">file</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">String</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"s\">\"hi┌ Warning: bye</span><span class=\"se\">\\n</span><span class=\"s\">└ @ Main REPL[52]:6</span><span class=\"se\">\\n\\n</span><span class=\"s\">\"</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 282001539,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652290774
+    },
+    {
+        "content": "<p><code>TeeStream(IOContext(io, :color =&gt; true), stdout)</code> also didn't work</p>",
+        "id": 282001651,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652290831
+    },
+    {
+        "content": "<p>Ah, I didn't realize that <code>IOContext</code> already works with <code>redirect_stdout</code>  (because <code>IOContext &lt;: AbstractPipe</code>... what??)</p>\n<p>In that case, you can probably get this to work.</p>",
+        "id": 282075585,
+        "sender_full_name": "c42f",
+        "timestamp": 1652345147
+    }
+]

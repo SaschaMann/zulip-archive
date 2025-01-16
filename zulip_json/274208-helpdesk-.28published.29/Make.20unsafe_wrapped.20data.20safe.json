@@ -1,0 +1,230 @@
+[
+    {
+        "content": "<p>What is the correct/fastest way to make an Array which is created though unsafe_wrap safe? It seems that both <code>collect</code> and <code>copy</code> works, but is there some way which is the best way?</p>\n<p>Here is the code which I need to fix for reference (which is not safe and segfaults): <a href=\"https://github.com/apache/arrow-julia/pull/436/files\">https://github.com/apache/arrow-julia/pull/436/files</a></p>",
+        "id": 357626441,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1683819128
+    },
+    {
+        "content": "<p>Depends on where that pointer came from</p>",
+        "id": 357631514,
+        "sender_full_name": "Sukera",
+        "timestamp": 1683820120
+    },
+    {
+        "content": "<p>Are you sure it's not being freed under your nose somewhere?</p>",
+        "id": 357631577,
+        "sender_full_name": "Sukera",
+        "timestamp": 1683820131
+    },
+    {
+        "content": "<p><a href=\"https://github.com/apache/arrow-julia/pull/436/files#diff-64d309c6bd8f2c1071594eabed6d5d4bfdfbd63c7b4fcbb056c7a2432128d5d3R511\">https://github.com/apache/arrow-julia/pull/436/files#diff-64d309c6bd8f2c1071594eabed6d5d4bfdfbd63c7b4fcbb056c7a2432128d5d3R511</a></p>",
+        "id": 357644089,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1683822694
+    },
+    {
+        "content": "<p>If you arent protecting <code>batch.bytes</code> from garbage collection you’re in for a bad time</p>",
+        "id": 357644243,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1683822731
+    },
+    {
+        "content": "<p>One thing I really like to do is use <a href=\"https://github.com/search?q=StrideArrays.jl&amp;type=Repositories\">StrideArrays.jl</a> for this kind of thing. </p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">StrideArrays</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"k\">let</span><span class=\"w\"> </span><span class=\"n\">A</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">3</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">4</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">5</span><span class=\"p\">]</span>\n<span class=\"w\">           </span><span class=\"n\">pA</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">PtrArray</span><span class=\"p\">(</span><span class=\"n\">pointer</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">size</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">))</span>\n<span class=\"w\">           </span><span class=\"n\">sA</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">StrideArray</span><span class=\"p\">(</span><span class=\"n\">pA</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">A</span><span class=\"p\">)</span>\n<span class=\"w\">       </span><span class=\"k\">end</span>\n<span class=\"go\">5-element StrideArray{Int64, 1, (1,), Tuple{Int64}, Tuple{Nothing}, Tuple{StaticInt{1}}, Vector{Int64}}:</span>\n<span class=\"go\"> 1</span>\n<span class=\"go\"> 2</span>\n<span class=\"go\"> 3</span>\n<span class=\"go\"> 4</span>\n<span class=\"go\"> 5</span>\n</code></pre></div>\n<p>the object <code>pA</code> is an abstract array that just has the pointer to <code>A</code> and information about it's size, and the object <code>sA</code> is also an abstractarray, but it stores <code>pA</code> and a reference to where the original data from <code>pA</code>'s pointer came from. Since <code>sA</code> carries this reference around, it will be safe from garbage collection</p>",
+        "id": 357646714,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1683823344
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe/near/357644243\">said</a>:</p>\n<blockquote>\n<p>If you arent protecting <code>batch.bytes</code> from garbage collection you’re in for a bad time</p>\n</blockquote>\n<p>Yeah exactly. It was a hipshot pr and I didn't read carefully what unsafe_wrap did (although the use of <code>wrap</code> name should have triggered an alarm). </p>\n<p>Since the normal case allocates a new array for the result, I'm sure that allocating a new array also for the uncompressed case is fine as well. I was more after if there is some idiomatic way to do it. I'm not sure the devs would like a new dependency just to handle this edge case.</p>",
+        "id": 357650934,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1683824416
+    },
+    {
+        "content": "<p>I guess they'd also prefer if the function was type stable, but maybe one can use a StridedArray also for the compressed case.</p>",
+        "id": 357651698,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1683824595
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"306754\">@Sukera</span> It absolutely is being freed under my nose, so I need to move it over to some safe array. Sorry if my question was unclear. I was trying to ask what is an idiomatic  way to do it.</p>",
+        "id": 357652531,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1683824778
+    },
+    {
+        "content": "<p>The most idiomatic thing I guess would be to not do the pointer gymnastics in the first place, but failing that, I'd change the <code>else</code> block in <code>buildbitmap</code> to something like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"w\">    </span><span class=\"k\">else</span>\n<span class=\"w\">        </span><span class=\"c\"># compressed</span>\n<span class=\"w\">        </span><span class=\"n\">ptr</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">pointer</span><span class=\"p\">(</span><span class=\"n\">batch</span><span class=\"o\">.</span><span class=\"n\">bytes</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">voff</span><span class=\"p\">)</span>\n<span class=\"w\">        </span><span class=\"n\">GC</span><span class=\"o\">.</span><span class=\"nd\">@preserve</span><span class=\"w\"> </span><span class=\"n\">batch</span><span class=\"w\"> </span><span class=\"k\">begin</span>\n<span class=\"w\">            </span><span class=\"n\">_</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">_decodedbytes</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">uncompress</span><span class=\"p\">(</span><span class=\"n\">ptr</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">buffer</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">rb</span><span class=\"o\">.</span><span class=\"n\">compression</span><span class=\"p\">)</span>\n<span class=\"w\">            </span><span class=\"n\">decodedbytes</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">collect</span><span class=\"p\">(</span><span class=\"n\">_decodedbytes</span><span class=\"p\">)</span>\n<span class=\"w\">        </span><span class=\"k\">end</span>\n<span class=\"w\">        </span><span class=\"k\">return</span><span class=\"w\"> </span><span class=\"n\">ValidityBitmap</span><span class=\"p\">(</span><span class=\"n\">decodedbytes</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">node</span><span class=\"o\">.</span><span class=\"n\">length</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">node</span><span class=\"o\">.</span><span class=\"n\">null_count</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 357655114,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1683825456
+    },
+    {
+        "content": "<p>or you could change <code>uncompress</code> to  take <code>batch</code> or <code>batch.bytes</code> as an argument and do the <code>GC.@preserve</code> and <code>collect</code> in there.</p>",
+        "id": 357655397,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1683825527
+    },
+    {
+        "content": "<p>And yeah, <code>copy</code> or <code>collect</code> should be fine. I guess <code>copy</code> is a more more clear here?</p>",
+        "id": 357655560,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1683825566
+    },
+    {
+        "content": "<p>I was also thinking that <code>Vector{UInt8}(encodedbytes)</code> might be even more clear,  e.g. in case <code>copy</code> would someday return some other type than <code>Vector</code>.</p>",
+        "id": 357656732,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1683825845
+    },
+    {
+        "content": "<blockquote>\n<p>the use of wrap name should have triggered an alarm</p>\n</blockquote>\n<p>the use of <code>unsafe_*</code> should have triggered an alarm <span aria-label=\"eyes\" class=\"emoji emoji-1f440\" role=\"img\" title=\"eyes\">:eyes:</span> I agree with Mason - if you reach for pointers without something in an FFI interopt requring that, you're willingly walking over a sea of knives.</p>\n<p><code>copy</code> is perfectly good to use here.</p>",
+        "id": 357663741,
+        "sender_full_name": "Sukera",
+        "timestamp": 1683827734
+    },
+    {
+        "content": "<p>It’s not immediately obvious to me that <code>Vector{UInt8}(encodedbytes)</code> actually makes a copy, so I wouldn’t use that one personally</p>",
+        "id": 357664802,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1683828005
+    },
+    {
+        "content": "<p>I agree - I wouldn't expect <code>copy</code> to return a different type entirely.</p>",
+        "id": 357665533,
+        "sender_full_name": "Sukera",
+        "timestamp": 1683828202
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"300483\">@DrChainsaw</span> I don't think this change <a href=\"https://github.com/apache/arrow-julia/pull/436/commits/5dec5f8353c26af5d017cbda5989cdfd026435b3\">https://github.com/apache/arrow-julia/pull/436/commits/5dec5f8353c26af5d017cbda5989cdfd026435b3</a> is sufficient</p>",
+        "id": 357672214,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1683830210
+    },
+    {
+        "content": "<p>You also need to protect <code>batch.bytes</code> from the GC while you do these operations on it</p>",
+        "id": 357672273,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1683830229
+    },
+    {
+        "content": "<p>That's why I suggested <code>GC.@preserve</code> here:</p>\n<p><span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe/near/357655114\">said</a>:</p>\n<blockquote>\n<p>The most idiomatic thing I guess would be to not do the pointer gymnastics in the first place, but failing that, I'd change the <code>else</code> block in <code>buildbitmap</code> to something like</p>\n<p><div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"w\">    </span><span class=\"k\">else</span>\n<span class=\"w\">        </span><span class=\"c\"># compressed</span>\n<span class=\"w\">        </span><span class=\"n\">ptr</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">pointer</span><span class=\"p\">(</span><span class=\"n\">batch</span><span class=\"o\">.</span><span class=\"n\">bytes</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">voff</span><span class=\"p\">)</span>\n<span class=\"w\">        </span><span class=\"n\">GC</span><span class=\"o\">.</span><span class=\"nd\">@preserve</span><span class=\"w\"> </span><span class=\"n\">batch</span><span class=\"w\"> </span><span class=\"k\">begin</span>\n<span class=\"w\">            </span><span class=\"n\">_</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">_decodedbytes</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">uncompress</span><span class=\"p\">(</span><span class=\"n\">ptr</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">buffer</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">rb</span><span class=\"o\">.</span><span class=\"n\">compression</span><span class=\"p\">)</span>\n<span class=\"w\">            </span><span class=\"n\">decodedbytes</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">collect</span><span class=\"p\">(</span><span class=\"n\">_decodedbytes</span><span class=\"p\">)</span>\n<span class=\"w\">        </span><span class=\"k\">end</span>\n<span class=\"w\">        </span><span class=\"k\">return</span><span class=\"w\"> </span><span class=\"n\">ValidityBitmap</span><span class=\"p\">(</span><span class=\"n\">decodedbytes</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">node</span><span class=\"o\">.</span><span class=\"n\">length</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">node</span><span class=\"o\">.</span><span class=\"n\">null_count</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"k\">end</span>\n</code></pre></div><br>\n</p>\n</blockquote>",
+        "id": 357672951,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1683830449
+    },
+    {
+        "content": "<p>Hmm, yeah I agree it looks weird to not have any <code>GC.@preserve</code> near that pointer. Wouldn't pretty much the entire codebase suffer from this since it uses pointers everywhere?</p>",
+        "id": 357677260,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1683831847
+    },
+    {
+        "content": "<p>No idea, I haven't looked at the wider codebase</p>",
+        "id": 357679014,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1683832467
+    },
+    {
+        "content": "<p>but any time you take the pointer from a julia GC tracked object, and then don't have references to that object, but keep your references to the pointer, you're dealing with a non-deterministic  time bomb</p>",
+        "id": 357679163,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1683832521
+    },
+    {
+        "content": "<p>Oh it's a very deterministic time bomb <span aria-label=\"grinning\" class=\"emoji emoji-1f600\" role=\"img\" title=\"grinning\">:grinning:</span> It will fail, the only thing you don't know is when :D</p>",
+        "id": 357680408,
+        "sender_full_name": "Sukera",
+        "timestamp": 1683832944
+    },
+    {
+        "content": "<p>The cyber security community made a whole industry about issues like that after all</p>",
+        "id": 357680470,
+        "sender_full_name": "Sukera",
+        "timestamp": 1683832971
+    },
+    {
+        "content": "<blockquote>\n<p>the only thing you don't know is when <span aria-label=\"grinning\" class=\"emoji emoji-1f600\" role=\"img\" title=\"grinning\">:grinning:</span></p>\n</blockquote>\n<p>So non-detereministic <span aria-label=\"stuck out tongue\" class=\"emoji emoji-1f61b\" role=\"img\" title=\"stuck out tongue\">:stuck_out_tongue:</span></p>",
+        "id": 357682273,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1683833593
+    },
+    {
+        "content": "<p>non-deterministic is that you don't know whether something happens or not - this WILL happen, you're just closing your eyes to it <span aria-label=\"stuck out tongue wink\" class=\"emoji emoji-1f61c\" role=\"img\" title=\"stuck out tongue wink\">:stuck_out_tongue_wink:</span></p>",
+        "id": 357682440,
+        "sender_full_name": "Sukera",
+        "timestamp": 1683833644
+    },
+    {
+        "content": "<p>But when and how it happens is completely non-deterministic</p>",
+        "id": 357682589,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1683833702
+    },
+    {
+        "content": "<p>The answer to those is always \"at the most inconvenient times\" :P</p>",
+        "id": 357685012,
+        "sender_full_name": "Sukera",
+        "timestamp": 1683834466
+    },
+    {
+        "content": "<p>There is something here which I think I don't have a firm grasp about.</p>\n<blockquote>\n<p>any time you take the pointer from a julia GC tracked object, and then don't have references to that object, but keep your references to the pointer, you're dealing with a non-deterministic time bomb</p>\n</blockquote>\n<p>This makes perfect sense to me and the first PR commit clearly did this by just returning the wrapped array (and that did indeed blow up in my face). However, the original (and afaik current PR code) seems to always copy over the pointed to data to a new array before the pointed to object (<code>batch.bytes</code>) can go out of scope. I suppose one can complain about the coding style to even have a function which accepts a pointer, but I'm ok with leaving that judgement to the package maintainers.</p>\n<p>However, looking at the the docs of <code>GC.@preserve</code>, the first example seems like redundant use of <code>GC.@preserve</code> since <code>x</code> can't be garbage collected before <code>unsafe_load</code> returns, or can it?</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"go\">  julia&gt; let</span>\n<span class=\"go\">             x = Ref{Int}(101)</span>\n<span class=\"go\">             p = Base.unsafe_convert(Ptr{Int}, x)</span>\n<span class=\"go\">             GC.@preserve x unsafe_load(p)</span>\n<span class=\"go\">         end</span>\n</code></pre></div>\n<p>Is this just a simple demonstration of how to use it, or is it a situation where it is needed or else the code will blow up eventually?</p>",
+        "id": 357703572,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1683841413
+    },
+    {
+        "content": "<p>Without a <code>GC.@preserve x</code> that code would blow up.</p>",
+        "id": 357703984,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1683841628
+    },
+    {
+        "content": "<p>It's unlikely to blow up, but it can happen</p>",
+        "id": 357704001,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1683841638
+    },
+    {
+        "content": "<p>If I write</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">Ref</span><span class=\"p\">(</span><span class=\"mi\">101</span><span class=\"p\">)</span>\n<span class=\"n\">p</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">unsafe_convert</span><span class=\"p\">(</span><span class=\"kt\">Ptr</span><span class=\"p\">{</span><span class=\"kt\">Int</span><span class=\"p\">},</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"p\">)</span>\n<span class=\"n\">unsafe_load</span><span class=\"p\">(</span><span class=\"n\">p</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>then the runtime is fully allowed to garbage collect <code>x</code> between the second and third lines, i.e.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">Ref</span><span class=\"p\">(</span><span class=\"mi\">101</span><span class=\"p\">)</span>\n<span class=\"n\">p</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">unsafe_convert</span><span class=\"p\">(</span><span class=\"kt\">Ptr</span><span class=\"p\">{</span><span class=\"kt\">Int</span><span class=\"p\">},</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"p\">)</span>\n<span class=\"c\"># No more references to x, now allowed to free its memory here!!!</span>\n<span class=\"n\">unsafe_load</span><span class=\"p\">(</span><span class=\"n\">p</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 357704273,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1683841776
+    },
+    {
+        "content": "<p>So I guess then the code in <a href=\"https://github.com/search?q=Arrow.jl&amp;type=Repositories\">Arrow.jl</a> might work (for now) because <code>batch</code> is accessed later on in the code?</p>",
+        "id": 357704566,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1683841916
+    },
+    {
+        "content": "<p>Probably yeah</p>",
+        "id": 357704634,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1683841931
+    },
+    {
+        "content": "<p>with the <code>Ref</code> example above, it's highly unlikely to blow up on you because the <code>Ref</code> constructed in that way is stack allocated, and in simple examples the compiler wouldn't move the stack frame to corrupt the <code>Ref</code> in the middle of a function's execution</p>",
+        "id": 357704803,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1683842040
+    },
+    {
+        "content": "<p>but it is definitely allowed to do so</p>",
+        "id": 357704858,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1683842048
+    },
+    {
+        "content": "<p>I guess I was assuming that scopes are as important to the compiler as they are to the programmer.</p>",
+        "id": 357704976,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1683842126
+    },
+    {
+        "content": "<p>(Note that there's no semantic guarantee that the <code>Ref</code> is actually stack allocated! Semantically, it's all just \"julia managed memory\" - there is no heap nor stack in that model, that's just the reality of computing leaking out from the abstraction)</p>",
+        "id": 357782991,
+        "sender_full_name": "Sukera",
+        "timestamp": 1683877753
+    }
+]

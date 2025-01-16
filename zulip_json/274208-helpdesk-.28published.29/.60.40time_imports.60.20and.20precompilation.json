@@ -1,0 +1,56 @@
+[
+    {
+        "content": "<p>If something takes a long time with <code>@time_imports</code>, does it likely mean that (more) precompile statements would help or are the causes separate? I'm trying to diagnose and speed up my package's load time.</p>",
+        "id": 399010399,
+        "sender_full_name": "Alec",
+        "timestamp": 1698468515
+    },
+    {
+        "content": "<p>Precompile statements wouldln't help much with that. The good news is that it's absolutely possible to make your package load faster! You should</p>\n<ul>\n<li>Use Julia 1.10 if possible. Loading packages has been optimised for Julia 1.10 relative to Julia 1.9</li>\n<li>Cut down on dependencies, if possible</li>\n<li>\n<p>Gate optional features of packages behind pkg extensions - this can reduce the total number of dependencies by quite a lot<br>\n... and now for the actual optimisation of loading time:</p>\n</li>\n<li>\n<p>Use <a href=\"https://juliahub.com/ui/Packages/General/Aqua\">Aqua.jl</a> to make sure that your package doesn't commit type piracy.</p>\n</li>\n<li>Make sure your package is type stable - or more precisely, that every variable's type is known at compile time when running your package</li>\n<li>A few packages use metaprogramming to programmatically define gigantic methods, or define tens of thousands of methods. Avoid these packages and don't do it yourself</li>\n<li>Make sure your dependencies don't commit type piracy, and that they are type stable, too</li>\n</ul>",
+        "id": 399063254,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1698508551
+    },
+    {
+        "content": "<p>There is a sense in which the above is pretty easy: Don't commit type piracy, write inferrible code, and don't use metaprogramming to generate massive packages.<br>\nThe hard part is - if you have an existing stack with your package and a lot of dependencies, how can you tell exactly which type instability in your dependencies cause issues such that you can surgically fix these issues instead of rewriting 20 different packages? For this, use SnoopCompile. But I'm afraid it'll be a bit of \"invalidation whack-a-mole\". The real solution is to use type-stable packages.</p>",
+        "id": 399063337,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1698508658
+    },
+    {
+        "content": "<blockquote>\n<p>Make sure your package is type stable - or more precisely, that every variable's type is known at compile time when running your package</p>\n</blockquote>\n<p>What distinction are you making here?</p>",
+        "id": 399069991,
+        "sender_full_name": "jar",
+        "timestamp": 1698514643
+    },
+    {
+        "content": "<blockquote>\n<p>I'm afraid it'll be a bit of \"invalidation whack-a-mole\". The real solution is to use type-stable packages.</p>\n</blockquote>\n<p>That's what I'm running into with JET and SnoopCompile - seems like both are highlighting pretty deep sources for possible call errors and invalidations respectively. :(</p>",
+        "id": 399113328,
+        "sender_full_name": "Alec",
+        "timestamp": 1698553561
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"326776\">jar</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/.60.40time_imports.60.20and.20precompilation/near/399069991\">said</a>:</p>\n<blockquote>\n<p>What distinction are you making here?</p>\n</blockquote>\n<p>Type stability is (was?) normally considered to only apply to whether the return type could be inferred from the input types. Whereas I'm talking about all variables. Someone called this \"type groundedness\" but the term hasn't caught on. Maybe \"inferrible\" is more common</p>",
+        "id": 399131328,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1698568296
+    },
+    {
+        "content": "<p>Alec: Is this in Base or stdlib packages, or third-party packages? You can try to add issues upstream and maybe a few PRs. I think it would be good to begin pushing people to release inferrible code into the ecosystem. Still today I hear from people who think inferribility is only something you care about in hot loops and due to performance.</p>",
+        "id": 399131516,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1698568415
+    },
+    {
+        "content": "<p>Third party packages. I’m going to rewatch some of the 2021 JuliaCon presentations on latency and try to grok that stuff better so when I open issues I can be more constructive (and maybe even submit PRs)</p>",
+        "id": 399188934,
+        "sender_full_name": "Alec",
+        "timestamp": 1698617513
+    },
+    {
+        "content": "<p>First upstream improvement in process of being registered :) <a href=\"https://gitlab.com/aplavin/AccessorsExtra.jl/-/issues/2\">https://gitlab.com/aplavin/AccessorsExtra.jl/-/issues/2</a></p>",
+        "id": 399207392,
+        "sender_full_name": "Alec",
+        "timestamp": 1698630827
+    }
+]

@@ -1,0 +1,254 @@
+[
+    {
+        "content": "<p>I'm writing an infinite, random iterator. Something like this (simplified):</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"kt\">RandIter</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">::</span><span class=\"w\"> </span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Int</span><span class=\"p\">}</span><span class=\"w\"></span>\n<span class=\"k\">end</span><span class=\"w\"></span>\n\n<span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">length</span><span class=\"p\">(</span><span class=\"n\">ri</span><span class=\"w\"> </span><span class=\"o\">::</span><span class=\"w\"> </span><span class=\"n\">RandIter</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mi\">5</span><span class=\"w\"></span>\n\n<span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">iterate</span><span class=\"p\">(</span><span class=\"n\">i</span><span class=\"o\">::</span><span class=\"kt\">RandIter</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">state</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mi\">0</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"k\">if</span><span class=\"w\"> </span><span class=\"n\">state</span><span class=\"w\"> </span><span class=\"o\">&lt;</span><span class=\"w\"> </span><span class=\"mi\">5</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"n\">i</span><span class=\"o\">.</span><span class=\"n\">x</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">rand</span><span class=\"p\">((</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"mi\">3</span><span class=\"p\">))</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"n\">i</span><span class=\"o\">.</span><span class=\"n\">x</span><span class=\"p\">[</span><span class=\"mi\">2</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">rand</span><span class=\"p\">((</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"mi\">3</span><span class=\"p\">))</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"n\">i</span><span class=\"o\">.</span><span class=\"n\">x</span><span class=\"p\">[</span><span class=\"mi\">3</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">rand</span><span class=\"p\">((</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"mi\">3</span><span class=\"p\">))</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"n\">state</span><span class=\"w\"> </span><span class=\"o\">+=</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"k\">return</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">i</span><span class=\"o\">.</span><span class=\"n\">x</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">state</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"k\">else</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"k\">return</span><span class=\"w\"> </span><span class=\"nb\">nothing</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"k\">end</span><span class=\"w\"></span>\n</code></pre></div>\n<p>and then</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">ri</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">RandIter</span><span class=\"p\">([</span><span class=\"mi\">0</span><span class=\"p\">,</span><span class=\"mi\">0</span><span class=\"p\">,</span><span class=\"mi\">0</span><span class=\"p\">]);</span><span class=\"w\"></span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">collect</span><span class=\"p\">(</span><span class=\"n\">Iterators</span><span class=\"o\">.</span><span class=\"n\">take</span><span class=\"p\">(</span><span class=\"n\">ri</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">4</span><span class=\"p\">))</span><span class=\"w\"></span>\n<span class=\"go\">4-element Vector{Any}:</span>\n<span class=\"go\"> [1, 3, 2]</span>\n<span class=\"go\"> [1, 3, 2]</span>\n<span class=\"go\"> [1, 3, 2]</span>\n<span class=\"go\"> [1, 3, 2]</span>\n</code></pre></div>\n<p>Here, <code>[1, 3, 2]</code> is the last random value assigned to <code>ri.x</code>.</p>\n<p>This is specific to <code>take</code>; for example, this works:</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">v</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">ri</span><span class=\"w\"> </span><span class=\"n\">println</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"p\">);</span><span class=\"w\"> </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"go\">[3, 3, 1]</span>\n<span class=\"go\">[2, 3, 1]</span>\n<span class=\"go\">[3, 3, 3]</span>\n<span class=\"go\">[1, 2, 2]</span>\n<span class=\"go\">[1, 1, 2]</span>\n</code></pre></div>\n<p>Ultimately, what I want to do is generate the random values without allocating; that's the idea behind reusing the memory allocated in <code>ri.x</code>. How can I do that and still have a working <code>take</code> iterator?</p>",
+        "id": 317436902,
+        "sender_full_name": "mbaz",
+        "timestamp": 1671737131
+    },
+    {
+        "content": "<p>you're returning the exact same array in every iteration</p>",
+        "id": 317446179,
+        "sender_full_name": "Sukera",
+        "timestamp": 1671740808
+    },
+    {
+        "content": "<p>if you want to create distinct arrays, you HAVE to copy</p>",
+        "id": 317446201,
+        "sender_full_name": "Sukera",
+        "timestamp": 1671740819
+    },
+    {
+        "content": "<p>Hmm, I'm starting to think that this will be impossible... for <code>take</code> to work, at some point a copy will have to be made. Unfortunately, this makes the iterator almost 10x slower</p>",
+        "id": 317446218,
+        "sender_full_name": "mbaz",
+        "timestamp": 1671740824
+    },
+    {
+        "content": "<p>you could always return a tuple instead, if the size is limited</p>",
+        "id": 317446286,
+        "sender_full_name": "Sukera",
+        "timestamp": 1671740854
+    },
+    {
+        "content": "<p>but yeah, at some point you will have to copy</p>",
+        "id": 317446304,
+        "sender_full_name": "Sukera",
+        "timestamp": 1671740865
+    },
+    {
+        "content": "<p>the only reason <code>println</code> works is because it prints the current state of the array, and doesn't keep a reference to it around for longer than one iteration</p>",
+        "id": 317446395,
+        "sender_full_name": "Sukera",
+        "timestamp": 1671740894
+    },
+    {
+        "content": "<p>Yep -- the problem with tuples is that later on I'd like to use the random values in more flexible ways.</p>",
+        "id": 317446402,
+        "sender_full_name": "mbaz",
+        "timestamp": 1671740897
+    },
+    {
+        "content": "<p>I guess what I was hoping would happen is that <code>collect(take(...))</code> would allocate an array of the required size and stick the iterator values in there, requiring only one allocation.</p>\n<p>If I need to copy the array, I end up doing one allocation per iteration, which is sad.</p>",
+        "id": 317446566,
+        "sender_full_name": "mbaz",
+        "timestamp": 1671740974
+    },
+    {
+        "content": "<p>well it <em>does</em> only allocate once, the outer array</p>",
+        "id": 317446723,
+        "sender_full_name": "Sukera",
+        "timestamp": 1671741024
+    },
+    {
+        "content": "<p>it's just that every entry returned is the exact same array (<code>===</code>), where you just changed its contents</p>",
+        "id": 317446768,
+        "sender_full_name": "Sukera",
+        "timestamp": 1671741047
+    },
+    {
+        "content": "<p>it's the same reason why</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">fill</span><span class=\"p\">([],</span><span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"mi\">2</span><span class=\"o\">-</span><span class=\"n\">element</span><span class=\"w\"> </span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Any</span><span class=\"p\">}}</span><span class=\"o\">:</span><span class=\"w\"></span>\n<span class=\"w\"> </span><span class=\"p\">[]</span><span class=\"w\"></span>\n<span class=\"w\"> </span><span class=\"p\">[]</span><span class=\"w\"></span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">ans</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">===</span><span class=\"w\"> </span><span class=\"n\">ans</span><span class=\"p\">[</span><span class=\"mi\">2</span><span class=\"p\">]</span><span class=\"w\"></span>\n<span class=\"nb\">true</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 317446840,
+        "sender_full_name": "Sukera",
+        "timestamp": 1671741074
+    },
+    {
+        "content": "<p>Yeah, but <code>collect</code> is not copying the values returned by my iterator.</p>",
+        "id": 317446893,
+        "sender_full_name": "mbaz",
+        "timestamp": 1671741114
+    },
+    {
+        "content": "<p>why should it?</p>",
+        "id": 317446909,
+        "sender_full_name": "Sukera",
+        "timestamp": 1671741120
+    },
+    {
+        "content": "<p>If you do something with the result, though, it might be fine that it gets re-used. E.g. <code>map(sum, iter)</code> ought to call sum before getting the next element, and thus have distinct values.</p>",
+        "id": 317447010,
+        "sender_full_name": "Michael Abbott",
+        "timestamp": 1671741143
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"272550\">@Michael Abbott</span> Yeah, in some cases (like <code>for</code>) above it does work.</p>",
+        "id": 317447086,
+        "sender_full_name": "mbaz",
+        "timestamp": 1671741181
+    },
+    {
+        "content": "<p>if you want to copy, you need to copy explicitly - either by doing <code>Iterators.map(copy, RandIter([1,2,3]))</code> or by copying in your iterator</p>",
+        "id": 317447105,
+        "sender_full_name": "Sukera",
+        "timestamp": 1671741187
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"345789\">mbaz</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60/near/317447086\">said</a>:</p>\n<blockquote>\n<p><span class=\"user-mention silent\" data-user-id=\"272550\">Michael Abbott</span> Yeah, in some cases (like <code>for</code>) above it does work.</p>\n</blockquote>\n<p>again - the  <code>for</code> doesn't copy. The <code>println</code> just looks at the elements of the array before you change them again.</p>",
+        "id": 317447174,
+        "sender_full_name": "Sukera",
+        "timestamp": 1671741227
+    },
+    {
+        "content": "<p>I understand.</p>",
+        "id": 317447294,
+        "sender_full_name": "mbaz",
+        "timestamp": 1671741275
+    },
+    {
+        "content": "<p>I'm not complaining, by the way, I just was very confused by the behavior of <code>collect(take(itr))</code>. I assumed that, just like <code>println</code> uses the values before they change, <code>collect</code> would take the returned values and stick them in its own array.</p>",
+        "id": 317447432,
+        "sender_full_name": "mbaz",
+        "timestamp": 1671741344
+    },
+    {
+        "content": "<p>that is exactly what it's doing though! :D</p>",
+        "id": 317447565,
+        "sender_full_name": "Sukera",
+        "timestamp": 1671741403
+    },
+    {
+        "content": "<p>you just always return the same array</p>",
+        "id": 317447577,
+        "sender_full_name": "Sukera",
+        "timestamp": 1671741410
+    },
+    {
+        "content": "<p>so it always sticks the same exact array into the new location</p>",
+        "id": 317447595,
+        "sender_full_name": "Sukera",
+        "timestamp": 1671741418
+    },
+    {
+        "content": "<p>Maybe I don't know what you mean by \"same array\". I understand the array (in the sense of the array pointer) is the same. However, the values of the array are different in each iteration.</p>",
+        "id": 317447800,
+        "sender_full_name": "mbaz",
+        "timestamp": 1671741487
+    },
+    {
+        "content": "<p>Maybe this is like copy vs deepcopy. <code>collect</code> is making a new array to hold things, but those things themselves are just pointers to memory. If I do <code>A = [[1,2], [3,4]]; B = copy(A)</code>, doing <code>B[1] = [5,6]</code> mutates B but not A. But <code>B[2] .= 0</code> mutates not B but B[2], which is <code>=== A[2]</code>, the same memory.</p>",
+        "id": 317447823,
+        "sender_full_name": "Michael Abbott",
+        "timestamp": 1671741497
+    },
+    {
+        "content": "<p>By \"same array\" I mean that they are <code>===</code> (called egal) - they are literally the same exact array object! They not only have the same contents, they occupy the same memory because they are the exact same object.</p>",
+        "id": 317448093,
+        "sender_full_name": "Sukera",
+        "timestamp": 1671741608
+    },
+    {
+        "content": "<p>I also had a mapslices example... internally it does exactly this re-use of one array for every slice. This is written into, passed to <code>f</code>, the result saved elsewhere, and repeat -- safe. But if you explicitly save the array elsewhere, it's always the same one:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">store</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"p\">[];</span><span class=\"w\"> </span><span class=\"n\">mapslices</span><span class=\"p\">(</span><span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"kt\">Int8</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"mi\">3</span><span class=\"p\">);</span><span class=\"w\"> </span><span class=\"n\">dims</span><span class=\"o\">=</span><span class=\"mi\">1</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"w\"></span>\n<span class=\"w\">                       </span><span class=\"n\">push!</span><span class=\"p\">(</span><span class=\"n\">store</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">                       </span><span class=\"n\">sum</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">                   </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"mi\">1</span><span class=\"o\">×</span><span class=\"mi\">3</span><span class=\"w\"> </span><span class=\"kt\">Matrix</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">}</span><span class=\"o\">:</span><span class=\"w\"></span>\n<span class=\"w\"> </span><span class=\"o\">-</span><span class=\"mi\">225</span><span class=\"w\">  </span><span class=\"mi\">90</span><span class=\"w\">  </span><span class=\"o\">-</span><span class=\"mi\">78</span><span class=\"w\"></span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">store</span><span class=\"w\"></span>\n<span class=\"mi\">3</span><span class=\"o\">-</span><span class=\"n\">element</span><span class=\"w\"> </span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Any</span><span class=\"p\">}</span><span class=\"o\">:</span><span class=\"w\"></span>\n<span class=\"w\"> </span><span class=\"kt\">Int8</span><span class=\"p\">[</span><span class=\"o\">-</span><span class=\"mi\">64</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"o\">-</span><span class=\"mi\">14</span><span class=\"p\">]</span><span class=\"w\"></span>\n<span class=\"w\"> </span><span class=\"kt\">Int8</span><span class=\"p\">[</span><span class=\"o\">-</span><span class=\"mi\">64</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"o\">-</span><span class=\"mi\">14</span><span class=\"p\">]</span><span class=\"w\"></span>\n<span class=\"w\"> </span><span class=\"kt\">Int8</span><span class=\"p\">[</span><span class=\"o\">-</span><span class=\"mi\">64</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"o\">-</span><span class=\"mi\">14</span><span class=\"p\">]</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 317448112,
+        "sender_full_name": "Michael Abbott",
+        "timestamp": 1671741616
+    },
+    {
+        "content": "<p>Whether the <em>content</em> of the array differs in each iteration is irrelevant - your iterator always returns the same <em>object</em>, so that's what <code>collect</code> sticks in the collected array. It doesn't go around checking whether the contents have changed - that'd be quite a lot of overhead (and hard to do in a generic way).</p>",
+        "id": 317448259,
+        "sender_full_name": "Sukera",
+        "timestamp": 1671741677
+    },
+    {
+        "content": "<p>Let's say <code>A</code> is <code>collect</code>'s array and <code>ri.x</code> is what my iterator returns. I thought what would happen is <code>A[:, n] = ri.x[:]</code>, where <code>n</code> is the iteration index.</p>",
+        "id": 317448280,
+        "sender_full_name": "mbaz",
+        "timestamp": 1671741688
+    },
+    {
+        "content": "<p>an iteration is not indexable - your iterator only returns a single object</p>",
+        "id": 317448337,
+        "sender_full_name": "Sukera",
+        "timestamp": 1671741716
+    },
+    {
+        "content": "<p>not a collection of objects</p>",
+        "id": 317448342,
+        "sender_full_name": "Sukera",
+        "timestamp": 1671741719
+    },
+    {
+        "content": "<p>No, but <code>collect</code> knows, since it iterates over the <code>Take</code> iterator.</p>",
+        "id": 317448485,
+        "sender_full_name": "mbaz",
+        "timestamp": 1671741775
+    },
+    {
+        "content": "<p>That's what mapslices will do, it makes a matrix A to write slices into -- they are moved to new memory. But the collected array is not a matrix like <code>A</code>, it's a vector containing <code>Vector</code>s, each of which has its own pointer (and in this case they all agree)</p>",
+        "id": 317448517,
+        "sender_full_name": "Michael Abbott",
+        "timestamp": 1671741789
+    },
+    {
+        "content": "<p>that is also not indexable!</p>",
+        "id": 317448519,
+        "sender_full_name": "Sukera",
+        "timestamp": 1671741790
+    },
+    {
+        "content": "<p>Making one big output array and writing into it while iterating is also what stack will do:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">Compat</span><span class=\"w\"></span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">stack</span><span class=\"p\">(</span><span class=\"n\">Iterators</span><span class=\"o\">.</span><span class=\"n\">take</span><span class=\"p\">(</span><span class=\"n\">ri</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">4</span><span class=\"p\">))</span><span class=\"w\"></span>\n<span class=\"mi\">3</span><span class=\"o\">×</span><span class=\"mi\">4</span><span class=\"w\"> </span><span class=\"kt\">Matrix</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">}</span><span class=\"o\">:</span><span class=\"w\"></span>\n<span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"w\">  </span><span class=\"mi\">1</span><span class=\"w\">  </span><span class=\"mi\">2</span><span class=\"w\">  </span><span class=\"mi\">1</span><span class=\"w\"></span>\n<span class=\"w\"> </span><span class=\"mi\">3</span><span class=\"w\">  </span><span class=\"mi\">1</span><span class=\"w\">  </span><span class=\"mi\">3</span><span class=\"w\">  </span><span class=\"mi\">2</span><span class=\"w\"></span>\n<span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"w\">  </span><span class=\"mi\">2</span><span class=\"w\">  </span><span class=\"mi\">3</span><span class=\"w\">  </span><span class=\"mi\">3</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 317448754,
+        "sender_full_name": "Michael Abbott",
+        "timestamp": 1671741889
+    },
+    {
+        "content": "<p><code>collect</code> (roughly) does this, provided the array has some knowable size:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">out</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">eltype</span><span class=\"p\">(</span><span class=\"kt\">itr</span><span class=\"p\">)}(</span><span class=\"nb\">undef</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">length</span><span class=\"p\">(</span><span class=\"n\">itr</span><span class=\"p\">))</span><span class=\"w\"></span>\n<span class=\"k\">for</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">idx</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">obj</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">enumerate</span><span class=\"p\">(</span><span class=\"n\">itr</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"n\">out</span><span class=\"p\">[</span><span class=\"n\">idx</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">obj</span><span class=\"w\"></span>\n<span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"n\">out</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 317448798,
+        "sender_full_name": "Sukera",
+        "timestamp": 1671741904
+    },
+    {
+        "content": "<p>there is no <code>copy</code> involved and it has no knowledge of whether or not you return the same exact object in each iteration or not</p>",
+        "id": 317448855,
+        "sender_full_name": "Sukera",
+        "timestamp": 1671741928
+    },
+    {
+        "content": "<p>(there are some more cases with multidimensional iterators, but those share the non-copying semantics so I'll leave them out for simplicity)</p>",
+        "id": 317448960,
+        "sender_full_name": "Sukera",
+        "timestamp": 1671741965
+    },
+    {
+        "content": "<p>And this is very different to having <code>out[:, idx] .= obj</code> in the loop, which copies the values of <code>obj</code> immediately (into <code>out::Matrix</code> instead of <code>out::Vector{Vector{...}}</code>)</p>",
+        "id": 317448981,
+        "sender_full_name": "Michael Abbott",
+        "timestamp": 1671741973
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"306754\">@Sukera</span> Agreed -- I see it now, but I didn't see it before.</p>\n<p><span class=\"user-mention\" data-user-id=\"272550\">@Michael Abbott</span> <code>stack</code> looks like what I need here.</p>",
+        "id": 317449018,
+        "sender_full_name": "mbaz",
+        "timestamp": 1671741989
+    },
+    {
+        "content": "<p><code>stack</code> is superfast as well... almost zero overhead. I can't wait for v1.9</p>",
+        "id": 317449541,
+        "sender_full_name": "mbaz",
+        "timestamp": 1671742230
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"306754\">@Sukera</span> <span class=\"user-mention\" data-user-id=\"272550\">@Michael Abbott</span>  Thanks for you help!</p>",
+        "id": 317449629,
+        "sender_full_name": "mbaz",
+        "timestamp": 1671742279
+    }
+]

@@ -1,0 +1,86 @@
+[
+    {
+        "content": "<p>In the spirit of <code>@brrrt</code> (see <a class=\"stream-topic\" data-stream-id=\"225582\" href=\"/#narrow/stream/225582-random/topic/Rename.20.02klzzwxh.3A0001.03.3F\">#random &gt; Rename <code>LoopVectorization.@avx</code>?</a>), I recently spent days debugging the following bug:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"c\"># get hidden neuron firing rate</span>\n<span class=\"n\">reservoir</span><span class=\"o\">.</span><span class=\"n\">ξhidden!</span><span class=\"p\">(</span><span class=\"n\">cache</span><span class=\"o\">.</span><span class=\"n\">r</span><span class=\"p\">)</span>\n<span class=\"nd\">@avx</span> <span class=\"n\">cache</span><span class=\"o\">.</span><span class=\"n\">r</span> <span class=\"o\">.+=</span> <span class=\"n\">reservoir</span><span class=\"o\">.</span><span class=\"n\">f</span><span class=\"o\">.</span><span class=\"p\">(</span><span class=\"n\">u</span><span class=\"p\">)</span>\n\n<span class=\"c\"># get output neuron firing rate</span>\n<span class=\"n\">reservoir</span><span class=\"o\">.</span><span class=\"n\">ξ!</span><span class=\"p\">(</span><span class=\"n\">cache</span><span class=\"o\">.</span><span class=\"n\">z</span><span class=\"p\">)</span>\n<span class=\"k\">if</span> <span class=\"n\">isexploring</span><span class=\"p\">[]</span>\n    <span class=\"n\">reservoir</span><span class=\"o\">.</span><span class=\"n\">ξ!</span><span class=\"p\">(</span><span class=\"n\">cache</span><span class=\"o\">.</span><span class=\"n\">z</span><span class=\"p\">)</span>\n    <span class=\"nd\">@avx</span> <span class=\"n\">cache</span><span class=\"o\">.</span><span class=\"n\">z</span> <span class=\"o\">.+=</span> <span class=\"n\">reservoir</span><span class=\"o\">.</span><span class=\"n\">Wout</span> <span class=\"o\">*</span> <span class=\"n\">cache</span><span class=\"o\">.</span><span class=\"n\">r</span>\n<span class=\"k\">else</span>\n    <span class=\"nd\">@avx</span> <span class=\"n\">cache</span><span class=\"o\">.</span><span class=\"n\">z</span> <span class=\"o\">.=</span> <span class=\"n\">reservoir</span><span class=\"o\">.</span><span class=\"n\">Wout</span> <span class=\"o\">*</span> <span class=\"n\">cache</span><span class=\"o\">.</span><span class=\"n\">r</span>\n<span class=\"k\">end</span>\n\n<span class=\"c\"># update du</span>\n<span class=\"nd\">@avx</span> <span class=\"n\">du</span> <span class=\"o\">.=</span> <span class=\"p\">(</span><span class=\"o\">-</span><span class=\"n\">u</span> <span class=\"o\">.+</span> <span class=\"n\">reservoir</span><span class=\"o\">.</span><span class=\"n\">λ</span> <span class=\"o\">*</span> <span class=\"n\">reservoir</span><span class=\"o\">.</span><span class=\"n\">Wr</span> <span class=\"o\">*</span> <span class=\"n\">cache</span><span class=\"o\">.</span><span class=\"n\">r</span> <span class=\"o\">.+</span>\n                  <span class=\"n\">reservoir</span><span class=\"o\">.</span><span class=\"n\">Win</span> <span class=\"o\">*</span> <span class=\"n\">input</span><span class=\"p\">(</span><span class=\"n\">t</span><span class=\"p\">)</span> <span class=\"o\">.+</span>\n                  <span class=\"n\">reservoir</span><span class=\"o\">.</span><span class=\"n\">Wfb</span> <span class=\"o\">*</span> <span class=\"n\">cache</span><span class=\"o\">.</span><span class=\"n\">z</span><span class=\"p\">)</span> <span class=\"o\">./</span> <span class=\"n\">reservoir</span><span class=\"o\">.</span><span class=\"n\">τ</span>\n</code></pre></div>\n<p>This code fails to produce anything resembling working. A red herring related to the DE stepping is why I spent so many days on it until I found out that removing <code>@avx</code> from the line corresponding to <code>du</code> fixed things. Now, I am wondering why the error occurred (like a more detailed explanation than <a href=\"https://github.com/search?q=LoopVectorization.jl&amp;type=Repositories\">LoopVectorization.jl</a> is unsafe). The size of the weight matrices are:</p>\n<ul>\n<li><code>size(Wr) == (1000, 1000)</code></li>\n<li><code>size(Win) == (1000, 1)</code></li>\n<li><code>size(Wfb) == (1000, 1)</code></li>\n<li><code>size(Wout) == (1, 1000)</code> (notice that <code>Wout</code> is not part of a broadcast, it is a matmul)</li>\n</ul>",
+        "id": 238651327,
+        "sender_full_name": "Kyle Daruwalla",
+        "timestamp": 1620926117
+    },
+    {
+        "content": "<p>I think it's probably this:<br>\n<a href=\"/user_uploads/7178/X-X5rKdz9qPYr_yiP6hTz7CF/image.png\">image.png</a></p>\n<div class=\"message_inline_image\"><a href=\"/user_uploads/7178/X-X5rKdz9qPYr_yiP6hTz7CF/image.png\" title=\"image.png\"><img src=\"/user_uploads/7178/X-X5rKdz9qPYr_yiP6hTz7CF/image.png\"></a></div>",
+        "id": 238651627,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1620926250
+    },
+    {
+        "content": "<p>Dimensions of size 1 are not kosher with LV, but I never really understood why</p>",
+        "id": 238651721,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1620926287
+    },
+    {
+        "content": "<p>Yeah but that warning only mentions broadcasting. The full expression is <code>z .= z .+ Wout * r</code>, so the 1x1000 array is embedded in an expression that uses broadcast, but it is not part of the broadcast itself. This is partially why I asked the question — to get clarity on if this kind of expression is still bad. And if the following would \"fix\" things:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">tmp</span> <span class=\"o\">=</span> <span class=\"n\">Wout</span> <span class=\"o\">*</span> <span class=\"n\">r</span>\n<span class=\"nd\">@avx</span> <span class=\"n\">z</span> <span class=\"o\">.+=</span> <span class=\"n\">tmp</span>\n</code></pre></div>",
+        "id": 238652212,
+        "sender_full_name": "Kyle Daruwalla",
+        "timestamp": 1620926516
+    },
+    {
+        "content": "<p>Also it is weird that I only needed to remove <code>@avx</code> from the <code>du</code> expression which involves no 1xN arrays!</p>",
+        "id": 238652332,
+        "sender_full_name": "Kyle Daruwalla",
+        "timestamp": 1620926572
+    },
+    {
+        "content": "<p>What's the size of <code>r</code>?</p>",
+        "id": 238652674,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1620926743
+    },
+    {
+        "content": "<p>If <code>r</code> is a <code>1000xN</code> array, then <code>Wout * r</code> is a <code>1xN</code> array so the problem is not solved</p>",
+        "id": 238652839,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1620926814
+    },
+    {
+        "content": "<p>You can make <code>Wout</code> a <code>Transpose{Vector}</code> though</p>",
+        "id": 238652910,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1620926867
+    },
+    {
+        "content": "<p>Ah, you're right! <code>r</code> is 1000x1, but I assume 1x1 arrays also not supported</p>",
+        "id": 238652928,
+        "sender_full_name": "Kyle Daruwalla",
+        "timestamp": 1620926878
+    },
+    {
+        "content": "<p>Yeah let me try with the transpose</p>",
+        "id": 238652982,
+        "sender_full_name": "Kyle Daruwalla",
+        "timestamp": 1620926889
+    },
+    {
+        "content": "<p>Thanks, this makes sense now</p>",
+        "id": 238653005,
+        "sender_full_name": "Kyle Daruwalla",
+        "timestamp": 1620926906
+    },
+    {
+        "content": "<p>Is <code>r</code> a <code>Matrix</code>, or is it a <code>Vector</code>?</p>",
+        "id": 238653057,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1620926934
+    },
+    {
+        "content": "<p>You'll need <code>r</code> to be a <code>Vector</code> in order to not get a <code>1x1</code> array out</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">let</span> <span class=\"n\">Wout</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">1000</span><span class=\"p\">)</span><span class=\"o\">'</span><span class=\"p\">,</span> <span class=\"n\">r</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">1000</span><span class=\"p\">,</span> <span class=\"mi\">1</span><span class=\"p\">)</span>\n           <span class=\"n\">Wout</span> <span class=\"o\">*</span> <span class=\"n\">r</span>\n       <span class=\"k\">end</span>\n<span class=\"mi\">1</span><span class=\"o\">×</span><span class=\"mi\">1</span> <span class=\"n\">adjoint</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Float64</span><span class=\"p\">})</span> <span class=\"n\">with</span> <span class=\"n\">eltype</span> <span class=\"kt\">Float64</span><span class=\"o\">:</span>\n <span class=\"mf\">244.01241695906867</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">let</span> <span class=\"n\">Wout</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">1000</span><span class=\"p\">)</span><span class=\"o\">'</span><span class=\"p\">,</span> <span class=\"n\">r</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">1000</span><span class=\"p\">)</span>\n           <span class=\"n\">Wout</span> <span class=\"o\">*</span> <span class=\"n\">r</span>\n       <span class=\"k\">end</span>\n<span class=\"mf\">236.71936258108883</span>\n</code></pre></div>",
+        "id": 238653207,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1620927007
+    },
+    {
+        "content": "<p>It's a <code>Vector</code></p>",
+        "id": 238653338,
+        "sender_full_name": "Kyle Daruwalla",
+        "timestamp": 1620927081
+    }
+]

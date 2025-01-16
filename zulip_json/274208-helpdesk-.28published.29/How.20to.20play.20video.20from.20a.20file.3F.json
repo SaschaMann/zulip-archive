@@ -1,0 +1,38 @@
+[
+    {
+        "content": "<p>I'm trying to read a video from a file and perform some basic computer vision. As a part of this, I'd like to display the video (with some CV annotations) live. Is there a good Julia package for this?</p>\n<p>The best I've go so far is </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">VideoIO</span>\n<span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">GLMakie</span>\n\n<span class=\"n\">f</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">Figure</span><span class=\"p\">()</span>\n<span class=\"n\">display</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">)</span>\n<span class=\"n\">a</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">Axis</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">)</span>\n\n<span class=\"n\">r</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">openvideo</span><span class=\"p\">(</span><span class=\"s\">\"video.MOV\"</span><span class=\"p\">)</span>\n<span class=\"n\">img</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">read</span><span class=\"p\">(</span><span class=\"n\">r</span><span class=\"p\">)</span>\n<span class=\"k\">while</span><span class=\"w\"> </span><span class=\"o\">!</span><span class=\"n\">eof</span><span class=\"p\">(</span><span class=\"n\">r</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"n\">read!</span><span class=\"p\">(</span><span class=\"n\">r</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">img</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"n\">image!</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">img</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>Which</p>\n<ul>\n<li>Freezes for long periods pretty frequently</li>\n<li>Displays the image with x and y axes flipped (easy to fix)</li>\n<li>Displays the image only in a small portion of the display window</li>\n<li>Uses the exported but undocumented <code>image!</code> function</li>\n</ul>\n<p>For comparison, in Python I would use <code>cv.imshow(img)</code> which is performant enough to display a full video live with a stable framerate.</p>",
+        "id": 420139019,
+        "sender_full_name": "Lilith Hafner",
+        "timestamp": 1707254962
+    },
+    {
+        "content": "<p>Can you time the reading of a frame just to be sure it is fast enough for the desired framerate?</p>\n<p>As for the Makie part, it looks like at every iteration you are generating a new plot - which is not optimal. You would want to plot once and then update the underlying data. One option is to use Observables - it might just be enough to give a smooth playback.<br>\nIf not, there is also an undocumented <code>Buffer</code> type that I use to update lineplots with lot of points as fast as possible.</p>",
+        "id": 420170355,
+        "sender_full_name": "Marcin Koculak",
+        "timestamp": 1707273378
+    },
+    {
+        "content": "<p>fyi Makie's official support is on Discourse and Discord</p>",
+        "id": 420171262,
+        "sender_full_name": "jar",
+        "timestamp": 1707274122
+    },
+    {
+        "content": "<p>That's true, Discord is the easiest way to reach devs I guess.</p>\n<p>However, this seems to work for me reasonably well (with FullHD video):</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">VideoIO</span>\n<span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">GLMakie</span>\n\n<span class=\"n\">f</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">Figure</span><span class=\"p\">()</span>\n<span class=\"n\">a</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">Axis</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">1</span><span class=\"p\">])</span>\n\n<span class=\"n\">r</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">openvideo</span><span class=\"p\">(</span><span class=\"s\">\"D:</span><span class=\"se\">\\\\</span><span class=\"s\">Downloads</span><span class=\"se\">\\\\</span><span class=\"s\">file_example_MOV_1920_2_2MB.mov\"</span><span class=\"p\">)</span>\n<span class=\"n\">img</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">Observable</span><span class=\"p\">(</span><span class=\"n\">read</span><span class=\"p\">(</span><span class=\"n\">r</span><span class=\"p\">))</span>\n<span class=\"n\">rot_img</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">lift</span><span class=\"p\">(</span><span class=\"n\">rotr90</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">img</span><span class=\"p\">)</span>\n<span class=\"n\">image!</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">rot_img</span><span class=\"p\">)</span>\n<span class=\"k\">while</span><span class=\"w\"> </span><span class=\"o\">!</span><span class=\"n\">eof</span><span class=\"p\">(</span><span class=\"n\">r</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"n\">img</span><span class=\"p\">[]</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">read</span><span class=\"p\">(</span><span class=\"n\">r</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"n\">sleep</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"o\">/</span><span class=\"mi\">60</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"c\">#fps</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 420175122,
+        "sender_full_name": "Marcin Koculak",
+        "timestamp": 1707277087
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"326776\">jar</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/How.20to.20play.20video.20from.20a.20file.3F/near/420171262\">said</a>:</p>\n<blockquote>\n<p>fyi Makie's official support is on Discourse and Discord</p>\n</blockquote>\n<p>Thanks for letting me know</p>\n<blockquote>\n<p>However, this seems to work for me reasonably well (with FullHD video):</p>\n</blockquote>\n<p>That works for me too; I added <code>aspect=DataAspect()</code> to preserve the aspect ratio and am now looking for a way to check if the Figure has been closed by a user, but this looks quite promising. Thanks!</p>",
+        "id": 420280691,
+        "sender_full_name": "Lilith Hafner",
+        "timestamp": 1707320457
+    },
+    {
+        "content": "<blockquote>\n<p>Can you time the reading of a frame just to be sure it is fast enough for the desired framerate?</p>\n</blockquote>\n<p>I can read frames at 2000-3000 FPS</p>",
+        "id": 420281011,
+        "sender_full_name": "Lilith Hafner",
+        "timestamp": 1707320550
+    }
+]

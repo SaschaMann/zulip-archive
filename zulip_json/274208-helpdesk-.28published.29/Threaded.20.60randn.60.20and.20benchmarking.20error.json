@@ -1,0 +1,110 @@
+[
+    {
+        "content": "<p>When benchmarking some code for <a href=\"https://github.com/JuliaActuary/EconomicScenarioGenerators.jl\">EconomicScenarioGenerators.jl</a>, I encountered this issue that I've only encountered <em>while benchmarking</em>.  When using a shared <code>Random.MersenneTwister</code>, <code>randn</code> will hit a complex number and error. Here's a minimal replicating example:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">g</span><span class=\"p\">()</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"n\">v</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">zeros</span><span class=\"p\">(</span><span class=\"mi\">100000</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"n\">Threads</span><span class=\"o\">.</span><span class=\"nd\">@threads</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">i</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">length</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"n\">v</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"n\">randn</span><span class=\"p\">(</span><span class=\"n\">Random</span><span class=\"o\">.</span><span class=\"n\">MersenneTwister</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">))</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"n\">v</span><span class=\"w\"></span>\n<span class=\"k\">end</span><span class=\"w\"></span>\n\n<span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">g</span><span class=\"p\">(</span><span class=\"n\">RNG</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"n\">v</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">zeros</span><span class=\"p\">(</span><span class=\"mi\">100000</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"n\">Threads</span><span class=\"o\">.</span><span class=\"nd\">@threads</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">i</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">length</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"n\">v</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"n\">randn</span><span class=\"p\">(</span><span class=\"n\">RNG</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"n\">v</span><span class=\"w\"></span>\n<span class=\"k\">end</span><span class=\"w\"></span>\n\n<span class=\"c\"># these do not error</span><span class=\"w\"></span>\n<span class=\"nd\">@btime</span><span class=\"w\"> </span><span class=\"n\">g</span><span class=\"p\">()</span><span class=\"w\"></span>\n<span class=\"n\">g</span><span class=\"p\">()</span><span class=\"w\"></span>\n<span class=\"n\">g</span><span class=\"p\">(</span><span class=\"n\">Random</span><span class=\"o\">.</span><span class=\"n\">MersenneTwister</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">))</span><span class=\"w\"></span>\n\n<span class=\"c\"># this errors</span><span class=\"w\"></span>\n<span class=\"nd\">@btime</span><span class=\"w\"> </span><span class=\"n\">g</span><span class=\"p\">(</span><span class=\"n\">Random</span><span class=\"o\">.</span><span class=\"n\">MersenneTwister</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">))</span><span class=\"w\"></span>\n</code></pre></div>\n<p>Is this indeed an issue worth filing? If so, with Julia or with BenchmarkTools?</p>",
+        "id": 290633856,
+        "sender_full_name": "Alec",
+        "timestamp": 1658610858
+    },
+    {
+        "content": "<p>Full stacktrace on Mac M1, Julia 1.8 RC3</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"nd\">@btime</span><span class=\"w\"> </span><span class=\"n\">g</span><span class=\"p\">(</span><span class=\"n\">Random</span><span class=\"o\">.</span><span class=\"n\">MersenneTwister</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">))</span><span class=\"w\"></span>\n<span class=\"gr\">ERROR: TaskFailedException</span>\n<span class=\"gr\">Stacktrace:</span>\n<span class=\"gr\">  [1] wait</span>\n<span class=\"gr\">    @ ./task.jl:345 [inlined]</span>\n<span class=\"gr\">  [2] threading_run(fun::var\"#128#threadsfor_fun#31\"{var\"#128#threadsfor_fun#30#32\"{MersenneTwister, Vector{Float64}, UnitRange{Int64}}}, static::Bool)</span>\n<span class=\"gr\">    @ Base.Threads ./threadingconstructs.jl:38</span>\n<span class=\"gr\">  [3] macro expansion</span>\n<span class=\"gr\">    @ ./threadingconstructs.jl:89 [inlined]</span>\n<span class=\"gr\">  [4] g</span>\n<span class=\"gr\">    @ ./Untitled-1:13 [inlined]</span>\n<span class=\"gr\">  [5] var\"##core#393\"()</span>\n<span class=\"gr\">    @ Main ~/.julia/packages/BenchmarkTools/7xSXH/src/execution.jl:489</span>\n<span class=\"gr\">  [6] var\"##sample#394\"(::Tuple{}, __params::BenchmarkTools.Parameters)</span>\n<span class=\"gr\">    @ Main ~/.julia/packages/BenchmarkTools/7xSXH/src/execution.jl:497</span>\n<span class=\"gr\">  [7] _lineartrial(b::BenchmarkTools.Benchmark, p::BenchmarkTools.Parameters; maxevals::Int64, kwargs::Base.Pairs{Symbol, Union{}, Tuple{}, NamedTuple{(), Tuple{}}})</span>\n<span class=\"gr\">    @ BenchmarkTools ~/.julia/packages/BenchmarkTools/7xSXH/src/execution.jl:161</span>\n<span class=\"gr\">  [8] _lineartrial(b::BenchmarkTools.Benchmark, p::BenchmarkTools.Parameters)</span>\n<span class=\"gr\">    @ BenchmarkTools ~/.julia/packages/BenchmarkTools/7xSXH/src/execution.jl:152</span>\n<span class=\"gr\">  [9] #invokelatest#2</span>\n<span class=\"gr\">    @ ./essentials.jl:729 [inlined]</span>\n<span class=\"gr\"> [10] invokelatest</span>\n<span class=\"gr\">    @ ./essentials.jl:726 [inlined]</span>\n<span class=\"gr\"> [11] #lineartrial#46</span>\n<span class=\"gr\">    @ ~/.julia/packages/BenchmarkTools/7xSXH/src/execution.jl:35 [inlined]</span>\n<span class=\"gr\"> [12] lineartrial</span>\n<span class=\"gr\">    @ ~/.julia/packages/BenchmarkTools/7xSXH/src/execution.jl:35 [inlined]</span>\n<span class=\"gr\"> [13] tune!(b::BenchmarkTools.Benchmark, p::BenchmarkTools.Parameters; progressid::Nothing, nleaves::Float64, ndone::Float64, verbose::Bool, pad::String, kwargs::Base.Pairs{Symbol, Union{}, Tuple{}, NamedTuple{(), Tuple{}}})</span>\n<span class=\"gr\">    @ BenchmarkTools ~/.julia/packages/BenchmarkTools/7xSXH/src/execution.jl:251</span>\n<span class=\"gr\"> [14] tune! (repeats 2 times)</span>\n<span class=\"gr\">    @ ~/.julia/packages/BenchmarkTools/7xSXH/src/execution.jl:247 [inlined]</span>\n<span class=\"gr\"> [15] top-level scope</span>\n<span class=\"gr\">    @ ~/.julia/packages/BenchmarkTools/7xSXH/src/execution.jl:576</span>\n\n<span class=\"gr\">    nested task error: DomainError with -1.0:</span>\n<span class=\"gr\">    log will only return a complex result if called with a complex argument. Try log(Complex(x)).</span>\n<span class=\"gr\">    Stacktrace:</span>\n<span class=\"gr\">     [1] throw_complex_domainerror(f::Symbol, x::Float64)</span>\n<span class=\"gr\">       @ Base.Math ./math.jl:33</span>\n<span class=\"gr\">     [2] _log(x::Float64, base::Val{:ℯ}, func::Symbol)</span>\n<span class=\"gr\">       @ Base.Math ./special/log.jl:292</span>\n<span class=\"gr\">     [3] log</span>\n<span class=\"gr\">       @ ./special/log.jl:257 [inlined]</span>\n<span class=\"gr\">     [4] randn_unlikely(rng::MersenneTwister, idx::Int64, rabs::Int64, x::Float64)</span>\n<span class=\"gr\">       @ Random ~/prog/julia-dd/usr/share/julia/stdlib/v1.8/Random/src/normal.jl:73</span>\n<span class=\"gr\">     [5] randn</span>\n<span class=\"gr\">       @ ~/prog/julia-dd/usr/share/julia/stdlib/v1.8/Random/src/normal.jl:54 [inlined]</span>\n<span class=\"gr\">     [6] macro expansion</span>\n<span class=\"gr\">       @ ./Untitled-1:14 [inlined]</span>\n<span class=\"gr\">     [7] (::var\"#128#threadsfor_fun#31\"{var\"#128#threadsfor_fun#30#32\"{MersenneTwister, Vector{Float64}, UnitRange{Int64}}})(tid::Int64; onethread::Bool)</span>\n<span class=\"gr\">       @ Main ./threadingconstructs.jl:84</span>\n<span class=\"gr\">     [8] #128#threadsfor_fun</span>\n<span class=\"gr\">       @ ./threadingconstructs.jl:51 [inlined]</span>\n<span class=\"gr\">     [9] (::Base.Threads.var\"#1#2\"{var\"#128#threadsfor_fun#31\"{var\"#128#threadsfor_fun#30#32\"{MersenneTwister, Vector{Float64}, UnitRange{Int64}}}, Int64})()</span>\n<span class=\"gr\">       @ Base.Threads ./threadingconstructs.jl:30</span>\n</code></pre></div>",
+        "id": 290633882,
+        "sender_full_name": "Alec",
+        "timestamp": 1658610910
+    },
+    {
+        "content": "<p>FWIW I hit the same thing (error only while benchmarking) with ThreadsX, but the above just uses Base to narrow in on the issue.</p>",
+        "id": 290633947,
+        "sender_full_name": "Alec",
+        "timestamp": 1658610997
+    },
+    {
+        "content": "<p>You should probably use the <code>setup</code> argument or interpolate the rng into <code>@btime</code>. It is creating too many rng's I think. Not sure who to blame yet, but I would expect you to have the same issue with <code>@belapsed</code> and <code>@benchmark</code> unless you setup the RNG first.</p>",
+        "id": 290634786,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1658612261
+    },
+    {
+        "content": "<p>Also might want to try the newer RNG algorithm. MT has a lot of bad properties in general.</p>",
+        "id": 290634933,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1658612445
+    },
+    {
+        "content": "<p>I’d assume this is an M1 Mac bug</p>",
+        "id": 290635280,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1658612931
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"374994\">@Michael Fiano</span> what would you recommend? I was using MT because I thought it was the new thread-safe option</p>",
+        "id": 290643739,
+        "sender_full_name": "Alec",
+        "timestamp": 1658625685
+    },
+    {
+        "content": "<p>MT is the old thread-unsafe RNG</p>",
+        "id": 290644305,
+        "sender_full_name": "Mosè Giordano",
+        "timestamp": 1658626665
+    },
+    {
+        "content": "<p>The new one is thread-local Xoshiro256++</p>",
+        "id": 290644874,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1658627703
+    },
+    {
+        "content": "<p>Thanks. I was using MT based on the recommendations on the <a href=\"https://julialang.org/blog/2019/07/multithreading/#random_number_generation\">Julia blog</a>.</p>\n<ul>\n<li>I tested on an ubuntu system on 1.7.3 and could not reproduce it (I had tested 1.7.0 and 1.8 RC3 on M1). </li>\n<li><code>Random.Xoshiro</code> did not error</li>\n</ul>",
+        "id": 290645436,
+        "sender_full_name": "Alec",
+        "timestamp": 1658628695
+    },
+    {
+        "content": "<p>Ah yes, a good bit has changed in the last three years on this front</p>",
+        "id": 290645664,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1658629005
+    },
+    {
+        "content": "<p>The new one probably could have been better advertized</p>",
+        "id": 290645679,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1658629034
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"272612\">@Alec</span> The blogpost you've linked only talked about <code>rand()</code>, i.e. random calls that use the thread/task specific default RNG. It does not imply that sharing <code>MersenneTwister</code> instances is thread safe.</p>",
+        "id": 290659971,
+        "sender_full_name": "Sukera",
+        "timestamp": 1658650373
+    },
+    {
+        "content": "<p>Since that blogpost was published, the default RNG was changed to <code>Xoshiro</code>, due to being smaller memory wise and faster. I'm not sure if sharing instances of that is thread safe.</p>",
+        "id": 290659984,
+        "sender_full_name": "Sukera",
+        "timestamp": 1658650428
+    },
+    {
+        "content": "<p>To the original question, it is forbidden to share objects (instances of Random.MersenneTwister or Xoshiro, for example) with mutable state between threads. This will create a data-race, and will lead to undefined behavior</p>",
+        "id": 291504453,
+        "sender_full_name": "Jameson Nash",
+        "timestamp": 1659291385
+    },
+    {
+        "content": "<p>The <a href=\"https://docs.julialang.org/en/v1/stdlib/Random/\">current (1.7.3) docs</a> say:</p>\n<blockquote>\n<p>In a multi-threaded program, you should generally use different RNG objects from different threads or tasks in order to be thread-safe. However, the default RNG is thread-safe as of Julia 1.3 (using a per-thread RNG up to version 1.6, and per-task thereafter).</p>\n</blockquote>\n<p>Would the following clarify the situation? I current read that and think that since 1.3, the default RNG is thread safe, and now that Xoshiro is the default, it's thread-safe.</p>\n<blockquote>\n<p>In a multi-threaded program, you should generally use different RNG objects from different threads or tasks in order to be thread-safe. However, the default global RNG is thread-safe as of Julia 1.3 (using a per-thread RNG up to version 1.6, and per-task thereafter). The global RNG refers to per-thread RNG instances; If you instantiate a non-global RNG, you should create a new RNG instance for each thread to avoid possible data-races.</p>\n</blockquote>",
+        "id": 291960004,
+        "sender_full_name": "Alec",
+        "timestamp": 1659584048
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">Random</span><span class=\"w\"></span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">Random</span><span class=\"o\">.</span><span class=\"n\">default_rng</span><span class=\"p\">()</span><span class=\"w\"></span>\n<span class=\"n\">TaskLocalRNG</span><span class=\"p\">()</span><span class=\"w\"></span>\n</code></pre></div>\n<p>This is a special object. The core RNG isn't thread safe.</p>",
+        "id": 291995548,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1659613488
+    },
+    {
+        "content": "<p>That seems worth explicitly mentioning, since \"the default\" seems bound to be misinterpreted as the core/\"default\" RNG. </p>\n<blockquote>\n<p>However, the default global RNG (obtained via <code>Random.default_rng()</code>) is thread-safe as of Julia 1.3</p>\n</blockquote>",
+        "id": 291997121,
+        "sender_full_name": "Sundar R",
+        "timestamp": 1659614434
+    }
+]

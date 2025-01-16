@@ -1,0 +1,176 @@
+[
+    {
+        "content": "<p>I have been using julia for the past 5 years, and I keep running into problems where my codebase suddenly takes an extremely excessive amount of time to start up. I have started multiple projects where at one point or another this issue cropped up, and even had to abandon one - rewriting it in another language.</p>\n<p>How is one supposed to debug this? What am I doing wrong? Which heuristics are getting derailed? If it is type instability, can we make the default behavior to just give up after failing to infer for too long?</p>\n<p>For a silly example, this is a work-in-progress package : <a href=\"https://github.com/quantumghent/PEPSKit.jl/tree/djeezus\">https://github.com/quantumghent/PEPSKit.jl/tree/djeezus</a> (you really need that branch)</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">PEPSKit</span><span class=\"p\">,</span><span class=\"n\">TensorKit</span><span class=\"w\"></span>\n<span class=\"n\">peps</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">InfinitePEPS</span><span class=\"p\">(</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"mi\">3</span><span class=\"p\">);</span><span class=\"w\"></span>\n<span class=\"n\">leading_boundary</span><span class=\"p\">(</span><span class=\"n\">peps</span><span class=\"p\">,</span><span class=\"n\">CTMRG</span><span class=\"p\">(</span><span class=\"n\">truncdim</span><span class=\"p\">(</span><span class=\"mi\">5</span><span class=\"p\">),</span><span class=\"mf\">1e-12</span><span class=\"p\">))</span><span class=\"w\"></span>\n</code></pre></div>\n<p>takes an absolutely unusable amount of time to run</p>",
+        "id": 286793040,
+        "sender_full_name": "Maarten",
+        "timestamp": 1655730933
+    },
+    {
+        "content": "<p>Do you know about <a href=\"https://github.com/timholy/SnoopCompile.jl\">https://github.com/timholy/SnoopCompile.jl</a> ?</p>",
+        "id": 286793310,
+        "sender_full_name": "Sukera",
+        "timestamp": 1655731044
+    },
+    {
+        "content": "<p>Also seems like that branch can't even be added by itself:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"p\">(</span><span class=\"n\">jl_vbpKOh</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"n\">pkg</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">add</span><span class=\"w\"> </span><span class=\"n\">https</span><span class=\"o\">://</span><span class=\"n\">github</span><span class=\"o\">.</span><span class=\"n\">com</span><span class=\"o\">/</span><span class=\"n\">quantumghent</span><span class=\"o\">/</span><span class=\"n\">PEPSKit</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"c\">#djeezus</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"n\">Updating</span><span class=\"w\"> </span><span class=\"n\">git</span><span class=\"o\">-</span><span class=\"n\">repo</span><span class=\"w\"> </span><span class=\"sb\">`https://github.com/quantumghent/PEPSKit.jl`</span><span class=\"w\"></span>\n<span class=\"w\">   </span><span class=\"n\">Resolving</span><span class=\"w\"> </span><span class=\"n\">package</span><span class=\"w\"> </span><span class=\"n\">versions</span><span class=\"o\">...</span><span class=\"w\"></span>\n<span class=\"n\">ERROR</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"n\">Unsatisfiable</span><span class=\"w\"> </span><span class=\"n\">requirements</span><span class=\"w\"> </span><span class=\"n\">detected</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">package</span><span class=\"w\"> </span><span class=\"n\">MPSKit</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">bb1c41ca</span><span class=\"p\">]</span><span class=\"o\">:</span><span class=\"w\"></span>\n<span class=\"w\"> </span><span class=\"n\">MPSKit</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">bb1c41ca</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"n\">log</span><span class=\"o\">:</span><span class=\"w\"></span>\n<span class=\"w\"> </span><span class=\"n\">├─possible</span><span class=\"w\"> </span><span class=\"n\">versions</span><span class=\"w\"> </span><span class=\"n\">are</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"mf\">0.1.0</span><span class=\"o\">-</span><span class=\"mf\">0.7.0</span><span class=\"w\"> </span><span class=\"n\">or</span><span class=\"w\"> </span><span class=\"n\">uninstalled</span><span class=\"w\"></span>\n<span class=\"w\"> </span><span class=\"n\">├─restricted</span><span class=\"w\"> </span><span class=\"n\">to</span><span class=\"w\"> </span><span class=\"n\">versions</span><span class=\"w\"> </span><span class=\"mf\">0.7</span><span class=\"w\"> </span><span class=\"n\">by</span><span class=\"w\"> </span><span class=\"n\">PEPSKit</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mf\">52969e89</span><span class=\"p\">],</span><span class=\"w\"> </span><span class=\"n\">leaving</span><span class=\"w\"> </span><span class=\"n\">only</span><span class=\"w\"> </span><span class=\"n\">versions</span><span class=\"w\"> </span><span class=\"mf\">0.7.0</span><span class=\"w\"></span>\n<span class=\"w\"> </span><span class=\"n\">│</span><span class=\"w\"> </span><span class=\"n\">└─PEPSKit</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mf\">52969e89</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"n\">log</span><span class=\"o\">:</span><span class=\"w\"></span>\n<span class=\"w\"> </span><span class=\"n\">│</span><span class=\"w\">   </span><span class=\"n\">├─possible</span><span class=\"w\"> </span><span class=\"n\">versions</span><span class=\"w\"> </span><span class=\"n\">are</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"mf\">0.1.0</span><span class=\"w\"> </span><span class=\"n\">or</span><span class=\"w\"> </span><span class=\"n\">uninstalled</span><span class=\"w\"></span>\n<span class=\"w\"> </span><span class=\"n\">│</span><span class=\"w\">   </span><span class=\"n\">└─PEPSKit</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mf\">52969e89</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"n\">is</span><span class=\"w\"> </span><span class=\"n\">fixed</span><span class=\"w\"> </span><span class=\"n\">to</span><span class=\"w\"> </span><span class=\"n\">version</span><span class=\"w\"> </span><span class=\"mf\">0.1.0</span><span class=\"w\"></span>\n<span class=\"w\"> </span><span class=\"n\">└─restricted</span><span class=\"w\"> </span><span class=\"n\">by</span><span class=\"w\"> </span><span class=\"n\">julia</span><span class=\"w\"> </span><span class=\"n\">compatibility</span><span class=\"w\"> </span><span class=\"n\">requirements</span><span class=\"w\"> </span><span class=\"n\">to</span><span class=\"w\"> </span><span class=\"n\">versions</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"mf\">0.1.0</span><span class=\"o\">-</span><span class=\"mf\">0.4.0</span><span class=\"w\"> </span><span class=\"n\">or</span><span class=\"w\"> </span><span class=\"n\">uninstalled</span><span class=\"w\"> </span><span class=\"n\">—</span><span class=\"w\"> </span><span class=\"n\">no</span><span class=\"w\"> </span><span class=\"n\">versions</span><span class=\"w\"> </span><span class=\"n\">left</span><span class=\"w\"></span>\n</code></pre></div>\n<p>Is there a circular dependency between your packages?</p>",
+        "id": 286793721,
+        "sender_full_name": "Sukera",
+        "timestamp": 1655731235
+    },
+    {
+        "content": "<p>ah, my julia version is too new</p>",
+        "id": 286793855,
+        "sender_full_name": "Sukera",
+        "timestamp": 1655731304
+    },
+    {
+        "content": "<p>I have tried snoopcompile in the past, but nothing obvious showed. For example, I did not see particularly many method invalidations. That said, the package changed a lot apparently, I will try it again</p>\n<p>I can change the package (or remove the mpskit dependency) if you want to get it to run</p>",
+        "id": 286795526,
+        "sender_full_name": "Maarten",
+        "timestamp": 1655732175
+    },
+    {
+        "content": "<p>I was just trying to see where the time of your example was actually spent</p>",
+        "id": 286795901,
+        "sender_full_name": "Sukera",
+        "timestamp": 1655732323
+    },
+    {
+        "content": "<p>(I'm now running snoopi_deep on it)</p>",
+        "id": 286795955,
+        "sender_full_name": "Maarten",
+        "timestamp": 1655732351
+    },
+    {
+        "content": "<p>is it package loading or runtime? If it's package loading, SnoopCompile can catch that. If it's runtime, you'll have to optimize your algorithms. If it's compile time, you can try to use precompile statements to reduce latency after package loading (though snoop compile can help finding the right invocations for that)</p>",
+        "id": 286796001,
+        "sender_full_name": "Sukera",
+        "timestamp": 1655732380
+    },
+    {
+        "content": "<p>so the first thing I usually do when trying to optimize performance is figuring out _where_ the time is spent in the first place - I usually start with runtime, since that's where people most often write suboptimal code</p>",
+        "id": 286796165,
+        "sender_full_name": "Sukera",
+        "timestamp": 1655732443
+    },
+    {
+        "content": "<p>Loading is near instantaneous, runtime is always good, compile time takes very long. In the past it has often been a single type instability (for example due to captured variables in closures) which takes the compile time from 30 seconds to 10 minutes.</p>",
+        "id": 286796220,
+        "sender_full_name": "Maarten",
+        "timestamp": 1655732482
+    },
+    {
+        "content": "<p>where does <code>leading_boundary</code> come from? I can't seem to find it in either PEPSKit or TensorKit</p>",
+        "id": 286796429,
+        "sender_full_name": "Sukera",
+        "timestamp": 1655732577
+    },
+    {
+        "content": "<p>have you run <a href=\"https://github.com/search?q=JET.jl&amp;type=Repositories\">JET.jl</a> on your code, to find those type instabilities more easily?</p>",
+        "id": 286796483,
+        "sender_full_name": "Sukera",
+        "timestamp": 1655732604
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"306754\">Sukera</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost/near/286796429\">said</a>:</p>\n<blockquote>\n<p>where does <code>leading_boundary</code> come from? I can't seem to find it in either PEPSKit or TensorKit</p>\n</blockquote>\n<p>It's defined in MPSKit, extended in PEPSKit for the particular case that is being called (in src/algorithms)</p>",
+        "id": 286796745,
+        "sender_full_name": "Maarten",
+        "timestamp": 1655732727
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"306754\">Sukera</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost/near/286796483\">said</a>:</p>\n<blockquote>\n<p>have you run <a href=\"https://github.com/search?q=JET.jl&amp;type=Repositories\">JET.jl</a> on your code, to find those type instabilities more easily?</p>\n</blockquote>\n<p>haven't tried JET yet. I tried it in the past, and then julia segfaulted</p>",
+        "id": 286796888,
+        "sender_full_name": "Maarten",
+        "timestamp": 1655732778
+    },
+    {
+        "content": "<p>snoopcompile results are in InferenceTimingNode: 0.304494/237.488271 on Core.Compiler.Timings.ROOT() with 4 direct children</p>",
+        "id": 286797186,
+        "sender_full_name": "Maarten",
+        "timestamp": 1655732912
+    },
+    {
+        "content": "<p>yep, sounds like A LOT of specialization is happening for what you're doing</p>",
+        "id": 286797659,
+        "sender_full_name": "Sukera",
+        "timestamp": 1655733099
+    },
+    {
+        "content": "<p>you may want to look into what exactly is eating up all that time</p>",
+        "id": 286797696,
+        "sender_full_name": "Sukera",
+        "timestamp": 1655733120
+    },
+    {
+        "content": "<p>but precompile statements will certainly help. it'll mostly shift the time to package install time, but people usually feel better about it being spent there <span aria-label=\"shrug\" class=\"emoji emoji-1f937\" role=\"img\" title=\"shrug\">:shrug:</span></p>",
+        "id": 286797813,
+        "sender_full_name": "Sukera",
+        "timestamp": 1655733154
+    },
+    {
+        "content": "<p>in your specific case, introducing some function barriers may just help enough already</p>",
+        "id": 286798211,
+        "sender_full_name": "Sukera",
+        "timestamp": 1655733345
+    },
+    {
+        "content": "<p>not everything in your big <code>left_move</code> function for example relies on <code>PType</code>, right?</p>",
+        "id": 286798294,
+        "sender_full_name": "Sukera",
+        "timestamp": 1655733368
+    },
+    {
+        "content": "<p>like the inner hot loops for example</p>",
+        "id": 286798325,
+        "sender_full_name": "Sukera",
+        "timestamp": 1655733387
+    },
+    {
+        "content": "<p>not a perfect fit from the example in the docs/your code, but I think <a href=\"https://docs.julialang.org/en/v1/manual/performance-tips/#kernel-functions\">https://docs.julialang.org/en/v1/manual/performance-tips/#kernel-functions</a> may apply</p>",
+        "id": 286798440,
+        "sender_full_name": "Sukera",
+        "timestamp": 1655733460
+    },
+    {
+        "content": "<p>I still think there's an issue here. The code I showed does not run - it's work in progress - and takes forever to start running. Yet if I now simply complete the algorithm (implement a few extra methods, not change the code) to make it run successfully, then the actual startup cost goes from 200+ seconds to like 30 second.</p>\n<p>I will try to further reduce startup time with function barriers (because left_move is indeed rather clunky), but I will also try to construct a minimal example to illustrate this long-startuptime behavior.</p>",
+        "id": 286804167,
+        "sender_full_name": "Maarten",
+        "timestamp": 1655735876
+    },
+    {
+        "content": "<p>very interesting</p>",
+        "id": 286808652,
+        "sender_full_name": "Sukera",
+        "timestamp": 1655737907
+    },
+    {
+        "content": "<p>when you say you had to implement extra methods to make it work, what were those methods for?</p>",
+        "id": 286808729,
+        "sender_full_name": "Sukera",
+        "timestamp": 1655737926
+    },
+    {
+        "content": "<p>is it possible you hit some fallback from one of your dependencies, which could have resulted in undue specialization?</p>",
+        "id": 286808791,
+        "sender_full_name": "Sukera",
+        "timestamp": 1655737969
+    },
+    {
+        "content": "<p>For finding compilation time, you can also use the normal profiler with StatProfileHTML. That works great too and is easier to use IMO</p>",
+        "id": 286827401,
+        "sender_full_name": "Rik Huijzer",
+        "timestamp": 1655750157
+    },
+    {
+        "content": "<p>Adding precompile directives can help but not for overspecialisations like is the case here? Then you would need to run precompile directives in a loop</p>",
+        "id": 286827519,
+        "sender_full_name": "Rik Huijzer",
+        "timestamp": 1655750242
+    },
+    {
+        "content": "<p>Maarten make sure you’re running the newest Julia version possible. The compiler has gotten a lot better especially in Julia 1.8</p>",
+        "id": 286827770,
+        "sender_full_name": "Rik Huijzer",
+        "timestamp": 1655750339
+    }
+]

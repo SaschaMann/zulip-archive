@@ -1,0 +1,62 @@
+[
+    {
+        "content": "<p>I have a vector (or an array) of random numbers<br>\n<code>x = [0.2, 3.4, 1.2, 3, 2.2]</code><br>\nand would like to find the position of those numbers (get a Cartesian Index)<br>\nfor a given regular grid / range of intervals <br>\n<code>y = -1:0.5:4</code> <br>\nso to get the index set<br>\n<code>ix = [3, 9, 5, 9, 7]</code><br>\nwith <code>y[ix[j]] &lt;= x[j] &lt; y[ix[j]+1]</code><br>\n(e.g. for <code> j = 1</code>: <code>0 &lt;= 0.2 &lt; 0.5</code>)<br>\n<strong>Is there an efficient build-in function in Julia or StatsBase for this mapping to intervals?</strong></p>\n<p>(I know to use<br>\n<code>Int(ceil((x .- y[1]) ./ (y[2] - y[1])))</code><br>\nbut I would like to get CartesianCoordinates for a 3d grid <br>\n(for the irregular spacing case: I guess some sorting would help))</p>",
+        "id": 277118954,
+        "sender_full_name": "Gerhard Dorn",
+        "timestamp": 1648633642
+    },
+    {
+        "content": "<p>For the 1D case, you can use <code>searchsortedlast</code> as mentioned in this <a href=\"https://stackoverflow.com/a/37380914/8127\">SO answer</a>. Here the usage would be something like </p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"n\">searchsortedlast</span><span class=\"o\">.</span><span class=\"p\">(</span><span class=\"kt\">Ref</span><span class=\"p\">(</span><span class=\"n\">y</span><span class=\"p\">),</span> <span class=\"n\">x</span><span class=\"p\">)</span>\n<span class=\"go\">5-element Vector{Int64}:</span>\n<span class=\"go\"> 3</span>\n<span class=\"go\"> 9</span>\n<span class=\"go\"> 5</span>\n<span class=\"go\"> 9</span>\n<span class=\"go\"> 7</span>\n</code></pre></div>",
+        "id": 277291233,
+        "sender_full_name": "Sundar R",
+        "timestamp": 1648737477
+    },
+    {
+        "content": "<p>I'm not sure I understand the 3D grid part though. What do x and y actually look like in that case, as a MWE?</p>",
+        "id": 277291449,
+        "sender_full_name": "Sundar R",
+        "timestamp": 1648737567
+    },
+    {
+        "content": "<p>I often have to do similar things and depending on the case I used either <code>searrchsortedfirst</code>/<code>searchsortedlast</code>, <a href=\"https://github.com/search?q=Interpolations.jl&amp;type=Repositories\">Interpolations.jl</a>, or <a href=\"https://github.com/search?q=NearestNeighbours.jl&amp;type=Repositories\">NearestNeighbours.jl</a>. In the 3D case when I can't use the built-ins, I interpolate/nearestneighbour-search the <code>LinearIndex</code>.</p>",
+        "id": 277350066,
+        "sender_full_name": "Benoit Pasquier",
+        "timestamp": 1648766794
+    },
+    {
+        "content": "<p>For me the fastest is if you can get away with <code>searchsorted</code>, and the most accurate is to use nearestneighbors (because then you can use any distance, which is useful, e.g., for lat,lon,altitude coordinates on the earth).</p>",
+        "id": 277350257,
+        "sender_full_name": "Benoit Pasquier",
+        "timestamp": 1648766924
+    },
+    {
+        "content": "<p>Importantly if your grid is <a href=\"https://en.wikipedia.org/wiki/Regular_grid\">regular</a> and rectangular — that is if you can index into it with <code>(i,j,k)</code>— and if you can deal with each dimension 1 by 1, then you should be able to just use <code>searchsorted</code> on each dimension to get a fast answer</p>",
+        "id": 277350643,
+        "sender_full_name": "Benoit Pasquier",
+        "timestamp": 1648767168
+    },
+    {
+        "content": "<p>For a regular grid, directly computing the index from the coordinate is much faster than <code>searchsorted</code>. For 3D, do this coordinate by coordinate, possibly with broadcasting, and wrap the indices into a <code>CartesianIndex</code>.</p>",
+        "id": 277392245,
+        "sender_full_name": "Gunnar Farnebäck",
+        "timestamp": 1648806180
+    },
+    {
+        "content": "<p>Ah yes! Good catch! I was confused and meant to say \"recitlinear\"... So:</p>",
+        "id": 277678843,
+        "sender_full_name": "Benoit Pasquier",
+        "timestamp": 1649044348
+    },
+    {
+        "content": "<ul>\n<li>regular: compute the indices \"by hand\"<br>\n<a href=\"/user_uploads/7178/773Z11EHLdE5l-TL9nVzjr61/image.png\">image.png</a><div class=\"message_inline_image\"><a href=\"/user_uploads/7178/773Z11EHLdE5l-TL9nVzjr61/image.png\" title=\"image.png\"><img src=\"/user_uploads/7178/773Z11EHLdE5l-TL9nVzjr61/image.png\"></a></div></li>\n</ul>",
+        "id": 277678856,
+        "sender_full_name": "Benoit Pasquier",
+        "timestamp": 1649044369
+    },
+    {
+        "content": "<ul>\n<li>rectilinear: <code>searchsortedXXXX</code><br>\n<a href=\"/user_uploads/7178/BlrzYJom3fhPBvW3UaiejfoP/image.png\">image.png</a><div class=\"message_inline_image\"><a href=\"/user_uploads/7178/BlrzYJom3fhPBvW3UaiejfoP/image.png\" title=\"image.png\"><img src=\"/user_uploads/7178/BlrzYJom3fhPBvW3UaiejfoP/image.png\"></a></div></li>\n</ul>",
+        "id": 277678865,
+        "sender_full_name": "Benoit Pasquier",
+        "timestamp": 1649044396
+    }
+]

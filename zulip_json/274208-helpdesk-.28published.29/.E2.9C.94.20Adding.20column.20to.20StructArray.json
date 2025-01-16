@@ -1,0 +1,56 @@
+[
+    {
+        "content": "<p>I'm new to the <a href=\"https://juliahub.com/ui/Packages/General/StructArray\">StructArray.jl</a> package. Given that I have</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">s</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">StructArray</span><span class=\"p\">((</span><span class=\"n\">a</span><span class=\"o\">=</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">],</span><span class=\"w\"> </span><span class=\"n\">b</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">1</span><span class=\"p\">]))</span>\n<span class=\"n\">c</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">5</span><span class=\"p\">,</span><span class=\"mi\">5</span><span class=\"p\">]</span>\n</code></pre></div>\n<p>How can I then create a new StructArray with a column <code>c</code>, i.e. <code>StructArray((a=[1,2], b =[1,1], c=[5,5]))</code> ?</p>",
+        "id": 419656273,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1707008596
+    },
+    {
+        "content": "<p>In other words, how can I \"add\" a column to a StructArray?</p>",
+        "id": 419656282,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1707008636
+    },
+    {
+        "content": "<p>I feel like this should work.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"nd\">@set</span><span class=\"w\"> </span><span class=\"n\">StructArray</span><span class=\"p\">((;</span><span class=\"n\">a</span><span class=\"o\">=</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">],</span><span class=\"w\"> </span><span class=\"n\">b</span><span class=\"o\">=</span><span class=\"p\">[</span><span class=\"mi\">10</span><span class=\"p\">,</span><span class=\"mi\">20</span><span class=\"p\">]))</span><span class=\"o\">.</span><span class=\"n\">c</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">100</span><span class=\"p\">,</span><span class=\"mi\">200</span><span class=\"p\">]</span>\n<span class=\"n\">ERROR</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"kt\">ArgumentError</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"n\">Failed</span><span class=\"w\"> </span><span class=\"n\">to</span><span class=\"w\"> </span><span class=\"n\">assign</span><span class=\"w\"> </span><span class=\"n\">properties</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"ss\">:c</span><span class=\"p\">,)</span><span class=\"w\"> </span><span class=\"n\">to</span><span class=\"w\"> </span><span class=\"n\">object</span><span class=\"w\"> </span><span class=\"n\">with</span><span class=\"w\"> </span><span class=\"n\">properties</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"ss\">:a</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"ss\">:b</span><span class=\"p\">)</span><span class=\"o\">.</span>\n</code></pre></div>",
+        "id": 419656519,
+        "sender_full_name": "jar",
+        "timestamp": 1707008890
+    },
+    {
+        "content": "<p>:/</p>",
+        "id": 419656650,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1707009058
+    },
+    {
+        "content": "<p>I can \"brute force\" by looping over the properties in the StructArray ,turning them into a namedtuple and then transforming the whole thing into a StructArray again.</p>",
+        "id": 419656679,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1707009101
+    },
+    {
+        "content": "<p>But this sounds inefficient... ?</p>",
+        "id": 419656682,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1707009108
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"326776\">@jar</span> just use <code>@insert</code> instead of <code>@set</code> :)</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">Accessors</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"nd\">@insert</span><span class=\"w\"> </span><span class=\"n\">s</span><span class=\"o\">.</span><span class=\"n\">c</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">5</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">5</span><span class=\"p\">]</span>\n<span class=\"mi\">2</span><span class=\"o\">-</span><span class=\"n\">element</span><span class=\"w\"> </span><span class=\"n\">StructArray</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">},</span><span class=\"w\"> </span><span class=\"o\">::</span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">},</span><span class=\"w\"> </span><span class=\"o\">::</span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">})</span><span class=\"w\"> </span><span class=\"n\">with</span><span class=\"w\"> </span><span class=\"n\">eltype</span><span class=\"w\"> </span><span class=\"nd\">@NamedTuple</span><span class=\"p\">{</span><span class=\"kt\">a</span><span class=\"o\">::</span><span class=\"kt\">Int64</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">b</span><span class=\"o\">::</span><span class=\"kt\">Int64</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">c</span><span class=\"o\">::</span><span class=\"kt\">Int64</span><span class=\"p\">}</span><span class=\"o\">:</span>\n<span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">b</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">c</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mi\">5</span><span class=\"p\">)</span>\n<span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">b</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">c</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mi\">5</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 419657314,
+        "sender_full_name": "aplavin",
+        "timestamp": 1707009839
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"358317\">@Davi Sales Barreira</span> under the hood, <code>@insert</code> does exactly as you say: extracts columns as a namedtuple, adds another element there, and construct a new structarray. This is efficient, basically free!</p>",
+        "id": 419657431,
+        "sender_full_name": "aplavin",
+        "timestamp": 1707009953
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"358317\">Davi Sales Barreira</span> has marked this topic as resolved.</p>",
+        "id": 419835197,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1707138392
+    }
+]

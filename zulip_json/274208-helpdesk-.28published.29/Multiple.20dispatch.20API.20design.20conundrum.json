@@ -1,0 +1,122 @@
+[
+    {
+        "content": "<p>I posted this on Slack helpdesk yesterday but I think Zulip lends itself better to slightly more open conceptual questions and I'll try and simplify the question (at the risk of creating an X-Y problem):</p>\n<p>I'm trying to leverage multiple dispatch to write a hierarchy of functions for a package of mine (<a href=\"https://juliahub.com/ui/Packages/General/TreatmentPanels\">TreatmentPanels.jl</a>) with the ultimate goal of providing a sort of \"mini-DSL\" to the user. </p>\n<p>Basically the user can specify treatment units (identified by a <code>String</code>/<code>Symbol</code> identifier) and time periods in which they are treated (either <code>TimeType</code> or <code>Int</code>). I'm trying to write a dispatch hierarchy which breaks up more complex combinations of units and time periods into simple one unit -&gt; one time period components with which I then call my \"kernel\" function.</p>\n<p>This all works reasonably well but I'm hitting a wall with the most general case which is this:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">typeof</span><span class=\"p\">([</span><span class=\"s\">\"b\"</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"n\">Date</span><span class=\"p\">(</span><span class=\"mi\">1991</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"s\">\"d\"</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"n\">Date</span><span class=\"p\">(</span><span class=\"mi\">1991</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"n\">Date</span><span class=\"p\">(</span><span class=\"mi\">1992</span><span class=\"p\">)])</span>\n<span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Pair</span><span class=\"p\">{</span><span class=\"kt\">String</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Any</span><span class=\"p\">}}</span>\n</code></pre></div>\n<p>so if there are different units with some of them being assigned only one treatment period (which in my mini-DSL means \"all periods after this date\") and others a start/end range, type inference taps out and turns the right hand side of my <code>Pair</code>s into <code>Any</code>. That means my whole dispatch house of cards falls down, as I can't define a \"fallback\" method for <code>Any</code> on the right hand side because I need to distinguish between the <code>Date(1991)</code> and <code>Date(1991) =&gt; Date(1992)</code> case.</p>\n<p>What do I do? Is this just a bad design/idea in general? Or should I fall back to <code>if right_hand_side isa Date ...</code> \"manual\" dispatch?</p>",
+        "id": 471189452,
+        "sender_full_name": "Nils",
+        "timestamp": 1726644941
+    },
+    {
+        "content": "<p>yeah that's a interesting problem. So basically you want a single date and a date range to be the same sort of object right?</p>",
+        "id": 471259635,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1726666120
+    },
+    {
+        "content": "<p>Does this hierarchy need to be extensible?</p>",
+        "id": 471259745,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1726666147
+    },
+    {
+        "content": "<p>I don't feel like I really understand what you're trying to do here, but the first thing that comes to mind is that you probably simply can't do anything like that with array construction syntax.  Arrays will be forced to broaden the type and of course you will wind up with <code>Any</code>, that's just how arrays work in Julia.  If you want to use array construction syntax you'll have to pipe stuff through functions which decide on the appropriate types first.  At most you can use a macro to make this look like array construction syntax.</p>",
+        "id": 471261076,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1726666501
+    },
+    {
+        "content": "<p>Yes I think ultimately my issue boils down to</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"o\">=&gt;</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"p\">]</span>\n<span class=\"mi\">2</span><span class=\"o\">-</span><span class=\"n\">element</span><span class=\"w\"> </span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Any</span><span class=\"p\">}</span><span class=\"o\">:</span>\n<span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"mi\">2</span>\n<span class=\"w\">   </span><span class=\"mi\">1</span>\n</code></pre></div>\n<p>when I need</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"kt\">Union</span><span class=\"p\">{</span><span class=\"kt\">Pair</span><span class=\"p\">{</span><span class=\"kt\">Int</span><span class=\"p\">,</span><span class=\"kt\">Int</span><span class=\"p\">},</span><span class=\"w\"> </span><span class=\"kt\">Int</span><span class=\"p\">}[</span><span class=\"mi\">1</span><span class=\"o\">=&gt;</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"p\">]</span>\n<span class=\"mi\">2</span><span class=\"o\">-</span><span class=\"n\">element</span><span class=\"w\"> </span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Union</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Pair</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Int64</span><span class=\"p\">}}}</span><span class=\"o\">:</span>\n<span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"mi\">2</span>\n<span class=\"w\">   </span><span class=\"mi\">1</span>\n</code></pre></div>",
+        "id": 471269235,
+        "sender_full_name": "Nils",
+        "timestamp": 1726668528
+    },
+    {
+        "content": "<p>Because, Mason to your question, the underlying function I want to dispatch to works differently for <code>String =&gt; Date</code> vs <code>String =&gt; Pair{Date, Date}</code></p>",
+        "id": 471269392,
+        "sender_full_name": "Nils",
+        "timestamp": 1726668577
+    },
+    {
+        "content": "<p>But maybe I just need to change the API to have multiple arguments for the multiple unit case.</p>",
+        "id": 471269659,
+        "sender_full_name": "Nils",
+        "timestamp": 1726668641
+    },
+    {
+        "content": "<p>And maybe I should have been clearer: my \"mini-DSL\" is supposed to allow the user to specify:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"s\">\"A\"</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"n\">Date</span><span class=\"p\">(</span><span class=\"mi\">2000</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"c\"># single unit treated for all periods from 2000 onwards</span>\n<span class=\"s\">\"A\"</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"n\">Date</span><span class=\"p\">(</span><span class=\"mi\">2000</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"n\">Date</span><span class=\"p\">(</span><span class=\"mi\">2005</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"c\"># single unit treated from 2000-2005</span>\n<span class=\"s\">\"A\"</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">Date</span><span class=\"p\">(</span><span class=\"mi\">2000</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"n\">Date</span><span class=\"p\">(</span><span class=\"mi\">2005</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">Date</span><span class=\"p\">(</span><span class=\"mi\">2008</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"n\">Date</span><span class=\"p\">(</span><span class=\"mi\">2010</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">Date</span><span class=\"p\">(</span><span class=\"mi\">2015</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"c\"># single unit treated from 2000-2005, 2008-2010, and all periods from 2015 onwards</span>\n<span class=\"p\">[</span><span class=\"s\">\"A\"</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"s\">\"B\"</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"n\">Date</span><span class=\"p\">(</span><span class=\"mi\">2000</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"c\"># two units treated from 2000 onwards</span>\n</code></pre></div>",
+        "id": 471270113,
+        "sender_full_name": "Nils",
+        "timestamp": 1726668761
+    },
+    {
+        "content": "<p>You can't make that type stable (or even promote to the narrowest union type) using array construction syntax.  You either have to use a tuple, make them arguments, or make a macro.</p>",
+        "id": 471270307,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1726668825
+    },
+    {
+        "content": "<p>But currently I write the \"multiple units, different treatment timings\" case as:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"p\">[</span><span class=\"s\">\"A\"</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">Date</span><span class=\"p\">(</span><span class=\"mi\">2000</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"n\">Date</span><span class=\"p\">(</span><span class=\"mi\">2005</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">Date</span><span class=\"p\">(</span><span class=\"mi\">2008</span><span class=\"p\">)],</span><span class=\"w\"> </span><span class=\"s\">\"B\"</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">Date</span><span class=\"p\">(</span><span class=\"mi\">2001</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"n\">Date</span><span class=\"p\">(</span><span class=\"mi\">2006</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">Date</span><span class=\"p\">(</span><span class=\"mi\">2010</span><span class=\"p\">)]]</span>\n</code></pre></div>",
+        "id": 471270522,
+        "sender_full_name": "Nils",
+        "timestamp": 1726668875
+    },
+    {
+        "content": "<p>You may also be interested in <a href=\"https://github.com/JuliaMath/IntervalSets.jl\">IntervalSets.jl</a> which has nice interval types with the convenient <code>..</code> syntax.</p>",
+        "id": 471270615,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1726668903
+    },
+    {
+        "content": "<p>Yes one can quarrel about the \"represent from-to as a pair of dates\", but the issue is the same if I use date ranges. I'll think about whether Intervals make sense (with dates things can get a bit tricky because often the interval needs to be specified (monthly, daily, weekly...) and so currently I just use start and end points and capture any dates in between, irrespective at what intervals)</p>",
+        "id": 471271028,
+        "sender_full_name": "Nils",
+        "timestamp": 1726669009
+    },
+    {
+        "content": "<p>I'll probably have to consider writing the multiple unit case as separate arguments. My function currently takes an input matrix which it mutates and then the unit/time period specification as the second argument.</p>\n<p>I suppose if I change</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">my_fun</span><span class=\"p\">(</span><span class=\"n\">X</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"s\">\"A\"</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">2000</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"mi\">2005</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2008</span><span class=\"p\">],</span><span class=\"w\"> </span><span class=\"s\">\"B\"</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">2001</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"mi\">2006</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2010</span><span class=\"p\">]])</span>\n</code></pre></div>\n<p>which doesn't work because of the resulting <code>Vector{Any}</code> to</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">my_fun</span><span class=\"p\">(</span><span class=\"n\">X</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"s\">\"A\"</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">2000</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"mi\">2005</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2008</span><span class=\"p\">],</span><span class=\"w\"> </span><span class=\"s\">\"B\"</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">2001</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"mi\">2006</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2010</span><span class=\"p\">])</span>\n</code></pre></div>\n<p>I can get a way with it, just not really sure how to write that (and whether slurping those multiple args will give me the same problem?)</p>",
+        "id": 471273548,
+        "sender_full_name": "Nils",
+        "timestamp": 1726669688
+    },
+    {
+        "content": "<p>No, that will not have the same problem, that will result in a <code>Tuple</code> which has type slots for each component.  The only problem with that is if you have a very large number of arguments it can get very expensive to compile.  You can also use a tuple if you'd like, it is equivalent.</p>",
+        "id": 471274572,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1726669945
+    },
+    {
+        "content": "<p>But you still have arrays which mix <code>Pair{Int,Int}</code> with <code>Int</code>, I'd change those to a tuple as well.  They seem like they are guaranteed short, so there should be no problem using a tuple there.</p>",
+        "id": 471274714,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1726669995
+    },
+    {
+        "content": "<p>For example</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"s\">\"A\"</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">2000</span><span class=\"o\">=&gt;</span><span class=\"mi\">2005</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2008</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"s\">\"B\"</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">2001</span><span class=\"o\">=&gt;</span><span class=\"mi\">2006</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2010</span><span class=\"p\">))</span><span class=\"w\"> </span><span class=\"o\">|&gt;</span><span class=\"w\"> </span><span class=\"n\">typeof</span>\n<span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"kt\">Pair</span><span class=\"p\">{</span><span class=\"kt\">String</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"kt\">Pair</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Int64</span><span class=\"p\">},</span><span class=\"w\"> </span><span class=\"kt\">Int64</span><span class=\"p\">}},</span><span class=\"w\"> </span><span class=\"kt\">Pair</span><span class=\"p\">{</span><span class=\"kt\">String</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"kt\">Pair</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Int64</span><span class=\"p\">},</span><span class=\"w\"> </span><span class=\"kt\">Int64</span><span class=\"p\">}}}</span>\n</code></pre></div>",
+        "id": 471275037,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1726670078
+    },
+    {
+        "content": "<p>There are annoyingly many foot-guns when it comes to actually <em>iterating</em> over tuples in Julia however.  That's potentially a reason to convert them to (properly typed) arrays later, but I'm still not really clear on what you're trying to do so I'm not sure if that's appropriate here.</p>",
+        "id": 471275565,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1726670240
+    },
+    {
+        "content": "<p>I suppose an issue with the tuples is that in my use case, functionally <code>[2000=&gt;2005, 2008]</code> and <code>[2000=&gt;2007, 2009=&gt;2010, 2012]</code> are equivalent, so dispatching on a <code>Vector{Union{Date, Pair{Date, Date}}}</code> is a useful thing to do, while in the tuple design those two things would have a different type?</p>",
+        "id": 471275847,
+        "sender_full_name": "Nils",
+        "timestamp": 1726670320
+    },
+    {
+        "content": "<p>Yes they would be different, so you'd probably need some kind of post-processing step.</p>\n<p>It's starting to sound to me a bit like what you want is to create an appropriate struct for the arguments.  There are still potential type promotion issues with it, but if you can create one with appropriate union types you can still pull it off</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"kt\">Arg</span>\n<span class=\"w\">    </span><span class=\"n\">name</span><span class=\"o\">::</span><span class=\"kt\">String</span>\n<span class=\"w\">    </span><span class=\"n\">inner</span><span class=\"o\">::</span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Union</span><span class=\"p\">{</span><span class=\"kt\">Date</span><span class=\"p\">,</span><span class=\"kt\">Pair</span><span class=\"p\">{</span><span class=\"kt\">Date</span><span class=\"p\">,</span><span class=\"kt\">Date</span><span class=\"p\">}}}</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>or whatever (I think that's probably not quite what you're looking for but might give you an idea).  You could then make your argument a <code>Vector{Arg}</code> or whatever it is you want.</p>",
+        "id": 471276801,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1726670587
+    },
+    {
+        "content": "<p>This is coming late but I have a similar problem with time tables and I went with representing them all as structs with two fields which are a Union{T, Nothing} but at construction are enforced to have at most one field a Nothing. It worked quite well in my use case.</p>",
+        "id": 489902982,
+        "sender_full_name": "Simone Carlo Surace",
+        "timestamp": 1734594281
+    }
+]

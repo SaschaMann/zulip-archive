@@ -1,0 +1,272 @@
+[
+    {
+        "content": "<p>Right now, going from <code>Array{T}</code> to <code>Array{Union{Missing, T}}</code> requires copying the original array: <a href=\"https://github.com/JuliaLang/julia/issues/26681\">https://github.com/JuliaLang/julia/issues/26681</a><br>\nBut according to this blog post a <code>Array{Union{Missing, T}}</code> is represented internally as two arrays, one for the data and one for the <code>Missing</code> array: <a href=\"https://julialang.org/blog/2018/06/missing/#an_efficient_representation\">https://julialang.org/blog/2018/06/missing/#an_efficient_representation</a></p>\n<p>So my question is, why is it necessary to copy the original array when using <code>convert()</code>? If an <code>Array{Union{Missing, T}}</code> is represented internally as two arrays anyway, would it be enough to create a <code>Array{Union{Missing, T}}</code> that references the original one but only initializes its internal <code>Array{UInt8}</code>?</p>",
+        "id": 292892518,
+        "sender_full_name": "James Wrigley",
+        "timestamp": 1660209116
+    },
+    {
+        "content": "<p>we could do that, but what do you then do about other references still pointing to the old array?</p>",
+        "id": 292893637,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660209671
+    },
+    {
+        "content": "<p>What about them? <span aria-label=\"thinking\" class=\"emoji emoji-1f914\" role=\"img\" title=\"thinking\">:thinking:</span></p>",
+        "id": 292894191,
+        "sender_full_name": "James Wrigley",
+        "timestamp": 1660209923
+    },
+    {
+        "content": "<p>There are plenty of cases where array variables share the underlying data (e.g. <code>reshape()</code>).</p>",
+        "id": 292894338,
+        "sender_full_name": "James Wrigley",
+        "timestamp": 1660209984
+    },
+    {
+        "content": "<p>yeah, but there the element type is the same</p>",
+        "id": 292894838,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660210219
+    },
+    {
+        "content": "<p>imagine you have <code>old_arr</code> with <code>Int8</code>s, and then you have a non-copying conversion to <code>Union{Missing, Int8}</code>. Now I set some element in the latter to <code>Missing</code> - what should reading from <code>old_arr</code> produce?</p>",
+        "id": 292894955,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660210269
+    },
+    {
+        "content": "<p>the <code>Int8</code> value is now invalid after all</p>",
+        "id": 292894972,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660210277
+    },
+    {
+        "content": "<p>(Int8 is just an example, it gets spicier with mutable structs for example)</p>",
+        "id": 292894996,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660210292
+    },
+    {
+        "content": "<p>Well, not really. As far as <code>old_arr</code> is concerned that element still has valid data, it's only in <code>new_arr</code> that it is <code>missing</code>.</p>",
+        "id": 292895259,
+        "sender_full_name": "James Wrigley",
+        "timestamp": 1660210409
+    },
+    {
+        "content": "<p>I can see why it could be confusing at first if you don't know how it's implemented under the hood, but to me that seems like quite reasonable semantics.</p>",
+        "id": 292895442,
+        "sender_full_name": "James Wrigley",
+        "timestamp": 1660210468
+    },
+    {
+        "content": "<p>inconsistent views of the same data does not at all sound reasonable to me :)</p>",
+        "id": 292895712,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660210566
+    },
+    {
+        "content": "<p>sounds very much like a bug waiting to happen</p>",
+        "id": 292895739,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660210580
+    },
+    {
+        "content": "<p>my point is that you can't really call it <code>new_arr</code> if it's sharing the same data</p>",
+        "id": 292895782,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660210603
+    },
+    {
+        "content": "<p>I don't think it's inconsistent, anymore than something like <code>PermutedDimsArray</code> is inconsistent <span aria-label=\"stuck out tongue\" class=\"emoji emoji-1f61b\" role=\"img\" title=\"stuck out tongue\">:stuck_out_tongue:</span></p>",
+        "id": 292896355,
+        "sender_full_name": "James Wrigley",
+        "timestamp": 1660210825
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"306754\">Sukera</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays/near/292895782\">said</a>:</p>\n<blockquote>\n<p>my point is that you can't really call it <code>new_arr</code> if it's sharing the same data</p>\n</blockquote>\n<p>I think you absolutely can, and it's even very useful because it avoids copying a potentially large array.</p>",
+        "id": 292896532,
+        "sender_full_name": "James Wrigley",
+        "timestamp": 1660210900
+    },
+    {
+        "content": "<p>Numpy's masked arrays are also implemented like this, but they have a <code>copy</code> option. Maybe it'd be best to have something like that, but with <code>copy=True</code> as the default?</p>",
+        "id": 292896722,
+        "sender_full_name": "James Wrigley",
+        "timestamp": 1660210972
+    },
+    {
+        "content": "<p><code>permutedims</code> is chiefly not the same, since it keeps the underlying the data exactly the same and all its validity guarantees. All it does is defer a copy if you do decide to push to e.g. the original vector.</p>",
+        "id": 292898347,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660211737
+    },
+    {
+        "content": "<p>You can't really avoid copying that without being sure that the data isn't being messed with under your nose</p>",
+        "id": 292898442,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660211767
+    },
+    {
+        "content": "<p>I absolutely agree, but in many cases that's <em>exactly</em> what I want. The whole point of converting to a missing array is so that I can forget about masked out elements.</p>",
+        "id": 292898873,
+        "sender_full_name": "James Wrigley",
+        "timestamp": 1660211966
+    },
+    {
+        "content": "<p>(i.e. I'm never going to touch <code>old_arr</code> once it's converted)</p>",
+        "id": 292898944,
+        "sender_full_name": "James Wrigley",
+        "timestamp": 1660211996
+    },
+    {
+        "content": "<p>that's a different usecase from just calling <code>convert</code> though</p>",
+        "id": 292899061,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660212026
+    },
+    {
+        "content": "<p>that'd be perfectly fine in a <code>MissingArray</code> wrapper</p>",
+        "id": 292899103,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660212046
+    },
+    {
+        "content": "<p>Is that a thing? <span aria-label=\"eyes\" class=\"emoji emoji-1f440\" role=\"img\" title=\"eyes\">:eyes:</span></p>",
+        "id": 292899169,
+        "sender_full_name": "James Wrigley",
+        "timestamp": 1660212084
+    },
+    {
+        "content": "<p>no</p>",
+        "id": 292899207,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660212098
+    },
+    {
+        "content": "<p>Ah you had me excited <span aria-label=\"sweat smile\" class=\"emoji emoji-1f605\" role=\"img\" title=\"sweat smile\">:sweat_smile:</span> But yes, that would also work if it existed.</p>",
+        "id": 292899338,
+        "sender_full_name": "James Wrigley",
+        "timestamp": 1660212138
+    },
+    {
+        "content": "<p>either way, if that conversion/copy is your bottleneck, I'm a tiny bit concerned about the other bottlenecks that are sure to come up around such code <span aria-label=\"eyes\" class=\"emoji emoji-1f440\" role=\"img\" title=\"eyes\">:eyes:</span></p>",
+        "id": 292899348,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660212142
+    },
+    {
+        "content": "<p>It's not the biggest bottleneck, but it increases running time by about ~40%. The biggest bottleneck is IO.</p>",
+        "id": 292899541,
+        "sender_full_name": "James Wrigley",
+        "timestamp": 1660212222
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"306754\">Sukera</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays/near/292899103\">said</a>:</p>\n<blockquote>\n<p>that'd be perfectly fine in a <code>MissingArray</code> wrapper</p>\n</blockquote>\n<p>I do wonder though, could you in theory get the same performance with such a wrapper as with a <code>Union{Missing, T}</code>? My understanding is that the compiler does a lot of work to optimize that away.</p>",
+        "id": 292899797,
+        "sender_full_name": "James Wrigley",
+        "timestamp": 1660212324
+    },
+    {
+        "content": "<p>sounds like you want to preallocate a <code>Vector{Union{Missing, T}}</code> in the first place to write into, but ok</p>",
+        "id": 292899842,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660212348
+    },
+    {
+        "content": "<p>the compiler isn't really able to optimize your <code>Array{Union{Missing, T}}</code> away, no</p>",
+        "id": 292899939,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660212375
+    },
+    {
+        "content": "<p>it has to insert checks for every element access</p>",
+        "id": 292899951,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660212382
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"306754\">Sukera</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays/near/292899842\">said</a>:</p>\n<blockquote>\n<p>sounds like you want to preallocate a <code>Vector{Union{Missing, T}}</code> in the first place to write into, but ok</p>\n</blockquote>\n<p>Unfortunately that's not possible, the data is being read from a Python library that doesn't accept a preallocated array.</p>",
+        "id": 292900098,
+        "sender_full_name": "James Wrigley",
+        "timestamp": 1660212446
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"306754\">Sukera</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays/near/292899951\">said</a>:</p>\n<blockquote>\n<p>it has to insert checks for every element access</p>\n</blockquote>\n<p>Right, but in the blogpost I linked there's an example of the compiler being able to vectorize a loop anyway using masked SIMD instructions. Is that sort of thing possible with a custom array type too? I don't know how specially the compiler treats unions of isbits types.</p>",
+        "id": 292900362,
+        "sender_full_name": "James Wrigley",
+        "timestamp": 1660212551
+    },
+    {
+        "content": "<p>masked SIMD are very specialized, if your data is not a very simple datatype SIMD will be hard either way</p>",
+        "id": 292903185,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660213887
+    },
+    {
+        "content": "<p>the compiler can do some tricks to bring the data in that shape, if you don't need all of a struct in the loop, but it's generally much more difficult</p>",
+        "id": 292903243,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660213918
+    },
+    {
+        "content": "<p>Gotcha, thanks.</p>",
+        "id": 292904294,
+        "sender_full_name": "James Wrigley",
+        "timestamp": 1660214448
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"306754\">Sukera</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays/near/292894838\">said</a>:</p>\n<blockquote>\n<p>yeah, but there the element type is the same</p>\n</blockquote>\n<p>What about <code>reinterpret</code>?</p>",
+        "id": 292951874,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1660231564
+    },
+    {
+        "content": "<p>those at least share the exact same memory for all their representations, so changing one affects the other directly</p>",
+        "id": 292957031,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660233170
+    },
+    {
+        "content": "<p>you may still not get a valid instance for custom structs with custom invariants, yes</p>",
+        "id": 292957138,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660233212
+    },
+    {
+        "content": "<p>It’s the exact same memory with <code>Union{T, Missing}</code> as well</p>",
+        "id": 292968098,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1660236790
+    },
+    {
+        "content": "<p>There’s just an additional bitvector telling you if an element is junk or not</p>",
+        "id": 292968166,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1660236813
+    },
+    {
+        "content": "<p>I think what James is asking for here is certainly not a good idea for a public API, but isn’t really any more scary than most unsafe pointer operations</p>",
+        "id": 292968422,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1660236909
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays/near/292968422\">said</a>:</p>\n<blockquote>\n<p>I think what James is asking for here is certainly got a good idea for a public API, but isn’t really any more scary than most unsafe pointer operations</p>\n</blockquote>\n<p>The \"but\" makes me think you meant to type \"certainly <em>not</em> a good idea for a public API\" there?</p>",
+        "id": 293018870,
+        "sender_full_name": "Sundar R",
+        "timestamp": 1660256680
+    },
+    {
+        "content": "<p>Oops, yeah I meant 'not'</p>",
+        "id": 293022072,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1660258138
+    },
+    {
+        "content": "<p>edited</p>",
+        "id": 293022095,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1660258160
+    }
+]

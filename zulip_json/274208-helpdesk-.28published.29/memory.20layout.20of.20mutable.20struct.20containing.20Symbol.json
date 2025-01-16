@@ -1,0 +1,122 @@
+[
+    {
+        "content": "<p>Can a mutable struct containing a Symbol have a concrete memory layout? I noticed that different symbols have different sizes:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">sizeof</span><span class=\"p\">(</span><span class=\"ss\">:t</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"mi\">1</span><span class=\"w\"></span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">sizeof</span><span class=\"p\">(</span><span class=\"ss\">:output</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"mi\">6</span><span class=\"w\"></span>\n</code></pre></div>\n<p>thus, a struct like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">mutable</span><span class=\"w\"> </span><span class=\"k\">struct</span> <span class=\"kt\">A</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"n\">s</span><span class=\"o\">::</span><span class=\"kt\">Symbol</span><span class=\"w\"></span>\n<span class=\"k\">end</span><span class=\"w\"></span>\n</code></pre></div>\n<p>cannot have a (not sure about the terminology here) constant memory layout, right?</p>",
+        "id": 295215465,
+        "sender_full_name": "Leandro Martínez",
+        "timestamp": 1661429989
+    },
+    {
+        "content": "<p>sure it can</p>",
+        "id": 295215765,
+        "sender_full_name": "Sukera",
+        "timestamp": 1661430122
+    },
+    {
+        "content": "<p>in fact, it has to - otherwise it wouldn't be possible to have different <code>A</code> where you can swap out the symbol</p>",
+        "id": 295215857,
+        "sender_full_name": "Sukera",
+        "timestamp": 1661430149
+    },
+    {
+        "content": "<p>what ends up happening is that for your field a pointer is used internally</p>",
+        "id": 295215900,
+        "sender_full_name": "Sukera",
+        "timestamp": 1661430175
+    },
+    {
+        "content": "<p>that way, the symbol can be swapped out while keeping the size of <code>A</code> fixed</p>",
+        "id": 295215941,
+        "sender_full_name": "Sukera",
+        "timestamp": 1661430193
+    },
+    {
+        "content": "<p><code>Symbol</code> in particular is a bit special though</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"k\">mutable</span><span class=\"w\"> </span><span class=\"k\">struct</span> <span class=\"kt\">A</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"n\">s</span><span class=\"o\">::</span><span class=\"kt\">Symbol</span><span class=\"w\"></span>\n<span class=\"w\">       </span><span class=\"k\">end</span><span class=\"w\"></span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">sizeof</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"mi\">8</span><span class=\"w\"></span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">sizeof</span><span class=\"p\">(</span><span class=\"kt\">Symbol</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"n\">ERROR</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"kt\">Type</span><span class=\"w\"> </span><span class=\"kt\">Symbol</span><span class=\"w\"> </span><span class=\"n\">does</span><span class=\"w\"> </span><span class=\"n\">not</span><span class=\"w\"> </span><span class=\"n\">have</span><span class=\"w\"> </span><span class=\"n\">a</span><span class=\"w\"> </span><span class=\"n\">definite</span><span class=\"w\"> </span><span class=\"n\">size</span><span class=\"o\">.</span><span class=\"w\"></span>\n<span class=\"n\">Stacktrace</span><span class=\"o\">:</span><span class=\"w\"></span>\n<span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"n\">sizeof</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">Type</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">   </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"w\"> </span><span class=\"o\">./</span><span class=\"n\">essentials</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">551</span><span class=\"w\"></span>\n<span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">2</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"n\">top</span><span class=\"o\">-</span><span class=\"n\">level</span><span class=\"w\"> </span><span class=\"n\">scope</span><span class=\"w\"></span>\n<span class=\"w\">   </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">REPL</span><span class=\"p\">[</span><span class=\"mi\">4</span><span class=\"p\">]</span><span class=\"o\">:</span><span class=\"mi\">1</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 295216495,
+        "sender_full_name": "Sukera",
+        "timestamp": 1661430376
+    },
+    {
+        "content": "<p>suffice it to say, since it does not have a definite size, using it in a mutable struct most likely ends up as a pointer</p>",
+        "id": 295216559,
+        "sender_full_name": "Sukera",
+        "timestamp": 1661430405
+    },
+    {
+        "content": "<p>Ah, ok, so it is boxed (but type-stable). Anyway, if one needs an array of those and access those fields, that won't be great for performance, as there will be lots of memory accessess, right?</p>\n<p>What if one uses the <code>const s::Symbol</code> introduced in <code>1.8</code>?</p>",
+        "id": 295216690,
+        "sender_full_name": "Leandro Martínez",
+        "timestamp": 1661430469
+    },
+    {
+        "content": "<p>it's not <code>Box</code>ed per se, the pointer is just abstracted away</p>",
+        "id": 295217565,
+        "sender_full_name": "Sukera",
+        "timestamp": 1661430820
+    },
+    {
+        "content": "<p>that's a good question <span aria-label=\"thinking\" class=\"emoji emoji-1f914\" role=\"img\" title=\"thinking\">:thinking:</span></p>",
+        "id": 295217588,
+        "sender_full_name": "Sukera",
+        "timestamp": 1661430841
+    },
+    {
+        "content": "<p>Answering my own question: I don't see any difference:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"k\">mutable</span><span class=\"w\"> </span><span class=\"k\">struct</span> <span class=\"kt\">B</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"k\">const</span><span class=\"w\"> </span><span class=\"n\">s</span><span class=\"o\">::</span><span class=\"kt\">Symbol</span><span class=\"w\"></span>\n<span class=\"w\">       </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"w\">       </span><span class=\"n\">v</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">B</span><span class=\"p\">(</span><span class=\"n\">rand</span><span class=\"p\">((</span><span class=\"ss\">:a</span><span class=\"p\">,</span><span class=\"ss\">:b</span><span class=\"p\">)))</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">_</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">1000</span><span class=\"p\">]</span><span class=\"w\"></span>\n<span class=\"w\">       </span><span class=\"nd\">@btime</span><span class=\"w\"> </span><span class=\"n\">count</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"w\"> </span><span class=\"o\">-&gt;</span><span class=\"w\"> </span><span class=\"n\">a</span><span class=\"o\">.</span><span class=\"n\">s</span><span class=\"w\"> </span><span class=\"o\">==</span><span class=\"w\"> </span><span class=\"ss\">:a</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"o\">$</span><span class=\"n\">v</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"mf\">451.457</span><span class=\"w\"> </span><span class=\"n\">ns</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">0</span><span class=\"w\"> </span><span class=\"n\">allocations</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"mi\">0</span><span class=\"w\"> </span><span class=\"n\">bytes</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"mi\">485</span><span class=\"w\"></span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"k\">mutable</span><span class=\"w\"> </span><span class=\"k\">struct</span> <span class=\"kt\">A</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"n\">s</span><span class=\"o\">::</span><span class=\"kt\">Symbol</span><span class=\"w\"></span>\n<span class=\"w\">       </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"w\">       </span><span class=\"n\">v</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">A</span><span class=\"p\">(</span><span class=\"n\">rand</span><span class=\"p\">((</span><span class=\"ss\">:a</span><span class=\"p\">,</span><span class=\"ss\">:b</span><span class=\"p\">)))</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">_</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">1000</span><span class=\"p\">]</span><span class=\"w\"></span>\n<span class=\"w\">       </span><span class=\"nd\">@btime</span><span class=\"w\"> </span><span class=\"n\">count</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"w\"> </span><span class=\"o\">-&gt;</span><span class=\"w\"> </span><span class=\"n\">a</span><span class=\"o\">.</span><span class=\"n\">s</span><span class=\"w\"> </span><span class=\"o\">==</span><span class=\"w\"> </span><span class=\"ss\">:a</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"o\">$</span><span class=\"n\">v</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"mf\">451.325</span><span class=\"w\"> </span><span class=\"n\">ns</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">0</span><span class=\"w\"> </span><span class=\"n\">allocations</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"mi\">0</span><span class=\"w\"> </span><span class=\"n\">bytes</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"mi\">492</span><span class=\"w\"></span>\n</code></pre></div>\n<p>Counting isbits stuff is much faster though:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">v</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"w\"> </span><span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">2</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">_</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">10</span><span class=\"o\">^</span><span class=\"mi\">3</span><span class=\"w\"> </span><span class=\"p\">]</span><span class=\"w\"></span>\n<span class=\"w\">       </span><span class=\"nd\">@btime</span><span class=\"w\"> </span><span class=\"n\">count</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">-&gt;</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">==</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"o\">$</span><span class=\"n\">v</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"mf\">55.400</span><span class=\"w\"> </span><span class=\"n\">ns</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">0</span><span class=\"w\"> </span><span class=\"n\">allocations</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"mi\">0</span><span class=\"w\"> </span><span class=\"n\">bytes</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"mi\">504</span><span class=\"w\"></span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">v</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"w\"> </span><span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"sc\">'A'</span><span class=\"o\">:</span><span class=\"sc\">'B'</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">_</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">10</span><span class=\"o\">^</span><span class=\"mi\">3</span><span class=\"w\"> </span><span class=\"p\">]</span><span class=\"w\"></span>\n<span class=\"w\">       </span><span class=\"nd\">@btime</span><span class=\"w\"> </span><span class=\"n\">count</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">-&gt;</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">==</span><span class=\"w\"> </span><span class=\"sc\">'A'</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"o\">$</span><span class=\"n\">v</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"mf\">67.148</span><span class=\"w\"> </span><span class=\"n\">ns</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">0</span><span class=\"w\"> </span><span class=\"n\">allocations</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"mi\">0</span><span class=\"w\"> </span><span class=\"n\">bytes</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"mi\">509</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 295217600,
+        "sender_full_name": "Leandro Martínez",
+        "timestamp": 1661430843
+    },
+    {
+        "content": "<p>it'll probably still be a pointer, since keeping the size of <code>A</code> constant is more important</p>",
+        "id": 295217669,
+        "sender_full_name": "Sukera",
+        "timestamp": 1661430875
+    },
+    {
+        "content": "<p>the symbol can have different sizes after all</p>",
+        "id": 295217679,
+        "sender_full_name": "Sukera",
+        "timestamp": 1661430883
+    },
+    {
+        "content": "<p>yes, because for mutable structs wrapping a symbol there's an additional indirection, since the array is an array of pointers as well</p>",
+        "id": 295222766,
+        "sender_full_name": "Sukera",
+        "timestamp": 1661432675
+    },
+    {
+        "content": "<p>In surprised it's that slow. Since symbols are interned, isn't it just an integer comparison of the pointers?</p>",
+        "id": 295224735,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1661433242
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"272650\">Jakob Nybo Nissen</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/memory.20layout.20of.20mutable.20struct.20containing.20Symbol/near/295224735\">said</a>:</p>\n<blockquote>\n<p>In surprised it's that slow. Since symbols are interned, isn't it just an integer comparison of the pointers?</p>\n</blockquote>\n<p>I always assumed that was the case (that'd it'd just be a pointer comparison, and hence equivalent to comparing <code>Int</code>s or <code>@enum</code>s).<br>\n<span class=\"user-mention\" data-user-id=\"278119\">@Christopher Rackauckas</span> , I guess this is another reason to change DiffEq retcodes, aside from <code>:success</code> being a fail.</p>",
+        "id": 295224963,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1661433310
+    },
+    {
+        "content": "<p>I wonder if all the time is being spent fetching out-of-cache stuff from the heap, and the symbol comparison is insignificant relative to the cache misses</p>",
+        "id": 295225956,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1661433589
+    },
+    {
+        "content": "<blockquote>\n<p>I guess this is another reason to change DiffEq retcodes, aside from :success being a fail.<br>\nIt's mostly a correctness thing. Mis-spelled <code>:succcess</code> is too common <span aria-label=\"sad\" class=\"emoji emoji-2639\" role=\"img\" title=\"sad\">:sad:</span></p>\n</blockquote>",
+        "id": 295234345,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1661436092
+    },
+    {
+        "content": "<p>A bunch of BioJulia including TranscodingStreams also use symbol literals in performance sensitive code. Perhaps it should be replaced with an enum</p>",
+        "id": 295234924,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1661436268
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"272650\">Jakob Nybo Nissen</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/memory.20layout.20of.20mutable.20struct.20containing.20Symbol/near/295224735\">said</a>:</p>\n<blockquote>\n<p>In surprised it's that slow. Since symbols are interned, isn't it just an integer comparison of the pointers?</p>\n</blockquote>\n<p>it'll have trouble since the array of mutable structs containing a symbol ends up as an array of pointers to a pointer - two derefs kill cache coherence, would be my guess - and that probably also kills SIMD</p>",
+        "id": 295235266,
+        "sender_full_name": "Sukera",
+        "timestamp": 1661436383
+    }
+]

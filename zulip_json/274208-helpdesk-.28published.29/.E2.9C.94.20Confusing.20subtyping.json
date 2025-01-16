@@ -1,0 +1,218 @@
+[
+    {
+        "content": "<p>I'm a bit confused about why the expected function method isn't being dispatched in my code, and it seems it comes down to this confusing result:</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"kt\">Dict</span><span class=\"p\">{</span><span class=\"kt\">Char</span><span class=\"p\">,</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Type</span><span class=\"p\">}}</span> <span class=\"o\">&lt;:</span> <span class=\"kt\">Dict</span><span class=\"p\">{</span><span class=\"kt\">Char</span><span class=\"p\">,</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Type</span><span class=\"p\">}}</span>\n<span class=\"go\">true</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"kt\">Dict</span><span class=\"p\">{</span><span class=\"kt\">Char</span><span class=\"p\">,</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Type</span><span class=\"p\">}}</span> <span class=\"o\">&lt;:</span> <span class=\"kt\">Dict</span><span class=\"p\">{</span><span class=\"kt\">Char</span><span class=\"p\">,</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"o\">&lt;:</span><span class=\"kt\">Type</span><span class=\"p\">}}</span>\n<span class=\"go\">false</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"kt\">Dict</span><span class=\"p\">{</span><span class=\"kt\">Char</span><span class=\"p\">,</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">DataType</span><span class=\"p\">}}</span> <span class=\"o\">&lt;:</span> <span class=\"kt\">Dict</span><span class=\"p\">{</span><span class=\"kt\">Char</span><span class=\"p\">,</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Type</span><span class=\"p\">}}</span>\n<span class=\"go\">false</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"kt\">Dict</span><span class=\"p\">{</span><span class=\"kt\">Char</span><span class=\"p\">,</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">DataType</span><span class=\"p\">}}</span> <span class=\"o\">&lt;:</span> <span class=\"kt\">Dict</span><span class=\"p\">{</span><span class=\"kt\">Char</span><span class=\"p\">,</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"o\">&lt;:</span><span class=\"kt\">Type</span><span class=\"p\">}}</span>\n<span class=\"go\">false</span>\n</code></pre></div>\n<p>If we could work out how to attain the result I'm expecting, that would be great.</p>\n<p>For reference, this is the issue I'm having</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"go\">MethodError: no method matching parseorg(::String, ::Dict{Char, Vector{Type}}, ::Vector{DataType}; debug=false, pointonfail=false)</span>\n<span class=\"go\">Closest candidates are:</span>\n<span class=\"go\">  parseorg(::AbstractString, ::Dict{Char, Vector{var\"#s40\"} where var\"#s40\"&lt;:Type}, ::Vector{var\"#s33\"} where var\"#s33\"&lt;:Type; debug, pointonfail)</span>\n</code></pre></div>",
+        "id": 262768140,
+        "sender_full_name": "Timothy",
+        "timestamp": 1637912934
+    },
+    {
+        "content": "<p>types in julia are invariant</p>",
+        "id": 262768416,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637913247
+    },
+    {
+        "content": "<p>(except tuples)</p>",
+        "id": 262768417,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637913252
+    },
+    {
+        "content": "<p>see <a href=\"https://docs.julialang.org/en/v1/manual/types/#man-parametric-composite-types\">https://docs.julialang.org/en/v1/manual/types/#man-parametric-composite-types</a></p>",
+        "id": 262768469,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637913334
+    },
+    {
+        "content": "<p>I'm guessing you declared your function like <code>parseorg(s::AbstractString, d::Dict{Char, Vector{T}}, v::Vector{U}) where {T &lt;: Type, U &lt;: Type}</code>? To get the dispatch you want, you'd write that as <code>parseorg(s::AbstractString, d::AbstractDict{Char, &lt;:AbstractVector{T}}, v::AbstractVector{U}) where {T, U}</code>, though that feels overly typed to me</p>",
+        "id": 262768653,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637913515
+    },
+    {
+        "content": "<p>I've written</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code> <span class=\"n\">parseorg</span><span class=\"p\">(</span><span class=\"n\">content</span><span class=\"o\">::</span><span class=\"kt\">AbstractString</span><span class=\"p\">,</span> <span class=\"n\">typematchers</span><span class=\"o\">::</span><span class=\"kt\">Dict</span><span class=\"p\">{</span><span class=\"kt\">Char</span><span class=\"p\">,</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"o\">&lt;:</span><span class=\"kt\">Type</span><span class=\"p\">}},</span>\n                  <span class=\"n\">typefallbacks</span><span class=\"o\">::</span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"o\">&lt;:</span><span class=\"kt\">Type</span><span class=\"p\">};</span> <span class=\"n\">debug</span><span class=\"o\">=</span><span class=\"nb\">false</span><span class=\"p\">,</span> <span class=\"n\">pointonfail</span><span class=\"o\">=</span><span class=\"nb\">false</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 262768683,
+        "sender_full_name": "Timothy",
+        "timestamp": 1637913556
+    },
+    {
+        "content": "<p>yeah, same thing, just without the <code>where</code></p>",
+        "id": 262768694,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637913574
+    },
+    {
+        "content": "<p>So basically going from a concrete to abstract type should do the trick?</p>",
+        "id": 262768763,
+        "sender_full_name": "Timothy",
+        "timestamp": 1637913606
+    },
+    {
+        "content": "<p>no, acknowledging that types are invariant does the trick ;)</p>",
+        "id": 262768846,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637913624
+    },
+    {
+        "content": "<p>what you've written is asking for a <code>Dict</code> taking a <code>Char</code> as key and pointing to _a_ vector that holds a subtype of <code>Type</code> though</p>",
+        "id": 262768888,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637913668
+    },
+    {
+        "content": "<p>note the <code>&lt;: AbstractVector</code> part</p>",
+        "id": 262768899,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637913687
+    },
+    {
+        "content": "<p>Ah right, thanks for pointing out that it's <em>that</em> bit</p>",
+        "id": 262768920,
+        "sender_full_name": "Timothy",
+        "timestamp": 1637913716
+    },
+    {
+        "content": "<p>do you have to distinguish between different <code>parseorg</code>? if not, I wouldn't necessarily use type annotations at all here</p>",
+        "id": 262768965,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637913727
+    },
+    {
+        "content": "<p>I have two forms, yes. I also like typing function arguments when to let myself know what I'm expecting.</p>",
+        "id": 262768991,
+        "sender_full_name": "Timothy",
+        "timestamp": 1637913776
+    },
+    {
+        "content": "<p>does that form have the same signature/number &amp; order of arguments?</p>",
+        "id": 262769017,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637913799
+    },
+    {
+        "content": "<p>The signature doesn't match. I <em>could</em> get away without typing any of it but then I come back to \"I also like typing function arguments when to let myself know what I'm expecting.\"</p>",
+        "id": 262769104,
+        "sender_full_name": "Timothy",
+        "timestamp": 1637913848
+    },
+    {
+        "content": "<p>Yeah, for documentation purposes it's not a bad idea, though be aware that you don't necessarily want to use concrete types in the signature</p>",
+        "id": 262769109,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637913859
+    },
+    {
+        "content": "<p>On that note, is there a particular reason why I'd want to go for <code>AbstractDict</code> / <code>AbstractVec</code> ?</p>",
+        "id": 262769131,
+        "sender_full_name": "Timothy",
+        "timestamp": 1637913887
+    },
+    {
+        "content": "<p>a <code>view</code> is an <code>AbstractVector</code> :)</p>",
+        "id": 262769148,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637913918
+    },
+    {
+        "content": "<p>no need to copy arrays around when slicing after all</p>",
+        "id": 262769156,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637913931
+    },
+    {
+        "content": "<p>As for <code>AbstractDict</code>- you could switch to <a href=\"https://github.com/search?q=Dictionaries.jl&amp;type=Repositories\">Dictionaries.jl</a> or an OrderedDict from <a href=\"https://github.com/search?q=DataStructures.jl&amp;type=Repositories\">DataStructures.jl</a> if you need a different interface or some ordering in your dict</p>",
+        "id": 262769222,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637913980
+    },
+    {
+        "content": "<p>if you have <code>AbstractDict</code>, you don't get <code>MethodError</code> all over the place, since they all satisfy that API</p>",
+        "id": 262769235,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637914006
+    },
+    {
+        "content": "<p>Thanks for elaborating. I've got <code>AbstractString</code> here for exactly the reason you mention with vectors (I'm taking <em>lots</em> of substrings).</p>",
+        "id": 262769278,
+        "sender_full_name": "Timothy",
+        "timestamp": 1637914069
+    },
+    {
+        "content": "<p>but other than that - I usually don't type things and rather document in comments/docstrings what I expect to hold interface-wise, since apart from dispatch, type annotations in function signatures do not improve performance or help inference</p>",
+        "id": 262769332,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637914090
+    },
+    {
+        "content": "<p>the only things I do type religiously is when I have a custom struct internal to my package and I want to make sure to require that struct as an input</p>",
+        "id": 262769385,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637914147
+    },
+    {
+        "content": "<p>I do have more info in docstrings, however for er, somewhat <em>unique</em> reasons, I'm not putting the docstrings next to the functions here.</p>",
+        "id": 262769405,
+        "sender_full_name": "Timothy",
+        "timestamp": 1637914174
+    },
+    {
+        "content": "<p>( if I do I get load order errors, since the docstrings use a macro which uses the code I'm documenting )</p>",
+        "id": 262769479,
+        "sender_full_name": "Timothy",
+        "timestamp": 1637914219
+    },
+    {
+        "content": "<p><span aria-label=\"thinking\" class=\"emoji emoji-1f914\" role=\"img\" title=\"thinking\">:thinking:</span></p>",
+        "id": 262769603,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637914341
+    },
+    {
+        "content": "<p>are you using <code>@doc</code>?</p>",
+        "id": 262769650,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637914396
+    },
+    {
+        "content": "<p>I am</p>",
+        "id": 262769753,
+        "sender_full_name": "Timothy",
+        "timestamp": 1637914478
+    },
+    {
+        "content": "<p>I'm very curious about how that breaks :o</p>",
+        "id": 262769763,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637914491
+    },
+    {
+        "content": "<p>Well, for the sake of your curiosity, this is what I've got going on:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"nd\">@doc</span> <span class=\"sa\">org</span><span class=\"s\">\"\"\"</span>\n<span class=\"s\">some lovely documentation</span>\n<span class=\"s\">\"\"\"</span> <span class=\"n\">parseorg</span>\n</code></pre></div>\n<p>and as you may imagine, the <code>@org_str</code> macro definition involves calling <code>parseorg</code> <span aria-label=\"smile\" class=\"emoji emoji-1f642\" role=\"img\" title=\"smile\">:smile:</span>.</p>",
+        "id": 262769861,
+        "sender_full_name": "Timothy",
+        "timestamp": 1637914566
+    },
+    {
+        "content": "<p>well, I'm sure you have your reasons for that <span aria-label=\"sweat smile\" class=\"emoji emoji-1f605\" role=\"img\" title=\"sweat smile\">:sweat_smile:</span></p>",
+        "id": 262770119,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637914811
+    },
+    {
+        "content": "<p>Well, if I'm writing a package to provide nice support for a certain markup language, it would basically be heretical <em>not</em> to write the docs using that markup language wouldn't it? <span aria-label=\"stuck out tongue\" class=\"emoji emoji-1f61b\" role=\"img\" title=\"stuck out tongue\">:stuck_out_tongue:</span></p>",
+        "id": 262770201,
+        "sender_full_name": "Timothy",
+        "timestamp": 1637914921
+    },
+    {
+        "content": "<p>Anyway, thanks for the help!</p>",
+        "id": 262772060,
+        "sender_full_name": "Timothy",
+        "timestamp": 1637916416
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"400021\">Timothy</span> has marked this topic as resolved.</p>",
+        "id": 262798359,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1637933999
+    }
+]

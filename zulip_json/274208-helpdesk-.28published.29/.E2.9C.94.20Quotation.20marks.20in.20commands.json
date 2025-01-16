@@ -1,0 +1,194 @@
+[
+    {
+        "content": "<p>I want to run <code>exiv2</code> from Julia, but the command I need has very weird syntax: <code>exiv2 -M\"set ...\"</code>. Julia transforms this to <code>exiv2 '-M\"set ...\"'</code>, which fails to run.</p>\n<p>Is there a way to force Julia not to quote those quotation marks?</p>",
+        "id": 289508456,
+        "sender_full_name": "mbaz",
+        "timestamp": 1657740344
+    },
+    {
+        "content": "<p>raw string literal?</p>",
+        "id": 289523584,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1657747780
+    },
+    {
+        "content": "<p>Nope -- still inserts the <code>'</code>.</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">rsl</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"sa\">r</span><span class=\"sr\">\"\"\"-M</span><span class=\"err\">\"</span><span class=\"sr\">set ...</span><span class=\"err\">\"</span><span class=\"sr\"> \"\"\"</span><span class=\"w\"></span>\n<span class=\"go\">r\"-M\\\"set ...\\\" \"</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">cmd</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"sb\">`exiv2 </span><span class=\"si\">$rsl</span><span class=\"sb\">`</span><span class=\"w\"></span>\n<span class=\"go\">`exiv2 'r\"-M\\\"set ...\\\" \"'`</span>\n</code></pre></div>",
+        "id": 289524205,
+        "sender_full_name": "mbaz",
+        "timestamp": 1657748099
+    },
+    {
+        "content": "<p>You can use single quotes if there is nothing for the shell to interpolate</p>",
+        "id": 289524396,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1657748206
+    },
+    {
+        "content": "<p>You could also check how Julia itself parses its own flags, since it has <code>julia -C\"native,...\"</code></p>",
+        "id": 289524658,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1657748362
+    },
+    {
+        "content": "<p>Single quotes don't work here; if I use them, Julia inserts double quotes. I'm not sure seeing how Julia parses those is useful here, since the problem is declaring the command, not parsing it.</p>",
+        "id": 289524994,
+        "sender_full_name": "mbaz",
+        "timestamp": 1657748527
+    },
+    {
+        "content": "<p>I see. My only thought is to construct a valid command in your shell, write the string to a file, and inspect the bytes to reproduce it in Julia.</p>",
+        "id": 289525099,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1657748586
+    },
+    {
+        "content": "<p>with a hex editor</p>",
+        "id": 289525105,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1657748591
+    },
+    {
+        "content": "<p>That's a good idea, thanks!</p>",
+        "id": 289525219,
+        "sender_full_name": "mbaz",
+        "timestamp": 1657748653
+    },
+    {
+        "content": "<p>But I wonder if I'm missing something, or if this is a limitation of Julia's command declaration syntax and opening an issue is warranted.</p>",
+        "id": 289525303,
+        "sender_full_name": "mbaz",
+        "timestamp": 1657748713
+    },
+    {
+        "content": "<p>No idea how useful that would be, but it may at least give you an idea of where the bytes differ and give some insight on how to correct them</p>",
+        "id": 289525319,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1657748724
+    },
+    {
+        "content": "<p>Which OS are you on?</p>",
+        "id": 289525836,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1657749009
+    },
+    {
+        "content": "<p>Linux.</p>",
+        "id": 289526348,
+        "sender_full_name": "mbaz",
+        "timestamp": 1657749325
+    },
+    {
+        "content": "<p>Best I could come up with as a newbie:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">run</span><span class=\"p\">(</span><span class=\"n\">setenv</span><span class=\"p\">(</span><span class=\"sb\">`sh -c \"echo </span><span class=\"se\">\\$</span><span class=\"sb\">TEST\"`</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"s\">\"TEST\"</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"s\">\"exiv2 -M</span><span class=\"se\">\\\"</span><span class=\"s\">set foo</span><span class=\"se\">\\\"</span><span class=\"s\">\"</span><span class=\"p\">,)));</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 289527658,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1657750183
+    },
+    {
+        "content": "<p>that will at least echo what you want using a shell subprocess</p>",
+        "id": 289527742,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1657750231
+    },
+    {
+        "content": "<p>No idea how to remove the envar</p>",
+        "id": 289527749,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1657750240
+    },
+    {
+        "content": "<p>Thanks for giving it a shot!</p>",
+        "id": 289527959,
+        "sender_full_name": "mbaz",
+        "timestamp": 1657750383
+    },
+    {
+        "content": "<p>Hm, <code>exiv2</code> is not doing what it's supposed to do when I run it like this. Everything looks fine, though.</p>",
+        "id": 289528817,
+        "sender_full_name": "mbaz",
+        "timestamp": 1657751023
+    },
+    {
+        "content": "<p>Anyway, I found a workaround (I can write the command to a temporary file and point <code>exiv2</code> to it). I think I'll open an issue, though; Julia should be able to handle this syntax.</p>",
+        "id": 289528907,
+        "sender_full_name": "mbaz",
+        "timestamp": 1657751070
+    },
+    {
+        "content": "<p>I see your frustration</p>",
+        "id": 289529087,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1657751194
+    },
+    {
+        "content": "<p><code>Cmd([\"exiv2 -M\\\"set Xmp.dc.title lang=en-US Hello\\\" /home/mfiano/Temp/test.png\"])</code></p>",
+        "id": 289529103,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1657751205
+    },
+    {
+        "content": "<p>I mean those damn single quotes</p>",
+        "id": 289529119,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1657751218
+    },
+    {
+        "content": "<p>I just spent a half hour trying to figure it out. It seems Julia is trying to be too clever with its interpolation. Inserting a backslash to escape a double quote automatically places the whole string in single quotes, which is not a valid command.</p>",
+        "id": 289530625,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1657752300
+    },
+    {
+        "content": "<p>Yep, that's it.</p>",
+        "id": 289533343,
+        "sender_full_name": "mbaz",
+        "timestamp": 1657754180
+    },
+    {
+        "content": "<p>Please file an issue!</p>",
+        "id": 289570047,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1657791429
+    },
+    {
+        "content": "<p>FWIW, in this specific case you can also call <code>exiv2</code> with</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">run</span><span class=\"p\">(</span><span class=\"sb\">`exiv2 \"-Mset Exif.Photo.UserComment My Photo 333\" transport.png`</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"n\">Process</span><span class=\"p\">(</span><span class=\"sb\">`exiv2 '-Mset Exif.Photo.UserComment My Photo 333' transport.png`</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">ProcessExited</span><span class=\"p\">(</span><span class=\"mi\">0</span><span class=\"p\">))</span><span class=\"w\"></span>\n\n<span class=\"n\">shell</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">exiv2</span><span class=\"w\"> </span><span class=\"n\">transport</span><span class=\"o\">.</span><span class=\"n\">png</span><span class=\"w\"></span>\n<span class=\"o\">...</span><span class=\"w\"></span>\n<span class=\"n\">Exif</span><span class=\"w\"> </span><span class=\"n\">comment</span><span class=\"w\">    </span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"n\">My</span><span class=\"w\"> </span><span class=\"n\">Photo</span><span class=\"w\"> </span><span class=\"mi\">333</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 289579618,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1657798176
+    },
+    {
+        "content": "<p>actually, what's the command that's failing for you?</p>",
+        "id": 289579764,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1657798255
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">run</span><span class=\"p\">(</span><span class=\"sb\">`exiv2 -M\"set Exif.Photo.UserComment My Photo3\" transport.png`</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"n\">Process</span><span class=\"p\">(</span><span class=\"sb\">`exiv2 '-Mset Exif.Photo.UserComment My Photo3' transport.png`</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">ProcessExited</span><span class=\"p\">(</span><span class=\"mi\">0</span><span class=\"p\">))</span><span class=\"w\"></span>\n</code></pre></div>\n<p>also works fine for me</p>",
+        "id": 289579785,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1657798268
+    },
+    {
+        "content": "<p>I think I was confused by Julia eliding the <code>\"</code>s:</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"sb\">`exiv2 -M\"set Exif.Photo.UserComment My Photo3\" image.jpg`</span><span class=\"w\"></span>\n<span class=\"go\">`exiv2 '-Mset Exif.Photo.UserComment My Photo3' image.jpg`</span>\n</code></pre></div>\n<p>I assumed this would fail. So I tried this:</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">run</span><span class=\"p\">(</span><span class=\"sb\">`exiv2 -M\\\"set Exif.Photo.UserComment My Photo3\\\" image.jpg`</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"go\">-M option 1: Invalid command line:</span>\n<span class=\"go\">exiv2: Error parsing -M option arguments</span>\n<span class=\"go\">Usage: exiv2 [ options ] [ action ] file ...</span>\n\n<span class=\"go\">Manipulate the Exif metadata of images.</span>\n<span class=\"gr\">ERROR: failed process: Process(`exiv2 '-M\"set' Exif.Photo.UserComment My 'Photo3\"' image.jpg`, ProcessExited(1)) [1]</span>\n</code></pre></div>\n<p>and I think from here I went down a rabbit hole instead of just doing the simplest thing, running the original command <span aria-label=\"sweat smile\" class=\"emoji emoji-1f605\" role=\"img\" title=\"sweat smile\">:sweat_smile:</span></p>",
+        "id": 289595283,
+        "sender_full_name": "mbaz",
+        "timestamp": 1657807110
+    },
+    {
+        "content": "<p>yeah, Cmd printing is very confusing</p>",
+        "id": 289595363,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1657807150
+    },
+    {
+        "content": "<p>Julia tries to be too smart for its own good</p>",
+        "id": 289595380,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1657807158
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"345789\">mbaz</span> has marked this topic as resolved.</p>",
+        "id": 289595450,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1657807197
+    }
+]

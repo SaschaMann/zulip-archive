@@ -1,0 +1,146 @@
+[
+    {
+        "content": "<p>What is <code>f</code> here:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">str</span> <span class=\"o\">=</span> <span class=\"s\">\"some long string possibly with Unicode characters\"</span>\n<span class=\"n\">trunc_str</span> <span class=\"o\">=</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">str</span><span class=\"p\">)</span>\n<span class=\"nd\">@assert</span> <span class=\"n\">textwidth</span><span class=\"p\">(</span><span class=\"n\">str</span><span class=\"p\">)</span> <span class=\"o\">==</span> <span class=\"n\">X</span>\n</code></pre></div>\n<p>x-ref <a href=\"https://github.com/JuliaLogging/LoggingFormats.jl/pull/1#discussion_r709108623\">https://github.com/JuliaLogging/LoggingFormats.jl/pull/1#discussion_r709108623</a></p>",
+        "id": 253400851,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1631706986
+    },
+    {
+        "content": "<p>modify <a href=\"https://github.com/julia-vscode/julia-vscode/blob/6b43cb7203e0152d5a727947292b8b302715748c/scripts/packages/VSCodeServer/src/misc.jl#L87-L102\">https://github.com/julia-vscode/julia-vscode/blob/6b43cb7203e0152d5a727947292b8b302715748c/scripts/packages/VSCodeServer/src/misc.jl#L87-L102</a> to <code>i += textwidth(c)</code>, maybe?</p>",
+        "id": 253411402,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1631711910
+    },
+    {
+        "content": "<p>Maybe something like this?</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">widthtrunc</span><span class=\"p\">(</span><span class=\"n\">str</span><span class=\"p\">,</span> <span class=\"n\">N</span><span class=\"p\">)</span>\n    <span class=\"n\">i</span> <span class=\"o\">=</span> <span class=\"mi\">1</span>\n    <span class=\"n\">w1</span> <span class=\"o\">=</span> <span class=\"mi\">0</span>\n    <span class=\"k\">while</span> <span class=\"n\">i</span> <span class=\"o\">&lt;</span> <span class=\"n\">ncodeunits</span><span class=\"p\">(</span><span class=\"n\">str</span><span class=\"p\">)</span>\n        <span class=\"n\">c</span> <span class=\"o\">=</span> <span class=\"n\">str</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span>\n        <span class=\"n\">w1</span> <span class=\"o\">+=</span> <span class=\"n\">textwidth</span><span class=\"p\">(</span><span class=\"n\">c</span><span class=\"p\">)</span>\n        <span class=\"n\">w1</span> <span class=\"o\">&gt;=</span> <span class=\"n\">N</span> <span class=\"o\">&amp;&amp;</span> <span class=\"k\">break</span>\n        <span class=\"n\">i</span> <span class=\"o\">=</span> <span class=\"n\">nextind</span><span class=\"p\">(</span><span class=\"n\">str</span><span class=\"p\">,</span> <span class=\"n\">i</span><span class=\"p\">)</span>\n    <span class=\"k\">end</span>\n\n    <span class=\"n\">i</span> <span class=\"o\">=</span> <span class=\"n\">i</span> <span class=\"o\">&gt;=</span> <span class=\"n\">ncodeunits</span><span class=\"p\">(</span><span class=\"n\">str</span><span class=\"p\">)</span> <span class=\"o\">?</span> <span class=\"n\">prevind</span><span class=\"p\">(</span><span class=\"n\">str</span><span class=\"p\">,</span> <span class=\"n\">i</span><span class=\"p\">)</span> <span class=\"o\">:</span> <span class=\"n\">i</span>\n\n    <span class=\"k\">return</span> <span class=\"n\">str</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">i</span><span class=\"p\">]</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">widthtrunc</span><span class=\"p\">(</span><span class=\"s\">\"h⛵αβ\"</span><span class=\"p\">,</span> <span class=\"mi\">4</span><span class=\"p\">)</span>\n<span class=\"s\">\"h⛵α\"</span>\n</code></pre></div>",
+        "id": 253413301,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1631712676
+    },
+    {
+        "content": "<p>I had recently done something like this using <code>chop(str, length(str)-N)</code>  (maybe a -1 is needed too, I can't recall)</p>",
+        "id": 253421605,
+        "sender_full_name": "Keith Rutkowski",
+        "timestamp": 1631715491
+    },
+    {
+        "content": "<p>Thanks, of course a loop is one option, was just thinking if there was something more convenient. I will suggest this:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">shorten_str</span><span class=\"p\">(</span><span class=\"n\">str</span><span class=\"p\">,</span> <span class=\"n\">max_len</span><span class=\"p\">)</span>\n    <span class=\"n\">io</span> <span class=\"o\">=</span> <span class=\"kt\">IOBuffer</span><span class=\"p\">(;</span> <span class=\"n\">sizehint</span><span class=\"o\">=</span><span class=\"n\">max_len</span><span class=\"p\">)</span>\n    <span class=\"n\">len</span> <span class=\"o\">=</span> <span class=\"mi\">0</span>\n    <span class=\"k\">for</span> <span class=\"n\">c</span> <span class=\"k\">in</span> <span class=\"n\">str</span>\n        <span class=\"n\">len</span> <span class=\"o\">+=</span> <span class=\"n\">textwidth</span><span class=\"p\">(</span><span class=\"n\">c</span><span class=\"p\">)</span>\n        <span class=\"k\">if</span> <span class=\"n\">len</span> <span class=\"o\">&gt;</span> <span class=\"n\">max_len</span>\n            <span class=\"k\">break</span>\n        <span class=\"k\">end</span>\n        <span class=\"n\">print</span><span class=\"p\">(</span><span class=\"n\">io</span><span class=\"p\">,</span> <span class=\"n\">c</span><span class=\"p\">)</span>\n    <span class=\"k\">end</span>\n    <span class=\"k\">return</span> <span class=\"kt\">String</span><span class=\"p\">(</span><span class=\"n\">take!</span><span class=\"p\">(</span><span class=\"n\">io</span><span class=\"p\">))</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 253427451,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1631717590
+    },
+    {
+        "content": "<p>just iterate through the string directly, no reason to index</p>",
+        "id": 253427878,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1631717757
+    },
+    {
+        "content": "<p>True, I had that version first but then I thought I needed <code>i</code> for something, but obviously not in this final version. Edited.</p>",
+        "id": 253428387,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1631717942
+    },
+    {
+        "content": "<p><code>print</code> is relatively slow.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">widthtrunc</span><span class=\"p\">(</span><span class=\"s\">\"h⛵αβ\"</span><span class=\"p\">,</span> <span class=\"mi\">4</span><span class=\"p\">)</span>\n  <span class=\"mf\">63.938</span> <span class=\"n\">ns</span> <span class=\"p\">(</span><span class=\"mi\">1</span> <span class=\"n\">allocation</span><span class=\"o\">:</span> <span class=\"mi\">32</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n<span class=\"s\">\"h⛵α\"</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">shorten_str</span><span class=\"p\">(</span><span class=\"s\">\"h⛵αβ\"</span><span class=\"p\">,</span> <span class=\"mi\">4</span><span class=\"p\">)</span>\n  <span class=\"mf\">161.731</span> <span class=\"n\">ns</span> <span class=\"p\">(</span><span class=\"mi\">5</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">256</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n<span class=\"s\">\"h⛵α\"</span>\n</code></pre></div>\n<p>Of course, it's probably not a bottleneck function, so it doesn't really matter which one to choose.</p>\n<p>(until the moment it bottleneck)</p>",
+        "id": 253430030,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1631718472
+    },
+    {
+        "content": "<p>True, final version:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">shorten_str</span><span class=\"p\">(</span><span class=\"n\">str</span><span class=\"p\">,</span> <span class=\"n\">max_len</span><span class=\"p\">)</span>\n    <span class=\"n\">len</span> <span class=\"o\">=</span> <span class=\"mi\">0</span>\n    <span class=\"n\">ind</span> <span class=\"o\">=</span> <span class=\"mi\">1</span>\n    <span class=\"k\">for</span> <span class=\"n\">i</span> <span class=\"k\">in</span> <span class=\"n\">eachindex</span><span class=\"p\">(</span><span class=\"n\">str</span><span class=\"p\">)</span>\n        <span class=\"n\">c</span> <span class=\"o\">=</span> <span class=\"nd\">@inbounds</span> <span class=\"n\">str</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span>\n        <span class=\"n\">len</span> <span class=\"o\">+=</span> <span class=\"n\">textwidth</span><span class=\"p\">(</span><span class=\"n\">c</span><span class=\"p\">)</span>\n        <span class=\"n\">len</span> <span class=\"o\">&gt;</span> <span class=\"n\">max_len</span> <span class=\"o\">&amp;&amp;</span> <span class=\"k\">break</span>\n        <span class=\"n\">ind</span> <span class=\"o\">=</span> <span class=\"n\">i</span>\n    <span class=\"k\">end</span>\n    <span class=\"k\">return</span> <span class=\"n\">str</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">ind</span><span class=\"p\">]</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 253432962,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1631719540
+    },
+    {
+        "content": "<p>Using <code>chop</code> for this is non-allocating and <em>much</em> faster for me.</p>",
+        "id": 253456710,
+        "sender_full_name": "Keith Rutkowski",
+        "timestamp": 1631727606
+    },
+    {
+        "content": "<p>But it doesn't respect <code>textwidth</code></p>",
+        "id": 253457556,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1631727912
+    },
+    {
+        "content": "<p>Also, doesn't <code>chop</code> allocate a new string as well? If you actually want a non-allocating solution then there's always</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">shorten_str</span><span class=\"p\">(</span><span class=\"n\">str</span><span class=\"p\">,</span> <span class=\"n\">max_len</span><span class=\"p\">)</span>\n    <span class=\"n\">len</span> <span class=\"o\">=</span> <span class=\"mi\">0</span>\n    <span class=\"n\">ind</span> <span class=\"o\">=</span> <span class=\"mi\">1</span>\n    <span class=\"k\">for</span> <span class=\"n\">i</span> <span class=\"k\">in</span> <span class=\"n\">eachindex</span><span class=\"p\">(</span><span class=\"n\">str</span><span class=\"p\">)</span>\n        <span class=\"n\">c</span> <span class=\"o\">=</span> <span class=\"nd\">@inbounds</span> <span class=\"n\">str</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span>\n        <span class=\"n\">len</span> <span class=\"o\">+=</span> <span class=\"n\">textwidth</span><span class=\"p\">(</span><span class=\"n\">c</span><span class=\"p\">)</span>\n        <span class=\"n\">len</span> <span class=\"o\">&gt;</span> <span class=\"n\">max_len</span> <span class=\"o\">&amp;&amp;</span> <span class=\"k\">break</span>\n        <span class=\"n\">ind</span> <span class=\"o\">=</span> <span class=\"n\">i</span>\n    <span class=\"k\">end</span>\n    <span class=\"k\">return</span> <span class=\"kt\">SubString</span><span class=\"p\">(</span><span class=\"n\">str</span><span class=\"p\">,</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">ind</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 253461328,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1631729255
+    },
+    {
+        "content": "<p>And if you don't care about <code>textwidth</code> then you should probably be using <code>first(str, max_len)</code> anyways</p>",
+        "id": 253461769,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1631729416
+    },
+    {
+        "content": "<p><code>chop</code> does respect <code>textwidth</code>, at least the results are the same as <code>shorten_str</code>, and it seems to be faster than the SubString approach too.</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"n\">shorten</span><span class=\"p\">(</span><span class=\"n\">str</span><span class=\"p\">,</span> <span class=\"n\">max_len</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">chop</span><span class=\"p\">(</span><span class=\"n\">str</span><span class=\"p\">,</span> <span class=\"n\">tail</span> <span class=\"o\">=</span> <span class=\"n\">length</span><span class=\"p\">(</span><span class=\"n\">str</span><span class=\"p\">)</span><span class=\"o\">-</span><span class=\"p\">(</span><span class=\"n\">max_len</span><span class=\"o\">-</span><span class=\"mi\">1</span><span class=\"p\">))</span>\n<span class=\"go\">shorten (generic function with 1 method)</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">shorten_str</span><span class=\"p\">(</span><span class=\"s\">\"h⛵αβ\"</span><span class=\"p\">,</span> <span class=\"mi\">4</span><span class=\"p\">)</span>\n<span class=\"go\">  70.533 ns (0 allocations: 0 bytes)</span>\n<span class=\"go\">\"h⛵α\"</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">shorten</span><span class=\"p\">(</span><span class=\"s\">\"h⛵αβ\"</span><span class=\"p\">,</span> <span class=\"mi\">4</span><span class=\"p\">)</span>\n<span class=\"go\">  26.924 ns (0 allocations: 0 bytes)</span>\n<span class=\"go\">\"h⛵α\"</span>\n</code></pre></div>",
+        "id": 253465829,
+        "sender_full_name": "Keith Rutkowski",
+        "timestamp": 1631731089
+    },
+    {
+        "content": "<p>sure, but that's because that example string doesn't have any chars that are wider than 1 column</p>",
+        "id": 253466274,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1631731305
+    },
+    {
+        "content": "<p>It does.</p>",
+        "id": 253466784,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1631731535
+    },
+    {
+        "content": "<p>Huh, so it does</p>",
+        "id": 253466915,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1631731583
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">textwidth</span><span class=\"p\">(</span><span class=\"sc\">'⛵'</span><span class=\"p\">)</span>\n<span class=\"mi\">2</span>\n</code></pre></div>",
+        "id": 253466916,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1631731584
+    },
+    {
+        "content": "<p>It only accidentally works for that case though:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">shorten</span><span class=\"p\">(</span><span class=\"s\">\"aaaaa\"</span><span class=\"p\">,</span> <span class=\"mi\">3</span><span class=\"p\">)</span>\n<span class=\"s\">\"aa\"</span>\n</code></pre></div>",
+        "id": 253467616,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1631731879
+    },
+    {
+        "content": "<p>so no, it doesn't respect <code>textwidth</code></p>",
+        "id": 253467717,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1631731915
+    },
+    {
+        "content": "<p>Oh, that's because it calculates from the tail?</p>",
+        "id": 253467913,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1631731981
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"n\">chop</span><span class=\"p\">(</span><span class=\"s\">\"h⛵αβ\"</span><span class=\"p\">,</span> <span class=\"n\">head</span><span class=\"o\">=</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"n\">tail</span> <span class=\"o\">=</span> <span class=\"mi\">0</span><span class=\"p\">)</span>\n<span class=\"go\">\"⛵αβ\"</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">chop</span><span class=\"p\">(</span><span class=\"s\">\"h⛵αβ\"</span><span class=\"p\">,</span> <span class=\"n\">head</span><span class=\"o\">=</span><span class=\"mi\">2</span><span class=\"p\">,</span> <span class=\"n\">tail</span> <span class=\"o\">=</span> <span class=\"mi\">0</span><span class=\"p\">)</span>\n<span class=\"go\">\"αβ\"</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">chop</span><span class=\"p\">(</span><span class=\"s\">\"h⛵αβ\"</span><span class=\"p\">,</span> <span class=\"n\">head</span><span class=\"o\">=</span><span class=\"mi\">3</span><span class=\"p\">,</span> <span class=\"n\">tail</span> <span class=\"o\">=</span> <span class=\"mi\">0</span><span class=\"p\">)</span>\n<span class=\"go\">\"β\"</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">chop</span><span class=\"p\">(</span><span class=\"s\">\"h⛵αβ\"</span><span class=\"p\">,</span> <span class=\"n\">head</span><span class=\"o\">=</span><span class=\"mi\">4</span><span class=\"p\">,</span> <span class=\"n\">tail</span> <span class=\"o\">=</span> <span class=\"mi\">0</span><span class=\"p\">)</span>\n<span class=\"go\">\"\"</span>\n</code></pre></div>",
+        "id": 253468019,
+        "sender_full_name": "Keith Rutkowski",
+        "timestamp": 1631732025
+    },
+    {
+        "content": "<p>Oh, I see the problem...  the example used 4 as the max length, when it should have been 3?</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"n\">shorten</span><span class=\"p\">(</span><span class=\"n\">str</span><span class=\"p\">,</span> <span class=\"n\">max_len</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">chop</span><span class=\"p\">(</span><span class=\"n\">str</span><span class=\"p\">,</span> <span class=\"n\">tail</span> <span class=\"o\">=</span> <span class=\"n\">length</span><span class=\"p\">(</span><span class=\"n\">str</span><span class=\"p\">)</span><span class=\"o\">-</span><span class=\"n\">max_len</span><span class=\"p\">)</span>\n<span class=\"go\">shorten (generic function with 1 method)</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">shorten</span><span class=\"p\">(</span><span class=\"s\">\"aaaaa\"</span><span class=\"p\">,</span> <span class=\"mi\">3</span><span class=\"p\">)</span>\n<span class=\"go\">\"aaa\"</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">shorten</span><span class=\"p\">(</span><span class=\"s\">\"h⛵αβ\"</span><span class=\"p\">,</span> <span class=\"mi\">3</span><span class=\"p\">)</span>\n<span class=\"go\">\"h⛵α\"</span>\n</code></pre></div>",
+        "id": 253468702,
+        "sender_full_name": "Keith Rutkowski",
+        "timestamp": 1631732263
+    },
+    {
+        "content": "<p>Right and the last case is actually 4 columns wide if you ask <code>textwidth</code>:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">textwidth</span><span class=\"p\">(</span><span class=\"s\">\"h⛵α\"</span><span class=\"p\">)</span>\n<span class=\"mi\">4</span>\n</code></pre></div>",
+        "id": 253468859,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1631732316
+    }
+]

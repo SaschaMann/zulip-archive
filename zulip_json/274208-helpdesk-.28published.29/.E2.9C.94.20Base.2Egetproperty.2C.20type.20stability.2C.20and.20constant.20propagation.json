@@ -1,0 +1,98 @@
+[
+    {
+        "content": "<p>I am a bit confused how the use of <code>Base.getproperty</code> is type stable. I understand that this is due to constant propagation, but I am confused how that works in this case.</p>",
+        "id": 287652025,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1656372562
+    },
+    {
+        "content": "<p>Why can Julia figure out the type in the second case but not the first case?</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"nd\">@code_warntype</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mi\">5</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">b</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mf\">5.0</span><span class=\"p\">)</span><span class=\"o\">.</span><span class=\"n\">a</span><span class=\"w\"></span>\n<span class=\"go\">MethodInstance for getproperty(::NamedTuple{(:a, :b), Tuple{Int64, Float64}}, ::Symbol)</span>\n<span class=\"go\">  from getproperty(x, f::Symbol) in Base at Base.jl:42</span>\n<span class=\"go\">Arguments</span>\n<span class=\"go\">  #self#::Core.Const(getproperty)</span>\n<span class=\"go\">  x::NamedTuple{(:a, :b), Tuple{Int64, Float64}}</span>\n<span class=\"go\">  f::Symbol</span>\n<span class=\"go\">Body::Union{Float64, Int64}</span>\n<span class=\"go\">1 ─      nothing</span>\n<span class=\"go\">│   %2 = Base.getfield(x, f)::Union{Float64, Int64}</span>\n<span class=\"go\">└──      return %2</span>\n\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"nd\">@code_warntype</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">-&gt;</span><span class=\"n\">x</span><span class=\"o\">.</span><span class=\"n\">a</span><span class=\"p\">)((</span><span class=\"n\">a</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mi\">5</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">b</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mf\">5.0</span><span class=\"p\">))</span><span class=\"w\"></span>\n<span class=\"go\">MethodInstance for (::var\"#21#22\")(::NamedTuple{(:a, :b), Tuple{Int64, Float64}})</span>\n<span class=\"go\">  from (::var\"#21#22\")(x) in Main at REPL[36]:1</span>\n<span class=\"go\">Arguments</span>\n<span class=\"go\">  #self#::Core.Const(var\"#21#22\"())</span>\n<span class=\"go\">  x::NamedTuple{(:a, :b), Tuple{Int64, Float64}}</span>\n<span class=\"go\">Body::Int64</span>\n<span class=\"go\">1 ─ %1 = Base.getproperty(x, :a)::Int64</span>\n<span class=\"go\">└──      return %1</span>\n</code></pre></div>",
+        "id": 287652491,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1656372859
+    },
+    {
+        "content": "<p>That is a really good question. I've been staring at this for 5 minutes with my compiler theory background, and I'd expect the latter to have a more difficult time. I'm fairly new to Julia's compiler, only looked at certain parts of it, but it seems like this deserves an issue the harder I stare at it.</p>",
+        "id": 287653180,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656373404
+    },
+    {
+        "content": "<p>My rough understanding is that in the first case we're looking at <code>Base.getproperty</code> itself. In the second case, we've wrapped it into an anonymous function. By wrapping it into an anonymous function, we've allowed constant propagation to occur.</p>\n<p>Is there a special case within the compiler  for<code>Base.getproperty</code> that triggers constant propagation within a function? Is it important that we are using a symbol?</p>",
+        "id": 287653671,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1656373759
+    },
+    {
+        "content": "<p>The only real difference is the former is in the toplevel lexical environment, and the latter is in the lexical environment of the function., but they are both immutable constants and should be stack/register allocated, so this is weird.</p>",
+        "id": 287653706,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656373785
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"269582\">@Mark Kittisopikul</span> <a href=\"https://discourse.julialang.org/t/unexpected-type-instability-with-getproperty-but-not-setproperty/26975/15\">https://discourse.julialang.org/t/unexpected-type-instability-with-getproperty-but-not-setproperty/26975/15</a></p>",
+        "id": 287654434,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656374356
+    },
+    {
+        "content": "<p>Yes, I've been reading that. I think I see what Kristoffer is saying now after reading it for the 5th time though.</p>",
+        "id": 287654651,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1656374480
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"nd\">@macroexpand</span><span class=\"w\"> </span><span class=\"nd\">@code_warntype</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mi\">5</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">b</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mf\">5.0</span><span class=\"p\">)</span><span class=\"o\">.</span><span class=\"n\">a</span><span class=\"w\"></span>\n<span class=\"o\">:</span><span class=\"p\">(</span><span class=\"n\">InteractiveUtils</span><span class=\"o\">.</span><span class=\"n\">code_warntype</span><span class=\"p\">(</span><span class=\"n\">getproperty</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">typesof</span><span class=\"p\">)((</span><span class=\"n\">a</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mi\">5</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">b</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mf\">5.0</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"ss\">:a</span><span class=\"p\">)))</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 287654699,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1656374503
+    },
+    {
+        "content": "<p>I am trying to make sense of it still. It seems to be just how @code_warntype is implemented. Maybe try looking at the lowered or native code of both?</p>",
+        "id": 287654728,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656374520
+    },
+    {
+        "content": "<p>Cthulhu might come in really handy here</p>",
+        "id": 287654981,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656374648
+    },
+    {
+        "content": "<p>In the first case, we are just asking for result of giving <code>getproperty</code> a <code>NamedTuple</code> and a <code>Symbol</code>. There is no constant <code>:a</code> to propagate.</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">InteractiveUtils</span><span class=\"o\">.</span><span class=\"n\">code_warntype</span><span class=\"p\">(</span><span class=\"n\">getproperty</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"kt\">NamedTuple</span><span class=\"p\">{(</span><span class=\"ss\">:a</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"ss\">:b</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Float64</span><span class=\"p\">}},</span><span class=\"w\"> </span><span class=\"kt\">Symbol</span><span class=\"p\">})</span><span class=\"w\"></span>\n<span class=\"go\">MethodInstance for getproperty(::NamedTuple{(:a, :b), Tuple{Int64, Float64}}, ::Symbol)</span>\n<span class=\"go\">  from getproperty(x, f::Symbol) in Base at Base.jl:42</span>\n<span class=\"go\">Arguments</span>\n<span class=\"go\">  #self#::Core.Const(getproperty)</span>\n<span class=\"go\">  x::NamedTuple{(:a, :b), Tuple{Int64, Float64}}</span>\n<span class=\"go\">  f::Symbol</span>\n<span class=\"go\">Body::Union{Float64, Int64}</span>\n<span class=\"go\">1 ─      nothing</span>\n<span class=\"go\">│   %2 = Base.getfield(x, f)::Union{Float64, Int64}</span>\n<span class=\"go\">└──      return %2</span>\n</code></pre></div>",
+        "id": 287655033,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1656374703
+    },
+    {
+        "content": "<p>Aye. This seems to be another case of \"prefer functions over toplevel data\"</p>",
+        "id": 287655302,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656374900
+    },
+    {
+        "content": "<p>Yeah, put the second into a function but with <code>.a</code> as a constant, and it'll propagate just fine.</p>",
+        "id": 287662151,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1656382007
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269582\">Mark Kittisopikul</span> has marked this topic as resolved.</p>",
+        "id": 287671488,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1656392979
+    },
+    {
+        "content": "<p>I learned something here. I still want to explore the bounds of how this works, but I think I understand more than when I did several hours ago.</p>",
+        "id": 287671546,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1656393029
+    },
+    {
+        "content": "<p>\"don't benchmark in global scope\" really should be \"don't inspect compiler optimizations in global scope\" <span aria-label=\"thinking\" class=\"emoji emoji-1f914\" role=\"img\" title=\"thinking\">:thinking:</span> if it requires constant prop, you need a compiled context to propagate in, which only happens in functions</p>",
+        "id": 287761096,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656442907
+    }
+]

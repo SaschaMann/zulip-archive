@@ -1,0 +1,416 @@
+[
+    {
+        "content": "<p>Can someone explain to a beginner what the macro constructors are doing at compile time? The generator function evaluated at compile time seems to be doing mostly type checking. I'm curious if it also evaluates the element-wise expressions at compile time, or what it is trying to solve: <a href=\"https://github.com/JuliaArrays/StaticArrays.jl/blob/master/src/SMatrix.jl\">https://github.com/JuliaArrays/StaticArrays.jl/blob/master/src/SMatrix.jl</a></p>\n<p>(I am so not used to Julian macros yet coming from the land of Lisp where I can write a complicated macro in my sleep [and actually have before <span aria-label=\"smile\" class=\"emoji emoji-1f642\" role=\"img\" title=\"smile\">:smile:</span>])</p>",
+        "id": 287605730,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656348538
+    },
+    {
+        "content": "<p><code>@macroexpand</code> is your best friend when it comes to understanding Julia macros.</p>",
+        "id": 287611697,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1656351288
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"nd\">@macroexpand</span><span class=\"w\"> </span><span class=\"nd\">@SVector</span><span class=\"w\"> </span><span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">3</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"go\">:(rand((SVector){3}))</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"nd\">@macroexpand</span><span class=\"w\"> </span><span class=\"nd\">@SVector</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">3</span><span class=\"p\">]</span><span class=\"w\"></span>\n<span class=\"go\">:((SVector){3}(tuple(1, 2, 3)))</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"nd\">@macroexpand</span><span class=\"w\"> </span><span class=\"nd\">@SMatrix</span><span class=\"w\"> </span><span class=\"n\">randn</span><span class=\"p\">(</span><span class=\"kt\">Float32</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">3</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"go\">:(randn((SMatrix){2, 3, Float32}))</span>\n</code></pre></div>",
+        "id": 287611800,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1656351336
+    },
+    {
+        "content": "<p>Yes I tried that, but I'm not sure what it is doing apart from the obvious syntactical abstraction.</p>",
+        "id": 287611907,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656351382
+    },
+    {
+        "content": "<p>that's all a julia macro is though</p>",
+        "id": 287612127,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656351507
+    },
+    {
+        "content": "<p>just an AST transform</p>",
+        "id": 287612133,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656351511
+    },
+    {
+        "content": "<p>Oh in Lisp macros are for 2 things, that being 1 of them.</p>",
+        "id": 287612147,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656351527
+    },
+    {
+        "content": "<p>what's the other?</p>",
+        "id": 287612153,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656351535
+    },
+    {
+        "content": "<p>Evaluation control</p>",
+        "id": 287612211,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656351579
+    },
+    {
+        "content": "<p>in what sense?</p>",
+        "id": 287612298,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656351615
+    },
+    {
+        "content": "<p>sorry, not too familiar with common lisp :)</p>",
+        "id": 287612314,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656351627
+    },
+    {
+        "content": "<p>Well suppose you had a function that took complex math expressions as arguments, but enough information is available to compute them at compile time. Or the opposite, deferring them until later.</p>",
+        "id": 287612374,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656351660
+    },
+    {
+        "content": "<p>yeah, that doesn't really fit into julias compilation model</p>",
+        "id": 287612520,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656351737
+    },
+    {
+        "content": "<p>restricting when and how <code>eval</code> works is a big part of what allows julia to be a compiled language in the first place</p>",
+        "id": 287612571,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656351767
+    },
+    {
+        "content": "<p>unlike LISP, in julia there's a clear difference between the expression object and the runtime objects described by that expression</p>",
+        "id": 287612618,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656351796
+    },
+    {
+        "content": "<p>julias macros run just after parsing, where no values are assigned to variables yet (except for literals of course)</p>",
+        "id": 287612670,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656351822
+    },
+    {
+        "content": "<p>Ah ok. In Lisp each phase of the compiler, the Read (parser), Eval (compiler), Print[er] are recursive in that they can call any other phase.</p>",
+        "id": 287612677,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656351829
+    },
+    {
+        "content": "<p>yes, the famous homoiconicity part of LISP allows that</p>",
+        "id": 287612744,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656351846
+    },
+    {
+        "content": "<p>No, that has nothing to do with homoiconicity</p>",
+        "id": 287612767,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656351859
+    },
+    {
+        "content": "<p>That is called a meta-circular evaluator.</p>",
+        "id": 287612787,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656351867
+    },
+    {
+        "content": "<p>Homoiconicity just means that the internal AST representation is identical to the suface syntax of the language.</p>",
+        "id": 287612864,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656351908
+    },
+    {
+        "content": "<p>hmm, yes, but I was trying to span a bridge from that property to LISP macros deferring the interpretation of the expression until some later date</p>",
+        "id": 287613005,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656351975
+    },
+    {
+        "content": "<p>I suppose you could have the laziness without homoiconicity, but it wouldn't be as nice anymore <span aria-label=\"thinking\" class=\"emoji emoji-1f914\" role=\"img\" title=\"thinking\">:thinking:</span></p>",
+        "id": 287613040,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656351999
+    },
+    {
+        "content": "<p>The deferral is just a special case of the 1st case (syntactic abstraction). The eager evaluation is the second case</p>",
+        "id": 287613064,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656352018
+    },
+    {
+        "content": "<p>right</p>",
+        "id": 287613077,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656352031
+    },
+    {
+        "content": "<p>After all, to defer, you just have to expand into a closure/thunk</p>",
+        "id": 287613091,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656352035
+    },
+    {
+        "content": "<p>there's no eager evaluation in julia, by design :)</p>",
+        "id": 287613093,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656352035
+    },
+    {
+        "content": "<p>you can sort of mimic it, but you can't evaluate code in the context of e.g. a local function</p>",
+        "id": 287613133,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656352059
+    },
+    {
+        "content": "<p>I see</p>",
+        "id": 287613140,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656352062
+    },
+    {
+        "content": "<p><code>eval</code> always happens at global scope</p>",
+        "id": 287613147,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656352068
+    },
+    {
+        "content": "<p>Hmm, in my startup.jl I am using @eval inside a function.</p>",
+        "id": 287613232,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656352090
+    },
+    {
+        "content": "<p>oh you can use it in a function, but the code will be evaluated at the top level, not in the scope of the function</p>",
+        "id": 287613385,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656352180
+    },
+    {
+        "content": "<p>you e.g. can't <code>eval</code> a new variable into a function, for example</p>",
+        "id": 287613418,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656352196
+    },
+    {
+        "content": "<p>Interesting. I guess that expains why there are no macrolet's or symbol macros, or compiler macros, only regular macros.</p>",
+        "id": 287613536,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656352236
+    },
+    {
+        "content": "<p>not sure what those are, but yeah, that's in part why macros are just AST transforms</p>",
+        "id": 287613634,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656352300
+    },
+    {
+        "content": "<p>I can really recommend Jeff's Phd thesis, explaining the whole world age mechanism that allows for this</p>",
+        "id": 287613661,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656352318
+    },
+    {
+        "content": "<p><a href=\"https://github.com/JeffBezanson/phdthesis\">https://github.com/JeffBezanson/phdthesis</a></p>",
+        "id": 287613734,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656352347
+    },
+    {
+        "content": "<p>macrolet is the equivalent of a lexically scoped (local macro), like let, but for binding macros instead of variables.<br>\nsymbol macros are for expanding plain old variables instead of expressions into compound forms.<br>\ncompiler macros are attached to functions to have them expand or not expand into more efficient code based on the lexical environment they are surrounded in</p>",
+        "id": 287613865,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656352420
+    },
+    {
+        "content": "<p>anyway, I am getting off-topic again <span aria-label=\"sweat smile\" class=\"emoji emoji-1f605\" role=\"img\" title=\"sweat smile\">:sweat_smile:</span></p>",
+        "id": 287613891,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656352432
+    },
+    {
+        "content": "<p>not sure why you'd need to bind macros differently <span aria-label=\"thinking\" class=\"emoji emoji-1f914\" role=\"img\" title=\"thinking\">:thinking:</span> with symbol macros, are you referring to expanding the object/expression a variable is/was assigned from (represents?) into its original form?</p>",
+        "id": 287614297,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656352614
+    },
+    {
+        "content": "<p>haha, it's fine</p>",
+        "id": 287614311,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656352621
+    },
+    {
+        "content": "<p>Oh and I forgot reader macros, which are expanded early on by the parser. <code>(</code> for example is a reader macro.</p>",
+        "id": 287614316,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656352622
+    },
+    {
+        "content": "<p>Forget what I said about variables. I meant symbols. you could have <code>:foo</code>, whenever encounterd in source code to expand into <code>call_something(x, y, z)</code>. There are both global and lexical variants of these.</p>",
+        "id": 287614555,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656352716
+    },
+    {
+        "content": "<p>and variable bindings would shadow them if they are introduced in an inner scope, or vice versa if using local symbol macros.</p>",
+        "id": 287614647,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656352774
+    },
+    {
+        "content": "<p>in julia, that would just be a <code>@foo</code> macro that doesn't take any arguments, returning the expression <code>:(call_something(x,y,z))</code></p>",
+        "id": 287614767,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656352819
+    },
+    {
+        "content": "<p>Lisp macros do pretty much everything. In Julia though, we rely much less on them as the interface abstractions  (I love iterators) are just great.</p>",
+        "id": 287614793,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656352831
+    },
+    {
+        "content": "<p>though they wouldn't be shadowed, since <code>@foo</code> is always parsed as a macro call and can't be an identifier</p>",
+        "id": 287614886,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656352873
+    },
+    {
+        "content": "<p>It's a bit different than a nullary regular macro. They don't map the same. But I will let you breathe a bit <span aria-label=\"smile\" class=\"emoji emoji-1f642\" role=\"img\" title=\"smile\">:smile:</span></p>",
+        "id": 287614923,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656352893
+    },
+    {
+        "content": "<p>if you like iterators, I think you may enjoy the most underused interface Base has to offer - the <code>Sampler</code> API in <code>Random</code></p>",
+        "id": 287614966,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656352916
+    },
+    {
+        "content": "<p>the docs are a little dense, but once you figure it out - they're very nice</p>",
+        "id": 287615036,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656352934
+    },
+    {
+        "content": "<p>I looked at that today. Pretty cool stuff.</p>",
+        "id": 287615040,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656352936
+    },
+    {
+        "content": "<p>Lisp is like Haskell in that it is a community of a bunch of people working independently trying to bend the language to do interesting things due to how flexibile it is. As a result, nobody works together, and we have a bunch of single developers just writing papers and cool language extensions. They don't work together because well, macros being so flexible means that it is often much easier to re-implement an existing library than to take the time to try to understand the original author's convoluted macro code. After all, code is just a projection of one's own thought processes, and Lisp lets you model code the way you think.</p>",
+        "id": 287615543,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656353177
+    },
+    {
+        "content": "<p>haha yeah I get that</p>",
+        "id": 287615622,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656353236
+    },
+    {
+        "content": "<p>I've spent quite a lot of time implementing a julia property based testing framework based on a single haskell blog post about Hedgehog</p>",
+        "id": 287615665,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656353263
+    },
+    {
+        "content": "<p>It's both a blessing and a curse. I am tired of it to be honest. I've been using it exclusively for about 20 years.</p>",
+        "id": 287615677,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656353269
+    },
+    {
+        "content": "<p>Yeah, I saw your property based testing framework.</p>",
+        "id": 287615753,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656353292
+    },
+    {
+        "content": "<p>docs are coming along, but I think there may be some breaking changes sometime.. I'm not quite happy with the experience yet</p>",
+        "id": 287615800,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656353327
+    },
+    {
+        "content": "<p>With Lisp I feel like I am working backwards, always having to implement my own stuff, because of the above. The plus side is, that the language standard is so well designed that it hasn't ever needed to change. Code from the 60's still runs on modern implementations for example.</p>",
+        "id": 287615895,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656353392
+    },
+    {
+        "content": "<p>But I had enough of it. I want to feel productive again, even if it means throwing away my life's work.</p>",
+        "id": 287615971,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656353412
+    },
+    {
+        "content": "<p>Ah well good luck on it. By the way, what else do you work on? I'm curious since you are the only other Julia developer I know that only has a general CS background.</p>",
+        "id": 287616269,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656353551
+    },
+    {
+        "content": "<p>I'm trying to finish my bachelor's thesis <span aria-label=\"joy\" class=\"emoji emoji-1f602\" role=\"img\" title=\"joy\">:joy:</span></p>",
+        "id": 287616340,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656353582
+    },
+    {
+        "content": "<p>but I procrastinate too much with other cool julia stuff</p>",
+        "id": 287616359,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656353594
+    },
+    {
+        "content": "<p>Aha.</p>",
+        "id": 287616393,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656353609
+    },
+    {
+        "content": "<p>It looks like I've been dabbling with Julia on and off for 7 years already. I first started playing with it when <span class=\"user-mention\" data-user-id=\"359511\">@Tamas K. Papp</span> moved from CL to Julia, and I wanted to ever since, but I was in the midst of a years-long project until recently.</p>",
+        "id": 287616679,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656353753
+    },
+    {
+        "content": "<p><a href=\"https://tamaspapp.eu/post/common-lisp-to-julia/\">https://tamaspapp.eu/post/common-lisp-to-julia/</a></p>",
+        "id": 287617095,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656353962
+    },
+    {
+        "content": "<p>I don't agree with every point he makes, especially 7 years later, but it does bring up a lot of good points. I am no data scientist though.</p>",
+        "id": 287617283,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656354043
+    },
+    {
+        "content": "<blockquote>\n<p>The equivalent of reader macros are called non-standard string literals in Julia.</p>\n</blockquote>\n<p><del>Sadly the link to the Julia docs is dead, and the new Metaprogramming chapter doesn't have a section on them, so I don't know if they are user-extensible or not.</del></p>",
+        "id": 287617543,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656354169
+    },
+    {
+        "content": "<p>Oh it does. I was looking in the wrong place.</p>",
+        "id": 287617659,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656354220
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"374994\">Michael Fiano</span> has marked this topic as resolved.</p>",
+        "id": 287620507,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1656355521
+    }
+]

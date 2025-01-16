@@ -1,0 +1,92 @@
+[
+    {
+        "content": "<p>Is there a way to get something as nice as</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">x</span><span class=\"p\">[</span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">.&lt;=</span><span class=\"w\"> </span><span class=\"n\">maximum</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"o\">/</span><span class=\"mi\">4</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">.=</span><span class=\"w\"> </span><span class=\"mf\">0.0</span>\n</code></pre></div>\n<p>with the same performance as</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">cutoff</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">maximum</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"o\">/</span><span class=\"mi\">4</span>\n<span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">i</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">eachindex</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"k\">if</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">&lt;=</span><span class=\"w\"> </span><span class=\"n\">cutoff</span>\n<span class=\"w\">        </span><span class=\"n\">x</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mf\">0.0</span>\n<span class=\"w\">    </span><span class=\"k\">end</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>?</p>\n<p>I see about a 2x performance hit from the first and 3 allocations (which surprised me, I was expecting one from the comparison)</p>",
+        "id": 411352733,
+        "sender_full_name": "Nils",
+        "timestamp": 1704454104
+    },
+    {
+        "content": "<p>I don't think the dots fuse across indexing like that</p>",
+        "id": 411356299,
+        "sender_full_name": "Sukera",
+        "timestamp": 1704455791
+    },
+    {
+        "content": "<p>so might be resolved with a <code>@views</code></p>",
+        "id": 411356319,
+        "sender_full_name": "Sukera",
+        "timestamp": 1704455801
+    },
+    {
+        "content": "<p>the result of the comparison will still be allocated though</p>",
+        "id": 411356358,
+        "sender_full_name": "Sukera",
+        "timestamp": 1704455819
+    },
+    {
+        "content": "<p>I'm actually kinda surprised that julia doesn't support a generator as an index</p>",
+        "id": 411362394,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1704457990
+    },
+    {
+        "content": "<p>then you could write this as something like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">x</span><span class=\"p\">[(</span><span class=\"n\">i</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">i</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">eachindex</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">if</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">&lt;=</span><span class=\"w\"> </span><span class=\"n\">maximum</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"o\">/</span><span class=\"mi\">4</span><span class=\"p\">)]</span><span class=\"w\"> </span><span class=\"o\">.=</span><span class=\"w\"> </span><span class=\"mf\">0.0</span>\n</code></pre></div>",
+        "id": 411362561,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1704458072
+    },
+    {
+        "content": "<p>I think the both cleanest(?) and most performant way to do this would be</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">.=</span><span class=\"w\"> </span><span class=\"n\">ifelse</span><span class=\"o\">.</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">.&lt;=</span><span class=\"w\"> </span><span class=\"n\">maximum</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"o\">/</span><span class=\"mi\">4</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mf\">0.0</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 411364146,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1704458787
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">f1</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"p\">[</span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">.&lt;=</span><span class=\"w\"> </span><span class=\"n\">maximum</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"o\">/</span><span class=\"mi\">4</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">.=</span><span class=\"w\"> </span><span class=\"mf\">0.0</span><span class=\"p\">;</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">f2</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"k\">let</span><span class=\"w\"> </span><span class=\"n\">cutoff</span><span class=\"o\">=</span><span class=\"n\">maximum</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"o\">/</span><span class=\"mi\">4</span>\n<span class=\"w\">           </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">i</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">eachindex</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n<span class=\"w\">               </span><span class=\"k\">if</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">&lt;=</span><span class=\"w\"> </span><span class=\"n\">cutoff</span>\n<span class=\"w\">                   </span><span class=\"n\">x</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mf\">0.0</span>\n<span class=\"w\">               </span><span class=\"k\">end</span>\n<span class=\"w\">           </span><span class=\"k\">end</span>\n<span class=\"w\">           </span><span class=\"n\">x</span>\n<span class=\"w\">       </span><span class=\"k\">end</span><span class=\"p\">;</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">f3</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">.=</span><span class=\"w\"> </span><span class=\"n\">ifelse</span><span class=\"o\">.</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">.&lt;=</span><span class=\"w\"> </span><span class=\"n\">maximum</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"o\">/</span><span class=\"mi\">4</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mf\">0.0</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"p\">);</span>\n</code></pre></div>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">N</span><span class=\"w\"> </span><span class=\"o\">∈</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">100</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">1000</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">10000</span><span class=\"p\">)</span>\n<span class=\"w\">           </span><span class=\"nd\">@show</span><span class=\"w\"> </span><span class=\"n\">N</span>\n<span class=\"w\">           </span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"n\">N</span><span class=\"p\">)</span>\n<span class=\"w\">           </span><span class=\"n\">print</span><span class=\"p\">(</span><span class=\"s\">\"f1  \"</span><span class=\"p\">);</span><span class=\"w\"> </span><span class=\"nd\">@btime</span><span class=\"w\"> </span><span class=\"n\">f1</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"n\">setup</span><span class=\"o\">=</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">N</span><span class=\"p\">))</span><span class=\"w\"> </span><span class=\"n\">evals</span><span class=\"o\">=</span><span class=\"mi\">1</span>\n<span class=\"w\">           </span><span class=\"n\">print</span><span class=\"p\">(</span><span class=\"s\">\"f2  \"</span><span class=\"p\">);</span><span class=\"w\"> </span><span class=\"nd\">@btime</span><span class=\"w\"> </span><span class=\"n\">f2</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"n\">setup</span><span class=\"o\">=</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">N</span><span class=\"p\">))</span><span class=\"w\"> </span><span class=\"n\">evals</span><span class=\"o\">=</span><span class=\"mi\">1</span>\n<span class=\"w\">           </span><span class=\"n\">print</span><span class=\"p\">(</span><span class=\"s\">\"f3  \"</span><span class=\"p\">);</span><span class=\"w\"> </span><span class=\"nd\">@btime</span><span class=\"w\"> </span><span class=\"n\">f3</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"n\">setup</span><span class=\"o\">=</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">N</span><span class=\"p\">))</span><span class=\"w\"> </span><span class=\"n\">evals</span><span class=\"o\">=</span><span class=\"mi\">1</span>\n<span class=\"w\">       </span><span class=\"k\">end</span>\n<span class=\"go\">N = 100</span>\n<span class=\"go\">f1    290.000 ns (3 allocations: 256 bytes)</span>\n<span class=\"go\">f2    130.000 ns (0 allocations: 0 bytes)</span>\n<span class=\"go\">f3    110.000 ns (0 allocations: 0 bytes)</span>\n<span class=\"go\">N = 1000</span>\n<span class=\"go\">f1    1.012 μs (4 allocations: 6.17 KiB)</span>\n<span class=\"go\">f2    671.000 ns (0 allocations: 0 bytes)</span>\n<span class=\"go\">f3    401.000 ns (0 allocations: 0 bytes)</span>\n<span class=\"go\">N = 10000</span>\n<span class=\"go\">f1    6.723 μs (5 allocations: 23.53 KiB)</span>\n<span class=\"go\">f2    4.799 μs (0 allocations: 0 bytes)</span>\n<span class=\"go\">f3    2.174 μs (0 allocations: 0 bytes)</span>\n</code></pre></div>",
+        "id": 411364266,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1704458847
+    },
+    {
+        "content": "<p>Oh wow, how is that <code>ifelse</code> thing faster?</p>",
+        "id": 411370120,
+        "sender_full_name": "Nils",
+        "timestamp": 1704461644
+    },
+    {
+        "content": "<p>Fwiw I don't see a speedup, so might be CPU dependent - in any case it's at least as fast and shorter and cleaner, so wins all round, thank you!</p>",
+        "id": 411370561,
+        "sender_full_name": "Nils",
+        "timestamp": 1704461877
+    },
+    {
+        "content": "<p>yeah, the relative performance of <code>ifelse</code> versus actual branching can be very CPU dependant</p>",
+        "id": 411371776,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1704462399
+    },
+    {
+        "content": "<p><code>ifelse</code> tends to be easier to make work with SIMD, but the branch-predictor can make branching more efficient</p>",
+        "id": 411372176,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1704462562
+    },
+    {
+        "content": "<p>could also be julia-version dependant, since it'll depend a lot on various low-level optimizations LLVM may or may not make</p>",
+        "id": 411372279,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1704462588
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Nicer.20performant.20syntax.20for.20replacing.20elements.20conditionally/near/411372279\">said</a>:</p>\n<blockquote>\n<p>could also be julia-version dependant, since it'll depend a lot on various low-level optimizations LLVM may or may not make</p>\n</blockquote>\n<p>Yeah, for me <code>f2</code> and <code>f3</code> perform about the same, both of them SIMDing thanks to LLVM.</p>",
+        "id": 411384404,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1704467338
+    },
+    {
+        "content": "<p>On my machine, if I am understanding correctly(which is a big if), f3 creates 2 main branches which both are heavily SIMDed, while f2 has one SIMDed branch with fewer instructions. So probably a better vectorization plus a better branch prediction pattern?</p>",
+        "id": 411394508,
+        "sender_full_name": "AMJ",
+        "timestamp": 1704471294
+    }
+]

@@ -1,0 +1,26 @@
+[
+    {
+        "content": "<p>I'm trying to write a loop that currently looks something like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"nd\">@avx</span> <span class=\"k\">for</span> <span class=\"n\">i</span> <span class=\"k\">in</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">2</span><span class=\"o\">:</span><span class=\"p\">(</span><span class=\"n\">length</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">)</span><span class=\"o\">-</span><span class=\"mi\">1</span><span class=\"p\">)</span>\n    <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">],</span> <span class=\"n\">a</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"o\">+</span><span class=\"mi\">1</span><span class=\"p\">]</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>What's the right way to write something like this with LoopVectorization? Is there an easy way I can tell if LoopVectorization is able to understand this loop, or if it is bailing out and just <code>@inbounds @simd</code>'ing it?</p>",
+        "id": 238846329,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1621038004
+    },
+    {
+        "content": "<p>Okay, so one approach is to just reshape <code>a</code> to a <code>2xN</code> matrix and then treat the first index special. Interestingly, I found a performance loss when I made it a <code>StaticInt(2)xN</code> matrix for some reason.</p>",
+        "id": 238848587,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1621039997
+    },
+    {
+        "content": "<p>What kind of static array</p>",
+        "id": 239161108,
+        "sender_full_name": "Zachary P Christensen",
+        "timestamp": 1621285926
+    },
+    {
+        "content": "<p>I was using a <code>PtrArray</code>. Chris identified what the problem was in <a class=\"stream-topic\" data-stream-id=\"137791\" href=\"/#narrow/stream/137791-general/topic/Working.20with.20Complex.20Numbers.20in.20LoopVectorization\">#general &gt; Working with Complex Numbers in LoopVectorization</a>. It was just that <a href=\"https://github.com/search?q=VectorizationBase.jl&amp;type=Repositories\">VectorizationBase.jl</a> was making a suboptimal choice for my CPU architecture, so he added a patch that makes it make the right choice</p>",
+        "id": 239161768,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1621286150
+    }
+]

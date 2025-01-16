@@ -1,0 +1,62 @@
+[
+    {
+        "content": "<p>I just saw this thread from <span class=\"user-mention\" data-user-id=\"273172\">@Júlio Hoffimann</span> and <span class=\"user-mention\" data-user-id=\"269150\">@Mason Protter</span> :<br>\n<a href=\"#narrow/stream/274208-helpdesk-%28published%29/topic/broadcast.20without.20length/near/229199757\">https://julialang.zulipchat.com/#narrow/stream/274208-helpdesk-%28published%29/topic/broadcast.20without.20length/near/229199757</a></p>\n<p>Starting a new thread here rather than hijack that one <span aria-label=\"smile\" class=\"emoji emoji-1f642\" role=\"img\" title=\"smile\">:smile:</span></p>\n<p>I have some places that seem like they would conceptually make sense for broadcasting, but I'm not sure about the risk of breaking things.</p>\n<p>Abstractly, I think of  broadcasting as elementwise operations over different containers. Maybe the first question is whether this is the correct interpretation.</p>\n<p>If so,</p>\n<ul>\n<li>We can think of an iterator as a generalization of an array. <code>it1</code> and <code>it2</code> may be infinite, but it's still clear what <code>it1 .* it2</code> means.</li>\n<li>If <code>f</code> and <code>g</code> are functions that take a single <code>Real</code> argument, there's an obvious interpretation of <code>f .* g</code></li>\n<li>If <code>a</code> and <code>b</code> are distributions or measures, <code>a .* b</code> is the pointwise product of distributions. In terms of the computation, this is very much like what we do when computing a posterior density.</li>\n</ul>\n<p>How broadly can we broadcast? How risky is it to extend things like this?</p>",
+        "id": 229204805,
+        "sender_full_name": "Chad Scherrer",
+        "timestamp": 1615139285
+    },
+    {
+        "content": "<p>I'd agree in all three cases that conceptually broadcast makes sense there. I think at a practical level though, I've heard Matt Bauman express that he thinks it's perhaps a bad idea to get too far away from the current broadcasting semantics because it's useful to have such a uniform interface and meaning</p>",
+        "id": 229205374,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615139840
+    },
+    {
+        "content": "<p>That said, only the second of the three really seems problematic to me (since functions <code>f</code> and <code>g</code> can have any number of weird methods)</p>",
+        "id": 229205464,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615139918
+    },
+    {
+        "content": "<p>However, If you defined some arrow types in julia (I've called these method  wrappers before), you could define e.g.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">fm</span> <span class=\"o\">=</span> <span class=\"nd\">@method</span> <span class=\"n\">f</span><span class=\"p\">(</span> <span class=\"o\">::</span><span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"o\">::</span><span class=\"n\">B</span><span class=\"p\">,</span> <span class=\"o\">::</span><span class=\"n\">C</span><span class=\"p\">)</span>\n<span class=\"n\">gm</span> <span class=\"o\">=</span> <span class=\"nd\">@method</span> <span class=\"n\">g</span><span class=\"p\">(</span> <span class=\"o\">::</span><span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"o\">::</span><span class=\"n\">D</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>at which point, I think it might be conceptually meaningful  to define</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">fm</span> <span class=\"o\">.*</span> <span class=\"n\">gm</span> <span class=\"o\">=</span> <span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"n\">b</span><span class=\"o\">::</span><span class=\"n\">B</span><span class=\"p\">,</span> <span class=\"n\">c</span><span class=\"o\">::</span><span class=\"n\">C</span><span class=\"p\">,</span> <span class=\"n\">d</span><span class=\"o\">::</span><span class=\"n\">D</span><span class=\"p\">)</span> <span class=\"o\">-&gt;</span> <span class=\"n\">fm</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">,</span> <span class=\"n\">b</span><span class=\"p\">,</span> <span class=\"n\">c</span><span class=\"p\">)</span> <span class=\"o\">*</span> <span class=\"n\">gm</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">,</span> <span class=\"n\">d</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 229205784,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615140171
+    },
+    {
+        "content": "<p>Ooohh, that makes me think of doing something like this on named tuples. Too bad that's off limits</p>",
+        "id": 229206061,
+        "sender_full_name": "Chad Scherrer",
+        "timestamp": 1615140410
+    },
+    {
+        "content": "<p>Which is really weird btw. You can define a wrapper that will act like a named tuple but allow broadcasting etc. So why isn't <code>NamedTuple</code> really just a wrapper that compiles away and has nicer syntax?</p>",
+        "id": 229206172,
+        "sender_full_name": "Chad Scherrer",
+        "timestamp": 1615140500
+    },
+    {
+        "content": "<p>The language devs couldn't decide on what semantics to assign to broadcast on dicts and named tuples, but didn't want it to hold up 1.0 or whatever, so they made it an explicit error so they could introduce it later in a non-breaking way</p>",
+        "id": 229206356,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615140643
+    },
+    {
+        "content": "<p>If broadcast on dicts and named tuples worked, then they wouldn't be able to change the meaning until at least 2.0</p>",
+        "id": 229206401,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1615140682
+    },
+    {
+        "content": "<p>Ok that makes a lot of sense, thanks</p>",
+        "id": 229209360,
+        "sender_full_name": "Chad Scherrer",
+        "timestamp": 1615143221
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"286004\">@Chad Scherrer</span> don't you really just want a nice applicative syntax? Or idiom brackets :P</p>\n<p>And then, I guess for the dicts/tuple question, it's a similar story why Haskell has separate <code>Applicative</code> instances for <code>[]</code> and <code>Zip</code>.</p>",
+        "id": 229267049,
+        "sender_full_name": "Philipp Gabler",
+        "timestamp": 1615194105
+    }
+]

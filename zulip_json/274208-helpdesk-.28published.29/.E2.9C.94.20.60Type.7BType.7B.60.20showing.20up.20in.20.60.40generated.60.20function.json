@@ -1,0 +1,164 @@
+[
+    {
+        "content": "<p>Not sure if this is a bug, but here is a MWE:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">Keys</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">NamedTuple</span><span class=\"p\">{</span><span class=\"kt\">names</span><span class=\"p\">,</span> <span class=\"kt\">data</span><span class=\"p\">}})</span> <span class=\"k\">where</span> <span class=\"p\">{</span><span class=\"kt\">names</span><span class=\"p\">,</span> <span class=\"kt\">data</span><span class=\"p\">}</span> <span class=\"o\">=</span> <span class=\"n\">names</span>\n<span class=\"nd\">@generated</span> <span class=\"k\">function</span> <span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n    <span class=\"n\">Core</span><span class=\"o\">.</span><span class=\"n\">println</span><span class=\"p\">(</span><span class=\"n\">Keys</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">))</span>\n    <span class=\"nb\">nothing</span>\n<span class=\"k\">end</span>\n\n<span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"kt\">NamedTuple</span><span class=\"p\">{(</span><span class=\"ss\">:a</span><span class=\"p\">,</span> <span class=\"ss\">:b</span><span class=\"p\">)})</span>\n</code></pre></div>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"c\">#+RESULTS:</span>\n<span class=\"kt\">MethodError</span><span class=\"o\">:</span> <span class=\"n\">no</span> <span class=\"n\">method</span> <span class=\"n\">matching</span> <span class=\"n\">Keys</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">NamedTuple</span><span class=\"p\">{(</span><span class=\"ss\">:a</span><span class=\"p\">,</span> <span class=\"ss\">:b</span><span class=\"p\">)}}})</span>\n</code></pre></div>\n<p>Anyone know what might be happening here? Should I open an issue?</p>",
+        "id": 269339842,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1643152533
+    },
+    {
+        "content": "<p>I find it very bizarre that <code>Type{Type{NamedTuple{(:a, :b)}}}</code> got constructed, that seems like a bug.</p>",
+        "id": 269339993,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1643152641
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">versioninfo</span><span class=\"p\">()</span>\n</code></pre></div>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"c\">#+RESULTS:</span>\n<span class=\"o\">:</span> <span class=\"n\">Julia</span> <span class=\"n\">Version</span> <span class=\"mf\">1.7.1</span>\n<span class=\"o\">:</span> <span class=\"n\">Commit</span> <span class=\"n\">ac5cc99908</span><span class=\"o\">*</span> <span class=\"p\">(</span><span class=\"mi\">2021</span><span class=\"o\">-</span><span class=\"mi\">12</span><span class=\"o\">-</span><span class=\"mi\">22</span> <span class=\"mi\">19</span><span class=\"o\">:</span><span class=\"mi\">35</span> <span class=\"n\">UTC</span><span class=\"p\">)</span>\n<span class=\"o\">:</span> <span class=\"n\">Platform</span> <span class=\"n\">Info</span><span class=\"o\">:</span>\n<span class=\"o\">:</span>   <span class=\"n\">OS</span><span class=\"o\">:</span> <span class=\"n\">Linux</span> <span class=\"p\">(</span><span class=\"n\">x86_64</span><span class=\"o\">-</span><span class=\"n\">pc</span><span class=\"o\">-</span><span class=\"n\">linux</span><span class=\"o\">-</span><span class=\"n\">gnu</span><span class=\"p\">)</span>\n<span class=\"o\">:</span>   <span class=\"n\">CPU</span><span class=\"o\">:</span> <span class=\"n\">AMD</span> <span class=\"n\">Ryzen</span> <span class=\"mi\">5</span> <span class=\"mi\">2600</span> <span class=\"n\">Six</span><span class=\"o\">-</span><span class=\"n\">Core</span> <span class=\"n\">Processor</span>\n<span class=\"o\">:</span>   <span class=\"n\">WORD_SIZE</span><span class=\"o\">:</span> <span class=\"mi\">64</span>\n<span class=\"o\">:</span>   <span class=\"n\">LIBM</span><span class=\"o\">:</span> <span class=\"n\">libopenlibm</span>\n<span class=\"o\">:</span>   <span class=\"n\">LLVM</span><span class=\"o\">:</span> <span class=\"n\">libLLVM</span><span class=\"o\">-</span><span class=\"mf\">12.0.1</span> <span class=\"p\">(</span><span class=\"n\">ORCJIT</span><span class=\"p\">,</span> <span class=\"n\">znver1</span><span class=\"p\">)</span>\n<span class=\"o\">:</span> <span class=\"n\">Environment</span><span class=\"o\">:</span>\n<span class=\"o\">:</span>   <span class=\"n\">JULIA_NUM_THREADS</span> <span class=\"o\">=</span> <span class=\"mi\">6</span>\n</code></pre></div>",
+        "id": 269340420,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1643152897
+    },
+    {
+        "content": "<p>That seems like the correct behavior, right?</p>",
+        "id": 269340746,
+        "sender_full_name": "Dilum Aluthge",
+        "timestamp": 1643153093
+    },
+    {
+        "content": "<p>If you call <code>foo(a)</code>, then \"inside\" the generated function, <code>x = typeof(a)</code>, right?</p>",
+        "id": 269340995,
+        "sender_full_name": "Dilum Aluthge",
+        "timestamp": 1643153281
+    },
+    {
+        "content": "<p>You called <code>foo(a)</code> where <code>a = NamedTuple</code>, and thus <code>typeof(a) = Type{NamedTuple}</code>.</p>\n<p>So inside the generated function, we have <code>x = typeof(a) = Type{NamedTuple}</code>, right?</p>\n<p>So, now, inside the generated function, you call <code>Keys(x)</code>.</p>",
+        "id": 269341495,
+        "sender_full_name": "Dilum Aluthge",
+        "timestamp": 1643153565
+    },
+    {
+        "content": "<p>If <code>x = Type{NamedTuple}</code>, and you call <code>Keys(x)</code>, then what should the type signature of that <code>Keys</code> method be?</p>\n<p>It should be <code>Keys(::Type{Type{NamedTuple}}) = ...</code>, right?</p>",
+        "id": 269341637,
+        "sender_full_name": "Dilum Aluthge",
+        "timestamp": 1643153646
+    },
+    {
+        "content": "<p>I guess I've just never experienced that before when passing types to generated functions. I thought that <code>Type</code> just existed so that we didn't get <code>DataType</code>, so I thought we didn't double wrap things in  <code>Type</code></p>",
+        "id": 269341732,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1643153719
+    },
+    {
+        "content": "<p>Well, we need to be able to distinguish between e.g. <code>foo(NamedTuple())</code> and <code>foo(NamedTuple)</code>, right?</p>",
+        "id": 269341918,
+        "sender_full_name": "Dilum Aluthge",
+        "timestamp": 1643153831
+    },
+    {
+        "content": "<p>That's not the same thing</p>",
+        "id": 269341934,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1643153844
+    },
+    {
+        "content": "<p>It'd be confusing if a <code>@generated</code> function changes its behavior when the argument is a type or not. So, I'd say the current behavior of <code>@generated</code> is correct and \"ergonomic.\"</p>",
+        "id": 269342033,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1643153900
+    },
+    {
+        "content": "<p>We generally <em>don't</em> want to distinguish between <code>Type{T}</code> and <code>T</code> when <code>T</code> is a type.</p>",
+        "id": 269342045,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1643153916
+    },
+    {
+        "content": "<p>If you know the argument is a type, you can use <code>@generated foo(::T) where {T} ...</code>. Then <code>T</code> is the same for generator code and the runtime code.</p>",
+        "id": 269342108,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1643153988
+    },
+    {
+        "content": "<p>Huh. Today I learned that <code>Core.Typeof(Type{T})</code> gives <code>Type{Type{T}}</code>. For some reason I thought I had remembered that we didn't do this</p>",
+        "id": 269342182,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1643154029
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"297129\">Takafumi Arakaki (tkf)</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/.60Type.7BType.7B.60.20showing.20up.20in.20.60.40generated.60.20function/near/269342108\">said</a>:</p>\n<blockquote>\n<p>If you know the argument is a type, you can use <code>@generated foo(::T) where {T} ...</code>. Then <code>T</code> is the same for generator code and the runtime code.</p>\n</blockquote>\n<p>Yeah, that's what I normally do, but the use case where I ran into this, I had a variable number of heterogeneous arguments so that wasn't an option.</p>",
+        "id": 269342339,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1643154130
+    },
+    {
+        "content": "<p>It is important to note that <code>T</code> and <code>Type{T}</code> are different.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"mi\">1</span> <span class=\"k\">isa</span> <span class=\"kt\">Int</span>\n<span class=\"nb\">true</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"mi\">1</span> <span class=\"k\">isa</span> <span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">Int</span><span class=\"p\">}</span>\n<span class=\"nb\">false</span>\n</code></pre></div>\n<p><code>Type{T}</code> is a type of <code>T</code></p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"kt\">Int</span> <span class=\"k\">isa</span> <span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">Int</span><span class=\"p\">}</span>\n<span class=\"nb\">true</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"kt\">Int</span> <span class=\"k\">isa</span> <span class=\"kt\">DataType</span>\n<span class=\"nb\">true</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">Int</span><span class=\"p\">}</span> <span class=\"o\">&lt;:</span> <span class=\"kt\">DataType</span>\n<span class=\"nb\">true</span>\n</code></pre></div>",
+        "id": 269342348,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1643154138
+    },
+    {
+        "content": "<p>Yeah, makes sense, thanks for the clarification</p>",
+        "id": 269342419,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1643154176
+    },
+    {
+        "content": "<p><code>Type{T}</code> is useful because it is a <em>singleton representation</em> of \"type of <code>T</code>\"</p>",
+        "id": 269342464,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1643154214
+    },
+    {
+        "content": "<p>I guess I'll need to splat the arguments, then have an inner method that I pass the arguments to as a tuple.</p>",
+        "id": 269342465,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1643154215
+    },
+    {
+        "content": "<p>Ahh... yes, I remember that vararg is a bit weird inside <code>@generated</code>. I'd probably define a function to unwrap the <code>Type</code></p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@generated</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">xs</span><span class=\"o\">...</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"p\">(</span><span class=\"k\">global</span> <span class=\"n\">XS</span> <span class=\"o\">=</span> <span class=\"n\">xs</span><span class=\"p\">;</span> <span class=\"nb\">nothing</span><span class=\"p\">);</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"kt\">Int</span><span class=\"p\">,</span> <span class=\"kt\">Nothing</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">XS</span>\n<span class=\"p\">(</span><span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">},</span> <span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">Nothing</span><span class=\"p\">})</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">instanceof</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}})</span> <span class=\"k\">where</span> <span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span> <span class=\"o\">=</span> <span class=\"n\">T</span><span class=\"p\">;</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">map</span><span class=\"p\">(</span><span class=\"n\">instanceof</span><span class=\"p\">,</span> <span class=\"n\">XS</span><span class=\"p\">)</span>\n<span class=\"p\">(</span><span class=\"kt\">Int64</span><span class=\"p\">,</span> <span class=\"kt\">Nothing</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 269342909,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1643154502
+    },
+    {
+        "content": "<p>Yeah, good idea. I'll just build that into <code>Keys</code>.</p>",
+        "id": 269343580,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1643154955
+    },
+    {
+        "content": "<p>I was fiddling again today with something <span class=\"user-mention\" data-user-id=\"278065\">@Brian Chen</span> asked about yesterday on Slack, and the part I left as an 'exercise to the reader' was a bit more frustrating than I had anticipated, so here it is in case you want it Brian. A vararg complement to <code>Base.structdiff</code> that isn't slow at runtime: </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">Keys</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"o\">&lt;:</span><span class=\"kt\">NamedTuple</span><span class=\"p\">{</span><span class=\"kt\">names</span><span class=\"p\">}})</span> <span class=\"k\">where</span> <span class=\"p\">{</span><span class=\"kt\">names</span><span class=\"p\">}</span> <span class=\"o\">=</span> <span class=\"n\">names</span>\n<span class=\"n\">Keys</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}})</span> <span class=\"k\">where</span> <span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span> <span class=\"o\">=</span> <span class=\"n\">Keys</span><span class=\"p\">(</span><span class=\"n\">T</span><span class=\"p\">)</span>\n\n<span class=\"nd\">@generated</span> <span class=\"k\">function</span> <span class=\"n\">structintersect</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">NamedTuple</span><span class=\"p\">{</span><span class=\"kt\">an</span><span class=\"p\">},</span> <span class=\"n\">rest</span><span class=\"o\">::</span><span class=\"kt\">Union</span><span class=\"p\">{</span><span class=\"kt\">NamedTuple</span><span class=\"p\">,</span> <span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"o\">&lt;:</span><span class=\"kt\">NamedTuple</span><span class=\"p\">}}</span><span class=\"o\">...</span><span class=\"p\">)</span> <span class=\"k\">where</span> <span class=\"p\">{</span><span class=\"kt\">an</span><span class=\"p\">}</span>\n    <span class=\"n\">names</span> <span class=\"o\">=</span> <span class=\"kt\">Tuple</span><span class=\"p\">(</span><span class=\"n\">intersect</span><span class=\"p\">(</span><span class=\"n\">an</span><span class=\"p\">,</span> <span class=\"n\">Keys</span><span class=\"o\">.</span><span class=\"p\">(</span><span class=\"n\">rest</span><span class=\"p\">)</span><span class=\"o\">...</span><span class=\"p\">))</span>\n    <span class=\"n\">data</span>  <span class=\"o\">=</span> <span class=\"kt\">Expr</span><span class=\"p\">(</span><span class=\"ss\">:tuple</span><span class=\"p\">,</span> <span class=\"p\">(</span><span class=\"o\">:</span><span class=\"p\">(</span><span class=\"n\">getproperty</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"p\">(</span><span class=\"kt\">QuoteNode</span><span class=\"p\">(</span><span class=\"n\">name</span><span class=\"p\">))))</span> <span class=\"k\">for</span> <span class=\"n\">name</span> <span class=\"k\">in</span> <span class=\"n\">names</span><span class=\"p\">)</span><span class=\"o\">...</span><span class=\"p\">)</span>\n    <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"kt\">NamedTuple</span><span class=\"p\">{</span><span class=\"o\">$</span><span class=\"kt\">names</span><span class=\"p\">}(</span><span class=\"o\">$</span><span class=\"n\">data</span><span class=\"p\">))</span>\n<span class=\"k\">end</span>\n\n<span class=\"n\">structintersect</span><span class=\"p\">((;</span><span class=\"n\">a</span><span class=\"o\">=</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"n\">b</span><span class=\"o\">=</span><span class=\"mi\">2</span><span class=\"p\">,</span> <span class=\"n\">c</span><span class=\"o\">=</span><span class=\"mi\">3</span><span class=\"p\">,</span> <span class=\"n\">d</span><span class=\"o\">=</span><span class=\"mi\">4</span><span class=\"p\">),</span> <span class=\"p\">(;</span><span class=\"n\">b</span><span class=\"o\">=</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"n\">c</span><span class=\"o\">=</span><span class=\"mi\">3</span><span class=\"p\">,</span> <span class=\"n\">d</span><span class=\"o\">=</span><span class=\"mi\">4</span><span class=\"p\">),</span> <span class=\"kt\">NamedTuple</span><span class=\"p\">{(</span><span class=\"ss\">:b</span><span class=\"p\">,</span> <span class=\"ss\">:d</span><span class=\"p\">)})</span>\n</code></pre></div>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"c\">#+RESULTS:</span>\n<span class=\"o\">:</span> <span class=\"p\">(</span><span class=\"n\">b</span> <span class=\"o\">=</span> <span class=\"mi\">2</span><span class=\"p\">,</span> <span class=\"n\">d</span> <span class=\"o\">=</span> <span class=\"mi\">4</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 269343742,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1643155072
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span> has marked this topic as resolved.</p>",
+        "id": 269345275,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1643155945
+    },
+    {
+        "content": "<p>Think I should bother trying to open a PR to Base with this? I suspect <code>Base.structdiff</code> only exists because they have a need to use it internally</p>",
+        "id": 269347640,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1643157701
+    },
+    {
+        "content": "<p>It would have been nice if we had a uniform dict/set API so that we could motivate this a bit better as a prerequisite of <code>intersect</code>-on-<code>NamedTuple</code></p>",
+        "id": 269352021,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1643161171
+    },
+    {
+        "content": "<p>Not that I'm against it or anything. I just don't know if it's OK or not</p>",
+        "id": 269352086,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1643161210
+    },
+    {
+        "content": "<p>That’s my feeling also.</p>",
+        "id": 269353825,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1643162850
+    }
+]

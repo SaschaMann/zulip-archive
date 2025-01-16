@@ -1,0 +1,200 @@
+[
+    {
+        "content": "<p>This works:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"o\">:</span><span class=\"p\">(</span> <span class=\"n\">x</span> <span class=\"o\">+</span> <span class=\"n\">y</span> <span class=\"p\">)</span>\n<span class=\"o\">:</span><span class=\"p\">(</span><span class=\"n\">x</span> <span class=\"o\">+</span> <span class=\"n\">y</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>I'd like to interpolate an operator instead of having a hard-coded <code>+</code>. I can do this:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">op</span> <span class=\"o\">=</span> <span class=\"o\">:+</span>\n<span class=\"o\">:+</span>\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"o\">:</span><span class=\"p\">(</span> <span class=\"o\">$</span><span class=\"n\">op</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span> <span class=\"n\">y</span><span class=\"p\">)</span> <span class=\"p\">)</span>\n<span class=\"o\">:</span><span class=\"p\">(</span><span class=\"n\">x</span> <span class=\"o\">+</span> <span class=\"n\">y</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>Is there a way to keep the <code>x op y</code> syntax? This fails:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"o\">:</span><span class=\"p\">(</span> <span class=\"n\">x</span> <span class=\"o\">$</span><span class=\"n\">op</span> <span class=\"n\">y</span> <span class=\"p\">)</span>\n<span class=\"n\">ERROR</span><span class=\"o\">:</span> <span class=\"n\">syntax</span><span class=\"o\">:</span> <span class=\"nb\">missing</span> <span class=\"n\">comma</span> <span class=\"n\">or</span> <span class=\"p\">)</span> <span class=\"k\">in</span> <span class=\"n\">argument</span> <span class=\"n\">list</span>\n</code></pre></div>",
+        "id": 281054917,
+        "sender_full_name": "mbaz",
+        "timestamp": 1651601751
+    },
+    {
+        "content": "<p>I doubt it. If it's not syntactically okay it's hard to get further. Of course you can do string interpolation and <code>Meta.parse</code> but you probably don't want that.</p>",
+        "id": 281059013,
+        "sender_full_name": "Gunnar Farnebäck",
+        "timestamp": 1651603638
+    },
+    {
+        "content": "<p>Thanks! Yes, I thought of <code>Meta.parse</code>, but basically I was just wondering if I was missing something. The manual doesn't provide clarity about this.</p>",
+        "id": 281059439,
+        "sender_full_name": "mbaz",
+        "timestamp": 1651603830
+    },
+    {
+        "content": "<p>I'm not sure  why it fails, though. My mental model (which is likely wrong) is that <code>:( x $op y )</code> is first converted to <code>:( x + y )</code>; that is, interpolation happens before further parsing of the quote. Probably parsing occurs before interpolation.</p>",
+        "id": 281059878,
+        "sender_full_name": "mbaz",
+        "timestamp": 1651604037
+    },
+    {
+        "content": "<p>It would be kinda hard to interpolate before parsing. E.g. making sense of</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">op</span> <span class=\"o\">=</span> <span class=\"p\">[</span><span class=\"o\">:+</span><span class=\"p\">,</span> <span class=\"o\">:-</span><span class=\"p\">]</span>\n<span class=\"mi\">2</span><span class=\"o\">-</span><span class=\"n\">element</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Symbol</span><span class=\"p\">}</span><span class=\"o\">:</span>\n <span class=\"o\">:+</span>\n <span class=\"o\">:-</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"p\">(</span><span class=\"n\">op</span><span class=\"p\">[</span><span class=\"mi\">2</span><span class=\"p\">])(</span><span class=\"n\">x</span><span class=\"p\">,</span> <span class=\"n\">y</span><span class=\"p\">))</span>\n<span class=\"o\">:</span><span class=\"p\">(</span><span class=\"n\">x</span> <span class=\"o\">-</span> <span class=\"n\">y</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 281072858,
+        "sender_full_name": "Gunnar Farnebäck",
+        "timestamp": 1651610008
+    },
+    {
+        "content": "<p>Couldn't it do <code>:( $(op[2])(x, y) ) -&gt; :( -(x, y) ) -&gt; :( x - y )</code>? Interpolate first, then parse.</p>",
+        "id": 281077785,
+        "sender_full_name": "mbaz",
+        "timestamp": 1651612162
+    },
+    {
+        "content": "<p>the latter two are the same though, from the parsers' POV</p>",
+        "id": 281077937,
+        "sender_full_name": "Sukera",
+        "timestamp": 1651612235
+    },
+    {
+        "content": "<p>the trouble is that <code>:( x $y z)</code> could, depending on <code>y</code>, be <code>:( -(x,z) )</code> or <code>:( x g z )</code>, which would be a syntax error</p>",
+        "id": 281078107,
+        "sender_full_name": "Sukera",
+        "timestamp": 1651612326
+    },
+    {
+        "content": "<p>so you _have_ to parse &amp; evaluate <code>y</code> before you're done parsing the outer expression, just to decide if the outer expression is valid</p>",
+        "id": 281078177,
+        "sender_full_name": "Sukera",
+        "timestamp": 1651612371
+    },
+    {
+        "content": "<p>How would it know the meaning of <code>(op[2])</code> before parsing?</p>",
+        "id": 281079301,
+        "sender_full_name": "Gunnar Farnebäck",
+        "timestamp": 1651613031
+    },
+    {
+        "content": "<p>it doesn't, but as <code>$(op[2])</code> is a complete expression already, it is free to parse &amp; evaluate that in isolation</p>",
+        "id": 281079776,
+        "sender_full_name": "Sukera",
+        "timestamp": 1651613300
+    },
+    {
+        "content": "<p>I see as similar to string interpolation: just blinldy replace tokens inside the quote (that is, replace <code>$(op[2])</code> with <code>:-</code>), then parse the resulting quote. If it is invalid, throw a syntax error, but not before.</p>",
+        "id": 281079779,
+        "sender_full_name": "mbaz",
+        "timestamp": 1651613301
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"306754\">@Sukera</span> I don't know what you mean by \"in isolation\". In both <code>:( $op(x,y) )</code> and in <code>:( x $op y )</code>, <code>$op</code> has the same value and should be parsed and evaluated identically?</p>",
+        "id": 281080018,
+        "sender_full_name": "mbaz",
+        "timestamp": 1651613426
+    },
+    {
+        "content": "<p>Clearly it is not just a parsing problem:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">op</span> <span class=\"o\">=</span> <span class=\"o\">:+</span>\n<span class=\"o\">:+</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">Meta</span><span class=\"o\">.</span><span class=\"n\">parse</span><span class=\"p\">(</span><span class=\"s\">\"x </span><span class=\"si\">$op</span><span class=\"s\"> y\"</span><span class=\"p\">)</span>\n<span class=\"o\">:</span><span class=\"p\">(</span><span class=\"n\">x</span> <span class=\"o\">+</span> <span class=\"n\">y</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 281080237,
+        "sender_full_name": "mbaz",
+        "timestamp": 1651613542
+    },
+    {
+        "content": "<p>well.. that's because <code>:()</code> is not actually an <code>Expr</code> literal?</p>",
+        "id": 281080428,
+        "sender_full_name": "Sukera",
+        "timestamp": 1651613671
+    },
+    {
+        "content": "<p>so it's not quite doing the same as what you're writing with <code>Meta.parse</code></p>",
+        "id": 281080474,
+        "sender_full_name": "Sukera",
+        "timestamp": 1651613701
+    },
+    {
+        "content": "<p>what <code>parse</code> gets is already <code>\"x + y\"</code> - there's never an expression interpolation going on</p>",
+        "id": 281080539,
+        "sender_full_name": "Sukera",
+        "timestamp": 1651613738
+    },
+    {
+        "content": "<p><code>:(  ... )</code> is a <code>QuoteNode</code> literal, which returns whatever expression is enclosed in the brackets</p>",
+        "id": 281080618,
+        "sender_full_name": "Sukera",
+        "timestamp": 1651613776
+    },
+    {
+        "content": "<p>Right.</p>",
+        "id": 281080640,
+        "sender_full_name": "mbaz",
+        "timestamp": 1651613797
+    },
+    {
+        "content": "<p>so at that point, you run into a conundrum - do you lower first, or do you interpolate first?</p>",
+        "id": 281080687,
+        "sender_full_name": "Sukera",
+        "timestamp": 1651613835
+    },
+    {
+        "content": "<p>when parsing the inner expression, that is</p>",
+        "id": 281080713,
+        "sender_full_name": "Sukera",
+        "timestamp": 1651613853
+    },
+    {
+        "content": "<p>logically, interpolation happens after lowering, because only then will the overall structure no longer change - you take a finished &amp; lowered expression and splice it into another lowered expression tree</p>",
+        "id": 281080806,
+        "sender_full_name": "Sukera",
+        "timestamp": 1651613898
+    },
+    {
+        "content": "<p>what you're proposing is doing that before the outer expression tree is done lowering, to change how the final tree looks</p>",
+        "id": 281080851,
+        "sender_full_name": "Sukera",
+        "timestamp": 1651613928
+    },
+    {
+        "content": "<p>Well, not proposing, just trying to understand <span aria-label=\"sweat smile\" class=\"emoji emoji-1f605\" role=\"img\" title=\"sweat smile\">:sweat_smile:</span></p>",
+        "id": 281080907,
+        "sender_full_name": "mbaz",
+        "timestamp": 1651613963
+    },
+    {
+        "content": "<p>:)</p>",
+        "id": 281081030,
+        "sender_full_name": "Sukera",
+        "timestamp": 1651614044
+    },
+    {
+        "content": "<p>suppose you allow that - I think you'd quickly get very unlucky with interpolation performance, because then you'd have to potentially rebalance/relower the expression tree after every interpolation, which could get oh so very expensive with macros</p>",
+        "id": 281081096,
+        "sender_full_name": "Sukera",
+        "timestamp": 1651614094
+    },
+    {
+        "content": "<p>in essence, they're doing the same interpolation thing, just with different surface level syntax &amp; a slightly different step in the pipeline, I think</p>",
+        "id": 281081183,
+        "sender_full_name": "Sukera",
+        "timestamp": 1651614133
+    },
+    {
+        "content": "<p>The way I interpret what you're saying (and this is probably what Gunnar also meant) is that the parser doesn't know what to do with what is essentially <code>:( token1 token2 token3 )</code>, because it doesn't know (yet) that <code>token2</code> is an operator (or function in general).</p>\n<p>Whereas in <code>:( token1 operator token3 )</code> and <code>:( token2(token1, token3 )</code>, it's clear which items are functions. Is that right?</p>",
+        "id": 281081603,
+        "sender_full_name": "mbaz",
+        "timestamp": 1651614415
+    },
+    {
+        "content": "<p>yeah, should serve well enough as a mental model</p>",
+        "id": 281082296,
+        "sender_full_name": "Sukera",
+        "timestamp": 1651614773
+    },
+    {
+        "content": "<p>except for the first one, you can take a look at the difference with <code>Meta.@dump</code></p>",
+        "id": 281082351,
+        "sender_full_name": "Sukera",
+        "timestamp": 1651614815
+    },
+    {
+        "content": "<p>though in this case, you won't see one with <code>+</code> because they parse to the same thing since they're both valid and the first one won't parse at all, because it's not julia code</p>",
+        "id": 281082482,
+        "sender_full_name": "Sukera",
+        "timestamp": 1651614871
+    },
+    {
+        "content": "<p>either way, it depends on what <code>token2</code> _is_ to work, and since only infix operator literals (or non-complex literal interpolations) are allowed there, if the parser (waaaay before lowering or the concept of a \"function\" is a thing) can't tell, you can't do it</p>",
+        "id": 281082781,
+        "sender_full_name": "Sukera",
+        "timestamp": 1651614980
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"345789\">mbaz</span> has marked this topic as resolved.</p>",
+        "id": 281082978,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1651615033
+    }
+]

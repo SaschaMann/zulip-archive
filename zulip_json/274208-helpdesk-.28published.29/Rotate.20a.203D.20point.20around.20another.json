@@ -1,0 +1,122 @@
+[
+    {
+        "content": "<p>Anyone know how I can use <a href=\"https://github.com/search?q=Rotations.jl&amp;type=Repositories\">Rotations.jl</a> to rotate a 3D point around another? I'm struggling with the README.md: </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">rotateby</span><span class=\"p\">(</span><span class=\"n\">pt</span><span class=\"o\">::</span><span class=\"n\">Point3D</span><span class=\"p\">,</span> <span class=\"n\">about</span><span class=\"o\">::</span><span class=\"n\">Point3D</span><span class=\"p\">,</span> <span class=\"n\">angleX</span><span class=\"p\">,</span> <span class=\"n\">angleY</span><span class=\"p\">,</span> <span class=\"n\">angleZ</span><span class=\"p\">)</span>\n    <span class=\"o\">...</span>\n    <span class=\"k\">return</span> <span class=\"n\">pt1</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 223752393,
+        "sender_full_name": "cormullion",
+        "timestamp": 1611412397
+    },
+    {
+        "content": "<p>It seems like they have XYZ-axis rotations. That's totally not my field, but I would guess that given points x and y and a rotation R around the origin, a rotation of x around y would simply decompose to <code>R*(x-y) + y</code> (?)</p>",
+        "id": 223757806,
+        "sender_full_name": "Florian Große",
+        "timestamp": 1611419613
+    },
+    {
+        "content": "<p>I think you'll need to better define exactly what you mean by angleX, angleY, angleZ.. It sounds from your comment in the <a href=\"https://github.com/JuliaGeometry/Rotations.jl/issues/138\">issue you opened</a> that you might need to get familiar with the different ways rotations can be represented -- probably what you want corresponds to one of them but from what you've said so far I can't tell which. </p>\n<p>There are lots of resources I could point you to but it'd be useful to know where you're starting from.  E.g. <a href=\"https://rotations.berkeley.edu/contents/\">https://rotations.berkeley.edu/contents/</a> is very comprehensive but pretty mathy and likely overkill.</p>\n<p>So, maybe you can say a bit more about where angleX/Y/Z come from and the context of how you intend to use <code>rotateby</code>.</p>",
+        "id": 223844396,
+        "sender_full_name": "Patrick Bouffard",
+        "timestamp": 1611533663
+    },
+    {
+        "content": "<p>Hi Patrick! Thanks for helping me out, I appreciate it.</p>\n<p>So let's say I'm thinking of a point A in 3D space, at <code>Point3D(1, 1, 0)</code>. I want to rotate this by π radians around the z axis. So I get B, <code>Point3D(1, -1, 0)</code>.  Then I want to rotate this around the y axis by π radians, so I get C, <code>Point3D(-1.0, -1.0, 0)</code>. I could also get to C by rotating A around the x-axis.<br>\n<a href=\"/user_uploads/7178/ENY_6kAaDfSUAL_lJ40E0yhJ/Screenshot-2021-01-25-at-09.38.42.png\">Screenshot-2021-01-25-at-09.38.42.png</a><br>\nIn this case obviously rotations can be either clockwise or anticlockwise (I used π for simplicity ), but any convention is OK.</p>\n<div class=\"message_inline_image\"><a href=\"/user_uploads/7178/ENY_6kAaDfSUAL_lJ40E0yhJ/Screenshot-2021-01-25-at-09.38.42.png\" title=\"Screenshot-2021-01-25-at-09.38.42.png\"><img src=\"/user_uploads/7178/ENY_6kAaDfSUAL_lJ40E0yhJ/Screenshot-2021-01-25-at-09.38.42.png\"></a></div><p>This was the kind of thing I was  thinking for \"3D rotations made easy\". I thought it could probably be done in a few lines... Perhaps I'm wrong.</p>",
+        "id": 223873837,
+        "sender_full_name": "cormullion",
+        "timestamp": 1611567814
+    },
+    {
+        "content": "<p>I think what you need here are relative poses. You can define/think of a point as a reference frame, and since you want the axes to be parallel, you can have all games at 0 relative angle to the origin. Then convert one point (or frame) to another point's frame of reference (simply subtract coordinates) and then use a rotx/roty/rotz. Then compose the result with the reference point's translation. In all it'll look like this:</p>\n<p>rotz(p2-p1, angle) + p1</p>",
+        "id": 223877097,
+        "sender_full_name": "Pranshu Malik",
+        "timestamp": 1611569738
+    },
+    {
+        "content": "<p>The same was also mentioned by Florian above</p>",
+        "id": 223877172,
+        "sender_full_name": "Pranshu Malik",
+        "timestamp": 1611569766
+    },
+    {
+        "content": "<p>Yes, that's what I meant. I think what <span class=\"user-mention\" data-user-id=\"343024\">@Patrick Bouffard</span> is hinting it is, that simply saying you want tp rotate degrees a, b, c around the x, y, z axes doesn't get you too far, because the order of application is not irrelevant for rotations! Imagine you start at a point on your x-axis, say (1., 0., 0.) and you just want to rotate 90° around the x and y axes. If you start by rotating around x, you don't change your point on the x-axis, so the rotation around y will bring you to (0., 0., ±1.). But if you start by rotating around y, you go to (0., 0., ±1.) initially and suddenly, your rotation around x is now actually doing something and you end up at (0., ±1., 0.). So you either have to do one rotation at a time or specify which convention you use when you say a° around x and b° around y.</p>",
+        "id": 223878308,
+        "sender_full_name": "Florian Große",
+        "timestamp": 1611570485
+    },
+    {
+        "content": "<p>So that's why I've been having trouble! :) Perhaps I shouldn't be trying to do three rotations at once, just provide a rotateX() rotateY() and rotate(Z) functions instead...</p>",
+        "id": 223878589,
+        "sender_full_name": "cormullion",
+        "timestamp": 1611570690
+    },
+    {
+        "content": "<p>That said, I found the package you are probably looking for:</p>\n<p><a href=\"https://github.com/JuliaGeometry/CoordinateTransformations.jl\">https://github.com/JuliaGeometry/CoordinateTransformations.jl</a></p>\n<p>Which was linked from <a href=\"https://github.com/search?q=Rotations.jl&amp;type=Repositories\">Rotations.jl</a>. It has a recenter method:</p>\n<p>\"\"\"<br>\nrecenter(trans::Union{AbstractMatrix,Transformation}, origin::AbstractVector) -&gt; ctrans</p>\n<p>Return a new transformation <code>ctrans</code> such that point <code>origin</code> servesas the origin-of-coordinates for <code>trans</code>. Translation by <code>±origin</code>occurs both before and after applying <code>trans</code>,...<br>\n\"\"\"</p>",
+        "id": 223878608,
+        "sender_full_name": "Florian Große",
+        "timestamp": 1611570704
+    },
+    {
+        "content": "<p>Yup, or there are also matrices for rotation along any axis. So if you can define one axis around which you have one rotation corresponding to 3 rotations from the origin, then that might be what you want. But only limited transformations will fit this criteria</p>",
+        "id": 223878825,
+        "sender_full_name": "Pranshu Malik",
+        "timestamp": 1611570840
+    },
+    {
+        "content": "<p>Yes I'm sure these packages can easily do this sort of thing without breaking into a sweat. It's just sometimes hard for me to find out how to do the simple things.  I suppose they're not really intended for that though.</p>",
+        "id": 223879248,
+        "sender_full_name": "cormullion",
+        "timestamp": 1611571130
+    },
+    {
+        "content": "<p>Did angleX/Y/Z come from another source and you are trying to apply them correctly? Or are you saying that you need to rotate points and are trying to work out a way to do so? If it's the former then it's important you interpret the 3 values correctly--there are a number of ways you could do so. Some of them are more common than others depending on if you're doing aerospace, or physics, or whatever. But if it's the latter the problem is reversed: there are a lot of different ways you can parametrize rotations and they all have pros and cons that depend on the application.</p>\n<p>If you give us a bit more context that will help give you better advice!</p>",
+        "id": 223925413,
+        "sender_full_name": "Patrick Bouffard",
+        "timestamp": 1611593289
+    },
+    {
+        "content": "<p>Well as Florian said I'm probably getting confused by the fact that rotations have to applied in a particular order, so perhaps it isn't a brilliant idea to try to supply all rotations in one function  call. <br>\n<a href=\"/user_uploads/7178/dKsBJwsKvziOzNk9hVNuLMDk/Screenshot-2021-01-25-at-17.36.33.png\">Screenshot-2021-01-25-at-17.36.33.png</a> <br>\nI originally thought that there might be an easy alternative to all these rotation  functions  by just switching to calls to <a href=\"https://github.com/search?q=Rotations.jl&amp;type=Repositories\">Rotations.jl</a> or <a href=\"https://github.com/search?q=CoordinateTransformations.jl&amp;type=Repositories\">CoordinateTransformations.jl</a> functions, but I wasn't able to get much from the READMEs, since they're obviously aimed at a different level of user (PhD rather than GCSE :)). I'll probably stick to what I have at the moment, just switching to separate functions...</p>\n<div class=\"message_inline_image\"><a href=\"/user_uploads/7178/dKsBJwsKvziOzNk9hVNuLMDk/Screenshot-2021-01-25-at-17.36.33.png\" title=\"Screenshot-2021-01-25-at-17.36.33.png\"><img src=\"/user_uploads/7178/dKsBJwsKvziOzNk9hVNuLMDk/Screenshot-2021-01-25-at-17.36.33.png\"></a></div>",
+        "id": 223933778,
+        "sender_full_name": "cormullion",
+        "timestamp": 1611596656
+    },
+    {
+        "content": "<p>Which library are you using to display text in 3D plots? I'd like to do this for a package too</p>",
+        "id": 223935442,
+        "sender_full_name": "Pranshu Malik",
+        "timestamp": 1611597393
+    },
+    {
+        "content": "<p>I use a small package called <a href=\"https://github.com/search?q=Thebes.jl&amp;type=Repositories\">Thebes.jl</a>, but it's fairly simplistic, and I want to improve the rotations code... <span aria-label=\"joy\" class=\"emoji emoji-1f602\" role=\"img\" title=\"joy\">:joy:</span></p>",
+        "id": 223936392,
+        "sender_full_name": "cormullion",
+        "timestamp": 1611597825
+    },
+    {
+        "content": "<p>Haha, fair point about the docs, though don't let that intimidate you! Assuming you don't just have this one thing to do and then never touch rotations in 3D again I think it would be good for you to find a resource that meets you where you're at mathematically. You definitely don't need a PhD to grasp the basics or even the advanced stuff.</p>\n<p>But you will need to be comfortable at least with vectors, matrix multiplication, and basic trigonometry (just sin &amp; cos). If you are then it'd be easy to help you, but again also knowing more about what you're trying to do here will really be useful.</p>",
+        "id": 223936401,
+        "sender_full_name": "Patrick Bouffard",
+        "timestamp": 1611597831
+    },
+    {
+        "content": "<p>Thanks Patrick! I like to encounter challenges sequentially, but multiple things arrive very quickly in JuliaGeometry!<span aria-label=\"joy\" class=\"emoji emoji-1f602\" role=\"img\" title=\"joy\">:joy:</span></p>",
+        "id": 223936750,
+        "sender_full_name": "cormullion",
+        "timestamp": 1611597978
+    },
+    {
+        "content": "<p>Fair enough. Neat package! Can you say more specifically what you want to improve? It looks like you have something that works.</p>",
+        "id": 223937661,
+        "sender_full_name": "Patrick Bouffard",
+        "timestamp": 1611598424
+    },
+    {
+        "content": "<p>Well either I don't understand my code or my code doesn't understand me, I'm not sure which it is. So I thought I'd investigate using someone else's code, which - I usually find - is better... <span aria-label=\"joy\" class=\"emoji emoji-1f602\" role=\"img\" title=\"joy\">:joy:</span> Perhaps I just have to watch more videos...</p>",
+        "id": 223940502,
+        "sender_full_name": "cormullion",
+        "timestamp": 1611599643
+    },
+    {
+        "content": "<p>Thanks for all the help! The answer is:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span> <span class=\"n\">Rotations</span>\n<span class=\"k\">function</span> <span class=\"n\">rotateby</span><span class=\"p\">(</span><span class=\"n\">point</span><span class=\"o\">::</span><span class=\"n\">Point3D</span><span class=\"p\">,</span> <span class=\"n\">about</span><span class=\"o\">::</span><span class=\"n\">Point3D</span><span class=\"p\">,</span> <span class=\"n\">angleX</span><span class=\"p\">,</span> <span class=\"n\">angleY</span><span class=\"p\">,</span> <span class=\"n\">angleZ</span><span class=\"p\">)</span>\n    <span class=\"n\">RotXYZ</span><span class=\"p\">(</span><span class=\"n\">angleX</span><span class=\"p\">,</span> <span class=\"n\">angleY</span><span class=\"p\">,</span> <span class=\"n\">angleZ</span><span class=\"p\">)</span> <span class=\"o\">*</span> <span class=\"p\">(</span><span class=\"n\">point</span> <span class=\"o\">-</span> <span class=\"n\">about</span><span class=\"p\">)</span> <span class=\"o\">+</span> <span class=\"n\">about</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>(Chris Foster helped me out!)</p>",
+        "id": 224038068,
+        "sender_full_name": "cormullion",
+        "timestamp": 1611667649
+    }
+]

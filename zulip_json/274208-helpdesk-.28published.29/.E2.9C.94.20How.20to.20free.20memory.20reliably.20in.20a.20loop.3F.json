@@ -1,0 +1,86 @@
+[
+    {
+        "content": "<p>Suppose I have a script like this:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"c\"># loop with 10 datasets</span>\n<span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">i</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">10</span>\n<span class=\"w\">  </span><span class=\"c\"># load huge dataset from i-th file</span>\n<span class=\"w\">  </span><span class=\"n\">dataset</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">load</span><span class=\"p\">(</span><span class=\"s\">\"input</span><span class=\"si\">$i</span><span class=\"s\">.dat\"</span><span class=\"p\">)</span>\n\n<span class=\"w\">  </span><span class=\"c\"># process the data somehow</span>\n<span class=\"w\">  </span><span class=\"n\">derived</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">func</span><span class=\"p\">(</span><span class=\"n\">dataset</span><span class=\"p\">)</span>\n\n<span class=\"w\">  </span><span class=\"c\"># save results to disk</span>\n<span class=\"w\">  </span><span class=\"n\">write</span><span class=\"p\">(</span><span class=\"s\">\"output</span><span class=\"si\">$i</span><span class=\"s\">.dat\"</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">derived</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>Each individual iteration works when I run the code manually in a session, but Julia GC is not freeing up memory when the code is placed in the loop.</p>\n<p>After the first iteration (i=1), the memory is almost full. In the second iteration (i=2), Julia crashes because it tries to load another huge dataset instead of rewriting the existing variable.</p>\n<p>What is the most reliable method to free the GC in this case? I want to run each iteration independently, no need to share memory across i=1,2,3,...,10.</p>\n<p>I am considering wrapping the whole script in a function, but am not sure if that is the best approach.</p>",
+        "id": 421658377,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1708005382
+    },
+    {
+        "content": "<p>I'd preallocate <code>dataset</code> and use <code>Random.rand!</code>, but that may not be possible in your actual use case.</p>",
+        "id": 421662827,
+        "sender_full_name": "mbaz",
+        "timestamp": 1708006636
+    },
+    {
+        "content": "<p>Yes, that is not possible, I used <code>rand</code> as an example. Will replace the example...</p>",
+        "id": 421662905,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1708006658
+    },
+    {
+        "content": "<p>I wonder if wrapping the loop body in a <code>let</code> (creating a new scope) would make Julia re-use the memory.</p>",
+        "id": 421662996,
+        "sender_full_name": "mbaz",
+        "timestamp": 1708006683
+    },
+    {
+        "content": "<p>I updated the example above. My current attempt is to wrap the loop body into a function:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">simulate</span><span class=\"p\">(</span><span class=\"n\">i</span><span class=\"p\">)</span>\n<span class=\"w\">  </span><span class=\"c\"># load huge dataset from i-th file</span>\n<span class=\"w\">  </span><span class=\"n\">dataset</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">load</span><span class=\"p\">(</span><span class=\"s\">\"input</span><span class=\"si\">$i</span><span class=\"s\">.dat\"</span><span class=\"p\">)</span>\n\n<span class=\"w\">  </span><span class=\"c\"># process the data somehow</span>\n<span class=\"w\">  </span><span class=\"n\">derived</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">func</span><span class=\"p\">(</span><span class=\"n\">dataset</span><span class=\"p\">)</span>\n\n<span class=\"w\">  </span><span class=\"c\"># save results to disk</span>\n<span class=\"w\">  </span><span class=\"n\">write</span><span class=\"p\">(</span><span class=\"s\">\"output</span><span class=\"si\">$i</span><span class=\"s\">.dat\"</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">derived</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n\n<span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">i</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">10</span>\n<span class=\"w\">  </span><span class=\"n\">simulate</span><span class=\"p\">(</span><span class=\"n\">i</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 421663282,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1708006756
+    },
+    {
+        "content": "<p>It seems that the GC is doing a better job now. Let's see if it works this time.</p>",
+        "id": 421663359,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1708006778
+    },
+    {
+        "content": "<p>I wonder if Julia (or VSCode) should do this by default, i.e., wrap code that was written in a script into a \"virtual\" function called \"vscode_main\" for better GC performance.</p>",
+        "id": 421663607,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1708006838
+    },
+    {
+        "content": "<p>In that case, sending the script to the REPL for execution would be equivalent to wrapping the code in a function, and calling the function instead.</p>",
+        "id": 421663813,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1708006893
+    },
+    {
+        "content": "<p>Wrapping the loop body into a function solved the problem so far. The code is in iteration 5 already.</p>",
+        "id": 421667170,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1708007858
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"273172\">Júlio Hoffimann</span> has marked this topic as resolved.</p>",
+        "id": 421667332,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1708007897
+    },
+    {
+        "content": "<p>FWIW I think Pluto does some auto-wrap-in-a-functioning, seems to work there. I think VSCode extension tends to want to be less magical though</p>",
+        "id": 421712647,
+        "sender_full_name": "Eric Hanson",
+        "timestamp": 1708020592
+    },
+    {
+        "content": "<p>What about adding <code>dataset = nothing; GC.gc()</code> at the end of each iteration? Would that be reliable?</p>",
+        "id": 421958431,
+        "sender_full_name": "Leandro Martínez",
+        "timestamp": 1708128814
+    },
+    {
+        "content": "<p>It is not reliable. Multiple threads on discourse discuss this.</p>",
+        "id": 421965656,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1708135303
+    },
+    {
+        "content": "<p><a href=\"https://docs.julialang.org/en/v1/manual/performance-tips/#Performance-critical-code-should-be-inside-a-function\">https://docs.julialang.org/en/v1/manual/performance-tips/#Performance-critical-code-should-be-inside-a-function</a></p>",
+        "id": 422485336,
+        "sender_full_name": "Lilith Hafner",
+        "timestamp": 1708456392
+    }
+]

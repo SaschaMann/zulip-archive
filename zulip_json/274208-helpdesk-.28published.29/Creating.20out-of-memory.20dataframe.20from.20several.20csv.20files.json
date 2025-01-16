@@ -1,0 +1,50 @@
+[
+    {
+        "content": "<p>Friends, perhaps someone can give me a hand here. I have a ton of CSV files and I want to join everything in one large Dataframe.<br>\nThe problem I have is consistency, i.e. the CSVs are supposed to have all the same columns, but some don't (slight variation in the naming used).<br>\nIn order to deal with this, I was using</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"w\">    </span><span class=\"n\">df</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">DataFrame</span><span class=\"p\">()</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">f</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">readdir</span><span class=\"p\">(</span><span class=\"n\">datadir</span><span class=\"p\">()</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"s\">\"/exp_raw\"</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">join</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"nb\">true</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"n\">println</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"k\">if</span><span class=\"w\"> </span><span class=\"n\">contains</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"s\">\".csv\"</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">            </span><span class=\"n\">append!</span><span class=\"p\">(</span><span class=\"n\">df</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">CSV</span><span class=\"o\">.</span><span class=\"n\">read</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">DataFrame</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">delim</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"s\">\";\"</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">cols</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"ss\">:union</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"k\">elseif</span><span class=\"w\"> </span><span class=\"n\">contains</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"s\">\".zip\"</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">            </span><span class=\"n\">append!</span><span class=\"p\">(</span><span class=\"n\">df</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">extraircsvzippado</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">),</span><span class=\"w\"></span>\n<span class=\"w\">                </span><span class=\"n\">cols</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"ss\">:union</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"k\">end</span><span class=\"w\"></span>\n</code></pre></div>\n<p>Hence, I joined the files in one dataframe as I parsed the files, and added new columns if they didn't match.<br>\nThe issue is that the dataframe is getting too large for the memory of the computer.<br>\nAny ideas on how to deal with this?</p>",
+        "id": 283885452,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1653486797
+    },
+    {
+        "content": "<p>Sounds like you need an out-of-core representation. Not sure if DataFrames can do this. If not, maybe <a href=\"https://github.com/search?q=JuliaDB.jl&amp;type=Repositories\">JuliaDB.jl</a>?</p>",
+        "id": 283886740,
+        "sender_full_name": "Chad Scherrer",
+        "timestamp": 1653487400
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"286004\">Chad Scherrer</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Creating.20out-of-memory.20dataframe.20from.20several.20csv.20files/near/283886740\">said</a>:</p>\n<blockquote>\n<p>Sounds like you need an out-of-core representation. Not sure if DataFrames can do this. If not, maybe <a href=\"https://github.com/search?q=JuliaDB.jl&amp;type=Repositories\">JuliaDB.jl</a>?</p>\n</blockquote>\n<p>Thanks for the answer <span class=\"user-mention\" data-user-id=\"286004\">@Chad Scherrer</span> . The only problem is the inconsistency in the files. As I've said, the number of columns grows each time there is a difference. Hence why I was using the <code>append!</code> with <code>cols=:union</code>.</p>",
+        "id": 283886997,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1653487522
+    },
+    {
+        "content": "<p>I'm wondering if <a href=\"https://github.com/search?q=Dagger.jl&amp;type=Repositories\">Dagger.jl</a> can help me here.</p>",
+        "id": 283887137,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1653487573
+    },
+    {
+        "content": "<p>After some thought, I think perhaps I can try pre-processing the CSV by checking the columns and fixing it, in order to send it to a database ;)</p>",
+        "id": 283888371,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1653488114
+    },
+    {
+        "content": "<p>The inconsistencies have to be solved, either before you join or after. I was thinking with JuliaDB you could just let them grow, then fix up any weirdness after the fact. Since it doesn't try to put it all in memory it seems like it would work.</p>\n<p>Just saw your last comment, yes that's the \"fix it before\" <span aria-label=\"smile\" class=\"emoji emoji-1f642\" role=\"img\" title=\"smile\">:smile:</span></p>",
+        "id": 283888416,
+        "sender_full_name": "Chad Scherrer",
+        "timestamp": 1653488145
+    },
+    {
+        "content": "<p>I've just been dealing with the same issue and I think realistically there's no other way then just fixing the column names. FWIW I ended up doing something like:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">colnames</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">names</span><span class=\"o\">.</span><span class=\"p\">(</span><span class=\"n\">CSV</span><span class=\"o\">.</span><span class=\"n\">read</span><span class=\"o\">.</span><span class=\"p\">(</span><span class=\"n\">list_of_csv_files</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">DataFrame</span><span class=\"p\">;</span><span class=\"w\"> </span><span class=\"n\">limit</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"p\">))</span><span class=\"w\"></span>\n</code></pre></div>\n<p>which I then converted to a DataFrame for an easy overview over all the names in all tables. In my case I only had a few hundred CSVs and it turned out there were only a dozen or so different patterns of column names, so it wasn't too hard to fix, especially after doing <code>[lowercase.(x) for x in colnames]</code> as a lot of it turned out to be inconsistent capitalization...</p>",
+        "id": 284138831,
+        "sender_full_name": "Nils",
+        "timestamp": 1653660912
+    },
+    {
+        "content": "<p>Yeah, that's how I'm proceeding also.</p>",
+        "id": 284156510,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1653669774
+    }
+]

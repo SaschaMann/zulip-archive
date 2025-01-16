@@ -1,0 +1,122 @@
+[
+    {
+        "content": "<p>I would like to highjack all calls to a particular function. </p>\n<p>I've tried cassette, but this runs into the llvmcall issue. I've tried cassetteoverlay, but that breaks julia entirely (argextype called on Expr with head :call which is not valid for IR in argument-position.) I've also looked at irtools/dynamo, but run into an issue where irtools breaks on certain broadcast expressions.</p>\n<p>I realise that I'm trying to do something that is highly discouraged and hacky, but do there nevertheless exist other solutions that I haven't explored yet? It seems that Cassette work has somewhat stalled with the promise that some work in base (abstractinterpreter) will allow for a more robust cassette like implementation. Does that exist somewhere?</p>",
+        "id": 450162759,
+        "sender_full_name": "Maarten",
+        "timestamp": 1720529189
+    },
+    {
+        "content": "<p>A low-tech option is to create an own type and just implement methods for it until you are able to hit the function you want to overwrite.</p>",
+        "id": 450376965,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1720598571
+    },
+    {
+        "content": "<p>That'd be a lot of work that I would ideally avoid. One workaround for me may be to hack on top of JuliaInterpreter. </p>\n<p>They have a global dictionary that links methods with their frames, so all I'd need to do is manually insert the calls that I want to detour there...</p>",
+        "id": 450382911,
+        "sender_full_name": "Maarten",
+        "timestamp": 1720600245
+    },
+    {
+        "content": "<p>Nevermind, juliainterpreter is too slow</p>",
+        "id": 450401448,
+        "sender_full_name": "Maarten",
+        "timestamp": 1720605270
+    },
+    {
+        "content": "<p>you'll probably want to watch this talk that just ended <a href=\"https://pretalx.com/juliacon2024/talk/D88XFU/\">https://pretalx.com/juliacon2024/talk/D88XFU/</a></p>",
+        "id": 450402793,
+        "sender_full_name": "Sukera",
+        "timestamp": 1720605725
+    },
+    {
+        "content": "<p>the recording will be up on youtube at some point</p>",
+        "id": 450402829,
+        "sender_full_name": "Sukera",
+        "timestamp": 1720605737
+    },
+    {
+        "content": "<p>the live stream is <a href=\"https://www.youtube.com/watch?v=OQnHyHgs0Qo\">https://www.youtube.com/watch?v=OQnHyHgs0Qo</a>, you should be able to scroll back ~30 minutes (at time of writing)</p>\n<div class=\"youtube-video message_inline_image\"><a data-id=\"OQnHyHgs0Qo\" href=\"https://www.youtube.com/watch?v=OQnHyHgs0Qo\"><img src=\"https://uploads.zulipusercontent.net/8a190fa38388fda040468590d5f6a2111020cd89/68747470733a2f2f692e7974696d672e636f6d2f76692f4f516e487948677330516f2f64656661756c742e6a7067\"></a></div>",
+        "id": 450402897,
+        "sender_full_name": "Sukera",
+        "timestamp": 1720605769
+    },
+    {
+        "content": "<p>I doubt a bit though whether this is less work <span aria-label=\"sweat smile\" class=\"emoji emoji-1f605\" role=\"img\" title=\"sweat smile\">:sweat_smile:</span></p>",
+        "id": 450403012,
+        "sender_full_name": "Sukera",
+        "timestamp": 1720605814
+    },
+    {
+        "content": "<p>watching it now :)</p>",
+        "id": 450403411,
+        "sender_full_name": "Maarten",
+        "timestamp": 1720605943
+    },
+    {
+        "content": "<p>I may also take some inspiration from infiltrator.jl</p>",
+        "id": 450403488,
+        "sender_full_name": "Maarten",
+        "timestamp": 1720605961
+    },
+    {
+        "content": "<p>I think both <a href=\"https://juliahub.com/ui/Packages/General/Cassette\">Cassette.jl</a> and <a href=\"https://juliahub.com/ui/Packages/General/Infiltrator\">Infiltrator.jl</a> are going to be completely subsumed by that talk</p>",
+        "id": 450403635,
+        "sender_full_name": "Sukera",
+        "timestamp": 1720605998
+    },
+    {
+        "content": "<p>oh, right before that talk was another ~half hour talk explaining the basic compiler/optimization pipeline which might be useful if you're not already familiar with it</p>",
+        "id": 450403837,
+        "sender_full_name": "Sukera",
+        "timestamp": 1720606060
+    },
+    {
+        "content": "<p>If that talk gets merged, it'd be perfect !</p>",
+        "id": 450409180,
+        "sender_full_name": "Maarten",
+        "timestamp": 1720607869
+    },
+    {
+        "content": "<p>What doesn't work for you with cassetteoverlay?</p>",
+        "id": 450443949,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1720615750
+    },
+    {
+        "content": "<p>something deep within julia's abstracteval errors. The code partially runs after spitting out an enormous stacktrace. I don't have a real \"minimal\" working example, but I did open an issue <a href=\"https://github.com/JuliaDebug/CassetteOverlay.jl/issues/57\">https://github.com/JuliaDebug/CassetteOverlay.jl/issues/57</a></p>",
+        "id": 450446447,
+        "sender_full_name": "Maarten",
+        "timestamp": 1720616513
+    },
+    {
+        "content": "<p><a href=\"https://gist.github.com/maartenvd/e9e3afbefe2577a0c504bdb217508ea8\">https://gist.github.com/maartenvd/e9e3afbefe2577a0c504bdb217508ea8</a> for an example part of the stacktrace</p>",
+        "id": 450446707,
+        "sender_full_name": "Maarten",
+        "timestamp": 1720616591
+    },
+    {
+        "content": "<p>Interestingly on master I get an entirely different error, but an error nevertheless</p>",
+        "id": 450446813,
+        "sender_full_name": "Maarten",
+        "timestamp": 1720616639
+    },
+    {
+        "content": "<p>I think I found the problem with IRtools dynamo...</p>",
+        "id": 450712969,
+        "sender_full_name": "Maarten",
+        "timestamp": 1720705111
+    },
+    {
+        "content": "<p>I forgot that I can simply re-use some of the amazing work in Revise/CodeTracking!</p>",
+        "id": 450973309,
+        "sender_full_name": "Maarten",
+        "timestamp": 1720790252
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">Revise</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">CodeTracking</span>\n\n<span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">hello</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">String</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"n\">println</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n\n<span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">detourhack</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">hello</span><span class=\"p\">),</span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">String</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"n\">println</span><span class=\"p\">(</span><span class=\"s\">\"detoured \"</span><span class=\"o\">*</span><span class=\"n\">a</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n\n<span class=\"n\">detourtable</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">Any</span><span class=\"p\">[]</span>\n<span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">detour</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">methods</span><span class=\"p\">(</span><span class=\"n\">Main</span><span class=\"o\">.</span><span class=\"n\">detourhack</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"n\">orig</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">which</span><span class=\"p\">(</span><span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"kt\">detour</span><span class=\"o\">.</span><span class=\"kt\">sig</span><span class=\"o\">.</span><span class=\"kt\">parameters</span><span class=\"p\">[</span><span class=\"mi\">2</span><span class=\"o\">:</span><span class=\"kt\">end</span><span class=\"p\">]</span><span class=\"o\">...</span><span class=\"p\">})</span>\n<span class=\"w\">    </span><span class=\"n\">orig_expr</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">definition</span><span class=\"p\">(</span><span class=\"n\">orig</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"n\">push!</span><span class=\"p\">(</span><span class=\"n\">detourtable</span><span class=\"p\">,(</span><span class=\"n\">detour</span><span class=\"p\">,</span><span class=\"n\">orig</span><span class=\"p\">,</span><span class=\"n\">orig_expr</span><span class=\"p\">))</span>\n<span class=\"k\">end</span>\n\n<span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">enable_highjack</span><span class=\"p\">()</span>\n<span class=\"w\">    </span><span class=\"n\">tsymb</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">GlobalRef</span><span class=\"p\">(</span><span class=\"n\">Main</span><span class=\"p\">,</span><span class=\"ss\">:detourhack</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">detour</span><span class=\"p\">,</span><span class=\"n\">orig</span><span class=\"p\">,</span><span class=\"n\">orig_expr</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">detourtable</span>\n<span class=\"w\">        </span><span class=\"n\">orsigparams</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">orig</span><span class=\"o\">.</span><span class=\"n\">sig</span><span class=\"o\">.</span><span class=\"n\">parameters</span>\n<span class=\"w\">        </span><span class=\"n\">pars</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">gensym</span><span class=\"p\">()</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">v</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">orsigparams</span><span class=\"p\">]</span>\n<span class=\"w\">        </span><span class=\"n\">fdeff</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">Expr</span><span class=\"p\">(</span><span class=\"ss\">:call</span><span class=\"p\">,[</span><span class=\"kt\">Expr</span><span class=\"p\">(</span><span class=\"o\">:</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"p\">),</span><span class=\"n\">a</span><span class=\"p\">,</span><span class=\"n\">b</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">,</span><span class=\"n\">b</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">zip</span><span class=\"p\">(</span><span class=\"n\">pars</span><span class=\"p\">,</span><span class=\"n\">orsigparams</span><span class=\"p\">)]</span><span class=\"o\">...</span><span class=\"p\">)</span>\n<span class=\"w\">        </span><span class=\"n\">body</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">Expr</span><span class=\"p\">(</span><span class=\"ss\">:call</span><span class=\"p\">,</span><span class=\"n\">tsymb</span><span class=\"p\">,</span><span class=\"n\">pars</span><span class=\"o\">...</span><span class=\"p\">)</span>\n<span class=\"w\">        </span><span class=\"n\">orig</span><span class=\"o\">.</span><span class=\"k\">module</span><span class=\"o\">.</span><span class=\"n\">eval</span><span class=\"p\">(</span><span class=\"kt\">Expr</span><span class=\"p\">(</span><span class=\"ss\">:function</span><span class=\"p\">,</span><span class=\"n\">fdeff</span><span class=\"p\">,</span><span class=\"n\">body</span><span class=\"p\">))</span>\n<span class=\"w\">    </span><span class=\"k\">end</span>\n<span class=\"k\">end</span>\n\n<span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">disable_highjack</span><span class=\"p\">()</span>\n<span class=\"w\">    </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">detour</span><span class=\"p\">,</span><span class=\"n\">orig</span><span class=\"p\">,</span><span class=\"n\">orig_expr</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">detourtable</span>\n<span class=\"w\">        </span><span class=\"n\">orig</span><span class=\"o\">.</span><span class=\"k\">module</span><span class=\"o\">.</span><span class=\"n\">eval</span><span class=\"p\">(</span><span class=\"n\">orig_expr</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"k\">end</span>\n<span class=\"k\">end</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">hello</span><span class=\"p\">(</span><span class=\"s\">\"world\"</span><span class=\"p\">)</span>\n<span class=\"n\">world</span>\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"n\">enable_highjack</span><span class=\"p\">()</span>\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"n\">hello</span><span class=\"p\">(</span><span class=\"s\">\"world\"</span><span class=\"p\">)</span>\n<span class=\"n\">detoured</span><span class=\"w\"> </span><span class=\"n\">world</span>\n</code></pre></div>\n<p>I don't know how to make this work with kwargs though</p>",
+        "id": 451044718,
+        "sender_full_name": "Maarten",
+        "timestamp": 1720808522
+    }
+]

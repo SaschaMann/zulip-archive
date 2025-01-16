@@ -1,0 +1,110 @@
+[
+    {
+        "content": "<p>Hello Everyone,</p>\n<p>Might there be a more practical and workable <br>\napproach to normalizing all the elements of <br>\na dataframe?</p>\n<p>x = CookieMonster[1:15,:]<br>\ny = CookieMonster[16:16,:]</p>\n<p>Currently, I have found two guidelines that both<br>\nresult in an error.</p>\n<p>1.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code> <span class=\"n\">X</span> <span class=\"o\">=</span> <span class=\"p\">(</span><span class=\"n\">x</span> <span class=\"o\">.-</span> <span class=\"n\">mean</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span> <span class=\"n\">dims</span> <span class=\"o\">=</span> <span class=\"mi\">2</span><span class=\"p\">))</span> <span class=\"o\">./</span> <span class=\"n\">std</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span> <span class=\"n\">dims</span> <span class=\"o\">=</span> <span class=\"mi\">2</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>Error as: 'no method matching mean'</p>\n<p>2.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">normalize</span><span class=\"p\">(</span><span class=\"n\">input_df</span><span class=\"o\">::</span><span class=\"kt\">DataFrame</span><span class=\"p\">,</span> <span class=\"n\">cols</span><span class=\"o\">::</span><span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">})</span>\n    <span class=\"n\">norm_df</span> <span class=\"o\">=</span> <span class=\"n\">input_df</span>\n    <span class=\"k\">for</span> <span class=\"n\">i</span> <span class=\"k\">in</span> <span class=\"n\">cols</span>\n        <span class=\"n\">norm_df</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span> <span class=\"o\">=</span> <span class=\"p\">(</span><span class=\"n\">input_df</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span> <span class=\"o\">-</span> <span class=\"n\">minimum</span><span class=\"p\">(</span><span class=\"n\">input_df</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]))</span> <span class=\"o\">/</span>\n            <span class=\"p\">(</span><span class=\"n\">maximum</span><span class=\"p\">(</span><span class=\"n\">input_df</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">])</span> <span class=\"o\">-</span> <span class=\"n\">minimum</span><span class=\"p\">(</span><span class=\"n\">input_df</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]))</span>\n    <span class=\"k\">end</span>\n    <span class=\"n\">norm_df</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>Error as: 'no method matching normalize'</p>\n<p>The normalize() method was around since 2015,<br>\nbut I have not seen any updates to it. </p>\n<p>I am programming in <em>Pluto.</em> </p>\n<p>Any tips?</p>",
+        "id": 245757464,
+        "sender_full_name": "QuBit",
+        "timestamp": 1626128262
+    },
+    {
+        "content": "<p>Are you <code>using LinearAlgebra</code> which is needed for <code>mean</code>?</p>",
+        "id": 245782050,
+        "sender_full_name": "Felix Kastner",
+        "timestamp": 1626155595
+    },
+    {
+        "content": "<p>I think <code>mean</code> is from <code>Statistics</code>, <code>normalize</code> may be in <code>LinearAlgebra</code>.</p>",
+        "id": 245782631,
+        "sender_full_name": "Daniel Karrasch",
+        "timestamp": 1626156361
+    },
+    {
+        "content": "<p>Oh, you're right. Sry</p>",
+        "id": 245783587,
+        "sender_full_name": "Felix Kastner",
+        "timestamp": 1626157469
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"421686\">Daniel Karrasch</span> </p>\n<p>Thank you much -- when I attempt to qualify <br>\nwith la.normalize(x), I am getting the following <br>\nerror: </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"kt\">MethodError</span><span class=\"o\">:</span> <span class=\"n\">no</span> <span class=\"n\">method</span> <span class=\"n\">matching</span> <span class=\"n\">normalize</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">DataFrames</span><span class=\"o\">.</span><span class=\"n\">DataFrame</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 245833397,
+        "sender_full_name": "QuBit",
+        "timestamp": 1626186764
+    },
+    {
+        "content": "<p>Honestly, I'm not familiar with the specifics of the <code>DataFrames</code> package. I think you should consult their documentation to see what manipulation methods they have. <code>normalize</code> is defined in the stdlib <code>LinearAlgebra</code> for some generic types, to which, apparently, <code>DataFrame</code> doesn't subtype. So then it's no surprise that <code>LinearAlgebra</code> doesn't define a normalize method for <code>DataFrame</code>s. This function overload would be the task of <code>DataFrames.jl</code>.</p>",
+        "id": 245834128,
+        "sender_full_name": "Daniel Karrasch",
+        "timestamp": 1626187081
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"421686\">Daniel Karrasch</span> </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code> <span class=\"n\">X</span> <span class=\"o\">=</span> <span class=\"p\">(</span><span class=\"n\">x</span> <span class=\"o\">.-</span> <span class=\"n\">mean</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span> <span class=\"n\">dims</span> <span class=\"o\">=</span> <span class=\"mi\">2</span><span class=\"p\">))</span> <span class=\"o\">./</span> <span class=\"n\">std</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span> <span class=\"n\">dims</span> <span class=\"o\">=</span> <span class=\"mi\">2</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>Is what I am attempting to achieve from the FluxML<br>\nexample <a href=\"https://github.com/FluxML/model-zoo/blob/master/other/housing/housing.jl\">HERE</a></p>\n<p>When I qualify the methods, I am returning the same <br>\nerror. As you might suspect, normalizing a DF is not <br>\nreally the be practice, however, perhaps what they <br>\npresented here was pseudo code, because I do not<br>\nthink it can work, even when I attempted nesting the <br>\neachrow() method.</p>",
+        "id": 245835640,
+        "sender_full_name": "QuBit",
+        "timestamp": 1626187707
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"421686\">Daniel Karrasch</span> </p>\n<p>Okay -- I attempted something like this: </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">x2</span> <span class=\"o\">=</span> <span class=\"p\">(</span><span class=\"n\">x</span> <span class=\"o\">.-</span> <span class=\"n\">mean</span><span class=\"p\">(</span><span class=\"kt\">Array</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">),</span> <span class=\"n\">dims</span> <span class=\"o\">=</span> <span class=\"mi\">2</span><span class=\"p\">))</span> <span class=\"o\">./</span> <span class=\"n\">std</span><span class=\"p\">(</span><span class=\"kt\">Array</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">),</span> <span class=\"n\">dims</span> <span class=\"o\">=</span> <span class=\"mi\">2</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>What do you think?</p>",
+        "id": 245836648,
+        "sender_full_name": "QuBit",
+        "timestamp": 1626188080
+    },
+    {
+        "content": "<p>That might work, but I wonder if there are more efficient ways that don't allocate the extra array.</p>",
+        "id": 245837029,
+        "sender_full_name": "Daniel Karrasch",
+        "timestamp": 1626188230
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"421686\">Daniel Karrasch</span> </p>\n<p>So far I am seeing some methods in C++ and Java. </p>\n<p>Am seeing tips on Stack OverFlow <a href=\"https://stackoverflow.com/questions/41238097/dynamic-allocation-to-array-of-pointers-and-its-alternatives\">HERE</a></p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">std</span><span class=\"o\">::</span><span class=\"kt\">vector</span><span class=\"o\">&lt;</span><span class=\"n\">int</span><span class=\"o\">&gt;</span> <span class=\"n\">vi</span><span class=\"p\">;</span>  <span class=\"o\">//</span> <span class=\"k\">if</span> <span class=\"n\">the</span> <span class=\"n\">number</span> <span class=\"n\">of</span> <span class=\"n\">int</span><span class=\"o\">-</span><span class=\"n\">s</span> <span class=\"n\">are</span> <span class=\"n\">dynamic</span>\n<span class=\"n\">std</span><span class=\"o\">::</span><span class=\"kt\">array</span><span class=\"o\">&lt;</span><span class=\"n\">int</span><span class=\"p\">,</span> <span class=\"mi\">50</span><span class=\"o\">&gt;</span> <span class=\"n\">ai</span><span class=\"p\">;</span> <span class=\"o\">//</span> <span class=\"k\">if</span> <span class=\"n\">the</span> <span class=\"n\">number</span> <span class=\"n\">of</span> <span class=\"n\">int</span><span class=\"o\">-</span><span class=\"n\">s</span> <span class=\"n\">are</span> <span class=\"n\">fixed</span>\n</code></pre></div>",
+        "id": 245837944,
+        "sender_full_name": "QuBit",
+        "timestamp": 1626188487
+    },
+    {
+        "content": "<p>Is there a problem for a <code>DataFrame</code> <code>x</code> when you call <code>mean(x, dims=2)</code> or <code>std(x, dims=2)</code>? Do you need this <code>Array(x)</code>?</p>",
+        "id": 245838549,
+        "sender_full_name": "Daniel Karrasch",
+        "timestamp": 1626188653
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"421686\">Daniel Karrasch</span> </p>\n<p>Yes -- without the Array() method, I get the error that:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code>  <span class=\"n\">no</span> <span class=\"n\">method</span> <span class=\"n\">matches</span> <span class=\"n\">mean</span><span class=\"p\">(</span><span class=\"n\">DataFrames</span><span class=\"o\">.</span><span class=\"n\">DataFrame</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 245839035,
+        "sender_full_name": "QuBit",
+        "timestamp": 1626188828
+    },
+    {
+        "content": "<p>Aha, that may be because it is common that DataFrames are non-numeric? What does <code>DataFrames.jl</code> recommend for operations like that? That should be a common problem.</p>",
+        "id": 245845015,
+        "sender_full_name": "Daniel Karrasch",
+        "timestamp": 1626191290
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"421686\">Daniel Karrasch</span> </p>\n<p>I am not seeing anything specific to this error message <a href=\"https://dataframes.juliadata.org/stable/man/querying_frameworks/\">HERE</a></p>",
+        "id": 245845763,
+        "sender_full_name": "QuBit",
+        "timestamp": 1626191625
+    },
+    {
+        "content": "<p>Recommended way to work with such operations described here: <a href=\"https://bkamins.github.io/julialang/2021/07/09/multicol.html\">https://bkamins.github.io/julialang/2021/07/09/multicol.html</a></p>",
+        "id": 245849605,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1626193304
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"390081\">QuBit</span> has marked this topic as resolved.</p>",
+        "id": 246566378,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1626776026
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"390081\">QuBit</span> has marked this topic as unresolved.</p>",
+        "id": 246566470,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1626776079
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"390081\">QuBit</span> has marked this topic as resolved.</p>",
+        "id": 246566496,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1626776106
+    }
+]

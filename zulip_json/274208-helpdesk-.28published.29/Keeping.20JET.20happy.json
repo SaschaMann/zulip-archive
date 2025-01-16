@@ -1,0 +1,470 @@
+[
+    {
+        "content": "<p>I'm starting to use JET to test one of my packages (Gaston), and it's already found a few places with subtly incorrect code <span aria-label=\"heart\" class=\"emoji emoji-2764\" role=\"img\" title=\"heart\">:heart:</span> </p>\n<p>However, in other cases I'm struggling with false positives. For example, in</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">if</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"sc\">'a'</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"sc\">'b'</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"sc\">'c'</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>it complains that I may be using <code>missing</code> in a Boolean context (since <code>in</code> can return <code>missing</code>). However, I'm sure that <code>x</code> is never <code>missing</code>. How can I tell JET that? I tried</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">Char</span>\n<span class=\"k\">if</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"sc\">'a'</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"sc\">'b'</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"sc\">'c'</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>but it doesn't work. On the other hand, these work:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">if</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">Char</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"sc\">'a'</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"sc\">'b'</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"sc\">'c'</span><span class=\"p\">)</span>\n</code></pre></div>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">if</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">Char</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"sc\">'a'</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"sc\">'b'</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"sc\">'c'</span><span class=\"p\">))</span>\n</code></pre></div>\n<p>but the code becomes less readable IMO. What's the best way to proceed here?</p>",
+        "id": 357991283,
+        "sender_full_name": "mbaz",
+        "timestamp": 1683927745
+    },
+    {
+        "content": "<p>One more; JET complains that <code>IJulia</code> is not defined:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">isdefined</span><span class=\"p\">(</span><span class=\"n\">Main</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"ss\">:IJulia</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">&amp;&amp;</span><span class=\"w\"> </span><span class=\"n\">Main</span><span class=\"o\">.</span><span class=\"n\">IJulia</span><span class=\"o\">.</span><span class=\"n\">inited</span>\n</code></pre></div>\n<p>It doesn't seem to take into account that <code>&amp;&amp;</code> shortcircuits.</p>",
+        "id": 357994422,
+        "sender_full_name": "mbaz",
+        "timestamp": 1683929223
+    },
+    {
+        "content": "<p>Can you put the <code>x::Char</code> at the place where <code>x</code> is defined?</p>",
+        "id": 357999446,
+        "sender_full_name": "jar",
+        "timestamp": 1683931636
+    },
+    {
+        "content": "<p>Yep! That works. <code>x</code> is actually the iteration variable in an outer <code>for</code> loop, but it turns out I can type assert it there. Thanks!</p>",
+        "id": 358000088,
+        "sender_full_name": "mbaz",
+        "timestamp": 1683931928
+    },
+    {
+        "content": "<p>This one has me completely stumped... I have <code>pl::Vector{Pair}</code> and <code>count::Int</code>:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">z</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">pl</span><span class=\"p\">[</span><span class=\"n\">count</span><span class=\"o\">+</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"k\">end</span><span class=\"p\">]</span>\n</code></pre></div>\n<p>makes JET complain with:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"w\">  </span><span class=\"n\">┌</span><span class=\"w\"> </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"o\">/</span><span class=\"n\">home</span><span class=\"o\">/</span><span class=\"n\">miguel</span><span class=\"o\">/</span><span class=\"n\">rcs</span><span class=\"o\">/</span><span class=\"n\">jdev</span><span class=\"o\">/</span><span class=\"n\">Gaston</span><span class=\"o\">/</span><span class=\"n\">src</span><span class=\"o\">/</span><span class=\"n\">gaston_aux</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">465</span><span class=\"w\"> </span><span class=\"n\">pl</span><span class=\"p\">[</span><span class=\"n\">count</span><span class=\"w\"> </span><span class=\"n\">Gaston</span><span class=\"o\">.:+</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"w\"> </span><span class=\"n\">Gaston</span><span class=\"o\">.:</span><span class=\"p\">(</span><span class=\"o\">:</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"n\">lastindex</span><span class=\"p\">(</span><span class=\"n\">pl</span><span class=\"p\">)]</span>\n<span class=\"w\">  </span><span class=\"n\">│┌</span><span class=\"w\"> </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">array</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">925</span><span class=\"w\"> </span><span class=\"n\">copyto!</span><span class=\"p\">(</span><span class=\"n\">X</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">firstindex</span><span class=\"p\">(</span><span class=\"n\">X</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">A</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">first</span><span class=\"p\">(</span><span class=\"n\">I</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">lI</span><span class=\"p\">)</span>\n<span class=\"w\">  </span><span class=\"n\">││┌</span><span class=\"w\"> </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">array</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">319</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">_copyto_impl!</span><span class=\"p\">(</span><span class=\"n\">dest</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">doffs</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">src</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">soffs</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">n</span><span class=\"p\">)</span>\n<span class=\"w\">  </span><span class=\"n\">│││┌</span><span class=\"w\"> </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">array</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">327</span><span class=\"w\"> </span><span class=\"n\">unsafe_copyto!</span><span class=\"p\">(</span><span class=\"n\">dest</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">doffs</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">src</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">soffs</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">n</span><span class=\"p\">)</span>\n<span class=\"w\">  </span><span class=\"n\">││││┌</span><span class=\"w\"> </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">array</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">281</span><span class=\"w\"> </span><span class=\"n\">srcp</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">pointer</span><span class=\"p\">(</span><span class=\"n\">src</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">soffs</span><span class=\"p\">)</span>\n<span class=\"w\">  </span><span class=\"n\">│││││┌</span><span class=\"w\"> </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">abstractarray</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">1243</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">_memory_offset</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">i</span><span class=\"p\">)</span>\n<span class=\"w\">  </span><span class=\"n\">││││││┌</span><span class=\"w\"> </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">abstractarray</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">1247</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">elsize</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n<span class=\"w\">  </span><span class=\"n\">│││││││┌</span><span class=\"w\"> </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">abstractarray</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">251</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">elsize</span><span class=\"p\">(</span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">))</span>\n<span class=\"w\">  </span><span class=\"n\">││││││││┌</span><span class=\"w\"> </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">array</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">213</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">aligned_sizeof</span><span class=\"p\">(</span><span class=\"n\">T</span><span class=\"p\">)</span>\n<span class=\"w\">  </span><span class=\"n\">│││││││││┌</span><span class=\"w\"> </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">reflection</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">392</span><span class=\"w\"> </span><span class=\"n\">al</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">datatype_alignment</span><span class=\"p\">(</span><span class=\"n\">T</span><span class=\"p\">)</span>\n<span class=\"w\">  </span><span class=\"n\">││││││││││</span><span class=\"w\"> </span><span class=\"n\">no</span><span class=\"w\"> </span><span class=\"n\">matching</span><span class=\"w\"> </span><span class=\"n\">method</span><span class=\"w\"> </span><span class=\"n\">found</span><span class=\"w\"> </span><span class=\"sb\">`datatype_alignment(::Type{Pair})`</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"n\">al</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">datatype_alignment</span><span class=\"p\">(</span><span class=\"n\">T</span><span class=\"o\">::</span><span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">Pair</span><span class=\"p\">})</span>\n</code></pre></div>\n<p>Mind, this code works perfectly fine under normal usage.</p>",
+        "id": 358000726,
+        "sender_full_name": "mbaz",
+        "timestamp": 1683932172
+    },
+    {
+        "content": "<p>Ha, figured it out! This was inside a function <code>f(pl::Vector{Pair})</code> but I had to declare it as <code>f(pl::Vector{P}) where P &lt;: Pair</code>. Darn transitive (or whatever) types get me all the time <span aria-label=\"sweat smile\" class=\"emoji emoji-1f605\" role=\"img\" title=\"sweat smile\">:sweat_smile:</span></p>",
+        "id": 358001918,
+        "sender_full_name": "mbaz",
+        "timestamp": 1683932704
+    },
+    {
+        "content": "<p>The undefined symbol is the one I don't know how to fix yet</p>",
+        "id": 358001960,
+        "sender_full_name": "mbaz",
+        "timestamp": 1683932720
+    },
+    {
+        "content": "<p><a href=\"https://github.com/search?q=JET.jl&amp;type=Repositories\">JET.jl</a> can't really see through the <code>isdefined</code> check - it doesn't know what exactly you're passing as the Symbol (it just sees the symbol), so that could be improved. Maybe open an issue at JET? Not sure where the improvement would need to be, either there or in the compiler to eliminate the <code>UndefVarError</code> case there..</p>",
+        "id": 358040767,
+        "sender_full_name": "Sukera",
+        "timestamp": 1683958269
+    },
+    {
+        "content": "<p>Yeah, I can see that it's quite difficult to determine statically that during execution no undefined symbol will be found.</p>",
+        "id": 358119674,
+        "sender_full_name": "mbaz",
+        "timestamp": 1683988411
+    },
+    {
+        "content": "<p>I think cases like yours where you explicitly want to check whether IJulia is loaded should be handled by package extensions with 1.9+</p>",
+        "id": 358120130,
+        "sender_full_name": "Sukera",
+        "timestamp": 1683988582
+    },
+    {
+        "content": "<p>I want to keep compatibility with LTS, but I'll look into package extensions. I'm not sure it will do the trick, though -- IJulia is not a dependency, and I need to know if it's both loaded and active.</p>",
+        "id": 358121155,
+        "sender_full_name": "mbaz",
+        "timestamp": 1683988972
+    },
+    {
+        "content": "<p>Does JET not provide a way to ignore a block of code?</p>",
+        "id": 358123983,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1683990021
+    },
+    {
+        "content": "<p>I just started using it yesterday... I haven't found a way to do that.</p>",
+        "id": 358124364,
+        "sender_full_name": "mbaz",
+        "timestamp": 1683990185
+    },
+    {
+        "content": "<p>But I just skimmed through the docs.</p>",
+        "id": 358124433,
+        "sender_full_name": "mbaz",
+        "timestamp": 1683990217
+    },
+    {
+        "content": "<p>Not that I know of, no</p>",
+        "id": 358125991,
+        "sender_full_name": "Sukera",
+        "timestamp": 1683990832
+    },
+    {
+        "content": "<p>Seems like a major omission then. No linter is perfect. Granted the model JET uses may preclude any easy ways of marking this</p>",
+        "id": 358126473,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1683991005
+    },
+    {
+        "content": "<p>If the JET user has higher standards than the code author, the user will want JET errors for code the author doesn't want them for. The user should get the final say on what JET reports.</p>",
+        "id": 358152527,
+        "sender_full_name": "jar",
+        "timestamp": 1684002947
+    },
+    {
+        "content": "<p><a href=\"https://github.com/aviatesk/JET.jl/issues/516\">https://github.com/aviatesk/JET.jl/issues/516</a></p>",
+        "id": 358154045,
+        "sender_full_name": "mbaz",
+        "timestamp": 1684003814
+    },
+    {
+        "content": "<p>But the user can always run their own tests on the code, right?</p>",
+        "id": 358154128,
+        "sender_full_name": "mbaz",
+        "timestamp": 1684003865
+    },
+    {
+        "content": "<p>The user wants to use JET to evaluate the code.</p>",
+        "id": 358154373,
+        "sender_full_name": "jar",
+        "timestamp": 1684003990
+    },
+    {
+        "content": "<p>And I (as package author) want my tests to pass... my point is that the user can always provide their own JET setup to evaluate code to their standards, regardless of what my own tests do</p>",
+        "id": 358154486,
+        "sender_full_name": "mbaz",
+        "timestamp": 1684004059
+    },
+    {
+        "content": "<p>Yep</p>",
+        "id": 358154649,
+        "sender_full_name": "jar",
+        "timestamp": 1684004165
+    },
+    {
+        "content": "<p>JET analyses are also a moving target. Getting warnings where there weren't any before after just a version bump is bad UX for a linter, and most of them take great pains to avoid that. Otherwise I'm not sure people would bother using such tools on CI.</p>",
+        "id": 358157151,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1684005755
+    },
+    {
+        "content": "<p>Granted, that's a different issue than being able to disable linter diagnostics for a certain section of code.</p>",
+        "id": 358157335,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1684005864
+    },
+    {
+        "content": "<p>This is my first time using JET, I'm waiting to see how it goes... I mostly plan to run it before tagging a new version or after significant code changes (same for AQUA)</p>",
+        "id": 358159495,
+        "sender_full_name": "mbaz",
+        "timestamp": 1684007233
+    },
+    {
+        "content": "<p>Argh... I found another kind of false positive: checking if a method exists with <code>hasmethod</code> before calling it, JET complains if the method doesn't exist.<br>\nIt seems like static-checking a dynamic language like Julia is going to be difficult.</p>",
+        "id": 358169009,
+        "sender_full_name": "mbaz",
+        "timestamp": 1684013639
+    },
+    {
+        "content": "<p>The hasmethod pattern isn't really any good anyway because it fails if there's internal dispatch.</p>",
+        "id": 358169701,
+        "sender_full_name": "jar",
+        "timestamp": 1684014153
+    },
+    {
+        "content": "<p>It's more flexible to just try the thing and have it return a success or failure value you can handle</p>",
+        "id": 358170346,
+        "sender_full_name": "jar",
+        "timestamp": 1684014711
+    },
+    {
+        "content": "<p>Would it better to use <code>applicable</code>?</p>",
+        "id": 358186150,
+        "sender_full_name": "mbaz",
+        "timestamp": 1684025645
+    },
+    {
+        "content": "<p>No those are equivalent</p>",
+        "id": 358191115,
+        "sender_full_name": "jar",
+        "timestamp": 1684027637
+    },
+    {
+        "content": "<p>In version 1.10, the compiler will know about <code>hasmethod</code>. Here's version 1.9:</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">Int</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">+</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"p\">;</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">g</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">hasmethod</span><span class=\"p\">(</span><span class=\"n\">g</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"kt\">typeof</span><span class=\"p\">(</span><span class=\"kt\">x</span><span class=\"p\">)});</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"nd\">@code_typed</span><span class=\"w\"> </span><span class=\"n\">g</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">)</span>\n<span class=\"go\">CodeInfo(</span>\n<span class=\"go\">1 ─ %1 = $(Expr(:foreigncall, :(:jl_get_world_counter), UInt64, svec(), 0, :(:ccall)))::UInt64</span>\n<span class=\"go\">│        invoke Base.to_tuple_type(Tuple{Int64}::Any)::Type{Tuple{Int64}}</span>\n<span class=\"go\">│   %3 = $(Expr(:foreigncall, :(:jl_gf_invoke_lookup), Any, svec(Any, Any, UInt64), 0, :(:ccall), Tuple{typeof(g), Int64}, :(Base.nothing), :(%1), :(%1)))::Any</span>\n<span class=\"go\">│   %4 = (%3 === Base.nothing)::Bool</span>\n<span class=\"go\">│   %5 = Core.Intrinsics.not_int(%4)::Bool</span>\n<span class=\"go\">└──      return %5</span>\n<span class=\"go\">) =&gt; Bool</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"nd\">@btime</span><span class=\"w\"> </span><span class=\"n\">g</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">)</span>\n<span class=\"go\">  111.074 ns (2 allocations: 112 bytes)</span>\n<span class=\"go\">true</span>\n</code></pre></div>\n<p>and here is v1.10</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">Int</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">+</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"p\">;</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">g</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">hasmethod</span><span class=\"p\">(</span><span class=\"n\">g</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"kt\">typeof</span><span class=\"p\">(</span><span class=\"kt\">x</span><span class=\"p\">)});</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"nd\">@code_typed</span><span class=\"w\"> </span><span class=\"n\">g</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">)</span>\n<span class=\"go\">CodeInfo(</span>\n<span class=\"go\">1 ─     return true</span>\n<span class=\"go\">) =&gt; Bool</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"nd\">@btime</span><span class=\"w\"> </span><span class=\"n\">g</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">)</span>\n<span class=\"go\">  1.080 ns (0 allocations: 0 bytes)</span>\n<span class=\"go\">true</span>\n</code></pre></div>",
+        "id": 358191840,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1684028135
+    },
+    {
+        "content": "<p>Here's an example<br>\n<a href=\"https://github.com/JuliaPreludes/Try.jl#side-notes-on-hasmethod-and-applicable-and-invoke\">https://github.com/JuliaPreludes/Try.jl#side-notes-on-hasmethod-and-applicable-and-invoke</a></p>",
+        "id": 358191986,
+        "sender_full_name": "jar",
+        "timestamp": 1684028243
+    },
+    {
+        "content": "<p>On earlier versions of julia you can use <a href=\"https://github.com/search?q=Tricks.jl&amp;type=Repositories\">Tricks.jl</a> for this though</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">Tricks</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"n\">static_hasmethod</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">Int</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">+</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"p\">;</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">g</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">static_hasmethod</span><span class=\"p\">(</span><span class=\"n\">g</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"kt\">typeof</span><span class=\"p\">(</span><span class=\"kt\">x</span><span class=\"p\">)});</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"nd\">@code_typed</span><span class=\"w\"> </span><span class=\"n\">g</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">)</span>\n<span class=\"go\">CodeInfo(</span>\n<span class=\"go\">1 ─     return true</span>\n<span class=\"go\">) =&gt; Bool</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"nd\">@btime</span><span class=\"w\"> </span><span class=\"n\">g</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">)</span>\n<span class=\"go\">  1.080 ns (0 allocations: 0 bytes)</span>\n<span class=\"go\">true</span>\n</code></pre></div>\n<p>Be warned, Jameson says this implementation is incorrect, but so far as I'm aware, he still hasn't actually shown us an example where it is incorrect or even explained in what way</p>",
+        "id": 358191998,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1684028267
+    },
+    {
+        "content": "<p>why is this stuff not documented?</p>",
+        "id": 358192124,
+        "sender_full_name": "mbaz",
+        "timestamp": 1684028391
+    },
+    {
+        "content": "<p>Why is what not documented?</p>",
+        "id": 358192190,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1684028436
+    },
+    {
+        "content": "<p>that <code>hasmethod</code> and <code>applicable</code> are not reliable</p>",
+        "id": 358192201,
+        "sender_full_name": "mbaz",
+        "timestamp": 1684028453
+    },
+    {
+        "content": "<p>They are reliable.</p>",
+        "id": 358192234,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1684028518
+    },
+    {
+        "content": "<p>If I understand <span class=\"user-mention\" data-user-id=\"326776\">@jar</span> correctly, they can return incorrect results in some cases</p>",
+        "id": 358192312,
+        "sender_full_name": "mbaz",
+        "timestamp": 1684028587
+    },
+    {
+        "content": "<p>They had unreliable performance mostly because the devs don't want you using them to build interfaces, but then people made <a href=\"https://github.com/search?q=Tricks.jl&amp;type=Repositories\">Tricks.jl</a> so eventually Jameson relented and made them fast</p>",
+        "id": 358192318,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1684028595
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"269150\">@Mason Protter</span> In the examples you showed, what is the role of <code>f</code>?</p>",
+        "id": 358192341,
+        "sender_full_name": "mbaz",
+        "timestamp": 1684028627
+    },
+    {
+        "content": "<p>Well it depends which question you mean to ask <code>hasmethod</code>: if your question is the more limited \"does this function have this method\" yes it's reliable. If it's \"will this call run without a method error\", it's not reliable.</p>",
+        "id": 358192390,
+        "sender_full_name": "jar",
+        "timestamp": 1684028657
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"345789\">mbaz</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Keeping.20JET.20happy/near/358192312\">said</a>:</p>\n<blockquote>\n<p>If I understand <span class=\"user-mention silent\" data-user-id=\"326776\">jar</span> correctly, they can return incorrect results in some cases</p>\n</blockquote>\n<p>No, Jar is just pointing out that just because a function has an applicable method, doesn't mean you won't hit an error further down the call stack</p>",
+        "id": 358192394,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1684028666
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"345789\">mbaz</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Keeping.20JET.20happy/near/358192341\">said</a>:</p>\n<blockquote>\n<p><span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span> In the examples you showed, what is the role of <code>f</code>?</p>\n</blockquote>\n<p>Some function that only has one method</p>",
+        "id": 358192412,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1684028702
+    },
+    {
+        "content": "<p>E.g. it gives <code>false</code> on <code>Float64</code>:</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"nd\">@code_typed</span><span class=\"w\"> </span><span class=\"n\">g</span><span class=\"p\">(</span><span class=\"mf\">1.0</span><span class=\"p\">)</span>\n<span class=\"go\">CodeInfo(</span>\n<span class=\"go\">1 ─     return true</span>\n<span class=\"go\">) =&gt; Bool</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"nd\">@btime</span><span class=\"w\"> </span><span class=\"n\">g</span><span class=\"p\">(</span><span class=\"mf\">1.0</span><span class=\"p\">)</span>\n<span class=\"go\">  1.080 ns (0 allocations: 0 bytes)</span>\n<span class=\"go\">true</span>\n</code></pre></div>",
+        "id": 358192432,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1684028739
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"326776\">jar</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Keeping.20JET.20happy/near/358192390\">said</a>:</p>\n<blockquote>\n<p>Well it depends which question you mean to ask <code>hasmethod</code>: if your question is the more limited \"does this function have this method\" yes it's reliable. If it's \"will this call run without a method error\", it's not reliable.</p>\n</blockquote>\n<p>To put it another way, <code>hasmethod</code> will give you the right answer, but you might still be asking a bad question.</p>",
+        "id": 358192494,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1684028796
+    },
+    {
+        "content": "<p>Yeah.  I'd say the question that <code>hasmethod</code> can answer just isn't that useful a question.</p>",
+        "id": 358192522,
+        "sender_full_name": "jar",
+        "timestamp": 1684028854
+    },
+    {
+        "content": "<p>What about this case?</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"go\">(v1.9) julia&gt; f(x::Real) = x + 1</span>\n<span class=\"go\">f (generic function with 1 method)</span>\n\n<span class=\"go\">(v1.9) julia&gt; hasmethod(f, Tuple{Float64})</span>\n<span class=\"go\">true</span>\n</code></pre></div>\n<p>but <code>f</code> has no method for tuples, right?</p>",
+        "id": 358192583,
+        "sender_full_name": "mbaz",
+        "timestamp": 1684028917
+    },
+    {
+        "content": "<p><code>hasmethod(f, Tuple{Float64})</code> is asking if <code>f</code> has a method for <code>f(::Float64)</code>, not <code>f(::Tuple{Float64})</code>.</p>",
+        "id": 358192610,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1684028967
+    },
+    {
+        "content": "<p>I.e. <code>hasmethod(f, Tuple{T, U, V})</code> is asking if <code>f(::T, ::U, ::V)</code> exists.</p>",
+        "id": 358192676,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1684029005
+    },
+    {
+        "content": "<p>Oh, darn, I forgot about <code>hasmethod</code> taking a tuple of types <span aria-label=\"face palm\" class=\"emoji emoji-1f926\" role=\"img\" title=\"face palm\">:face_palm:</span></p>",
+        "id": 358192681,
+        "sender_full_name": "mbaz",
+        "timestamp": 1684029010
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"326776\">jar</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Keeping.20JET.20happy/near/358192522\">said</a>:</p>\n<blockquote>\n<p>Yeah.  I'd say the question that <code>hasmethod</code> can answer just isn't that useful a question.</p>\n</blockquote>\n<p>In general no, but for interfaces, yeah I'd say it can be useful.</p>",
+        "id": 358192700,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1684029038
+    },
+    {
+        "content": "<p>OK, I think I get it now.</p>",
+        "id": 358192702,
+        "sender_full_name": "mbaz",
+        "timestamp": 1684029047
+    },
+    {
+        "content": "<p>i.e. a classic one is <code>hasmethod(iterate, Tuple{T})</code> to find out if you have an iterable.</p>",
+        "id": 358192712,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1684029061
+    },
+    {
+        "content": "<p>In my case, I just want to make sure a method exists for a certain combination of argument types.</p>",
+        "id": 358192790,
+        "sender_full_name": "mbaz",
+        "timestamp": 1684029148
+    },
+    {
+        "content": "<p>One way to find that out is to call the function with those arguments and see what happens</p>",
+        "id": 358192869,
+        "sender_full_name": "jar",
+        "timestamp": 1684029257
+    },
+    {
+        "content": "<p>With try/catch, right?</p>",
+        "id": 358192887,
+        "sender_full_name": "mbaz",
+        "timestamp": 1684029284
+    },
+    {
+        "content": "<p>yuck</p>",
+        "id": 358192889,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1684029287
+    },
+    {
+        "content": "<p>I don't love it</p>",
+        "id": 358192915,
+        "sender_full_name": "mbaz",
+        "timestamp": 1684029310
+    },
+    {
+        "content": "<p>What's the situation where you want to check whether a method exists?</p>",
+        "id": 358192991,
+        "sender_full_name": "jar",
+        "timestamp": 1684029395
+    },
+    {
+        "content": "<p>This is for my gnuplot frontend, Gaston. To simplify, let's say you can plot with <code>plot(x, y)</code>. Gnuplot only understands real data in a certain format, so I need to convert whatever <code>x</code> and <code>y</code> are to this format.</p>",
+        "id": 358193128,
+        "sender_full_name": "mbaz",
+        "timestamp": 1684029508
+    },
+    {
+        "content": "<p>Gaston handles the usual data types, but I want to let users define their own conversions.</p>",
+        "id": 358193150,
+        "sender_full_name": "mbaz",
+        "timestamp": 1684029543
+    },
+    {
+        "content": "<p>So I provide a function <code>convert_args</code> for users to extend. So if users call <code>plot(x::MyType, y::MyType)</code>, it works as long as users also provide <code>convert_args(x::MyType, y::MyType)</code> which returns data in gnuplot-compatible format</p>",
+        "id": 358193237,
+        "sender_full_name": "mbaz",
+        "timestamp": 1684029614
+    },
+    {
+        "content": "<p>Before calling <code>convert_args</code>, I check (with <code>hasmethod</code>) if such a method exists. This has been working fine for a long time, but <code>JET</code> flagged it.</p>",
+        "id": 358193293,
+        "sender_full_name": "mbaz",
+        "timestamp": 1684029665
+    },
+    {
+        "content": "<p>Why do you check instead of just letting it fail?</p>",
+        "id": 358193382,
+        "sender_full_name": "jar",
+        "timestamp": 1684029745
+    },
+    {
+        "content": "<p>Yeah, that seems like a case where I'd just let it fail</p>",
+        "id": 358193411,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1684029799
+    },
+    {
+        "content": "<p>Good question -- I guess the idea is to provide a nice error message explaining what the problem is and how to solve it.</p>",
+        "id": 358193413,
+        "sender_full_name": "mbaz",
+        "timestamp": 1684029803
+    },
+    {
+        "content": "<p>If you want to give them a good error message, you could always just do</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">convert_args</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">y</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">error</span><span class=\"p\">(</span><span class=\"kt\">ArgumentError</span><span class=\"p\">(</span><span class=\"s\">\"your types haven't yet implemented `convert_args` ...\"</span><span class=\"p\">))</span>\n</code></pre></div>",
+        "id": 358193472,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1684029850
+    },
+    {
+        "content": "<p>That looks indeed like a better solution, I think I'll go with it.</p>",
+        "id": 358193503,
+        "sender_full_name": "mbaz",
+        "timestamp": 1684029916
+    },
+    {
+        "content": "<p>Or even better, use <code>Base.Experimental.register_error_hint</code>.</p>",
+        "id": 358193505,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1684029917
+    },
+    {
+        "content": "<p><a href=\"https://docs.julialang.org/en/v1/base/base/#Base.Experimental.register_error_hint\">https://docs.julialang.org/en/v1/base/base/#Base.Experimental.register_error_hint</a></p>",
+        "id": 358193573,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1684029971
+    },
+    {
+        "content": "<p>Yeah, I was just looking it up</p>",
+        "id": 358193581,
+        "sender_full_name": "mbaz",
+        "timestamp": 1684029994
+    },
+    {
+        "content": "<p>Looks like it's worth a try</p>",
+        "id": 358193624,
+        "sender_full_name": "mbaz",
+        "timestamp": 1684030075
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"269150\">@Mason Protter</span> Coming back to the examples you posted above, <code>g</code> is defined as <code>g(x) = hasmethod(g, Tuple{typeof(x)})</code>, but shouldn't it be <code>g(x) = hasmethod(f, Tuple{typeof(x)})</code>?</p>",
+        "id": 358193792,
+        "sender_full_name": "mbaz",
+        "timestamp": 1684030287
+    },
+    {
+        "content": "<p>ha ha ha, yeah it should</p>",
+        "id": 358193859,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1684030356
+    },
+    {
+        "content": "<p>I should read what I write more carefully</p>",
+        "id": 358193861,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1684030363
+    },
+    {
+        "content": "<p>No problem <span aria-label=\"big smile\" class=\"emoji emoji-1f604\" role=\"img\" title=\"big smile\">:big_smile:</span>  I just wanted to make sure I understood what was going on</p>",
+        "id": 358193877,
+        "sender_full_name": "mbaz",
+        "timestamp": 1684030389
+    },
+    {
+        "content": "<p>BTW thanks a lot for your help <span class=\"user-mention\" data-user-id=\"269150\">@Mason Protter</span> <span class=\"user-mention\" data-user-id=\"326776\">@jar</span></p>",
+        "id": 358193938,
+        "sender_full_name": "mbaz",
+        "timestamp": 1684030484
+    },
+    {
+        "content": "<p>arguably <code>throw(ArgumentError(...))</code> is cleaner than <code>error(ArgumentError(...))</code> <span aria-label=\"eyes\" class=\"emoji emoji-1f440\" role=\"img\" title=\"eyes\">:eyes:</span></p>",
+        "id": 358368438,
+        "sender_full_name": "Sukera",
+        "timestamp": 1684132328
+    }
+]

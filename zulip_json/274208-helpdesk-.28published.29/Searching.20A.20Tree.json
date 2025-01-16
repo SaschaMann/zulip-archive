@@ -1,0 +1,32 @@
+[
+    {
+        "content": "<p>This might be a naive question, but is this a good way of structuring a tree search? If this were Lisp (or I didn't care about type stable return values) I'd just return false if the key wasn't found, the data if it was found.</p>\n<p>As it stands I basically have:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"kt\">Tree</span>\n    <span class=\"n\">name</span><span class=\"o\">::</span><span class=\"kt\">Symbol</span>\n    <span class=\"n\">data</span>\n    <span class=\"n\">children</span><span class=\"o\">::</span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Tree</span><span class=\"p\">}</span>\n<span class=\"k\">end</span>\n\n<span class=\"k\">function</span> <span class=\"n\">getindex</span><span class=\"p\">(</span><span class=\"n\">t</span><span class=\"o\">::</span><span class=\"kt\">Tree</span><span class=\"p\">,</span> <span class=\"n\">s</span><span class=\"o\">::</span><span class=\"kt\">Symbol</span><span class=\"p\">)</span>\n    <span class=\"k\">if</span> <span class=\"n\">isleaf</span><span class=\"p\">(</span><span class=\"n\">t</span><span class=\"p\">)</span>\n        <span class=\"k\">if</span> <span class=\"n\">s</span> <span class=\"o\">==</span> <span class=\"n\">name</span><span class=\"p\">(</span><span class=\"n\">t</span><span class=\"p\">)</span>\n            <span class=\"k\">return</span> <span class=\"n\">t</span><span class=\"o\">.</span><span class=\"n\">data</span>\n        <span class=\"k\">else</span>\n            <span class=\"n\">throw</span><span class=\"p\">(</span><span class=\"kt\">KeyError</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"p\">))</span>\n        <span class=\"k\">end</span>\n    <span class=\"k\">else</span>\n        <span class=\"k\">for</span> <span class=\"n\">child</span> <span class=\"k\">in</span> <span class=\"n\">children</span><span class=\"p\">(</span><span class=\"n\">t</span><span class=\"p\">)</span>\n            <span class=\"k\">try</span>\n                <span class=\"k\">return</span> <span class=\"n\">getindex</span><span class=\"p\">(</span><span class=\"n\">child</span><span class=\"p\">,</span> <span class=\"n\">s</span><span class=\"p\">)</span>\n            <span class=\"k\">catch</span> <span class=\"n\">e</span>\n                <span class=\"k\">if</span> <span class=\"o\">!</span><span class=\"p\">(</span><span class=\"n\">e</span> <span class=\"k\">isa</span> <span class=\"kt\">KeyError</span><span class=\"p\">)</span>\n                    <span class=\"n\">throw</span><span class=\"p\">(</span><span class=\"n\">e</span><span class=\"p\">)</span>\n                <span class=\"k\">end</span>\n            <span class=\"k\">end</span>\n        <span class=\"k\">end</span>\n        <span class=\"n\">throw</span><span class=\"p\">(</span><span class=\"kt\">KeyError</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"p\">))</span>\n    <span class=\"k\">end</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 243528450,
+        "sender_full_name": "John Honaker",
+        "timestamp": 1624373594
+    },
+    {
+        "content": "<p>Also, I know I only return data if it's a leaf, as of right now only leaves have data, but I'm not sure I'm going to keep it that way.</p>",
+        "id": 243528939,
+        "sender_full_name": "John Honaker",
+        "timestamp": 1624373775
+    },
+    {
+        "content": "<p>Usually Base APIs return Some{T} or Nothing</p>",
+        "id": 243535888,
+        "sender_full_name": "Jameson Nash",
+        "timestamp": 1624376565
+    },
+    {
+        "content": "<p><code>false</code> is a weird option, that depends on lisp assuming anything that isn't false is true</p>",
+        "id": 243535924,
+        "sender_full_name": "Jameson Nash",
+        "timestamp": 1624376585
+    },
+    {
+        "content": "<p>Well, they do usually. Either they use <code>nil</code>, <code>#false</code> or something else and then checks like</p>\n<div class=\"codehilite\" data-code-language=\"Racket\"><pre><span></span><code><span class=\"p\">(</span><span class=\"k\">define</span> <span class=\"n\">answer</span> <span class=\"p\">(</span><span class=\"n\">some-or-false-func</span> <span class=\"n\">data</span><span class=\"p\">))</span>\n<span class=\"p\">(</span><span class=\"k\">if</span> <span class=\"p\">(</span><span class=\"n\">answer</span><span class=\"p\">)</span>\n    <span class=\"n\">answer</span> <span class=\"c1\">; return answer if some</span>\n    <span class=\"p\">(</span><span class=\"nb\">error</span> <span class=\"s2\">\"Nothing found\"</span><span class=\"p\">))</span> <span class=\"c1\">; throw an error if false</span>\n</code></pre></div>\n<p>And Some/Nothing totally slipped my mind. Thanks!</p>",
+        "id": 243544778,
+        "sender_full_name": "John Honaker",
+        "timestamp": 1624380475
+    }
+]

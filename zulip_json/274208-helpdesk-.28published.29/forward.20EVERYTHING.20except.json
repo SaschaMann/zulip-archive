@@ -1,0 +1,200 @@
+[
+    {
+        "content": "<p>There are some functions and packages here and there </p>\n<ul>\n<li><a href=\"https://github.com/JeffreySarnoff/TypedDelegation.jl\">https://github.com/JeffreySarnoff/TypedDelegation.jl</a></li>\n<li><a href=\"https://github.com/FluxML/MacroTools.jl/blob/master/src/examples/forward.jl\">https://github.com/FluxML/MacroTools.jl/blob/master/src/examples/forward.jl</a>)</li>\n<li><a href=\"https://discourse.julialang.org/t/forward-all-methods-of-a-structure/11783/2?u=filchristou\">https://discourse.julialang.org/t/forward-all-methods-of-a-structure/11783/2?u=filchristou</a></li>\n<li><a href=\"https://github.com/MikeInnes/Lazy.jl/blob/6705a0aa95b2d479e4ca5b5593313b0d6a857966/src/macros.jl#L293\">https://github.com/MikeInnes/Lazy.jl/blob/6705a0aa95b2d479e4ca5b5593313b0d6a857966/src/macros.jl#L293</a><br>\n(and probably more..)<br>\nthat forward struct fields to other functions.</li>\n</ul>\n<p>And there also some packages offering an OOP experience like</p>\n<ul>\n<li><a href=\"https://github.com/search?q=ObjectedOriented.jl&amp;type=Repositories\">ObjectedOriented.jl</a></li>\n<li><a href=\"https://github.com/search?q=Classes.jl&amp;type=Repositories\">Classes.jl</a></li>\n</ul>\n<p>However I don't want to handpick which functions to forward neither care about how many variables there are or in what position is the field I want to forward.<br>\nI would like to forward everything everywhere all at once. <span aria-label=\"eye\" class=\"emoji emoji-1f441\" role=\"img\" title=\"eye\">:eye:</span> <br>\nAnd just handpick which functions I don't want to forward so that I can implement them.</p>\n<p>e.g. let's say I want to define my own <code>SimpleGraph</code> variance that just adds vertices in my own funny way.</p>\n<p>I would like to do something like (pseudocode)</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">Graphs</span><span class=\"w\"></span>\n\n<span class=\"c\"># same subtyping and parameters as SimpleGraph</span><span class=\"w\"></span>\n<span class=\"k\">struct</span> <span class=\"kt\">MyFunnySimpleGraph</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"w\"> </span><span class=\"o\">&lt;:</span><span class=\"w\"> </span><span class=\"kt\">Integer</span><span class=\"p\">}</span><span class=\"w\"> </span><span class=\"o\">&lt;:</span><span class=\"w\"> </span><span class=\"kt\">AbstractSimpleGraph</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">sg</span><span class=\"o\">::</span><span class=\"kt\">SimpleGraph</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span><span class=\"w\"></span>\n<span class=\"k\">end</span><span class=\"w\"></span>\n\n<span class=\"nd\">@forwardeverythingeverywhereallatonce</span><span class=\"w\"> </span><span class=\"n\">MyFunnySimpleGraph</span><span class=\"o\">.</span><span class=\"n\">sg</span><span class=\"w\"> </span><span class=\"n\">except</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">Graphs</span><span class=\"o\">.</span><span class=\"n\">add_vertex!</span><span class=\"w\"></span>\n<span class=\"k\">end</span><span class=\"w\"></span>\n\n<span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">Graphs</span><span class=\"o\">.</span><span class=\"n\">add_vertex!</span><span class=\"p\">(</span><span class=\"n\">mfsg</span><span class=\"o\">::</span><span class=\"kt\">MyFunnySimpleGraph</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"c\"># hilarious code</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"c\"># ...</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"c\"># end hilarious code</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">add_vertex!</span><span class=\"p\">(</span><span class=\"n\">mfsg</span><span class=\"o\">.</span><span class=\"n\">sg</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"k\">end</span><span class=\"w\"></span>\n</code></pre></div>\n<p>so I would expect even a random function defined like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">random_function_from_random_package</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">T</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">y</span><span class=\"o\">::</span><span class=\"kt\">R</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">where</span><span class=\"w\"> </span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">,</span><span class=\"kt\">R</span><span class=\"p\">}</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"c\"># code</span><span class=\"w\"></span>\n<span class=\"k\">end</span><span class=\"w\"></span>\n</code></pre></div>\n<p>when called with <code>random_function_from_random_package(10, mfsg)</code> (without use of macro)<br>\nto actually expand to <br>\n<code>random_function_from_random_package(10, mfsg.sg)</code></p>\n<p>is this even possible ?</p>",
+        "id": 324145478,
+        "sender_full_name": "Filippos Christou",
+        "timestamp": 1674850420
+    },
+    {
+        "content": "<p>So to understand the question, it’s a bit like the <code>pub</code> idea in OOP where methods in a class are made public and available to the consumer when the object holding the methods is in scope?</p>\n<p>Maybe adding an <code>export myfun</code> below the function would solve your issue? Or write a macro to allow <code>@export function myfun() … end</code>, but that doesn’t sound like the best idea. Best would probably to bite the bullet and manually define exports so that the code is easiest to understand.</p>",
+        "id": 324164678,
+        "sender_full_name": "Rik Huijzer",
+        "timestamp": 1674858076
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"425512\">Filippos Christou</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except/near/324145478\">said</a>:</p>\n<blockquote>\n<p>is this even possible ?</p>\n</blockquote>\n<p>No, though I wish it was. One good reason to not have it is that the semantics get messy when you consider multiple dispatch and being able to dynamically add methods.</p>",
+        "id": 324178207,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1674861311
+    },
+    {
+        "content": "<p>If something like <a href=\"https://docs.ruby-lang.org/en/3.2/BasicObject.html#method-i-method_missing\"><code>method_missing</code></a> could be made to work well in Julia, that would be quite interesting</p>",
+        "id": 324179145,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1674861488
+    },
+    {
+        "content": "<p>I just realized this post actually wishes for of a solution to a bigger gripe, expressed also here <a href=\"https://viralinstruction.com/posts/badjulia/#the_type_system_works_poorly\">https://viralinstruction.com/posts/badjulia/#the_type_system_works_poorly</a>.</p>",
+        "id": 324537411,
+        "sender_full_name": "Filippos Christou",
+        "timestamp": 1675062395
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"431304\">@Rik Huijzer</span> <br>\nIf I were to put it in OOP terms, I would just say subtyping structs. However knowing that this is impossible in julia I had some hopes for compositions and forwarding mechanisms, since partial solutions are already available.</p>",
+        "id": 324537637,
+        "sender_full_name": "Filippos Christou",
+        "timestamp": 1675062503
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"278065\">@Brian Chen</span> <br>\ninteresting to see how Ruby approaches this. I think there are 2 separate discussions here: <br>\n<strong>i)</strong> should there be such functionality ? <br>\n<strong>ii)</strong> how would this be implemented or what should be added in the language in order for an implementation to be possible ?</p>",
+        "id": 324538163,
+        "sender_full_name": "Filippos Christou",
+        "timestamp": 1675062761
+    },
+    {
+        "content": "<p>arguing about <code>i)</code> I agree that it might lead into shady territories, complicated patterns and hard-to-diagnose errors. However, programming is complicated and some times this is needed. Also, favoring code repetition and e.g. copying all <code>SimpleGraph</code> methods and substituting the type with <code>MyFunnnySimpleGraph</code> is a bigger programmatic sin.</p>",
+        "id": 324538653,
+        "sender_full_name": "Filippos Christou",
+        "timestamp": 1675063041
+    },
+    {
+        "content": "<p>So, I don't know what the exact repercussions would be, but I am sure it solves a big problem and a gripe for the language. At the same time it holds onto its principle of composition over inheritance.</p>",
+        "id": 324538825,
+        "sender_full_name": "Filippos Christou",
+        "timestamp": 1675063125
+    },
+    {
+        "content": "<p>Regarding <code>ii)</code>, I had the impression metaprogramming was strong enough to get us wherever we wanted. I mean, using this, packages like <code>OnjectOriented.jl</code> were built that provide a OOP experience. But I can see the challenge in this one. Ruby's <code>method_missing</code> could be implemented right away with a <code>try-catch</code>block, but it will be slow and bulky.</p>",
+        "id": 324539640,
+        "sender_full_name": "Filippos Christou",
+        "timestamp": 1675063494
+    },
+    {
+        "content": "<p>Then, I though maybe a traits mentality could get us out of this problem. After all (never used, from what I hear) Rust is only using traits to do its business. However I failed to find a trait pattern that implements such functionality.</p>",
+        "id": 324540070,
+        "sender_full_name": "Filippos Christou",
+        "timestamp": 1675063671
+    },
+    {
+        "content": "<p>If you want Julia to be OOP, then that’s asking for a painful experience. Julia is not OOP.</p>",
+        "id": 324547765,
+        "sender_full_name": "Rik Huijzer",
+        "timestamp": 1675066733
+    },
+    {
+        "content": "<p>I don't want julia to be OOP. I just want the composition over inheritance experience to be easier. Merely an extension of the well known and widely used <a href=\"https://github.com/MikeInnes/Lazy.jl/blob/6705a0aa95b2d479e4ca5b5593313b0d6a857966/src/macros.jl#L293\"><code>Lazy.@forward</code></a>.</p>",
+        "id": 324548616,
+        "sender_full_name": "Filippos Christou",
+        "timestamp": 1675066904
+    },
+    {
+        "content": "<p>I also often wish for some 'substitute struct X  for struct Y except when I say so' type of magic. </p>\n<p>A workaround I have used a couple of times is to have and <code>abstract type DecoratingX</code> which forwards all method involving an <code>x::DecoratingX</code> to <code>wrapped(x)</code>. Only practically useful when there is a small number of methods but I believe this is more of a fundamental limitation to composability/reuse (e.g. it becomes more difficult to keep consistent behaviour the more you violate SRP or something). Obviously doesn't work on types where you can't rearrange the inheritance hierarchy.</p>",
+        "id": 324601892,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1675084119
+    },
+    {
+        "content": "<p>if you're accessing object properties directly, you're setting yourself up for a world of pain imo</p>",
+        "id": 324602091,
+        "sender_full_name": "Sukera",
+        "timestamp": 1675084188
+    },
+    {
+        "content": "<p>field access should always happen through functions and you want to have an abstract supertype in almost all cases, least of which to make testing easier</p>",
+        "id": 324602231,
+        "sender_full_name": "Sukera",
+        "timestamp": 1675084224
+    },
+    {
+        "content": "<p>what you can do when you do have an abstract super type and use functions is that you can quite easily define a \"do nothing\" subtype for testing, that can return whatever you need, while still dispatching just like the \"true\" object</p>",
+        "id": 324602352,
+        "sender_full_name": "Sukera",
+        "timestamp": 1675084275
+    },
+    {
+        "content": "<p>of course none of that matters when it's not your package, at which point you're at the mercy of the package dev to know about software engineering practices.. which we sorely lack, as a mostly scientific community</p>",
+        "id": 324602515,
+        "sender_full_name": "Sukera",
+        "timestamp": 1675084327
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"306754\">Sukera</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except/near/324602091\">said</a>:</p>\n<blockquote>\n<p>if you're accessing object properties directly, you're setting yourself up for a world of pain imo</p>\n</blockquote>\n<p>Yup, accessing through functions is pretty much a prerequisite for the pattern to work.</p>",
+        "id": 324602938,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1675084451
+    },
+    {
+        "content": "<p>yeah, I dislike dot-access with a passion</p>",
+        "id": 324603004,
+        "sender_full_name": "Sukera",
+        "timestamp": 1675084470
+    },
+    {
+        "content": "<p>you can sort-of fix it by writing custom <code>getproperty</code> for all your testing subtypes, but that too is a world of unnecessary pain when the true interface (just write a damn function) is already there</p>",
+        "id": 324603170,
+        "sender_full_name": "Sukera",
+        "timestamp": 1675084526
+    },
+    {
+        "content": "<p>not to mention that you may be bound to some other interface due to that field being concretely typed at definition, so you can't replace internals...</p>",
+        "id": 324603272,
+        "sender_full_name": "Sukera",
+        "timestamp": 1675084550
+    },
+    {
+        "content": "<p>yeah. if all the codebase belongs to me, then all problems are easily solved. The hard part starts when I want to use a different source. I wish this was easy to solve.</p>",
+        "id": 324733298,
+        "sender_full_name": "Filippos Christou",
+        "timestamp": 1675098962
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"300483\">DrChainsaw</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except/near/324601892\">said</a>:</p>\n<blockquote>\n<p>I also often wish for some 'substitute struct X  for struct Y except when I say so' type of magic. </p>\n</blockquote>\n<p>I've asked about how to get these \"phantom\" types working on Slack before, but didn't get any bites. They would really useful for array wrappers.</p>",
+        "id": 324733812,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1675099118
+    },
+    {
+        "content": "<p>Maybe an issue on Base would help carry the discussion forward</p>",
+        "id": 324733858,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1675099134
+    },
+    {
+        "content": "<p>One issue I see with such a forwarding is that it is not clear oftentimes whether you want to return the wrapped field, or the original structure. Say if you have an array wrapper, how would you define <code>empty!</code> on it? Typically, <code>empty!</code> returns the emptied collection, in this case it should be the wrapper, but with forwarding it will return the result of <code>empty!</code> called on the wrapped array, and so, the wrapped array will be returned. Same story for algebraic operations, where e.g. adding two array wrappers should return an array wrapper, not the addition of the wrapped arrays which are a different type. But there, you don't want to return one of the original arguments (as you would with <code>empty!</code>), but actually rewrap the result into a new array wrapper. Then you have also problems with method ambiguities, where if you declare <code>f(t::MyType, args...; kwargs...) = f(t.inner, args...; kwargs...)</code>, you may run into dispatch issues depending on what methods are defined for <code>f</code> and specifically what was the type signature on <code>args</code>: say <code>f(::Any, ::Integer, ::Integer)</code> was defined, you'd need to actually define <code>f(::MyType, ::Integer, ::Integer)</code>. I believe the list of issues and corner cases may go on for a while, the conclusion being that such a generic forward wrapping is either not well defined or faces significant implementation challenges.</p>",
+        "id": 324739435,
+        "sender_full_name": "Cédric Belmant",
+        "timestamp": 1675100699
+    },
+    {
+        "content": "<p>So I think explicitly forwarding methods (and not implicitly as suggested by the title of this thread) makes more sense because then you can actually be clear about the expected behavior (and even define a few <code>@forward</code> macro variants or options to rewrap the result at the end, or return the original argument, that kind of stuff).</p>",
+        "id": 324740174,
+        "sender_full_name": "Cédric Belmant",
+        "timestamp": 1675100886
+    },
+    {
+        "content": "<p>The real fun starts when you realize that re-wrapping the result of an operation may break the semantics/invariants imposed by the wrapper :) Sometimes you really do need to have the same object be mutated</p>",
+        "id": 324842618,
+        "sender_full_name": "Sukera",
+        "timestamp": 1675149830
+    },
+    {
+        "content": "<p>yeah. that's a very good point.<br>\nI guess you shouldn't forward as a non-brainer.</p>\n<p>Could this kind of wrapping though be used as a non-brainer ?</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"kt\">MyWrapperType</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">wrapped</span><span class=\"o\">::</span><span class=\"kt\">AnotherType</span><span class=\"w\"></span>\n<span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"n\">wrapper</span><span class=\"p\">(</span><span class=\"n\">mwt</span><span class=\"o\">::</span><span class=\"kt\">MyWrapperType</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">mwt</span><span class=\"o\">.</span><span class=\"n\">wrapped</span><span class=\"w\"></span>\n\n<span class=\"n\">everyfunctionoutthere</span><span class=\"p\">(</span><span class=\"n\">mwr</span><span class=\"o\">::</span><span class=\"kt\">MyWrapperType</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">result</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">everyfunctionoutthere</span><span class=\"p\">(</span><span class=\"n\">wrapped</span><span class=\"p\">(</span><span class=\"n\">mwr</span><span class=\"p\">))</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"k\">return</span><span class=\"w\"> </span><span class=\"n\">identityorwrapped</span><span class=\"p\">(</span><span class=\"n\">result</span><span class=\"p\">)</span><span class=\"w\"></span>\n\n<span class=\"n\">identityorwrapped</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"w\"></span>\n<span class=\"n\">identityorwrapped</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">AnotherType</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">MyWrapperType</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 325628586,
+        "sender_full_name": "Filippos Christou",
+        "timestamp": 1675430595
+    },
+    {
+        "content": "<p>Probably not always... Verdict: you need a brain to code.</p>",
+        "id": 325628647,
+        "sender_full_name": "Filippos Christou",
+        "timestamp": 1675430614
+    },
+    {
+        "content": "<p>As a trivial counterexample, you could have a type that checks the backtrace in every function implemented for it for whether there is a direct chain of dispatch from the first dispatch down to the current call, using exactly that type. If there are two such blocks in the backtrace, the type knows that it's been wrapped and throws. Et voila, you have a type that is unwrappable!</p>",
+        "id": 325629398,
+        "sender_full_name": "Sukera",
+        "timestamp": 1675430795
+    },
+    {
+        "content": "<p>The only way out of that mess is to have a proper outside-extensible trait system, which we don't have :)</p>",
+        "id": 325629559,
+        "sender_full_name": "Sukera",
+        "timestamp": 1675430848
+    },
+    {
+        "content": "<p>I played a bit with <a href=\"https://github.com/search?q=SimpleTraits.jl&amp;type=Repositories\">SimpleTraits.jl</a> and <a href=\"https://github.com/search?q=WhereTraits.jl&amp;type=Repositories\">WhereTraits.jl</a>, but indeed they both seem to require modification of original code to do what this post desires...and that's a deal breaker.</p>",
+        "id": 325631741,
+        "sender_full_name": "Filippos Christou",
+        "timestamp": 1675431363
+    }
+]

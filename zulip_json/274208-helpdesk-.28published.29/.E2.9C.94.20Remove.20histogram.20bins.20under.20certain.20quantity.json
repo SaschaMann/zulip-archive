@@ -1,0 +1,32 @@
+[
+    {
+        "content": "<p>If I plot a histogram of an array, like the one below, what is the easiest way to remove values in that array that correspond to bins below a certain threshold? For example, once I look at the histogram, it's pretty easy to see that something like -160 is a good threshold in order to turn it into a more normal distribution, but I would like to do this automatically without using a plot</p>\n<p><a href=\"/user_uploads/7178/wwN0ahyWo_gt5SKH9EczeDRb/image.png\">image.png</a> </p>\n<div class=\"message_inline_image\"><a href=\"/user_uploads/7178/wwN0ahyWo_gt5SKH9EczeDRb/image.png\" title=\"image.png\"><img src=\"/user_uploads/7178/wwN0ahyWo_gt5SKH9EczeDRb/image.png\"></a></div><div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">array_new</span> <span class=\"o\">=</span> <span class=\"n\">array</span><span class=\"p\">[</span><span class=\"n\">array</span> <span class=\"o\">.&gt;</span> <span class=\"o\">-</span><span class=\"mi\">160</span><span class=\"p\">]</span>\n</code></pre></div>\n<p><a href=\"/user_uploads/7178/OIHxvoWsXDN_VoLPpIa8C8NO/image.png\">image.png</a></p>\n<div class=\"message_inline_image\"><a href=\"/user_uploads/7178/OIHxvoWsXDN_VoLPpIa8C8NO/image.png\" title=\"image.png\"><img src=\"/user_uploads/7178/OIHxvoWsXDN_VoLPpIa8C8NO/image.png\"></a></div>",
+        "id": 252849364,
+        "sender_full_name": "Dale Black",
+        "timestamp": 1631307429
+    },
+    {
+        "content": "<p>Maybe you want to find the best fitting gaussian, and plot around the fitted mean and the fitted variance?<br>\nOr an easier and cruder way might be to just throw out the lowest 10% of the data (and maybe also the top 1% ? ):</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span> <span class=\"n\">Statistics</span>\n<span class=\"k\">using</span> <span class=\"n\">Plots</span>\n\n<span class=\"n\">data</span> <span class=\"o\">=</span> <span class=\"n\">vcat</span><span class=\"p\">(</span><span class=\"n\">randn</span><span class=\"p\">(</span><span class=\"mi\">1000</span><span class=\"p\">),</span><span class=\"o\">-</span><span class=\"mf\">10.0</span><span class=\"o\">.+</span><span class=\"n\">randn</span><span class=\"p\">(</span><span class=\"mi\">100</span><span class=\"p\">))</span>\n\n<span class=\"n\">left</span> <span class=\"o\">=</span> <span class=\"n\">quantile!</span><span class=\"p\">(</span><span class=\"n\">data</span><span class=\"p\">,</span><span class=\"mf\">0.1</span><span class=\"p\">)</span>\n<span class=\"n\">right</span> <span class=\"o\">=</span> <span class=\"n\">quantile!</span><span class=\"p\">(</span><span class=\"n\">data</span><span class=\"p\">,</span><span class=\"mf\">0.99</span><span class=\"p\">)</span>\n\n<span class=\"n\">histogram</span><span class=\"p\">(</span><span class=\"n\">data</span><span class=\"p\">[</span> <span class=\"n\">left</span> <span class=\"o\">.&lt;</span> <span class=\"n\">data</span> <span class=\"o\">.&lt;</span> <span class=\"n\">right</span><span class=\"p\">])</span>\n</code></pre></div>",
+        "id": 252864464,
+        "sender_full_name": "Robbie Rosati",
+        "timestamp": 1631316710
+    },
+    {
+        "content": "<p>Or for that matter you could estimate the mean and variance of the gaussian from more quantiles</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">approx_mean</span> <span class=\"o\">=</span> <span class=\"n\">quantile!</span><span class=\"p\">(</span><span class=\"n\">data</span><span class=\"p\">,</span><span class=\"mf\">0.5</span><span class=\"p\">)</span>\n<span class=\"n\">approx_stdev</span> <span class=\"o\">=</span> <span class=\"p\">(</span> <span class=\"n\">quantile!</span><span class=\"p\">(</span><span class=\"n\">data</span><span class=\"p\">,</span><span class=\"mf\">0.185</span><span class=\"p\">)</span> <span class=\"o\">+</span> <span class=\"n\">quantile!</span><span class=\"p\">(</span><span class=\"n\">data</span><span class=\"p\">,</span><span class=\"mf\">0.815</span><span class=\"p\">)</span> <span class=\"p\">)</span> <span class=\"o\">/</span> <span class=\"mi\">2</span>   <span class=\"c\"># middle 63%</span>\n</code></pre></div>",
+        "id": 252864889,
+        "sender_full_name": "Robbie Rosati",
+        "timestamp": 1631316973
+    },
+    {
+        "content": "<p>Thank you! That works great</p>",
+        "id": 252939369,
+        "sender_full_name": "Dale Black",
+        "timestamp": 1631398788
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"352971\">Dale Black</span> has marked this topic as resolved.</p>",
+        "id": 252939370,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1631398791
+    }
+]

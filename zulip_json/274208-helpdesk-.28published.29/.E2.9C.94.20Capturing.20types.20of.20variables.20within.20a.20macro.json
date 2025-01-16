@@ -1,0 +1,212 @@
+[
+    {
+        "content": "<p>Say I want to write a macro</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"nd\">@foo</span><span class=\"w\"> </span><span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">,</span><span class=\"n\">b</span><span class=\"p\">,</span><span class=\"n\">c</span><span class=\"p\">)</span><span class=\"w\"></span>\n</code></pre></div>\n<p>that captures and modifies a function call <code>f(a,b,c)</code>. Is there any way to get the types of the arguments <code>a</code>,<code>b</code>, etc. within the macro?</p>",
+        "id": 284939518,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1654294992
+    },
+    {
+        "content": "<p>Within the macro they're all just <code>Symbol</code>s within the captured Expr, so I can't just use <code>typeof</code> directly...</p>",
+        "id": 284939833,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1654295268
+    },
+    {
+        "content": "<p>The only way I can think of is something along the lines of </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">macro</span><span class=\"w\"> </span><span class=\"n\">bad_form</span><span class=\"p\">(</span><span class=\"n\">expr</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"n\">argtypes</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">ntuple</span><span class=\"p\">(</span><span class=\"n\">i</span><span class=\"o\">-&gt;</span><span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">eval</span><span class=\"p\">(</span><span class=\"n\">expr</span><span class=\"o\">.</span><span class=\"n\">args</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"o\">+</span><span class=\"mi\">1</span><span class=\"p\">])),</span><span class=\"w\"> </span><span class=\"n\">length</span><span class=\"p\">(</span><span class=\"n\">expr</span><span class=\"o\">.</span><span class=\"n\">args</span><span class=\"p\">)</span><span class=\"o\">-</span><span class=\"mi\">1</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"o\">:</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">argtypes</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"k\">end</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 284939859,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1654295282
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">a</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">b</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">c</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mf\">2.0</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">3</span><span class=\"o\">//</span><span class=\"mi\">4</span><span class=\"w\"></span>\n<span class=\"go\">(1, 2.0, 3//4)</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"nd\">@bad_form</span><span class=\"w\"> </span><span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">,</span><span class=\"n\">b</span><span class=\"p\">,</span><span class=\"n\">c</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"go\">(Int64, Float64, Rational{Int64})</span>\n</code></pre></div>\n<p>which works in global scope but is a massive code smell AFAIU</p>",
+        "id": 284939935,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1654295343
+    },
+    {
+        "content": "<p>N.b. I can't do something like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">macro</span><span class=\"w\"> </span><span class=\"n\">good_form_but_not_helpful</span><span class=\"p\">(</span><span class=\"n\">expr</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"o\">:</span><span class=\"p\">(</span><span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"p\">(</span><span class=\"n\">expr</span><span class=\"o\">.</span><span class=\"n\">args</span><span class=\"p\">[</span><span class=\"mi\">2</span><span class=\"p\">])))</span><span class=\"w\"></span>\n<span class=\"k\">end</span><span class=\"w\"></span>\n</code></pre></div>\n<p>because I need access to the types within the body of the macro</p>",
+        "id": 284940222,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1654295632
+    },
+    {
+        "content": "<p>No, you cannot do this</p>",
+        "id": 284942690,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1654297614
+    },
+    {
+        "content": "<p>The only real way is with a generated function</p>",
+        "id": 284942714,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1654297641
+    },
+    {
+        "content": "<p>e.g.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">macro</span><span class=\"w\"> </span><span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"n\">expr</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">     </span><span class=\"n\">some_data</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">extract_info</span><span class=\"p\">(</span><span class=\"n\">expr</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">     </span><span class=\"o\">:</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">some_data</span><span class=\"p\">))</span><span class=\"w\"></span>\n<span class=\"k\">end</span><span class=\"w\"></span>\n\n<span class=\"nd\">@generated</span><span class=\"w\"> </span><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"n\">some_data</span><span class=\"o\">::</span><span class=\"kt\">T</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">where</span><span class=\"w\"> </span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"c\"># code generation dending on T here</span><span class=\"w\"></span>\n<span class=\"k\">end</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 284942811,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1654297733
+    },
+    {
+        "content": "<p>Huh, bummer.</p>",
+        "id": 284943759,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1654298665
+    },
+    {
+        "content": "<p>It's funny because it doesn't seem that hard</p>",
+        "id": 284943763,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1654298670
+    },
+    {
+        "content": "<p>But I guess that explains why the <code>@ccall</code> macro makes you manually annotate the types of everything rather than being able to just figure them out itself</p>",
+        "id": 284943808,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1654298711
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"293896\">Brenhin Keller</span> has marked this topic as resolved.</p>",
+        "id": 284943818,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1654298724
+    },
+    {
+        "content": "<p>Don't the <code>@code_*</code> macros do exactly this? How do they work? Do they use the generated function suggested above? I'm away from computer, can't easily check myself.</p>\n<p>Note that <code>@ccall</code> shouldn't infer the type of the arguments, you can pass a value with a different type as long as it can be converted to the actual type required by the library</p>",
+        "id": 284949426,
+        "sender_full_name": "Mosè Giordano",
+        "timestamp": 1654305848
+    },
+    {
+        "content": "<p>Ok, I browsed a bit the repo on the phone and found it: <a href=\"https://github.com/JuliaLang/julia/blob/bd8dbc388c7b89f68838ca554ed7ba91740cce75/stdlib/InteractiveUtils/src/macros.jl#L34\">https://github.com/JuliaLang/julia/blob/bd8dbc388c7b89f68838ca554ed7ba91740cce75/stdlib/InteractiveUtils/src/macros.jl#L34</a></p>",
+        "id": 284949891,
+        "sender_full_name": "Mosè Giordano",
+        "timestamp": 1654306614
+    },
+    {
+        "content": "<p>I don't see any generated function anywhere</p>",
+        "id": 284949980,
+        "sender_full_name": "Mosè Giordano",
+        "timestamp": 1654306754
+    },
+    {
+        "content": "<p>Oh woah!</p>",
+        "id": 284950460,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1654307523
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"293896\">Brenhin Keller</span> has marked this topic as unresolved.</p>",
+        "id": 284950468,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1654307548
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269186\">Mosè Giordano</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Capturing.20types.20of.20variables.20within.20a.20macro/near/284949426\">said</a>:</p>\n<blockquote>\n<p>Don't the <code>@code_*</code> macros do exactly this? How do they work? Do they use the generated function suggested above? I'm away from computer, can't easily check myself.</p>\n<p>Note that <code>@ccall</code> shouldn't infer the type of the arguments, you can pass a value with a different type as long as it can be converted to the actual type required by the library</p>\n</blockquote>\n<p>The <code>@code_*</code> macros do not do anything with the type in their body.</p>",
+        "id": 284952108,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1654309979
+    },
+    {
+        "content": "<p>You can check with <code>@macroexpand</code>.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"nd\">@macroexpand</span><span class=\"w\"> </span><span class=\"nd\">@code_typed</span><span class=\"w\"> </span><span class=\"n\">sin</span><span class=\"p\">(</span><span class=\"mf\">1.0</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"k\">quote</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"k\">local</span><span class=\"w\"> </span><span class=\"sa\">var</span><span class=\"s\">\"#1263#results\"</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">InteractiveUtils</span><span class=\"o\">.</span><span class=\"n\">code_typed</span><span class=\"p\">(</span><span class=\"n\">sin</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">typesof</span><span class=\"p\">)(</span><span class=\"mf\">1.0</span><span class=\"p\">))</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"k\">if</span><span class=\"w\"> </span><span class=\"n\">InteractiveUtils</span><span class=\"o\">.</span><span class=\"n\">length</span><span class=\"p\">(</span><span class=\"sa\">var</span><span class=\"s\">\"#1263#results\"</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">==</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"sa\">var</span><span class=\"s\">\"#1263#results\"</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"k\">else</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"sa\">var</span><span class=\"s\">\"#1263#results\"</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"k\">end</span><span class=\"w\"></span>\n</code></pre></div>\n<p>That is, it just becomes <code>code_typed(sin, (Base.typesof)(1.0))</code></p>",
+        "id": 284952194,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1654310055
+    },
+    {
+        "content": "<p>I only brought up generated functions because <span class=\"user-mention\" data-user-id=\"293896\">@Brenhin Keller</span> wanted the code generation itself to depend on the types</p>",
+        "id": 284952205,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1654310096
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"293896\">Brenhin Keller</span> has marked this topic as resolved.</p>",
+        "id": 284952216,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1654310114
+    },
+    {
+        "content": "<p>Ok, so turns out there <em>is</em> also <code>Core.eval</code>, which <code>@static</code> uses in a very similar context... I wonder if anything makes this unsafe:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">macro</span><span class=\"w\"> </span><span class=\"n\">static_types</span><span class=\"p\">(</span><span class=\"n\">expr</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"n\">argtypes</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">ntuple</span><span class=\"p\">(</span><span class=\"n\">i</span><span class=\"o\">-&gt;</span><span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">Core</span><span class=\"o\">.</span><span class=\"n\">eval</span><span class=\"p\">(</span><span class=\"n\">__module__</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">expr</span><span class=\"o\">.</span><span class=\"n\">args</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"o\">+</span><span class=\"mi\">1</span><span class=\"p\">])),</span><span class=\"w\"> </span><span class=\"n\">length</span><span class=\"p\">(</span><span class=\"n\">expr</span><span class=\"o\">.</span><span class=\"n\">args</span><span class=\"p\">)</span><span class=\"o\">-</span><span class=\"mi\">1</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"o\">:</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">argtypes</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"k\">end</span><span class=\"w\"></span>\n</code></pre></div>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">a</span><span class=\"p\">,</span><span class=\"n\">b</span><span class=\"p\">,</span><span class=\"n\">c</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">ones</span><span class=\"p\">(</span><span class=\"mi\">2</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"mf\">3.0</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"nb\">false</span><span class=\"w\"></span>\n<span class=\"go\">([1.0, 1.0], 3.0, false)</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"nd\">@static_types</span><span class=\"w\"> </span><span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">,</span><span class=\"n\">b</span><span class=\"p\">,</span><span class=\"n\">c</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"go\">(Vector{Float64}, Float64, Bool)</span>\n</code></pre></div>",
+        "id": 285497348,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1654760564
+    },
+    {
+        "content": "<p>unsafe in what regard?</p>",
+        "id": 285497512,
+        "sender_full_name": "Sukera",
+        "timestamp": 1654760652
+    },
+    {
+        "content": "<p>that still just looks up the argument in global scope</p>",
+        "id": 285497537,
+        "sender_full_name": "Sukera",
+        "timestamp": 1654760667
+    },
+    {
+        "content": "<p>Dunno, I was just always told \"you're not supposed to use <code>eval</code>in a macro\"</p>",
+        "id": 285497557,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1654760687
+    },
+    {
+        "content": "<p>so I think the macro only works in global scope</p>",
+        "id": 285497559,
+        "sender_full_name": "Sukera",
+        "timestamp": 1654760689
+    },
+    {
+        "content": "<p>yeah, but that's because <code>eval</code>ing the code created by the macro is redundant when you can just return the expression from the macro in the first place</p>",
+        "id": 285497606,
+        "sender_full_name": "Sukera",
+        "timestamp": 1654760726
+    },
+    {
+        "content": "<p>I guess it pretty much has the same limitations <code>@static</code> does</p>",
+        "id": 285498011,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1654761029
+    },
+    {
+        "content": "<p>Works fine in a module but only works off variables in the global scope of that module</p>",
+        "id": 285498212,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1654761155
+    },
+    {
+        "content": "<p>Still could be useful for some things (the difference from just returning from the macro being you can know earlier in compilation pipeline, so can use that information inside the body of the macro to, e.g., interpolate into an llvmcall, etc.)</p>",
+        "id": 285498272,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1654761209
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"293896\">@Brenhin Keller</span> all the problems with <code>@eval</code> here apply to <code>Core.eval</code>.</p>",
+        "id": 285616501,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1654823169
+    },
+    {
+        "content": "<p>In fact,</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"nd\">@macroexpand1</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"nd\">@eval</span><span class=\"w\"> </span><span class=\"n\">Foo</span><span class=\"w\"> </span><span class=\"n\">bar</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"o\">:</span><span class=\"p\">(</span><span class=\"n\">Core</span><span class=\"o\">.</span><span class=\"n\">eval</span><span class=\"p\">(</span><span class=\"n\">Foo</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"ss\">:bar</span><span class=\"p\">))</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 285616732,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1654823230
+    },
+    {
+        "content": "<p>But yeah, there are contexts where <code>eval</code> is fine to use in a macro. Anything that is supposed to be evaluated when the code is <strong>parsed</strong> and doesn't actually depend on runtime or compile time info is fine. It's just something that's commonly misused</p>",
+        "id": 285617102,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1654823344
+    },
+    {
+        "content": "<p>Yeah, that makes sense</p>",
+        "id": 285619540,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1654824070
+    },
+    {
+        "content": "<p>thanks!</p>",
+        "id": 285619544,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1654824076
+    }
+]

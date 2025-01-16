@@ -1,0 +1,302 @@
+[
+    {
+        "content": "<p>Does anyone know of an AbstractArray subtype that has an expensive length method? <a href=\"https://github.com/JuliaLang/julia/pull/52133#issuecomment-1825357138\">ref</a></p>",
+        "id": 403977663,
+        "sender_full_name": "Lilith Hafner",
+        "timestamp": 1700836168
+    },
+    {
+        "content": "<p>Here's one <img alt=\":troll:\" class=\"emoji\" src=\"https://zulip-avatars.s3.amazonaws.com/7178/emoji/images/15252.png\" title=\"troll\"> </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"kt\">MyArray</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">N</span><span class=\"p\">}</span><span class=\"w\"> </span><span class=\"o\">&lt;:</span><span class=\"w\"> </span><span class=\"kt\">AbstractVector</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">N</span><span class=\"p\">}</span>\n<span class=\"w\">     </span><span class=\"n\">A</span><span class=\"o\">::</span><span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">N</span><span class=\"p\">}</span>\n<span class=\"k\">end</span>\n<span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">size</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">MyArray</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">sleep</span><span class=\"p\">(</span><span class=\"mi\">10</span><span class=\"p\">);</span><span class=\"w\"> </span><span class=\"n\">size</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">.</span><span class=\"n\">A</span><span class=\"p\">))</span>\n<span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">getindex</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">MyArray</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">i</span><span class=\"o\">...</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">getindex</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">.</span><span class=\"n\">A</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">i</span><span class=\"o\">...</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 403978878,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1700836626
+    },
+    {
+        "content": "<p>More seriously, I doubt there are many cases where the length is expensive</p>",
+        "id": 403979329,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1700836801
+    },
+    {
+        "content": "<p>but it's not hard to dream up such cases</p>",
+        "id": 403979396,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1700836813
+    },
+    {
+        "content": "<p>so I don't really see the harm in trying to avoid calling it twice if possible</p>",
+        "id": 403979448,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1700836830
+    },
+    {
+        "content": "<p>A linked list type?</p>",
+        "id": 404058464,
+        "sender_full_name": "Timothy",
+        "timestamp": 1700889279
+    },
+    {
+        "content": "<p>it'd be kinda weird to make a linked list an <code>AbstractArray</code>, but people do crazy stuff</p>",
+        "id": 404096282,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1700909389
+    },
+    {
+        "content": "<p>there are no big-O requirements on the <code>AbstractArray</code> interface <img alt=\":shrugging:\" class=\"emoji\" src=\"https://zulip-avatars.s3.amazonaws.com/7178/emoji/images/15207.gif\" title=\"shrugging\"></p>",
+        "id": 404096400,
+        "sender_full_name": "Sukera",
+        "timestamp": 1700909422
+    },
+    {
+        "content": "<p>yep</p>",
+        "id": 404096487,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1700909467
+    },
+    {
+        "content": "<p>I guess some real examples out in the ecosystem would be stuff like <a href=\"https://github.com/JuliaArrays/LazyArrays.jl#concatenation\">https://github.com/JuliaArrays/LazyArrays.jl#concatenation</a> and <a href=\"https://github.com/JuliaArrays/LazyArrays.jl#kronecker-products\">https://github.com/JuliaArrays/LazyArrays.jl#kronecker-products</a></p>",
+        "id": 404096723,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1700909588
+    },
+    {
+        "content": "<p>they're not particularly expensive to compute, but can become arbitrarily expensive through nesting</p>",
+        "id": 404096824,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1700909631
+    },
+    {
+        "content": "<p>there's also distributed arrays, with <code>O(does your network like you today)</code></p>",
+        "id": 404096979,
+        "sender_full_name": "Sukera",
+        "timestamp": 1700909698
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">LazyArrays</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"k\">let</span>\n<span class=\"w\">           </span><span class=\"n\">A</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">foldl</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">10</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">init</span><span class=\"o\">=</span><span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">3</span><span class=\"p\">,</span><span class=\"mi\">3</span><span class=\"p\">))</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"> </span><span class=\"n\">A</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">_</span>\n<span class=\"w\">               </span><span class=\"n\">ApplyArray</span><span class=\"p\">(</span><span class=\"n\">kron</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">A</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">3</span><span class=\"p\">,</span><span class=\"mi\">3</span><span class=\"p\">))</span>\n<span class=\"w\">           </span><span class=\"k\">end</span>\n<span class=\"w\">           </span><span class=\"nd\">@benchmark</span><span class=\"w\"> </span><span class=\"n\">length</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">)</span>\n<span class=\"w\">       </span><span class=\"k\">end</span>\n<span class=\"go\">BenchmarkTools.Trial: 10000 samples with 10 evaluations.</span>\n<span class=\"go\"> Range (min … max):  1.143 μs …  2.572 μs  ┊ GC (min … max): 0.00% … 0.00%</span>\n<span class=\"go\"> Time  (median):     1.195 μs              ┊ GC (median):    0.00%</span>\n<span class=\"go\"> Time  (mean ± σ):   1.211 μs ± 74.610 ns  ┊ GC (mean ± σ):  0.00% ± 0.00%</span>\n\n<span class=\"go\">    ▁▆█▆▄▂</span>\n<span class=\"go\">  ▁▂████████▆▅▄▃▃▂▂▁▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁ ▂</span>\n<span class=\"go\">  1.14 μs        Histogram: frequency by time        1.62 μs &lt;</span>\n\n<span class=\"go\"> Memory estimate: 1.73 KiB, allocs estimate: 46.</span>\n</code></pre></div>",
+        "id": 404097505,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1700909986
+    },
+    {
+        "content": "<p>though to be fair, this really doesn't need to be so slow and they could have made it less slow</p>",
+        "id": 404098271,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1700910247
+    },
+    {
+        "content": "<p>ah okay, well if you just construct it using a flat structure instead of nesting like a psychopath, it's just <code>O(number of arrays)</code>, but still.</p>",
+        "id": 404098637,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1700910421
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"k\">let</span>\n<span class=\"w\">           </span><span class=\"n\">A</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">ApplyArray</span><span class=\"p\">(</span><span class=\"n\">kron</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"n\">i</span><span class=\"p\">,</span><span class=\"n\">i</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">i</span><span class=\"w\"> </span><span class=\"o\">∈</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">10</span><span class=\"p\">)</span><span class=\"o\">...</span><span class=\"p\">)</span>\n<span class=\"w\">           </span><span class=\"nd\">@benchmark</span><span class=\"w\"> </span><span class=\"n\">length</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">)</span>\n<span class=\"w\">       </span><span class=\"k\">end</span>\n<span class=\"go\">BenchmarkTools.Trial: 10000 samples with 1000 evaluations.</span>\n<span class=\"go\"> Range (min … max):  6.261 ns … 14.106 ns  ┊ GC (min … max): 0.00% … 0.00%</span>\n<span class=\"go\"> Time  (median):     6.272 ns              ┊ GC (median):    0.00%</span>\n<span class=\"go\"> Time  (mean ± σ):   6.352 ns ±  0.197 ns  ┊ GC (mean ± σ):  0.00% ± 0.00%</span>\n\n<span class=\"go\">  █▆    ▁▅▅▅▁                               ▃▃               ▂</span>\n<span class=\"go\">  ██▄▄▄▃█████▇▄▁▅█▇▁▁▁▃▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▇▆▁▁███▇▅▆▁▅▇█▆▁▁▁▁▄█ █</span>\n<span class=\"go\">  6.26 ns      Histogram: log(frequency) by time     7.09 ns &lt;</span>\n\n<span class=\"go\"> Memory estimate: 0 bytes, allocs estimate: 0.</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"k\">let</span>\n<span class=\"w\">           </span><span class=\"n\">A</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">ApplyArray</span><span class=\"p\">(</span><span class=\"n\">kron</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"n\">i</span><span class=\"p\">,</span><span class=\"n\">i</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">i</span><span class=\"w\"> </span><span class=\"o\">∈</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">20</span><span class=\"p\">)</span><span class=\"o\">...</span><span class=\"p\">)</span>\n<span class=\"w\">           </span><span class=\"nd\">@benchmark</span><span class=\"w\"> </span><span class=\"n\">length</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">)</span>\n<span class=\"w\">       </span><span class=\"k\">end</span>\n<span class=\"go\">BenchmarkTools.Trial: 10000 samples with 999 evaluations.</span>\n<span class=\"go\"> Range (min … max):  11.854 ns … 15.595 ns  ┊ GC (min … max): 0.00% … 0.00%</span>\n<span class=\"go\"> Time  (median):     11.995 ns              ┊ GC (median):    0.00%</span>\n<span class=\"go\"> Time  (mean ± σ):   12.084 ns ±  0.193 ns  ┊ GC (mean ± σ):  0.00% ± 0.00%</span>\n\n<span class=\"go\">      ▅█ ▁▆▄▂                                       ▂ ▃▁</span>\n<span class=\"go\">  ▂▃▅████████▇▅▃▁▄▄▃▃▂▂▂▂▂▂▂▂▂▂▁▂▃▄▅▆▅▁▅▆▅▅▅▆▆▃▅▃▄▄▇█▄██▄▄▃▃▂ ▄</span>\n<span class=\"go\">  11.9 ns         Histogram: frequency by time        12.4 ns &lt;</span>\n\n<span class=\"go\"> Memory estimate: 0 bytes, allocs estimate: 0.</span>\n</code></pre></div>",
+        "id": 404098701,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1700910445
+    },
+    {
+        "content": "<p>well, turns out <code>DArray</code>s aren't resizeable, which makes their <code>length</code> a trivial <code>O(1)</code></p>",
+        "id": 404100052,
+        "sender_full_name": "Sukera",
+        "timestamp": 1700911097
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Expensive.20.60length.28.3A.3AAbstractArray.29.60/near/404096282\">said</a>:</p>\n<blockquote>\n<p>it'd be kinda weird to make a linked list an <code>AbstractArray</code>, but people do crazy stuff</p>\n</blockquote>\n<p>A real-world example of this is LinkedList implementing the List API in Java</p>",
+        "id": 404123643,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1700929296
+    },
+    {
+        "content": "<p>O(N) random access and all</p>",
+        "id": 404123660,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1700929317
+    },
+    {
+        "content": "<p>Sure, but is it an AbstractArray?</p>",
+        "id": 404137399,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1700937055
+    },
+    {
+        "content": "<p>java.util.List is pretty close to AbstractVector. And funnily enough the old Vector class was retrofitted to implement the List interface</p>",
+        "id": 404140358,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1700938283
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Expensive.20.60length.28.3A.3AAbstractArray.29.60/near/404096282\">said</a>:</p>\n<blockquote>\n<p>it'd be kinda weird to make a linked list an <code>AbstractArray</code>, but people do crazy stuff</p>\n</blockquote>\n<p>I don't see what aspect of the Array API would be violated.</p>",
+        "id": 404142690,
+        "sender_full_name": "Timothy",
+        "timestamp": 1700939151
+    },
+    {
+        "content": "<p>None of it</p>",
+        "id": 404156736,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1700945136
+    },
+    {
+        "content": "<p>I don’t think abstract array is a very useful concept to write performant algorithms against if one isn’t assuming O(1) random access and length checks. If it’s easy to avoid such assumptions I don’t see why not but I don’t really think one needs to go out of their way too far for it.</p>",
+        "id": 404171552,
+        "sender_full_name": "Eric Hanson",
+        "timestamp": 1700953159
+    },
+    {
+        "content": "<p>Yeah. Ultimately, when people write methods targeting <code>AbstractArray</code>, regular <code>Array</code> is their first consideration, and any different subtype comes secondary.</p>",
+        "id": 404172492,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1700953987
+    },
+    {
+        "content": "<p><code>Array</code> is the defacto standard, but you're allowed to create subtypes that deviate from <code>Array</code>'s behaviour in pretty wild ways, with the implicit understanding that the further you deviate, the more likely it is that something will go wrong</p>",
+        "id": 404172563,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1700954063
+    },
+    {
+        "content": "<p>I wish there was a better and more scalable way of nudging people away from writing code which promises to take AbstractArrays but only really works for Array. Even measures such as asking for functions to add guards like <code>Base.require_one_based_indexing</code> seem to be a bridge too far :(</p>",
+        "id": 404174134,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1700955692
+    },
+    {
+        "content": "<p><code>function f(::Array)</code>?</p>",
+        "id": 404176106,
+        "sender_full_name": "jar",
+        "timestamp": 1700957435
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"278065\">Brian Chen</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Expensive.20.60length.28.3A.3AAbstractArray.29.60/near/404174134\">said</a>:</p>\n<blockquote>\n<p>I wish there was a better and more scalable way of nudging people away from writing code which promises to take AbstractArrays but only really works for Array. Even measures such as asking for functions to add guards like <code>Base.require_one_based_indexing</code> seem to be a bridge too far :(</p>\n</blockquote>\n<p>I just write my methods for <code>::DenseArray</code> rather than <code>::AbstractArray</code> if I want to be able to assume one-based indexing, and have been happy with that</p>",
+        "id": 404260126,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1701006602
+    },
+    {
+        "content": "<p>Are <code>DenseArray</code>s guarunteed to have one-based indexing?</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">help</span><span class=\"o\">?&gt;</span><span class=\"w\"> </span><span class=\"kt\">DenseArray</span>\n<span class=\"n\">search</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"kt\">DenseArray</span><span class=\"w\"> </span><span class=\"kt\">DenseMatrix</span>\n\n<span class=\"w\">  </span><span class=\"kt\">DenseArray</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">N</span><span class=\"p\">}</span><span class=\"w\"> </span><span class=\"o\">&lt;:</span><span class=\"w\"> </span><span class=\"kt\">AbstractArray</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">,</span><span class=\"kt\">N</span><span class=\"p\">}</span>\n\n<span class=\"w\">  </span><span class=\"n\">N</span><span class=\"o\">-</span><span class=\"n\">dimensional</span><span class=\"w\"> </span><span class=\"n\">dense</span><span class=\"w\"> </span><span class=\"n\">array</span><span class=\"w\"> </span><span class=\"n\">with</span><span class=\"w\"> </span><span class=\"n\">elements</span><span class=\"w\"> </span><span class=\"n\">of</span><span class=\"w\"> </span><span class=\"n\">type</span><span class=\"w\"> </span><span class=\"n\">T</span><span class=\"o\">.</span><span class=\"w\"> </span><span class=\"n\">The</span><span class=\"w\"> </span><span class=\"n\">elements</span><span class=\"w\"> </span><span class=\"n\">of</span><span class=\"w\"> </span><span class=\"n\">a</span><span class=\"w\"> </span><span class=\"n\">dense</span><span class=\"w\"> </span><span class=\"n\">array</span><span class=\"w\"> </span><span class=\"n\">are</span><span class=\"w\"> </span><span class=\"n\">stored</span><span class=\"w\"> </span><span class=\"n\">contiguously</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">memory</span><span class=\"o\">.</span>\n</code></pre></div>",
+        "id": 404263048,
+        "sender_full_name": "Lilith Hafner",
+        "timestamp": 1701008830
+    },
+    {
+        "content": "<p>they are not</p>",
+        "id": 404265221,
+        "sender_full_name": "Sukera",
+        "timestamp": 1701010495
+    },
+    {
+        "content": "<p>These days I mostly think that offset arrays were a bad idea. We should have just demanded that abstract arrays do <code>1</code>-based indexing, and then purused offset index types, rather than offset array types.</p>",
+        "id": 404265363,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1701010604
+    },
+    {
+        "content": "<p>hindsight is 20/20 though</p>",
+        "id": 404265373,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1701010616
+    },
+    {
+        "content": "<p>I argued something similar on Slack the other day. That said, I think this goes beyond index bases. For example, functions assuming their array inputs are mutable or that setindex! will work over the entire index range of the array.</p>",
+        "id": 404272023,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1701015911
+    },
+    {
+        "content": "<p>yep</p>",
+        "id": 404272165,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1701016025
+    },
+    {
+        "content": "<p>I do think though that the whole offset-array thing is one of the biggest offenders for <code>AbstractArray</code> problems. In particular, I'm pretty sure it's by far the worst for causing people to get silently incorrect results rather than errors, either because <code>@inbounds</code> was misused, or because the whole array wasn't indexed over (e.g. <code>arr[1:5]</code> or whatever)</p>",
+        "id": 404272410,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1701016283
+    },
+    {
+        "content": "<p>Getting a <code>MethodError</code> because your program tried to do <code>setindex!</code> but that wasn't supported is pretty benign by comparison.</p>",
+        "id": 404272507,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1701016382
+    },
+    {
+        "content": "<p>It's a big mental drain because a lot of the time, I'll write a function, and it's a perfectly fine <code>AbstractArray</code> function, except for the fact that it assumes 1-based indexing, so then I need to decide. Do I</p>\n<ol>\n<li>fix it to use arbitrary indexing? that's sometimes easy and sometimes pretty annoying</li>\n<li>constraint it to only take <code>Array</code>? Fine, but what if I want to use views, or <code>Adjoint</code> or whatever</li>\n<li>add a <code>Base.require_one_based_indexing</code>, I guess, but that's also just a kinda ugly kludge.</li>\n</ol>\n<p>It's not a big deal, and usually there is a good solution from that list, but I don't like that I need to make that decision every time I encounter this, when it really could have just been solved once and for all by demanding 1-based indexing when you pass an <code>Integer</code> or <code>CartesianIndex</code>.</p>",
+        "id": 404272864,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1701016721
+    },
+    {
+        "content": "<p>Isn't there some wrapper type that makes one based indexing apply? I have a vague recollection.</p>",
+        "id": 404272883,
+        "sender_full_name": "Timothy",
+        "timestamp": 1701016754
+    },
+    {
+        "content": "<p>Welcome to array wrapper hell</p>",
+        "id": 404272972,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1701016830
+    },
+    {
+        "content": "<p>I don't recommend it.</p>",
+        "id": 404272981,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1701016837
+    },
+    {
+        "content": "<p>The easiest way to wrap your way out of it would be to just use another <code>OffsetArray</code>, i.e.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">OffsetArray</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">map</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"w\"> </span><span class=\"o\">-&gt;</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">s</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">size</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">)))</span>\n</code></pre></div>\n<p>but that's yet another unpleasant kldugy solution</p>",
+        "id": 404273142,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1701017018
+    },
+    {
+        "content": "<p>Note that one shouldn't blindly turn offsetarrays into 1-indexed ones in the function, and claim \"now my code supports offsetarrays\". Different indices is the actual reason to use offsetarrays in the first place! For some functions ignoring indices is fine, for many it isn't.<br>\nFor example, <code>fft(offsetarray)</code> is different from <code>fft(1-array with the same data)</code>.<br>\nOr, <code>cor(A::AbstractArray, B::AbstractArray) = cor(collect(A), collect(B))</code> method if it existed would be wrong for offsetarrays.</p>",
+        "id": 404275781,
+        "sender_full_name": "aplavin",
+        "timestamp": 1701019482
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Expensive.20.60length.28.3A.3AAbstractArray.29.60/near/404272864\">said</a>:</p>\n<blockquote>\n<ol start=\"2\">\n<li>constraint it to only take <code>Array</code>? Fine, but what if I want to use views, or <code>Adjoint</code> or whatever</li>\n</ol>\n</blockquote>\n<p>This is what makes me wonder if <code>Array</code> shouldn't have been more like <code>StrideArray</code> and internalized some of this information instead of relying on wrappers and crazy unions like <code>StridedArray</code></p>",
+        "id": 404277761,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1701021318
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Expensive.20.60length.28.3A.3AAbstractArray.29.60/near/404272507\">said</a>:</p>\n<blockquote>\n<p>Getting a <code>MethodError</code> because your program tried to do <code>setindex!</code> but that wasn't supported is pretty benign by comparison.</p>\n</blockquote>\n<p>Was thinking more of a case where e.g. an in-place function assumes it can re-use parts of the output as scratch space, but then it gets passed a wrapper type like <code>Diagonal</code> and throws an ArgumentError trying to <code>setindex!</code> where it's not allowed to. This example is a little contrived, but I feel like similar issues have shown up in the wild beofre.</p>",
+        "id": 404278282,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1701021513
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"669432\">Lilith Hafner</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Expensive.20.60length.28.3A.3AAbstractArray.29.60/near/404263048\">said</a>:</p>\n<blockquote>\n<p>Are <code>DenseArray</code>s guarunteed to have one-based indexing?</p>\n</blockquote>\n<p>Oh I may be getting confused with column-major, which they are documented as being (despite that not being in the docstring): <a href=\"https://github.com/JuliaLang/julia/blob/c30d45dfdf63c83eb864ebe924a715fe283013b4/doc/src/manual/arrays.md?plain=1#L1124C1-L1131C1\">https://github.com/JuliaLang/julia/blob/c30d45dfdf63c83eb864ebe924a715fe283013b4/doc/src/manual/arrays.md?plain=1#L1124C1-L1131C1</a></p>\n<p>IMO if they're not, it might be worth  requiring them or a subtype to be one-based too, since it might be useful to have that information in the type system</p>",
+        "id": 404283777,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1701026854
+    },
+    {
+        "content": "<blockquote>\n<p>much of the array library is implemented in a generic manner that allows all custom arrays to behave similarly.</p>\n</blockquote>\n<p><span aria-label=\"rolling on the floor laughing\" class=\"emoji emoji-1f923\" role=\"img\" title=\"rolling on the floor laughing\">:rolling_on_the_floor_laughing:</span></p>",
+        "id": 404283966,
+        "sender_full_name": "Sukera",
+        "timestamp": 1701027026
+    },
+    {
+        "content": "<p>It would not be breaking to add a <code>OneBasedAbstractArray &lt;: AbstractArray</code>, but then things like <code>SubArray</code> would need to either 1) not subtype <code>OneBasedAbstractArray</code> or 2) split into <code>OneBasedSubArray &lt;: SubArray</code>.</p>\n<p><a href=\"https://github.com/JuliaLang/julia/issues/5\">#5</a> would be the best solution. Non-dispatchable traits would be sufficient in this case and wouldn't have any of the ambiguity issues</p>",
+        "id": 404294640,
+        "sender_full_name": "Lilith Hafner",
+        "timestamp": 1701036846
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"278065\">Brian Chen</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Expensive.20.60length.28.3A.3AAbstractArray.29.60/near/404277761\">said</a>:</p>\n<blockquote>\n<p><span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Expensive.20.60length.28.3A.3AAbstractArray.29.60/near/404272864\">said</a>:</p>\n<blockquote>\n<ol start=\"2\">\n<li>constraint it to only take <code>Array</code>? Fine, but what if I want to use views, or <code>Adjoint</code> or whatever</li>\n</ol>\n</blockquote>\n<p>This is what makes me wonder if <code>Array</code> shouldn't have been more like <code>StrideArray</code> and internalized some of this information instead of relying on wrappers and crazy unions like <code>StridedArray</code></p>\n</blockquote>\n<p>It's a difficult trade off. <code>StrideArray</code> has a million different opaque, undocumented type parameters that mean different things about the array. It certainly has really nice properties, but it does come at a cost to comprehension</p>",
+        "id": 404296094,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1701038392
+    },
+    {
+        "content": "<p>But I really do think the current situation with array wrappers is borderline intolerable.</p>",
+        "id": 404296147,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1701038416
+    }
+]

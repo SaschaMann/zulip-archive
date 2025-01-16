@@ -1,0 +1,74 @@
+[
+    {
+        "content": "<p>Hey, so suppose I have a struct </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"n\">Foo</span>\n    <span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">Int</span>\n    <span class=\"n\">b</span><span class=\"o\">::</span><span class=\"kt\">Float64</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>and I basically want this thing to behave like a <code>Tuple</code> under iteration. e.g. I'd like this to 'just work' and carry no runtime performance overhead.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">f</span><span class=\"p\">((</span><span class=\"n\">a</span><span class=\"p\">,</span> <span class=\"n\">b</span><span class=\"p\">))</span> <span class=\"o\">=</span> <span class=\"n\">a</span> <span class=\"o\">+</span> <span class=\"n\">b</span>\n</code></pre></div>\n<p>What's a clean way to do this right?</p>",
+        "id": 223459994,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1611192711
+    },
+    {
+        "content": "<p>If I do the naive thing, it's very slow:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">iterate</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"o\">::</span><span class=\"n\">Foo</span><span class=\"p\">,</span> <span class=\"n\">s</span><span class=\"o\">=</span><span class=\"mi\">1</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">s</span> <span class=\"o\">&lt;=</span> <span class=\"n\">length</span><span class=\"p\">(</span><span class=\"n\">fieldnames</span><span class=\"p\">(</span><span class=\"n\">Foo</span><span class=\"p\">))</span> <span class=\"o\">?</span> <span class=\"p\">(</span><span class=\"n\">getfield</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"n\">s</span><span class=\"p\">),</span> <span class=\"n\">s</span><span class=\"o\">+</span><span class=\"mi\">1</span><span class=\"p\">)</span> <span class=\"o\">:</span> <span class=\"nb\">nothing</span>\n\n<span class=\"k\">let</span> <span class=\"n\">foo</span> <span class=\"o\">=</span> <span class=\"kt\">Ref</span><span class=\"p\">(</span><span class=\"n\">Foo</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">))</span>\n    <span class=\"nd\">@btime</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">foo</span><span class=\"p\">[])</span>\n<span class=\"k\">end</span>\n\n<span class=\"c\">#+RESULTS:</span>\n   <span class=\"mf\">802.830</span> <span class=\"n\">ns</span> <span class=\"p\">(</span><span class=\"mi\">4</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">112</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n <span class=\"mf\">3.0</span>\n</code></pre></div>\n<p>I feel there must be some clean way to basically say \"iterate this thing as if it were a Tuple\"</p>",
+        "id": 223460304,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1611193021
+    },
+    {
+        "content": "<p>Okay, so if I <em>don't</em> define the above <code>iterate</code> method and instead define</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">indexed_iterate</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"o\">::</span><span class=\"n\">Foo</span><span class=\"p\">,</span> <span class=\"n\">i</span><span class=\"o\">::</span><span class=\"kt\">Int</span><span class=\"p\">,</span> <span class=\"n\">state</span><span class=\"o\">=</span><span class=\"mi\">1</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"p\">(</span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"nd\">@_inline_meta</span><span class=\"p\">;</span> <span class=\"p\">(</span><span class=\"n\">getfield</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"n\">i</span><span class=\"p\">),</span> <span class=\"n\">i</span><span class=\"o\">+</span><span class=\"mi\">1</span><span class=\"p\">))</span>\n</code></pre></div>\n<p>everything is fast. Good to know I suppose.</p>",
+        "id": 223461339,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1611194132
+    },
+    {
+        "content": "<p>You should probably still define <code>iterate</code> as well though, since <code>indexed_iterate</code> is just an implementation detail and is always assumed to return the same results as regular iteration</p>",
+        "id": 223475149,
+        "sender_full_name": "Simeon Schaub",
+        "timestamp": 1611212026
+    },
+    {
+        "content": "<p>Still slower that <code>indexed_iterate</code>, but better that the OP</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"nd\">@inline</span> <span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">iterate</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"o\">::</span><span class=\"n\">Foo</span><span class=\"p\">,</span> <span class=\"n\">s</span> <span class=\"o\">=</span> <span class=\"mi\">1</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">s</span> <span class=\"o\">≤</span> <span class=\"n\">fieldcount</span><span class=\"p\">(</span><span class=\"n\">Foo</span><span class=\"p\">)</span> <span class=\"o\">?</span> <span class=\"p\">(</span><span class=\"n\">getfield</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"n\">s</span><span class=\"p\">),</span> <span class=\"n\">s</span> <span class=\"o\">+</span> <span class=\"mi\">1</span><span class=\"p\">)</span> <span class=\"o\">:</span> <span class=\"nb\">nothing</span>\n</code></pre></div>",
+        "id": 223537055,
+        "sender_full_name": "Pablo Zubieta",
+        "timestamp": 1611247943
+    },
+    {
+        "content": "<p>Some LinearAlgebra types does this, I thing QR does, you can perhaps see how they do it?</p>",
+        "id": 223541175,
+        "sender_full_name": "Fredrik Bagge Carlson",
+        "timestamp": 1611249495
+    },
+    {
+        "content": "<p>Hm, it seems that <span class=\"user-mention\" data-user-id=\"285376\">@Pablo Zubieta</span>'s method is just as fast as indexed_iterate for me on 1.6.</p>",
+        "id": 223541540,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1611249634
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">struct</span> <span class=\"n\">Foo</span>\n           <span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">Int</span>\n           <span class=\"n\">b</span><span class=\"o\">::</span><span class=\"kt\">Float64</span>\n       <span class=\"k\">end</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">f</span><span class=\"p\">((</span><span class=\"n\">a</span><span class=\"p\">,</span> <span class=\"n\">b</span><span class=\"p\">))</span> <span class=\"o\">=</span> <span class=\"n\">a</span> <span class=\"o\">+</span> <span class=\"n\">b</span>\n<span class=\"n\">f</span> <span class=\"p\">(</span><span class=\"n\">generic</span> <span class=\"k\">function</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@inline</span> <span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">iterate</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"o\">::</span><span class=\"n\">Foo</span><span class=\"p\">,</span> <span class=\"n\">s</span> <span class=\"o\">=</span> <span class=\"mi\">1</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">s</span> <span class=\"o\">≤</span> <span class=\"n\">fieldcount</span><span class=\"p\">(</span><span class=\"n\">Foo</span><span class=\"p\">)</span> <span class=\"o\">?</span> <span class=\"p\">(</span><span class=\"n\">getfield</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"n\">s</span><span class=\"p\">),</span> <span class=\"n\">s</span> <span class=\"o\">+</span> <span class=\"mi\">1</span><span class=\"p\">)</span> <span class=\"o\">:</span> <span class=\"nb\">nothing</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">let</span> <span class=\"n\">foo</span> <span class=\"o\">=</span> <span class=\"kt\">Ref</span><span class=\"p\">(</span><span class=\"n\">Foo</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">))</span>\n           <span class=\"nd\">@btime</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">foo</span><span class=\"p\">[])</span>\n       <span class=\"k\">end</span>\n  <span class=\"mf\">1.859</span> <span class=\"n\">ns</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n<span class=\"mf\">3.0</span>\n</code></pre></div>\n<p>and</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">struct</span> <span class=\"n\">Foo</span>\n           <span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">Int</span>\n           <span class=\"n\">b</span><span class=\"o\">::</span><span class=\"kt\">Float64</span>\n       <span class=\"k\">end</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">f</span><span class=\"p\">((</span><span class=\"n\">a</span><span class=\"p\">,</span> <span class=\"n\">b</span><span class=\"p\">))</span> <span class=\"o\">=</span> <span class=\"n\">a</span> <span class=\"o\">+</span> <span class=\"n\">b</span>\n<span class=\"n\">f</span> <span class=\"p\">(</span><span class=\"n\">generic</span> <span class=\"k\">function</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">indexed_iterate</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"o\">::</span><span class=\"n\">Foo</span><span class=\"p\">,</span> <span class=\"n\">i</span><span class=\"o\">::</span><span class=\"kt\">Int</span><span class=\"p\">,</span> <span class=\"n\">state</span><span class=\"o\">=</span><span class=\"mi\">1</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"p\">(</span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"nd\">@_inline_meta</span><span class=\"p\">;</span> <span class=\"p\">(</span><span class=\"n\">getfield</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"n\">i</span><span class=\"p\">),</span> <span class=\"n\">i</span><span class=\"o\">+</span><span class=\"mi\">1</span><span class=\"p\">))</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">let</span> <span class=\"n\">foo</span> <span class=\"o\">=</span> <span class=\"kt\">Ref</span><span class=\"p\">(</span><span class=\"n\">Foo</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">))</span>\n           <span class=\"nd\">@btime</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">foo</span><span class=\"p\">[])</span>\n       <span class=\"k\">end</span>\n  <span class=\"mf\">1.849</span> <span class=\"n\">ns</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n<span class=\"mf\">3.0</span>\n</code></pre></div>",
+        "id": 223541669,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1611249701
+    },
+    {
+        "content": "<p>Oh. I was trying on 1.5.3, great to see that the compiler is also better here in 1.6.</p>",
+        "id": 223547849,
+        "sender_full_name": "Pablo Zubieta",
+        "timestamp": 1611252441
+    },
+    {
+        "content": "<p>I think with <a href=\"https://github.com/JuliaLang/julia/pull/39285\">https://github.com/JuliaLang/julia/pull/39285</a> you wouldn’t even need an iterate method, just a semicolon:  <code>f((;a, b)) = a + b</code></p>",
+        "id": 223722927,
+        "sender_full_name": "Eric Hanson",
+        "timestamp": 1611364211
+    },
+    {
+        "content": "<p>Wow, that’s very neat. Kinda niche though, since you need to bind the variables to the same name as the property names.</p>",
+        "id": 223724902,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1611366525
+    },
+    {
+        "content": "<p>There was some discussion in <a href=\"https://github.com/JuliaLang/julia/issues/28579\">https://github.com/JuliaLang/julia/issues/28579</a> about having some more advanced matching as well. Wouldn't be too hard to add, but would need to come to a decission on how exactly that should work.</p>",
+        "id": 223741448,
+        "sender_full_name": "Simeon Schaub",
+        "timestamp": 1611395473
+    }
+]

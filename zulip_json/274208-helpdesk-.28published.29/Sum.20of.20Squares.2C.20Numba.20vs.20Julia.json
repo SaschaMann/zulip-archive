@@ -1,0 +1,398 @@
+[
+    {
+        "content": "<p>I'm trying to beat Numba and failing:</p>\n<div class=\"codehilite\" data-code-language=\"Python\"><pre><span></span><code><span class=\"n\">In</span> <span class=\"p\">[</span><span class=\"mi\">55</span><span class=\"p\">]:</span> <span class=\"nd\">@numba</span><span class=\"o\">.</span><span class=\"n\">jit</span><span class=\"p\">(</span><span class=\"n\">nopython</span><span class=\"o\">=</span><span class=\"kc\">True</span><span class=\"p\">,</span> <span class=\"n\">fastmath</span><span class=\"o\">=</span><span class=\"kc\">False</span><span class=\"p\">,</span> <span class=\"n\">parallel</span><span class=\"o\">=</span><span class=\"kc\">True</span><span class=\"p\">)</span>\n    <span class=\"o\">...</span><span class=\"p\">:</span> <span class=\"k\">def</span> <span class=\"nf\">sum_squares</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">):</span>\n    <span class=\"o\">...</span><span class=\"p\">:</span>     <span class=\"k\">return</span> <span class=\"n\">np</span><span class=\"o\">.</span><span class=\"n\">sum</span><span class=\"p\">(</span><span class=\"n\">np</span><span class=\"o\">.</span><span class=\"n\">square</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">))</span>\n    <span class=\"o\">...</span><span class=\"p\">:</span>\n\n<span class=\"n\">In</span> <span class=\"p\">[</span><span class=\"mi\">58</span><span class=\"p\">]:</span> <span class=\"o\">%</span><span class=\"n\">timeit</span> <span class=\"n\">sum_squares</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">)</span>\n<span class=\"mi\">874</span> <span class=\"n\">µs</span> <span class=\"err\">±</span> <span class=\"mf\">19.6</span> <span class=\"n\">µs</span> <span class=\"n\">per</span> <span class=\"n\">loop</span> <span class=\"p\">(</span><span class=\"n\">mean</span> <span class=\"err\">±</span> <span class=\"n\">std</span><span class=\"o\">.</span> <span class=\"n\">dev</span><span class=\"o\">.</span> <span class=\"n\">of</span> <span class=\"mi\">7</span> <span class=\"n\">runs</span><span class=\"p\">,</span> <span class=\"mi\">1000</span> <span class=\"n\">loops</span> <span class=\"n\">each</span><span class=\"p\">)</span>\n</code></pre></div>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"n\">A</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">2048</span><span class=\"p\">,</span> <span class=\"mi\">2408</span><span class=\"p\">);</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">sum_squares</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">ThreadsX</span><span class=\"o\">.</span><span class=\"n\">mapreduce</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">-&gt;</span><span class=\"n\">x</span><span class=\"o\">^</span><span class=\"mi\">2</span><span class=\"p\">,</span> <span class=\"o\">+</span><span class=\"p\">,</span> <span class=\"n\">A</span><span class=\"p\">)</span>\n<span class=\"go\">sum_squares (generic function with 1 method)</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">sum_squares</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">)</span>\n<span class=\"go\">  982.900 μs (2328 allocations: 159.38 KiB)</span>\n<span class=\"go\">1.6443015832629544e6</span>\n</code></pre></div>",
+        "id": 254776780,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1632519596
+    },
+    {
+        "content": "<p>I'm getting about the same.  Also tried <code>A |&gt; Map(x -&gt; x^2) |&gt; sum</code> with Transducers and got slightly worse.  I often find the performance of threading in Julia frustratingly fiddly, especially for the additive cost.  Not sure how to fix this.  <span class=\"user-mention\" data-user-id=\"297129\">@Takafumi Arakaki (tkf)</span> might have some insight.</p>",
+        "id": 254778571,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1632520538
+    },
+    {
+        "content": "<p>My insight is that it's best to try conjuring <span class=\"user-mention\" data-user-id=\"284680\">@chriselrod</span> for this kind of close-to-the-metal thing :)</p>",
+        "id": 254789628,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1632527873
+    },
+    {
+        "content": "<p>I'm curious how it scales.  In my experience the additive cost with the threading libraries usually sucks, but they'll scale pretty well</p>",
+        "id": 254789791,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1632527985
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"269582\">@Mark Kittisopikul</span> , how big is the array in Python? I noticed you wrote <code>rand(2048, 2408)</code> in the julia code</p>",
+        "id": 254790106,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1632528158
+    },
+    {
+        "content": "<p>I tried, that, it's still really slow regardless, it's only like 5/4 or so</p>",
+        "id": 254790143,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1632528195
+    },
+    {
+        "content": "<p>Here is what I see with <a href=\"https://github.com/search?q=LoopVectorization.jl&amp;type=Repositories\">LoopVectorization.jl</a></p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">using</span> <span class=\"n\">LoopVectorization</span><span class=\"p\">,</span> <span class=\"n\">ThreadsX</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">sum_squares</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">ThreadsX</span><span class=\"o\">.</span><span class=\"n\">mapreduce</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">-&gt;</span><span class=\"n\">x</span><span class=\"o\">^</span><span class=\"mi\">2</span><span class=\"p\">,</span> <span class=\"o\">+</span><span class=\"p\">,</span> <span class=\"n\">A</span><span class=\"p\">);</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">function</span> <span class=\"n\">sum_squares_turbo</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"o\">::</span><span class=\"kt\">Matrix</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">})</span> <span class=\"k\">where</span> <span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span>\n           <span class=\"n\">out</span> <span class=\"o\">=</span> <span class=\"n\">zero</span><span class=\"p\">(</span><span class=\"n\">T</span><span class=\"p\">)</span>\n           <span class=\"nd\">@tturbo</span> <span class=\"k\">for</span> <span class=\"n\">i</span> <span class=\"k\">in</span> <span class=\"n\">eachindex</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">)</span>\n               <span class=\"n\">out</span> <span class=\"o\">+=</span> <span class=\"n\">A</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span><span class=\"o\">^</span><span class=\"mi\">2</span>\n           <span class=\"k\">end</span>\n           <span class=\"n\">out</span>\n       <span class=\"k\">end</span><span class=\"p\">;</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">let</span> <span class=\"n\">A</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">2048</span><span class=\"p\">,</span> <span class=\"mi\">2048</span><span class=\"p\">)</span>\n           <span class=\"nd\">@btime</span> <span class=\"n\">sum_squares</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">)</span>\n           <span class=\"nd\">@btime</span> <span class=\"n\">sum_squares_turbo</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">)</span>\n       <span class=\"k\">end</span><span class=\"p\">;</span>\n  <span class=\"mf\">804.960</span> <span class=\"n\">μs</span> <span class=\"p\">(</span><span class=\"mi\">669</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mf\">42.56</span> <span class=\"n\">KiB</span><span class=\"p\">)</span>\n  <span class=\"mf\">747.194</span> <span class=\"n\">μs</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">let</span> <span class=\"n\">A</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">2048</span><span class=\"p\">,</span> <span class=\"mi\">2408</span><span class=\"p\">)</span>\n           <span class=\"nd\">@btime</span> <span class=\"n\">sum_squares</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">)</span>\n           <span class=\"nd\">@btime</span> <span class=\"n\">sum_squares_turbo</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">)</span>\n       <span class=\"k\">end</span><span class=\"p\">;</span>\n  <span class=\"mf\">966.097</span> <span class=\"n\">μs</span> <span class=\"p\">(</span><span class=\"mi\">672</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mf\">42.66</span> <span class=\"n\">KiB</span><span class=\"p\">)</span>\n  <span class=\"mf\">913.550</span> <span class=\"n\">μs</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 254790184,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1632528237
+    },
+    {
+        "content": "<p>Theres some profit from using good vecotorization here and lower overhead in the multithreading, but this operation is almost totally dominated by memory bandwidth I believe, so it can only be so fast.</p>",
+        "id": 254790317,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1632528323
+    },
+    {
+        "content": "<p>It's worrying that performance is only worse by a factor of 2 or 3 if you do it sequentially</p>",
+        "id": 254790363,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1632528360
+    },
+    {
+        "content": "<p>I think Julia multi-threading still needs a lot of work.  It seems fast for very large oprations, but it still seems to really suck for relatively small arrays</p>",
+        "id": 254790443,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1632528397
+    },
+    {
+        "content": "<p>I beleive that's because it's dominated by memory bandwidth, not a problem with julia's threading</p>",
+        "id": 254790445,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1632528398
+    },
+    {
+        "content": "<p>Is it possible that the Julia and python benchmarks work a little differently?  I think I basically know what happens when bnechmarks run on non-parallel code, but I don't know if there are any weird caveats with multi-threading</p>",
+        "id": 254790505,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1632528452
+    },
+    {
+        "content": "<p>Actually, now that I look at the OP carefully, the difference to Numba is actually \"only\" about 100 μs. This kind of overhead is actually not super crazy if you have many cores at the moment, unfortunately.</p>",
+        "id": 254790671,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1632528575
+    },
+    {
+        "content": "<p>(I)Python's <code>timeit</code> disables GC</p>",
+        "id": 254790759,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1632528615
+    },
+    {
+        "content": "<p>I would really appreciate if someone could come along and explain to me:</p>\n<ul>\n<li>Is Julia multi-threading really slow to start up?  If not, please explain.</li>\n<li>If yes, why?  Can this be fixed?</li>\n<li>Is there some benefit being gained from the slow start?</li>\n</ul>",
+        "id": 254790896,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1632528725
+    },
+    {
+        "content": "<p>The fact that there's not much difference from LoopVectorization's <code>@tturbo</code> makes me think the overhead here is not the problem</p>",
+        "id": 254791066,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1632528876
+    },
+    {
+        "content": "<p>LV has super low overhead threading</p>",
+        "id": 254791072,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1632528885
+    },
+    {
+        "content": "<p>I agree it's memory-bound, but if it's completely a hardware property, I think you'd see more similar timing in Python.</p>",
+        "id": 254791284,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1632529072
+    },
+    {
+        "content": "<p>Or maybe it's just a difference in benchmarking tools as <span class=\"user-mention\" data-user-id=\"269446\">@Expanding Man</span> said</p>",
+        "id": 254791371,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1632529127
+    },
+    {
+        "content": "<p>Actually, I'm now puzzled why Numba is fast for <em>that</em> code. Does Numba do map-reduce fusion to avoid allocating <code>np.square(a)</code>?</p>",
+        "id": 254791399,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1632529155
+    },
+    {
+        "content": "<p>Doesn't it have all sorts of insane numpy-specific JIT optimizations?</p>",
+        "id": 254791438,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1632529198
+    },
+    {
+        "content": "<p>Yeah. I’m sure they’re fusing operations there</p>",
+        "id": 254791507,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1632529228
+    },
+    {
+        "content": "<p>I definitely recall one of the problems with numba being that you can never really know what it's doing, because they had to be so aggressive in optimizing innocent looking calls that it's  basically re-writing all your code for you.</p>",
+        "id": 254791560,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1632529294
+    },
+    {
+        "content": "<p>And then you'll have something it can't optimize and it uses regular python code and <em>surprise!</em> your code now takes 100 ms</p>",
+        "id": 254791647,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1632529342
+    },
+    {
+        "content": "<p>Actually, just enabling SIMD (<code>simd = true</code>) helps a lot here:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">A</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">2048</span><span class=\"p\">,</span> <span class=\"mi\">2408</span><span class=\"p\">);</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">sum_squares</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">ThreadsX</span><span class=\"o\">.</span><span class=\"n\">mapreduce</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">-&gt;</span><span class=\"n\">x</span><span class=\"o\">^</span><span class=\"mi\">2</span><span class=\"p\">,</span> <span class=\"o\">+</span><span class=\"p\">,</span> <span class=\"n\">A</span><span class=\"p\">);</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">sum_squares</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">)</span>\n  <span class=\"mf\">1.350</span> <span class=\"n\">ms</span> <span class=\"p\">(</span><span class=\"mi\">416</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mf\">26.41</span> <span class=\"n\">KiB</span><span class=\"p\">)</span>\n<span class=\"mf\">1.643906959681204e6</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">sum_squares</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">ThreadsX</span><span class=\"o\">.</span><span class=\"n\">mapreduce</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">-&gt;</span><span class=\"n\">x</span><span class=\"o\">^</span><span class=\"mi\">2</span><span class=\"p\">,</span> <span class=\"o\">+</span><span class=\"p\">,</span> <span class=\"n\">A</span><span class=\"p\">;</span> <span class=\"n\">simd</span> <span class=\"o\">=</span> <span class=\"nb\">true</span><span class=\"p\">);</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">sum_squares</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">)</span>\n  <span class=\"mf\">586.626</span> <span class=\"n\">μs</span> <span class=\"p\">(</span><span class=\"mi\">415</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mf\">26.36</span> <span class=\"n\">KiB</span><span class=\"p\">)</span>\n<span class=\"mf\">1.6439069596812006e6</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">Threads</span><span class=\"o\">.</span><span class=\"n\">nthreads</span><span class=\"p\">()</span>\n<span class=\"mi\">4</span>\n</code></pre></div>",
+        "id": 254791651,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1632529348
+    },
+    {
+        "content": "<p>Well, that basically solves it then, I pretty much guarantee you numba is doing simd</p>",
+        "id": 254791812,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1632529459
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269446\">Expanding Man</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia/near/254791647\">said</a>:</p>\n<blockquote>\n<p>And then you'll have something it can't optimize and it uses regular python code and <em>surprise!</em> your code now takes 100 ms</p>\n</blockquote>\n<p>This is true for any optimizing compiler including Julia. I think Julia experts don't feel \"you can never really know what it's doing\" mainly since it has great introspection tools and maybe also the language design is more transparent to this. It's conceivable that Numba has or will have nice tools for diving into code gen.</p>",
+        "id": 254792294,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1632529864
+    },
+    {
+        "content": "<p>It's a lot less extreme in the Julia case though.  \"Normal\" Julia code doesn't run slower than everything else by a factor of 50.  \"Normal\" python code is ungodly slow.  I guess I'm thinking more about things that I have more experience here like trying to use anonymous functions to solve diff eq and stuff like that, but seems like the same kind of thing was happening with numba.</p>",
+        "id": 254792544,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1632530064
+    },
+    {
+        "content": "<p>FWIW, this is what I get</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"k\">using</span> <span class=\"n\">LoopVectorization</span><span class=\"p\">,</span> <span class=\"n\">ThreadsX</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">A</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">2048</span><span class=\"p\">,</span> <span class=\"mi\">2408</span><span class=\"p\">);</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">sum_squares</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">ThreadsX</span><span class=\"o\">.</span><span class=\"n\">mapreduce</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">-&gt;</span><span class=\"n\">x</span><span class=\"o\">^</span><span class=\"mi\">2</span><span class=\"p\">,</span> <span class=\"o\">+</span><span class=\"p\">,</span> <span class=\"n\">A</span><span class=\"p\">;</span> <span class=\"n\">simd</span> <span class=\"o\">=</span> <span class=\"nb\">true</span><span class=\"p\">);</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"k\">function</span> <span class=\"n\">sum_squares_turbo</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"o\">::</span><span class=\"kt\">Matrix</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">})</span> <span class=\"k\">where</span> <span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span>\n                  <span class=\"n\">out</span> <span class=\"o\">=</span> <span class=\"n\">zero</span><span class=\"p\">(</span><span class=\"n\">T</span><span class=\"p\">)</span>\n                  <span class=\"nd\">@tturbo</span> <span class=\"k\">for</span> <span class=\"n\">i</span> <span class=\"k\">in</span> <span class=\"n\">eachindex</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">)</span>\n                      <span class=\"n\">out</span> <span class=\"o\">+=</span> <span class=\"n\">A</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span><span class=\"o\">^</span><span class=\"mi\">2</span>\n                  <span class=\"k\">end</span>\n                  <span class=\"n\">out</span>\n              <span class=\"k\">end</span><span class=\"p\">;</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">sum_squares</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">)</span>\n<span class=\"go\">  314.468 μs (5455 allocations: 346.11 KiB)</span>\n<span class=\"go\">1.6439709895118927e6</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">sum_squares_turbo</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">)</span>\n<span class=\"go\">  167.646 μs (0 allocations: 0 bytes)</span>\n<span class=\"go\">1.6439709895118927e6</span>\n</code></pre></div>",
+        "id": 254792801,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1632530259
+    },
+    {
+        "content": "<p><code>nthreads</code>?</p>",
+        "id": 254792883,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1632530302
+    },
+    {
+        "content": "<p>In terms of memory bound:</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"n\">sizeof</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">)</span> <span class=\"o\">/</span> <span class=\"p\">(</span><span class=\"mi\">1</span> <span class=\"o\">&lt;&lt;</span> <span class=\"mi\">20</span><span class=\"p\">)</span>\n<span class=\"go\">37.625</span>\n</code></pre></div>\n<p><code>A</code> is 37.625 MiB. Thus, my computer has to stream <code>A</code> through RAM. This should be entirely hardware limited.</p>",
+        "id": 254792885,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1632530304
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"n\">Threads</span><span class=\"o\">.</span><span class=\"n\">nthreads</span><span class=\"p\">()</span>\n<span class=\"go\">36</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">LoopVectorization</span><span class=\"o\">.</span><span class=\"n\">num_cores</span><span class=\"p\">()</span>\n<span class=\"go\">static(18)</span>\n</code></pre></div>",
+        "id": 254792899,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1632530315
+    },
+    {
+        "content": "<p>lol the benefits of having a huge EPYC machine or whatever it is you're running <span aria-label=\"laughing\" class=\"emoji emoji-1f606\" role=\"img\" title=\"laughing\">:laughing:</span></p>",
+        "id": 254792941,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1632530349
+    },
+    {
+        "content": "<p>While we're at it, <span class=\"user-mention\" data-user-id=\"297129\">@Takafumi Arakaki (tkf)</span> , any idea why this is so slow?  I would have thought this should be almost exactly the same thing as <code>ThreadsX</code> is doing, no?</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">◖◗</span> <span class=\"nd\">@btime</span> <span class=\"o\">$</span><span class=\"n\">A</span> <span class=\"o\">|&gt;</span> <span class=\"n\">Map</span><span class=\"p\">(</span><span class=\"n\">x</span> <span class=\"o\">-&gt;</span> <span class=\"n\">x</span><span class=\"o\">^</span><span class=\"mi\">2</span><span class=\"p\">)</span> <span class=\"o\">|&gt;</span> <span class=\"n\">sum</span>\n  <span class=\"mf\">3.461</span> <span class=\"n\">ms</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n<span class=\"mf\">1.6446086881129586e6</span>\n</code></pre></div>",
+        "id": 254793467,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1632530773
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"n\">LoopVectorization</span><span class=\"o\">.</span><span class=\"n\">num_cores</span><span class=\"p\">()</span>\n<span class=\"go\">static(18)</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">versioninfo</span><span class=\"p\">()</span>\n<span class=\"go\">Julia Version 1.8.0-DEV.607</span>\n<span class=\"go\">Commit 523d851be2* (2021-09-23 22:21 UTC)</span>\n<span class=\"go\">Platform Info:</span>\n<span class=\"go\">  OS: Linux (x86_64-generic-linux)</span>\n<span class=\"go\">  CPU: Intel(R) Core(TM) i9-10980XE CPU @ 3.00GHz</span>\n<span class=\"go\">  WORD_SIZE: 64</span>\n<span class=\"go\">  LIBM: libopenlibm</span>\n<span class=\"go\">  LLVM: libLLVM-12.0.1 (ORCJIT, cascadelake)</span>\n<span class=\"go\">Environment:</span>\n<span class=\"go\">  JULIA_NUM_THREADS = 36</span>\n</code></pre></div>\n<p>Probably the most relevant feature is that it has 4 memory channels.</p>\n<p>IIRC, my RAM is clocked at 3.6 GHz (I should spend some time to see if I can get it higher).<br>\nDDR4 can do 8 bytes/channel/clock, and I have 4 channels, so the bandwidth should be</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"mf\">3.6</span> <span class=\"o\">*</span> <span class=\"mi\">8</span> <span class=\"o\">*</span> <span class=\"mi\">4</span>\n<span class=\"go\">115.2</span>\n</code></pre></div>\n<p>I.e., 115.2 GiB/s. So, dividing the number of <code>GiB</code> in <code>A</code> by the <code>GiB</code> gives us</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"p\">(</span><span class=\"n\">sizeof</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">)</span> <span class=\"o\">/</span> <span class=\"p\">(</span><span class=\"mi\">1</span> <span class=\"o\">&lt;&lt;</span> <span class=\"mi\">30</span><span class=\"p\">))</span> <span class=\"o\">/</span> <span class=\"p\">(</span><span class=\"mf\">3.6</span> <span class=\"o\">*</span> <span class=\"mi\">8</span> <span class=\"o\">*</span> <span class=\"mi\">4</span><span class=\"p\">)</span> <span class=\"c\"># seconds</span>\n<span class=\"go\">0.0003189510769314236</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"mf\">1e6</span><span class=\"n\">ans</span> <span class=\"c\"># microseconds</span>\n<span class=\"go\">318.95107693142364</span>\n</code></pre></div>\n<p>So streaming that much memory should take 319 microseconds.</p>",
+        "id": 254793918,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1632531209
+    },
+    {
+        "content": "<p>I think that's simply because it's single-threaded and also it doesn't enable SIMD</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@btime</span> <span class=\"o\">$</span><span class=\"n\">A</span> <span class=\"o\">|&gt;</span> <span class=\"n\">Map</span><span class=\"p\">(</span><span class=\"n\">x</span> <span class=\"o\">-&gt;</span> <span class=\"n\">x</span><span class=\"o\">^</span><span class=\"mi\">2</span><span class=\"p\">)</span> <span class=\"o\">|&gt;</span> <span class=\"n\">sum</span>\n  <span class=\"mf\">5.230</span> <span class=\"n\">ms</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n<span class=\"mf\">1.6439112758022486e6</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">sum</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">A</span> <span class=\"o\">|&gt;</span> <span class=\"n\">Map</span><span class=\"p\">(</span><span class=\"n\">x</span> <span class=\"o\">-&gt;</span> <span class=\"n\">x</span><span class=\"o\">^</span><span class=\"mi\">2</span><span class=\"p\">);</span> <span class=\"n\">simd</span> <span class=\"o\">=</span> <span class=\"nb\">true</span><span class=\"p\">)</span>\n  <span class=\"mf\">3.202</span> <span class=\"n\">ms</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n<span class=\"mf\">1.6439112758022742e6</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">ThreadsX</span><span class=\"o\">.</span><span class=\"n\">sum</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">A</span> <span class=\"o\">|&gt;</span> <span class=\"n\">Map</span><span class=\"p\">(</span><span class=\"n\">x</span> <span class=\"o\">-&gt;</span> <span class=\"n\">x</span><span class=\"o\">^</span><span class=\"mi\">2</span><span class=\"p\">),</span> <span class=\"n\">simd</span> <span class=\"o\">=</span> <span class=\"nb\">true</span><span class=\"p\">)</span>\n  <span class=\"mf\">643.555</span> <span class=\"n\">μs</span> <span class=\"p\">(</span><span class=\"mi\">413</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mf\">26.30</span> <span class=\"n\">KiB</span><span class=\"p\">)</span>\n<span class=\"mf\">1.6439112758022815e6</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">Threads</span><span class=\"o\">.</span><span class=\"n\">nthreads</span><span class=\"p\">()</span>\n<span class=\"mi\">4</span>\n</code></pre></div>\n<p>It's a bit puzzling that the speedup is somewhat superlinear though. Maybe some part of the array sits in L3 (but it's not 30 MB )?</p>",
+        "id": 254793938,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1632531241
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"n\">sizeof</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">)</span> <span class=\"o\">/</span> <span class=\"p\">(</span><span class=\"n\">CPUSummary</span><span class=\"o\">.</span><span class=\"n\">num_l2cache</span><span class=\"p\">()</span><span class=\"o\">*</span><span class=\"n\">CPUSummary</span><span class=\"o\">.</span><span class=\"n\">cache_size</span><span class=\"p\">(</span><span class=\"kt\">Val</span><span class=\"p\">(</span><span class=\"mi\">2</span><span class=\"p\">))</span> <span class=\"o\">+</span> <span class=\"n\">CPUSummary</span><span class=\"o\">.</span><span class=\"n\">num_l3cache</span><span class=\"p\">()</span><span class=\"o\">*</span><span class=\"n\">CPUSummary</span><span class=\"o\">.</span><span class=\"n\">cache_size</span><span class=\"p\">(</span><span class=\"kt\">Val</span><span class=\"p\">(</span><span class=\"mi\">3</span><span class=\"p\">)))</span>\n<span class=\"go\">0.8801169590643275</span>\n</code></pre></div>\n<p>So I guess <code>A</code> actually fits in my CPU's cache, hence why I can get much better performance than the 320 microseconds theoretical peak based on memory bandwidth.</p>",
+        "id": 254794055,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1632531354
+    },
+    {
+        "content": "<p>I now wonder why <span class=\"user-mention\" data-user-id=\"269150\">@Mason Protter</span> didn't see the difference, even with non-SIMD <code>ThreadsX.mapreduce</code>.</p>\n<p>I also see the boost from LoopVectorization:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">sum_squares_turbo</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">)</span>\n  <span class=\"mf\">163.249</span> <span class=\"n\">μs</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n<span class=\"mf\">1.6439112758022822e6</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">sum_squares</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">)</span>\n  <span class=\"mf\">644.125</span> <span class=\"n\">μs</span> <span class=\"p\">(</span><span class=\"mi\">415</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mf\">26.36</span> <span class=\"n\">KiB</span><span class=\"p\">)</span>\n<span class=\"mf\">1.6439112758022815e6</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">versioninfo</span><span class=\"p\">()</span>\n<span class=\"n\">Julia</span> <span class=\"n\">Version</span> <span class=\"mf\">1.8.0</span><span class=\"o\">-</span><span class=\"n\">DEV</span><span class=\"mf\">.590</span>\n<span class=\"n\">Commit</span> <span class=\"mi\">2</span><span class=\"n\">c9e051c46</span> <span class=\"p\">(</span><span class=\"mi\">2021</span><span class=\"o\">-</span><span class=\"mi\">09</span><span class=\"o\">-</span><span class=\"mi\">23</span> <span class=\"mi\">21</span><span class=\"o\">:</span><span class=\"mi\">35</span> <span class=\"n\">UTC</span><span class=\"p\">)</span>\n<span class=\"n\">Platform</span> <span class=\"n\">Info</span><span class=\"o\">:</span>\n  <span class=\"n\">OS</span><span class=\"o\">:</span> <span class=\"n\">Linux</span> <span class=\"p\">(</span><span class=\"n\">x86_64</span><span class=\"o\">-</span><span class=\"n\">linux</span><span class=\"o\">-</span><span class=\"n\">gnu</span><span class=\"p\">)</span>\n  <span class=\"n\">CPU</span><span class=\"o\">:</span> <span class=\"n\">AMD</span> <span class=\"n\">EPYC</span> <span class=\"mi\">7502</span> <span class=\"mi\">32</span><span class=\"o\">-</span><span class=\"n\">Core</span> <span class=\"n\">Processor</span>\n  <span class=\"n\">WORD_SIZE</span><span class=\"o\">:</span> <span class=\"mi\">64</span>\n  <span class=\"n\">LIBM</span><span class=\"o\">:</span> <span class=\"n\">libopenlibm</span>\n  <span class=\"n\">LLVM</span><span class=\"o\">:</span> <span class=\"n\">libLLVM</span><span class=\"o\">-</span><span class=\"mf\">12.0.1</span> <span class=\"p\">(</span><span class=\"n\">ORCJIT</span><span class=\"p\">,</span> <span class=\"n\">znver2</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">Threads</span><span class=\"o\">.</span><span class=\"n\">nthreads</span><span class=\"p\">()</span>\n<span class=\"mi\">4</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">LoopVectorization</span><span class=\"o\">.</span><span class=\"n\">num_cores</span><span class=\"p\">()</span>\n<span class=\"n\">static</span><span class=\"p\">(</span><span class=\"mi\">64</span><span class=\"p\">)</span>\n\n<span class=\"n\">shell</span><span class=\"o\">&gt;</span> <span class=\"n\">nproc</span>\n<span class=\"mi\">128</span>\n</code></pre></div>",
+        "id": 254794058,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1632531355
+    },
+    {
+        "content": "<p>Maybe LoopVectorization is making some bad optimizations for my system</p>",
+        "id": 254794268,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1632531531
+    },
+    {
+        "content": "<p>LoopVectorization really doesn't like znver1...</p>",
+        "id": 254794298,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1632531571
+    },
+    {
+        "content": "<p>If you're willing to debug, maybe we can find out why.<br>\nBut, --</p>",
+        "id": 254794323,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1632531601
+    },
+    {
+        "content": "<p>tkf's EPYC machine and my Intel machine both have enough cache to hold <code>A</code> without touching RAM.</p>",
+        "id": 254794434,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1632531628
+    },
+    {
+        "content": "<p>So it could also be that this is the issue. (i.e., we see a huge speedup only because it fits in cache, and otherwise we wouldn't)</p>",
+        "id": 254794453,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1632531646
+    },
+    {
+        "content": "<p>Ah, yes, there was a race condition in my question and chriselrod's answer</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">sizeof</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">)</span> <span class=\"o\">/</span> <span class=\"p\">(</span><span class=\"n\">CPUSummary</span><span class=\"o\">.</span><span class=\"n\">num_l2cache</span><span class=\"p\">()</span><span class=\"o\">*</span><span class=\"n\">CPUSummary</span><span class=\"o\">.</span><span class=\"n\">cache_size</span><span class=\"p\">(</span><span class=\"kt\">Val</span><span class=\"p\">(</span><span class=\"mi\">2</span><span class=\"p\">))</span> <span class=\"o\">+</span> <span class=\"n\">CPUSummary</span><span class=\"o\">.</span><span class=\"n\">num_l3cache</span><span class=\"p\">()</span><span class=\"o\">*</span><span class=\"n\">CPUSummary</span><span class=\"o\">.</span><span class=\"n\">cache_size</span><span class=\"p\">(</span><span class=\"kt\">Val</span><span class=\"p\">(</span><span class=\"mi\">3</span><span class=\"p\">)))</span>\n<span class=\"mf\">0.1306423611111111</span>\n</code></pre></div>",
+        "id": 254794475,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1632531671
+    },
+    {
+        "content": "<p>In terms of flops, 58 GFLOPS wouldn't be a bad number to hit with a single core:</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"mf\">2e-9</span><span class=\"n\">length</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">)</span> <span class=\"o\">/</span> <span class=\"mf\">167.646e-6</span>\n<span class=\"go\">58.83330350858356</span>\n</code></pre></div>\n<p>(but it is pretty bad for 18 or 64 cores)</p>",
+        "id": 254794483,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1632531685
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"n\">B</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">2048</span><span class=\"o\">*</span><span class=\"mi\">2</span><span class=\"p\">,</span> <span class=\"mi\">2408</span><span class=\"o\">*</span><span class=\"mi\">2</span><span class=\"p\">);</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">sizeof</span><span class=\"p\">(</span><span class=\"n\">B</span><span class=\"p\">)</span> <span class=\"o\">/</span> <span class=\"p\">(</span><span class=\"n\">CPUSummary</span><span class=\"o\">.</span><span class=\"n\">num_l2cache</span><span class=\"p\">()</span><span class=\"o\">*</span><span class=\"n\">CPUSummary</span><span class=\"o\">.</span><span class=\"n\">cache_size</span><span class=\"p\">(</span><span class=\"kt\">Val</span><span class=\"p\">(</span><span class=\"mi\">2</span><span class=\"p\">))</span> <span class=\"o\">+</span> <span class=\"n\">CPUSummary</span><span class=\"o\">.</span><span class=\"n\">num_l3cache</span><span class=\"p\">()</span><span class=\"o\">*</span><span class=\"n\">CPUSummary</span><span class=\"o\">.</span><span class=\"n\">cache_size</span><span class=\"p\">(</span><span class=\"kt\">Val</span><span class=\"p\">(</span><span class=\"mi\">3</span><span class=\"p\">)))</span>\n<span class=\"go\">3.52046783625731</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">sum_squares_turbo</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">B</span><span class=\"p\">)</span>\n<span class=\"go\">  1.657 ms (0 allocations: 0 bytes)</span>\n<span class=\"go\">6.575621490774e6</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">sum_squares</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">B</span><span class=\"p\">)</span>\n<span class=\"go\">  1.905 ms (5478 allocations: 346.83 KiB)</span>\n<span class=\"go\">6.575621490774e6</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"mf\">2e-9</span><span class=\"n\">length</span><span class=\"p\">(</span><span class=\"n\">B</span><span class=\"p\">)</span> <span class=\"o\">/</span> <span class=\"mf\">1.676e-3</span>\n<span class=\"go\">23.539780429594273</span>\n</code></pre></div>\n<p>Making <code>B</code> 4x larger than <code>A</code> so that it is now too large for my cache makes it take 10x longer.<br>\nI get half the GFLOPS from LV and performance is closer.</p>\n<p>Most likely explanation: tkf and my machine are fast enough that overhead makes a huge difference.<br>\nLV only takes less than 170 microseconds for each of us.</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"nd\">@benchmark</span> <span class=\"n\">fetch</span><span class=\"p\">(</span><span class=\"n\">Threads</span><span class=\"o\">.</span><span class=\"nd\">@spawn</span> <span class=\"mi\">1</span><span class=\"o\">+</span><span class=\"mi\">1</span><span class=\"p\">)</span>\n<span class=\"go\">BenchmarkTools.Trial: 10000 samples with 5 evaluations.</span>\n<span class=\"go\"> Range (min … max):   2.022 μs … 68.784 μs  ┊ GC (min … max): 0.00% … 0.00%</span>\n<span class=\"go\"> Time  (median):     59.636 μs              ┊ GC (median):    0.00%</span>\n<span class=\"go\"> Time  (mean ± σ):   55.873 μs ± 13.982 μs  ┊ GC (mean ± σ):  0.00% ± 0.00%</span>\n\n<span class=\"go\">  ▂▁▁ ▁▂▁▂▁▁ ▁                                     ▄▆████▇▇▅▄ ▂</span>\n<span class=\"go\">  ███▇██████████▇▇▇▆▅▅▅▆▄▆▄▄▄▅▂▄▅▅▆▄▅▅▄▅▄▄▅▅▅▅▅▄▄▄▇██████████ █</span>\n<span class=\"go\">  2.02 μs      Histogram: log(frequency) by time      65.8 μs &lt;</span>\n\n<span class=\"go\"> Memory estimate: 473 bytes, allocs estimate: 4.</span>\n</code></pre></div>\n<p>Hence, the overhead of base threading makes a huge difference for us, but not for slower (fewer core) machines.</p>",
+        "id": 254794688,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1632531880
+    },
+    {
+        "content": "<p>Oh wait, if I use transducers <code>Map</code> it's not multi-threaded by default?  I guess I need to read the docs? <span aria-label=\"sweat smile\" class=\"emoji emoji-1f605\" role=\"img\" title=\"sweat smile\">:sweat_smile:</span></p>",
+        "id": 254794928,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1632532128
+    },
+    {
+        "content": "<p>Tacking on 150 microseconds of overhead makes a huge difference when LV takes 170 microseconds (for <code>A</code>), but much less difference when LV takes 1700 microseconds (for <code>B</code>).</p>\n<p>I think LV handles scaling with many threads better than base's threading, hence <span class=\"user-mention\" data-user-id=\"297129\">@Takafumi Arakaki (tkf)</span> gets 400+ microseconds of overhead.</p>\n<p>With only 12 threads, maybe <span class=\"user-mention\" data-user-id=\"269150\">@Mason Protter</span> 's threading overhead is around 50 microseconds, while LV's baseline time is much slower, combining to make only a small proportional difference.</p>",
+        "id": 254795074,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1632532241
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"269446\">@Expanding Man</span> Yeah, your right. You'd need to combine it with <a href=\"https://github.com/search?q=ThreadsX.jl&amp;type=Repositories\">ThreadsX.jl</a> or <a href=\"https://github.com/search?q=Folds.jl&amp;type=Repositories\">Folds.jl</a> (or use <code>foldxt</code> explicitly).</p>\n<p>Long answer: <code>Map</code> does not care how it's executed and so it all depends on how you reduce it. <code>sum</code> (or rather it's internal <code>foldl</code>) is by default sequential. You'd need to opt-in parallelism since I can't analyze <code>`Map(f)</code> to see if it is safe to do it. You can opt-in parallelism it by choosing the variants of the \"last function you apply\" like <code>sum</code>, <code>collect</code>, <code>Set</code>, etc. I guess it's imaginable to make it parallel by default, but <a href=\"https://github.com/search?q=Transducers.jl&amp;type=Repositories\">Transducers.jl</a> started as a sequential computing package.</p>",
+        "id": 254795575,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1632532744
+    },
+    {
+        "content": "<p>That's really cool.  I was recently discussing on slack how I love transducers but I tend to avoid it because it's such basic functionality (not necessarily basic implementation) that I expect it from base so I hesitate to add it as a dependency.  I should stop doing this.</p>",
+        "id": 254795705,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1632532862
+    },
+    {
+        "content": "<p>Well, I'd love to have tailwind for shoving transducers into Base <span aria-label=\"laughing\" class=\"emoji emoji-1f606\" role=\"img\" title=\"laughing\">:laughing:</span></p>",
+        "id": 254796591,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1632533669
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"284680\">@chriselrod</span>  Hmm... Isn't it (also?) simply because LV generates better code than the Julia compiler? I see improvements with one thread and small array:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">function</span> <span class=\"n\">sum_squares_turbo</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"o\">::</span><span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">})</span> <span class=\"k\">where</span> <span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span>\n           <span class=\"n\">out</span> <span class=\"o\">=</span> <span class=\"n\">zero</span><span class=\"p\">(</span><span class=\"n\">T</span><span class=\"p\">)</span>\n           <span class=\"nd\">@tturbo</span> <span class=\"k\">for</span> <span class=\"n\">i</span> <span class=\"k\">in</span> <span class=\"n\">eachindex</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">)</span>\n               <span class=\"n\">out</span> <span class=\"o\">+=</span> <span class=\"n\">A</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span><span class=\"o\">^</span><span class=\"mi\">2</span>\n           <span class=\"k\">end</span>\n           <span class=\"n\">out</span>\n       <span class=\"k\">end</span><span class=\"p\">;</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">sum_squares</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">ThreadsX</span><span class=\"o\">.</span><span class=\"n\">mapreduce</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">-&gt;</span><span class=\"n\">x</span><span class=\"o\">^</span><span class=\"mi\">2</span><span class=\"p\">,</span> <span class=\"o\">+</span><span class=\"p\">,</span> <span class=\"n\">A</span><span class=\"p\">;</span> <span class=\"n\">simd</span> <span class=\"o\">=</span> <span class=\"nb\">true</span><span class=\"p\">,</span> <span class=\"n\">basesize</span> <span class=\"o\">=</span> <span class=\"n\">typemax</span><span class=\"p\">(</span><span class=\"kt\">Int</span><span class=\"p\">));</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">sum_squares_foldl</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">foldxl</span><span class=\"p\">(</span><span class=\"o\">+</span><span class=\"p\">,</span> <span class=\"n\">A</span> <span class=\"o\">|&gt;</span> <span class=\"n\">Map</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">-&gt;</span><span class=\"n\">x</span><span class=\"o\">^</span><span class=\"mi\">2</span><span class=\"p\">);</span> <span class=\"n\">simd</span> <span class=\"o\">=</span> <span class=\"nb\">true</span><span class=\"p\">);</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">xs</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">2048</span><span class=\"p\">);</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">sum_squares_turbo</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">xs</span><span class=\"p\">);</span>\n  <span class=\"mf\">104.054</span> <span class=\"n\">ns</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">sum_squares</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">xs</span><span class=\"p\">);</span>  <span class=\"c\"># base case + some surrounding overhead</span>\n  <span class=\"mf\">275.578</span> <span class=\"n\">ns</span> <span class=\"p\">(</span><span class=\"mi\">2</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">32</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">sum_squares_foldl</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">xs</span><span class=\"p\">);</span>  <span class=\"c\"># base case, without overhead</span>\n  <span class=\"mf\">199.763</span> <span class=\"n\">ns</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 254796865,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1632533979
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"297129\">Takafumi Arakaki (tkf)</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia/near/254796591\">said</a>:</p>\n<blockquote>\n<p>Well, I'd love to have tailwind for shoving transducers into Base <span aria-label=\"laughing\" class=\"emoji emoji-1f606\" role=\"img\" title=\"laughing\">:laughing:</span></p>\n</blockquote>\n<p>Transducers in Base would be super awesome.  In particular my complaints in my aforementioned discussion on slack was about how <code>Base.Iterators</code> is really weird because it's very basic functionality that's shoved into another module.  A really cool thing about the idea of transducers in base (though perhaps this is a frivolous reason to want it) is that it can naturally fit without interfering with the existing namespace.</p>",
+        "id": 254797069,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1632534160
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"297129\">Takafumi Arakaki (tkf)</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia/near/254796865\">said</a>:</p>\n<blockquote>\n<p><span class=\"user-mention silent\" data-user-id=\"284680\">chriselrod</span>  Hmm... Isn't it (also?) simply because LV generates better code than the Julia compiler? I see improvements with one thread and small array:</p>\n</blockquote>\n<p>I figured the arrays being memory bound would mean this doesn't matter.<br>\nYou'll notice the difference go away if you make the arrays much larger.</p>\n<p>If you're curious, LV is unrolling by 8 while LLVM unrolls by 4. If you have up to 2 loads per cycle and 2 fmas per cycle, the CPU ideally wouldn't be bottlenecked by memory if it is all in the L1 cache. With a latency of 4 cycles per fma and 2 fma issued/cycle, you'd need 8 in flight at a time without dependency chain conflicts. Hence LV will unroll it by 8.<br>\nA dot product on the other hand, which requires 2 loads per fma, it'll only unroll by 4 because the loads limit it to at best 1 fma/cycle.</p>",
+        "id": 254798222,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1632535226
+    },
+    {
+        "content": "<p>The theoretical peak flops of a single core of my CPU is 124.8 GFLOPS. The multithreaded benchmark was making less than half that using 18 cores, meaning the cores themselves were probably idle most of the time rather than hitting the limit on fmas issued/cycle.</p>",
+        "id": 254798458,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1632535435
+    },
+    {
+        "content": "<p>Ah, you are right. There's still some difference if it fits in L2 but if it hits L3 there's no difference</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">xs</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">2</span><span class=\"o\">^</span><span class=\"mi\">15</span><span class=\"p\">);</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">sizeof</span><span class=\"p\">(</span><span class=\"n\">xs</span><span class=\"p\">)</span> <span class=\"o\">/</span> <span class=\"n\">CPUSummary</span><span class=\"o\">.</span><span class=\"n\">cache_size</span><span class=\"p\">(</span><span class=\"kt\">Val</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">))</span>\n<span class=\"mf\">8.0</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">xs</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">2</span><span class=\"o\">^</span><span class=\"mi\">15</span><span class=\"p\">);</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">sum_squares_turbo</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">xs</span><span class=\"p\">);</span>\n  <span class=\"mf\">2.463</span> <span class=\"n\">μs</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">sum_squares_foldl</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">xs</span><span class=\"p\">);</span>\n  <span class=\"mf\">3.081</span> <span class=\"n\">μs</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">xs</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"mi\">2</span><span class=\"o\">^</span><span class=\"mi\">19</span><span class=\"p\">);</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">sizeof</span><span class=\"p\">(</span><span class=\"n\">xs</span><span class=\"p\">)</span> <span class=\"o\">/</span> <span class=\"n\">CPUSummary</span><span class=\"o\">.</span><span class=\"n\">cache_size</span><span class=\"p\">(</span><span class=\"kt\">Val</span><span class=\"p\">(</span><span class=\"mi\">2</span><span class=\"p\">))</span>\n<span class=\"mf\">8.0</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">sum_squares_turbo</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">xs</span><span class=\"p\">);</span>\n  <span class=\"mf\">57.410</span> <span class=\"n\">μs</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">sum_squares_foldl</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">xs</span><span class=\"p\">);</span>\n  <span class=\"mf\">57.509</span> <span class=\"n\">μs</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 254798970,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1632535914
+    },
+    {
+        "content": "<p>Thanks for sorting this out guys. I learned a lot from reading over the conversation.</p>",
+        "id": 254812824,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1632550077
+    },
+    {
+        "content": "<p>In case it is help to you, here's is what Numba is doing in terms of LLVM and asm:<br>\n<a href=\"/user_uploads/7178/Nl3n_UHcM0jtJ6jB6OcSXYz6/sum_squares_numba_llvm.txt\">sum_squares_numba_llvm.txt</a> <br>\n<a href=\"/user_uploads/7178/nXnfVEu-0vOE-YGwllpgWGmK/sum_squares_numba_x86_64_asm.txt\">sum_squares_numba_x86_64_asm.txt</a></p>",
+        "id": 254813530,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1632550851
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia/near/254790106\">said</a>:</p>\n<blockquote>\n<p><span class=\"user-mention silent\" data-user-id=\"269582\">Mark Kittisopikul</span> , how big is the array in Python? I noticed you wrote <code>rand(2048, 2408)</code> in the julia code</p>\n</blockquote>\n<p><span class=\"user-mention\" data-user-id=\"269582\">@Mark Kittisopikul</span> can you confirm that the array you benchmarked in Numba is the same size as the array in Julia?</p>",
+        "id": 254813870,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1632551187
+    },
+    {
+        "content": "<p>Yes. Same size.</p>",
+        "id": 254813879,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1632551204
+    },
+    {
+        "content": "<p>Okay. The 2408 seemed like it was a typo</p>",
+        "id": 254813894,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1632551236
+    },
+    {
+        "content": "<p>That’s quite strange</p>",
+        "id": 254813908,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1632551256
+    },
+    {
+        "content": "<p>Oh, hmm, maybe</p>",
+        "id": 254813964,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1632551290
+    },
+    {
+        "content": "<p>Looking over the history, I think you were absolutely correct, <span class=\"user-mention\" data-user-id=\"269150\">@Mason Protter</span> . I screwed up the inputs between the two languages in the end of my testing. Originally, my test suite was completely starting from pyjulia and using <code>Main.eval</code> from Python to conduct my tests, but I simplified to a pure Julia example for this post, and that is when I made the typo.</p>",
+        "id": 254871267,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1632604764
+    },
+    {
+        "content": "<p>So is there a performance difference between the Julia and Numba versions?</p>",
+        "id": 254871347,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1632604823
+    },
+    {
+        "content": "<p>In short, no. The longer version is that it depends how one measures it.</p>",
+        "id": 254873270,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1632606757
+    }
+]

@@ -1,0 +1,44 @@
+[
+    {
+        "content": "<p>I have two unregistered packages on Github, say <a href=\"https://github.com/search?q=Stripes.jl&amp;type=Repositories\">Stripes.jl</a> and <a href=\"https://github.com/search?q=Tigers.jl&amp;type=Repositories\">Tigers.jl</a> where the latter depends on the former. The way I'm dealing with this now is to have a <code>Tigers/setup.jl</code> script that you run to dev the <a href=\"https://github.com/search?q=Stripes.jl&amp;type=Repositories\">Stripes.jl</a> repo before you build <a href=\"https://github.com/search?q=Tigers.jl&amp;type=Repositories\">Tigers.jl</a>. With recentish Pkg updates I thought I'd automate this with <code>deps/build.jl</code> or similar, but I can't figure anything out. My naive approach is to dev <a href=\"https://github.com/search?q=Stripes.jl&amp;type=Repositories\">Stripes.jl</a> in build.jl, but apparently Stripes needs to be registered (or dev'd) before the build file is run-- no build log is even produced before the error pops up (ERROR: expected package <code>Stripes [310cc8c8]</code> to be registered).</p>\n<p>I'm working around this by including Manifest.toml in the repo, but that doesn't seem like a \"real\" solution. Maybe there's just no real solution since packages shouldn't automatically depend on unregistered/implicitly untrusted git repos?</p>",
+        "id": 242143741,
+        "sender_full_name": "Graham Smith",
+        "timestamp": 1623281478
+    },
+    {
+        "content": "<p>The best way is to just document that you need to install them in that order. Something like:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"c\">### Installation</span>\n<span class=\"n\">In</span> <span class=\"n\">order</span> <span class=\"n\">to</span> <span class=\"n\">install</span> <span class=\"n\">this</span> <span class=\"n\">package</span> <span class=\"n\">you</span> <span class=\"n\">first</span> <span class=\"n\">need</span> <span class=\"n\">to</span> <span class=\"n\">install</span> <span class=\"n\">Stripes</span><span class=\"o\">.</span><span class=\"n\">jl</span>\n<span class=\"sb\">```julia</span>\n<span class=\"sb\">pkg&gt; add https://github.com/username/Stripes.jl</span>\n\n<span class=\"sb\">pkg&gt; add https://github.com/username/Tigers.jl</span>\n<span class=\"sb\">```</span>\n</code></pre></div>",
+        "id": 242145538,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1623283109
+    },
+    {
+        "content": "<p>The best solution from a technical point of view is to register the packages in a registry of your own. It doesn't help at all with the trust issue though since the users would then also need to trust your registry.</p>",
+        "id": 242174001,
+        "sender_full_name": "Gunnar Farnebäck",
+        "timestamp": 1623313646
+    },
+    {
+        "content": "<p>A personal registry is exactly the solution I wanted. For anyone looking to do this in the future, <a href=\"https://github.com/search?q=LocalRegistry.jl&amp;type=Repositories\">LocalRegistry.jl</a> makes this super simple (<a href=\"https://github.com/GunnarFarneback/LocalRegistry.jl\">https://github.com/GunnarFarneback/LocalRegistry.jl</a>).</p>",
+        "id": 242259856,
+        "sender_full_name": "Graham Smith",
+        "timestamp": 1623354206
+    },
+    {
+        "content": "<p>(I see you're the person who wrote that, <span class=\"user-mention\" data-user-id=\"273176\">@Gunnar Farnebäck</span> ! Thank you!)</p>",
+        "id": 242260087,
+        "sender_full_name": "Graham Smith",
+        "timestamp": 1623354336
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"273176\">Gunnar Farnebäck</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Auto-downloading.20unregistered.20packages/near/242174001\">said</a>:</p>\n<blockquote>\n<p>The best solution from a technical point of view is to register the packages in a registry of your own. It doesn't help at all with the trust issue though since the users would then also need to trust your registry.</p>\n</blockquote>\n<p>Is there any experience/advice how to handle trust issues regarding private/user maintained registries besides writing a documentation to make things transparent ? E.g. a <a href=\"https://github.com/search?q=RegistryDocumenter.jl&amp;type=Repositories\">RegistryDocumenter.jl</a> ? </p>\n<p>In particular I envision an \"n+1\" attack: someone re-registers a package from General with some backdoor with a higher version in his/her own registry and triggers users to add it by providing another \"cool\" package. Is there some automatism to prevent this ?</p>\n<p>(<a href=\"https://github.com/search?q=LocalRegistry.jl&amp;type=Repositories\">LocalRegistry.jl</a> indeed is great!)</p>",
+        "id": 242650887,
+        "sender_full_name": "j-fu",
+        "timestamp": 1623700461
+    },
+    {
+        "content": "<p>That goes under the name \"dependency confusion\" attack and is exactly the trust issue with adding additional registries. There have been discussions about mechanisms to counteract it but it's all somewhat complicated by the fact that Pkg is designed to allow migration between registries. Note that the problem is slightly mitigated by the fact that instantiating a Manifest  doesn't bring in a new version just because it exists in the registry. The danger comes when you do a package update.</p>",
+        "id": 242657712,
+        "sender_full_name": "Gunnar Farnebäck",
+        "timestamp": 1623704023
+    }
+]

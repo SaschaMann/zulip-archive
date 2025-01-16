@@ -1,0 +1,44 @@
+[
+    {
+        "content": "<p>What is the best way to loop through data and store it in an array without sacrificing performance? The code below is what I am working on but I am guessing it is not very efficient</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">start_bounds</span> <span class=\"o\">=</span> <span class=\"p\">[]</span>\n<span class=\"n\">end_bounds</span> <span class=\"o\">=</span> <span class=\"p\">[]</span>\n<span class=\"k\">for</span> <span class=\"n\">i</span> <span class=\"kp\">in</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">N</span>\n    <span class=\"n\">start_bounds</span> <span class=\"o\">=</span> <span class=\"n\">map</span><span class=\"p\">(</span><span class=\"n\">d</span> <span class=\"o\">-&gt;</span> <span class=\"n\">minimum</span><span class=\"p\">(</span><span class=\"n\">getindex</span><span class=\"o\">.</span><span class=\"p\">(</span><span class=\"n\">idx</span><span class=\"p\">,</span> <span class=\"n\">d</span><span class=\"p\">)),</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">N</span><span class=\"p\">)</span>\n    <span class=\"n\">end_bounds</span> <span class=\"o\">=</span> <span class=\"n\">map</span><span class=\"p\">(</span><span class=\"n\">d</span> <span class=\"o\">-&gt;</span> <span class=\"n\">maximum</span><span class=\"p\">(</span><span class=\"n\">getindex</span><span class=\"o\">.</span><span class=\"p\">(</span><span class=\"n\">idx</span><span class=\"p\">,</span> <span class=\"n\">d</span><span class=\"p\">)),</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">N</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>If it helps, here is the full function</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">generate_spatial_bounding_box</span><span class=\"p\">(</span><span class=\"n\">img</span><span class=\"p\">,</span> <span class=\"n\">select_function</span><span class=\"p\">)</span>\n    <span class=\"n\">idx</span> <span class=\"o\">=</span> <span class=\"n\">findall</span><span class=\"p\">(</span><span class=\"n\">select_function</span><span class=\"p\">,</span> <span class=\"n\">img</span><span class=\"p\">)</span>\n    <span class=\"n\">N</span> <span class=\"o\">=</span> <span class=\"n\">_ndims</span><span class=\"p\">(</span><span class=\"n\">eltype</span><span class=\"p\">(</span><span class=\"n\">idx</span><span class=\"p\">))</span>\n    <span class=\"n\">start_bounds</span> <span class=\"o\">=</span> <span class=\"p\">[]</span>\n    <span class=\"n\">end_bounds</span> <span class=\"o\">=</span> <span class=\"p\">[]</span>\n    <span class=\"k\">for</span> <span class=\"n\">i</span> <span class=\"kp\">in</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">N</span>\n        <span class=\"n\">start_bounds</span> <span class=\"o\">=</span> <span class=\"n\">map</span><span class=\"p\">(</span><span class=\"n\">d</span> <span class=\"o\">-&gt;</span> <span class=\"n\">minimum</span><span class=\"p\">(</span><span class=\"n\">getindex</span><span class=\"o\">.</span><span class=\"p\">(</span><span class=\"n\">idx</span><span class=\"p\">,</span> <span class=\"n\">d</span><span class=\"p\">)),</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">N</span><span class=\"p\">)</span>\n        <span class=\"n\">end_bounds</span> <span class=\"o\">=</span> <span class=\"n\">map</span><span class=\"p\">(</span><span class=\"n\">d</span> <span class=\"o\">-&gt;</span> <span class=\"n\">maximum</span><span class=\"p\">(</span><span class=\"n\">getindex</span><span class=\"o\">.</span><span class=\"p\">(</span><span class=\"n\">idx</span><span class=\"p\">,</span> <span class=\"n\">d</span><span class=\"p\">)),</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">N</span><span class=\"p\">)</span>\n    <span class=\"k\">end</span>\n    <span class=\"k\">return</span> <span class=\"n\">start_bounds</span><span class=\"p\">,</span> <span class=\"n\">end_bounds</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 225633334,
+        "sender_full_name": "Dale Black",
+        "timestamp": 1612833117
+    },
+    {
+        "content": "<p>Oh wait, I think I can just avoid the empty array container altogether. This seems to work fine.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">generate_spatial_bounding_box</span><span class=\"p\">(</span><span class=\"n\">img</span><span class=\"p\">,</span> <span class=\"n\">select_function</span><span class=\"p\">)</span>\n    <span class=\"n\">idx</span> <span class=\"o\">=</span> <span class=\"n\">findall</span><span class=\"p\">(</span><span class=\"n\">select_function</span><span class=\"p\">,</span> <span class=\"n\">img</span><span class=\"p\">)</span>\n    <span class=\"n\">N</span> <span class=\"o\">=</span> <span class=\"n\">_ndims</span><span class=\"p\">(</span><span class=\"n\">eltype</span><span class=\"p\">(</span><span class=\"n\">idx</span><span class=\"p\">))</span>\n    <span class=\"n\">start_bounds</span> <span class=\"o\">=</span> <span class=\"n\">map</span><span class=\"p\">(</span><span class=\"n\">d</span> <span class=\"o\">-&gt;</span> <span class=\"n\">minimum</span><span class=\"p\">(</span><span class=\"n\">getindex</span><span class=\"o\">.</span><span class=\"p\">(</span><span class=\"n\">idx</span><span class=\"p\">,</span> <span class=\"n\">d</span><span class=\"p\">)),</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">N</span><span class=\"p\">)</span>\n    <span class=\"n\">end_bounds</span> <span class=\"o\">=</span> <span class=\"n\">map</span><span class=\"p\">(</span><span class=\"n\">d</span> <span class=\"o\">-&gt;</span> <span class=\"n\">maximum</span><span class=\"p\">(</span><span class=\"n\">getindex</span><span class=\"o\">.</span><span class=\"p\">(</span><span class=\"n\">idx</span><span class=\"p\">,</span> <span class=\"n\">d</span><span class=\"p\">)),</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">N</span><span class=\"p\">)</span>\n    <span class=\"k\">return</span> <span class=\"n\">start_bounds</span><span class=\"p\">,</span> <span class=\"n\">end_bounds</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 225649278,
+        "sender_full_name": "Dale Black",
+        "timestamp": 1612850727
+    },
+    {
+        "content": "<p>BTW you may take a look at <a href=\"https://github.com/search?q=GeoStats.jl&amp;type=Repositories\">GeoStats.jl</a> if you're interested in bounding boxes of spatial data. Part of this functionality is being moved to <a href=\"https://github.com/search?q=Meshes.jl&amp;type=Repositories\">Meshes.jl</a> in the next release.</p>",
+        "id": 225651183,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1612853355
+    },
+    {
+        "content": "<p><a href=\"https://github.com/search?q=Meshes.jl&amp;type=Repositories\">Meshes.jl</a> is extremely interesting but I work with medical data, so 3D voxels. I’m not sure if meshes will apply to my use case but you might be able to convince me otherwise if there is a benefit that I’m not seeing?</p>",
+        "id": 225721646,
+        "sender_full_name": "Dale Black",
+        "timestamp": 1612890159
+    },
+    {
+        "content": "<p><a href=\"https://github.com/search?q=Meshes.jl&amp;type=Repositories\">Meshes.jl</a> should be N-dimensional, we support 3D models and that is definitely part of the goal.</p>",
+        "id": 225724454,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1612891195
+    },
+    {
+        "content": "<p>You can follow the #meshes.jl stream in case the works overlaps.</p>",
+        "id": 225724539,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1612891217
+    },
+    {
+        "content": "<p>Will do, thanks!</p>",
+        "id": 225771541,
+        "sender_full_name": "Dale Black",
+        "timestamp": 1612912301
+    }
+]

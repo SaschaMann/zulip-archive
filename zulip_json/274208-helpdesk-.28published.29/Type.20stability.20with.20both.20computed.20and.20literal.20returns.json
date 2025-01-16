@@ -1,0 +1,122 @@
+[
+    {
+        "content": "<p>how many input types do you have?</p>",
+        "id": 462501262,
+        "sender_full_name": "Sukera",
+        "timestamp": 1723709949
+    },
+    {
+        "content": "<p>Could be lots? Some numbers, some vectors, some structs and tuples containing said types, et cetera. As for base number types, right now it's all Float64 in the code I'm currently working on, but I might stick some DoubleFloats in there later, I often work with Float32 for GPU. Also, for some reason I can't shake my habit of insisting on dimensional correctness, as shown in the <code>returnT</code> snippet, even though I've never used Unitful so far.</p>",
+        "id": 462575217,
+        "sender_full_name": "Daniel Wennberg",
+        "timestamp": 1723735397
+    },
+    {
+        "content": "<p>I always use <code>Base.promote_eltype</code>  for those purposes</p>",
+        "id": 462613929,
+        "sender_full_name": "Andrés Riedemann",
+        "timestamp": 1723746775
+    },
+    {
+        "content": "<p>Then you're likely looking for <code>oftype</code>, though that won't help with producing vector output</p>",
+        "id": 462628780,
+        "sender_full_name": "Sukera",
+        "timestamp": 1723751990
+    },
+    {
+        "content": "<p>there is no generic solution for all (or even most) possible types</p>",
+        "id": 462629003,
+        "sender_full_name": "Sukera",
+        "timestamp": 1723752026
+    },
+    {
+        "content": "<p><code>oftype</code> can't help me here, that would require me to already have a value of the return type at hand</p>",
+        "id": 462632398,
+        "sender_full_name": "Daniel Wennberg",
+        "timestamp": 1723752980
+    },
+    {
+        "content": "<p>fundamentally, what you're trying to do is more-or-less do type inference</p>",
+        "id": 462833196,
+        "sender_full_name": "Sukera",
+        "timestamp": 1723831088
+    },
+    {
+        "content": "<p>so either you bite the bullet on <code>Base.promote_op</code>, or you use some heuristic or trait based workaround</p>",
+        "id": 462833248,
+        "sender_full_name": "Sukera",
+        "timestamp": 1723831122
+    },
+    {
+        "content": "<p>e.g. if your input set of types is finite, you can precalculate them and just use a lookup table</p>",
+        "id": 462833295,
+        "sender_full_name": "Sukera",
+        "timestamp": 1723831139
+    },
+    {
+        "content": "<p>if you don't want that or your input set is unlimited, you don't really have options <img alt=\":shrugging:\" class=\"emoji\" src=\"https://avatars.zulip.com/7178/emoji/images/2366215e.gif\" title=\"shrugging\"></p>",
+        "id": 462833365,
+        "sender_full_name": "Sukera",
+        "timestamp": 1723831165
+    },
+    {
+        "content": "<blockquote>\n<p>fundamentally, what you're trying to do is more-or-less do type inference</p>\n</blockquote>\n<p>Clearly. But the compiler is already doing that inference. What I'm dreaming of is syntax for \"hey compiler, if you were able to find a concrete type for that other branch, please apply that here too\"</p>",
+        "id": 462833576,
+        "sender_full_name": "Daniel Wennberg",
+        "timestamp": 1723831258
+    },
+    {
+        "content": "<p>lots of people want that, but since the compiler is allowed to stop inferring at any time and just give you <code>Any</code>, there's no hard guarantees to get that</p>",
+        "id": 462833724,
+        "sender_full_name": "Sukera",
+        "timestamp": 1723831315
+    },
+    {
+        "content": "<p>your best bet is <code>Base.promote_op</code></p>",
+        "id": 462833821,
+        "sender_full_name": "Sukera",
+        "timestamp": 1723831337
+    },
+    {
+        "content": "<p>(or limit your input types far enough to hardcode it)</p>",
+        "id": 462833855,
+        "sender_full_name": "Sukera",
+        "timestamp": 1723831346
+    },
+    {
+        "content": "<p>(which would be my preferred choice, since in your limited example you won't be able to <code>convert</code> a <code>NaN</code> to a <code>Vector{Float64}</code>, for example)</p>",
+        "id": 462833932,
+        "sender_full_name": "Sukera",
+        "timestamp": 1723831377
+    },
+    {
+        "content": "<p>in my experience though, it's usually more fruitful to figure out why inference is even failing in the first place</p>",
+        "id": 462834042,
+        "sender_full_name": "Sukera",
+        "timestamp": 1723831425
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"306754\">Sukera</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Type.20stability.20with.20both.20computed.20and.20literal.20returns/near/462833724\">said</a>:</p>\n<blockquote>\n<p>lots of people want that, but since the compiler is allowed to stop inferring at any time and just give you <code>Any</code>, there's no hard guarantees to get that</p>\n</blockquote>\n<p>But that's fine. If inference gave up then my function's type stability isn't worth anything anyway, so the compiler can just leave the literal as-is (or, rather, insert <code>convert(Any, &lt;my_literal&gt;)</code>, which amounts to the same thing)</p>",
+        "id": 462834527,
+        "sender_full_name": "Daniel Wennberg",
+        "timestamp": 1723831619
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"306754\">Sukera</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Type.20stability.20with.20both.20computed.20and.20literal.20returns/near/462833932\">said</a>:</p>\n<blockquote>\n<p>(which would be my preferred choice, since in your limited example you won't be able to <code>convert</code> a <code>NaN</code> to a <code>Vector{Float64}</code>, for example)</p>\n</blockquote>\n<p>Well, I know that <code>complicated_calculation</code> will return a float of some kind, otherwise this would be pointless</p>",
+        "id": 462834823,
+        "sender_full_name": "Daniel Wennberg",
+        "timestamp": 1723831757
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"306754\">Sukera</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Type.20stability.20with.20both.20computed.20and.20literal.20returns/near/462834042\">said</a>:</p>\n<blockquote>\n<p>in my experience though, it's usually more fruitful to figure out why inference is even failing in the first place</p>\n</blockquote>\n<p>Failing inference isn't the issue here?</p>",
+        "id": 462834869,
+        "sender_full_name": "Daniel Wennberg",
+        "timestamp": 1723831785
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"368583\">Daniel Wennberg</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Type.20stability.20with.20both.20computed.20and.20literal.20returns/near/462834527\">said</a>:</p>\n<blockquote>\n<p><span class=\"user-mention silent\" data-user-id=\"306754\">Sukera</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Type.20stability.20with.20both.20computed.20and.20literal.20returns/near/462833724\">said</a>:</p>\n<blockquote>\n<p>lots of people want that, but since the compiler is allowed to stop inferring at any time and just give you <code>Any</code>, there's no hard guarantees to get that</p>\n</blockquote>\n<p>But that's fine. If inference gave up then my function's type stability isn't worth anything anyway, so the compiler can just leave the literal as-is (or, rather, insert <code>convert(Any, &lt;my_literal&gt;)</code>, which amounts to the same thing)</p>\n</blockquote>\n<p>then just <code>convert</code> to whatever <code>Base.promote_op</code> returns, potentially taking the <code>Union</code> of that and <code>AbstractFloat</code></p>",
+        "id": 462937261,
+        "sender_full_name": "Sukera",
+        "timestamp": 1723871762
+    }
+]

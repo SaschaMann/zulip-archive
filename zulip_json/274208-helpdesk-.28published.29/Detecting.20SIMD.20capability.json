@@ -1,0 +1,152 @@
+[
+    {
+        "content": "<p>Is there currently a solid way of checking whether it's safe to precompile code making use of specific CPU instructions?<br>\nI have this package that uses <code>llvmcall</code>, by checking which CPU instructions the host CPU supports. Problem is, when the user then sets <code>export JULIA_CPU_TARGET=\"generic\"</code>, it produces the wrong code and crashes.<br>\nHow does LoopVectorization handle this? cc <span class=\"user-mention\" data-user-id=\"284680\">@chriselrod</span></p>",
+        "id": 371263322,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1688149101
+    },
+    {
+        "content": "<p>Looks like the JuliaSIMD packages use <a href=\"https://github.com/JuliaSIMD/HostCPUFeatures.jl\">https://github.com/JuliaSIMD/HostCPUFeatures.jl</a></p>",
+        "id": 371267784,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1688150159
+    },
+    {
+        "content": "<p>e.g. </p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">HostCPUFeatures</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">HostCPUFeatures</span><span class=\"o\">.</span><span class=\"n\">simd_integer_register_size</span><span class=\"p\">()</span>\n<span class=\"go\">static(32)</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">HostCPUFeatures</span><span class=\"o\">.</span><span class=\"n\">pick_vector_width</span><span class=\"p\">(</span><span class=\"kt\">Float64</span><span class=\"p\">)</span>\n<span class=\"go\">static(4)</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">HostCPUFeatures</span><span class=\"o\">.</span><span class=\"n\">pick_vector_width</span><span class=\"p\">(</span><span class=\"kt\">Float16</span><span class=\"p\">)</span>\n<span class=\"go\">static(8)</span>\n</code></pre></div>",
+        "id": 371268408,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1688150288
+    },
+    {
+        "content": "<p>Looks like it, but then there is <a href=\"https://github.com/JuliaSIMD/HostCPUFeatures.jl/issues/12\">https://github.com/JuliaSIMD/HostCPUFeatures.jl/issues/12</a> in which it's not quite clear if it was fixed.<br>\nAnyway, I can try it!</p>",
+        "id": 371271929,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1688151092
+    },
+    {
+        "content": "<p>It seems like the PR that closed the issue should fix that issue right?</p>",
+        "id": 371272718,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1688151272
+    },
+    {
+        "content": "<p>Oh yeah it does seem to work actually <span aria-label=\"smiley\" class=\"emoji emoji-1f603\" role=\"img\" title=\"smiley\">:smiley:</span></p>",
+        "id": 371274848,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1688151763
+    },
+    {
+        "content": "<p>nice!</p>",
+        "id": 371275015,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1688151803
+    },
+    {
+        "content": "<p>Nevermind, it doesn't work still</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">ScanByte</span>\n<span class=\"p\">[</span><span class=\"w\"> </span><span class=\"n\">Info</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"n\">Precompiling</span><span class=\"w\"> </span><span class=\"n\">ScanByte</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">7</span><span class=\"n\">b38b023</span><span class=\"o\">-</span><span class=\"n\">a4d7</span><span class=\"o\">-</span><span class=\"mi\">4</span><span class=\"n\">c5e</span><span class=\"o\">-</span><span class=\"mi\">8</span><span class=\"n\">d43</span><span class=\"o\">-</span><span class=\"mf\">3f3097</span><span class=\"n\">f304eb</span><span class=\"p\">]</span>\n<span class=\"n\">LLVM</span><span class=\"w\"> </span><span class=\"n\">ERROR</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"n\">Do</span><span class=\"w\"> </span><span class=\"n\">not</span><span class=\"w\"> </span><span class=\"n\">know</span><span class=\"w\"> </span><span class=\"n\">how</span><span class=\"w\"> </span><span class=\"n\">to</span><span class=\"w\"> </span><span class=\"n\">split</span><span class=\"w\"> </span><span class=\"n\">the</span><span class=\"w\"> </span><span class=\"n\">result</span><span class=\"w\"> </span><span class=\"n\">of</span><span class=\"w\"> </span><span class=\"n\">this</span><span class=\"w\"> </span><span class=\"n\">operator!</span>\n</code></pre></div>",
+        "id": 371283684,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1688153777
+    },
+    {
+        "content": "<p>Ah that's too bad. I'd maybe open a new issue or try to get that old one re-opened</p>",
+        "id": 371286338,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1688154430
+    },
+    {
+        "content": "<p>it's basically branching on whaat <code>Base.Sys</code> claims</p>",
+        "id": 371403022,
+        "sender_full_name": "Sukera",
+        "timestamp": 1688201203
+    },
+    {
+        "content": "<p>As far as I can tell, it is just not possible to robustly write ISA-specific code in Julia, because there is no documented or even semi-legit looking method of checking which code can be validly emitted <span aria-label=\"frown\" class=\"emoji emoji-1f641\" role=\"img\" title=\"frown\">:frown:</span> Too bad</p>",
+        "id": 371413736,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1688203452
+    },
+    {
+        "content": "<p>yup</p>",
+        "id": 371414139,
+        "sender_full_name": "Sukera",
+        "timestamp": 1688203556
+    },
+    {
+        "content": "<p>there's no API checking for the kind of architecture you're actually being compiled for</p>",
+        "id": 371414295,
+        "sender_full_name": "Sukera",
+        "timestamp": 1688203584
+    },
+    {
+        "content": "<p><code>Base.Sys</code> only tells you the host system, after all</p>",
+        "id": 371414364,
+        "sender_full_name": "Sukera",
+        "timestamp": 1688203598
+    },
+    {
+        "content": "<p>Missed this -- <br>\nHostCPUFeature can only detect the host's features (which is why it's not called <code>TargetCPUFeatures.jl</code>).<br>\nWe don't have an API for actually detecting Julia's LLVM's JIT target, even though one has easy/direct access to this from within LLVM. Which is another one of the motivations for working as an LLVM pass; then things like sys image multiversioning, setting pkg image targets, etc should all \"just work\", as they do with every other LLVM-level optimization.</p>",
+        "id": 371597044,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1688258078
+    },
+    {
+        "content": "<p>So the JuliaSIMD approach is to generate code for the host, and on <code>__init__</code> try to detect if the host is wrong. If so, it'll try and <code>@eval</code> some methods to fix things, and invalidate any cached compiled code that may now be invalid.</p>",
+        "id": 371597159,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1688258129
+    },
+    {
+        "content": "<p>(This is why all queries are functions, rather than global consts, so we get backedges)</p>",
+        "id": 371597228,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1688258160
+    },
+    {
+        "content": "<p>Even though sysimages for generic targets have existed for ages now, I didn't pay enough attention to the fact that precompilation like that could fail. I guess we weren't running/actually compiling enough code, even for sysimage use cases, to run into that.</p>",
+        "id": 371597465,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1688258259
+    },
+    {
+        "content": "<p>The most correct thing to do would be to get builtin support for the queries:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">have_fma</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">})</span><span class=\"w\"> </span><span class=\"k\">where</span><span class=\"w\"> </span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">Core</span><span class=\"o\">.</span><span class=\"n\">Intrinsics</span><span class=\"o\">.</span><span class=\"n\">have_fma</span><span class=\"p\">(</span><span class=\"n\">T</span><span class=\"p\">)</span>\n<span class=\"n\">have_fma</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">generic</span><span class=\"w\"> </span><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">with</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"w\"> </span><span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">have_fma</span><span class=\"p\">(</span><span class=\"kt\">Float64</span><span class=\"p\">)</span>\n<span class=\"nb\">true</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">Core</span><span class=\"o\">.</span><span class=\"n\">Intrinsics</span><span class=\"o\">.</span><span class=\"n\">have_fma</span><span class=\"p\">(</span><span class=\"kt\">Float64</span><span class=\"p\">)</span>\n<span class=\"nb\">false</span>\n</code></pre></div>\n<p>Note that it actually needs to compile to not give a safe/conservative/possibly pessimizing answer.</p>",
+        "id": 371598061,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1688258520
+    },
+    {
+        "content": "<p>But failing that, as discussed in the issue, I would set it up to check on precompilation whether the ENV variable has been set. If so, load the appropriate generic set of capabilities.<br>\nThis is pretty bad, but better than nothing.</p>",
+        "id": 371598263,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1688258592
+    },
+    {
+        "content": "<p>Note also that LLVM is able to legalize many, but not all, generic intrinsics.<br>\nIt probably cannot legalize instruction-specific intrsinsics.<br>\nAnd some generic ones can also cause aborts, until LLVM actually implements legalizing fallbacks.</p>\n<p>For example, the matmul intrinsics, or the compressed stores/expand loads on older versions of LLVM (recent LLVM versions can scalarize these; I haven't checked if they can scalarize or vetorize the matmul intrinsics, but maybe; these are obviously aimed at tensor cores).</p>",
+        "id": 371598579,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1688258709
+    },
+    {
+        "content": "<p>Ok - I'll try to make a PR to HostCPUFeatures today or one of the next days, but to me it looks like a relatively easy feature to add to Base itself. I'll also make an issue in Julia itself.</p>",
+        "id": 371640907,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1688281383
+    },
+    {
+        "content": "<p>wait, which feature is easy to add to Base?</p>",
+        "id": 371641492,
+        "sender_full_name": "Sukera",
+        "timestamp": 1688281639
+    },
+    {
+        "content": "<p>\"detecting SIMD capability\" can mean a whole lot of things</p>",
+        "id": 371641540,
+        "sender_full_name": "Sukera",
+        "timestamp": 1688281669
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"306754\">Sukera</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Detecting.20SIMD.20capability/near/371641540\">said</a>:</p>\n<blockquote>\n<p>\"detecting SIMD capability\" can mean a whole lot of things</p>\n</blockquote>\n<p>I haven't looked at how <code>have_fma</code> is implemented, but at least Thayer a template we should be able to follow.</p>",
+        "id": 371747060,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1688309461
+    }
+]
