@@ -1,0 +1,668 @@
+<html>
+<head><meta charset="utf-8"><title>nonallocating multiarg `any` · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html">nonallocating multiarg `any`</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="229607114"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229607114" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229607114">(Mar 10 2021 at 05:51)</a>:</h4>
+<p>#gripes multi-arg <code>mapreduce</code> is just <code>reduce(..., map(...</code></p>
+<p>And so it allocates an intermediate array. I am trying to write a fast version of <code>all(map(foo, array1, array2))</code>.</p>
+
+
+
+<a name="229609272"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229609272" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229609272">(Mar 10 2021 at 06:22)</a>:</h4>
+<p>I can think to do</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">_all</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span>
+  <span class="k">for</span> <span class="n">i</span> <span class="o">=</span> <span class="n">eachindex</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span>
+    <span class="nd">@inbounds</span> <span class="n">a</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="nd">@inbounds</span> <span class="n">b</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="n">f</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="o">||</span> <span class="k">return</span> <span class="kc">false</span>
+  <span class="k">end</span>
+  <span class="k">return</span> <span class="kc">true</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>It doesn't handle missing. I could make an iterator and use <code>all(f, itr)</code> in Base. But  I'd like a good primitive for this, that can be sped up with parallelism, for example.</p>
+
+
+
+<a name="229610758"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229610758" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229610758">(Mar 10 2021 at 06:43)</a>:</h4>
+<p>Have you tried <a href="https://github.com/search?q=Transducers.jl&amp;type=Repositories">Transducers.jl</a> for this? It’ll require zipping and then splatting the arrays, but it’ll give you parallelism.</p>
+
+
+
+<a name="229696176"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229696176" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229696176">(Mar 10 2021 at 16:30)</a>:</h4>
+<p>I've been meaning to try that, but I haven't yet.</p>
+
+
+
+<a name="229700089"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229700089" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229700089">(Mar 10 2021 at 16:48)</a>:</h4>
+<p>Let's suppose I'm doing <code>reduce((a, b) -&gt; map(foo, a, b), [array1, array2, ...])</code></p>
+<p>So there's two " levels" where parallelism can come in: the <code>map</code>, and the <code>reduce</code>. Does <a href="https://github.com/search?q=Transducers.jl&amp;type=Repositories">Transducers.jl</a> give me a way to not think about where to make operations parallel?</p>
+
+
+
+<a name="229703808"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229703808" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229703808">(Mar 10 2021 at 17:08)</a>:</h4>
+<blockquote>
+<p>Does <a href="https://github.com/search?q=Transducers.jl&amp;type=Repositories">Transducers.jl</a> give me a way to not think about where to make operations parallel?</p>
+</blockquote>
+<p>Yes, absolutely</p>
+
+
+
+<a name="229726565"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229726565" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229726565">(Mar 10 2021 at 19:23)</a>:</h4>
+<p>So here's what this'd look like using Transducers in the singlethreaded case:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">tr_all</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span> <span class="o">=</span> <span class="n">foldl</span><span class="p">(</span><span class="o">&amp;</span><span class="p">,</span> <span class="n">zip</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">MapSplat</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">ReduceIf</span><span class="p">(</span><span class="n">x</span><span class="o">::</span><span class="kt">Bool</span> <span class="o">-&gt;</span> <span class="n">x</span> <span class="o">==</span> <span class="kc">false</span><span class="p">))</span>
+</code></pre></div>
+<p>Breaking this into parts, first look at </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">zip</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">MapSplat</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">ReduceIf</span><span class="p">(</span><span class="n">x</span><span class="o">::</span><span class="kt">Bool</span> <span class="o">-&gt;</span> <span class="n">x</span> <span class="o">==</span> <span class="kc">false</span><span class="p">)</span>
+</code></pre></div>
+<p>this is called an 'eduction', and you can think of it kinda like an iterator, except it's specifically designed for use with folds. Looking at it's parts, </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">zip</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">MapSplat</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+</code></pre></div>
+<p>is kinda like a lazy version of <code>map(f, A, B)</code>. Basically,  <code>zip(A, B)</code> combines <code>A</code> and <code>B</code> into a single iterable container and then <code>MapSplat(f)</code> applied to that iterator will take each element of the iterator <code>ABi</code> and perform <code>f(ABi...)</code> to it.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">let</span> <span class="n">A</span> <span class="o">=</span>  <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">B</span> <span class="o">=</span> <span class="p">[</span><span class="o">:</span><span class="n">a</span><span class="p">,</span> <span class="o">:</span><span class="n">b</span><span class="p">,</span> <span class="o">:</span><span class="n">c</span><span class="p">]</span>
+           <span class="n">f</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span><span class="o">=</span> <span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="n">b</span><span class="p">)</span>
+           <span class="n">collect</span><span class="p">(</span><span class="n">zip</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">MapSplat</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>
+       <span class="k">end</span>
+<span class="mi">3</span><span class="o">-</span><span class="n">element</span> <span class="kt">Vector</span><span class="p">{</span><span class="n">NamedTuple</span><span class="p">{(</span><span class="o">:</span><span class="n">a</span><span class="p">,</span> <span class="o">:</span><span class="n">b</span><span class="p">),</span> <span class="kt">Tuple</span><span class="p">{</span><span class="kt">Int64</span><span class="p">,</span> <span class="kt">Symbol</span><span class="p">}}}</span><span class="o">:</span>
+ <span class="p">(</span><span class="n">a</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="o">:</span><span class="n">a</span><span class="p">)</span>
+ <span class="p">(</span><span class="n">a</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="o">:</span><span class="n">b</span><span class="p">)</span>
+ <span class="p">(</span><span class="n">a</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="o">:</span><span class="n">c</span><span class="p">)</span>
+</code></pre></div>
+<p>The next ingredient is the <code>|&gt; ReduceIf(x::Bool -&gt; x == false)</code>. This is important for early termination. It basically allows us to bail out of the <code>fold</code> if we ever encounter an element that is <code>false</code> (this is important for <code>all</code> to be performant!). </p>
+<p>Then finally we can look at the whole thing</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">foldl</span><span class="p">(</span><span class="o">&amp;</span><span class="p">,</span> <span class="n">zip</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">MapSplat</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">ReduceIf</span><span class="p">(</span><span class="n">x</span><span class="o">::</span><span class="kt">Bool</span> <span class="o">-&gt;</span> <span class="n">x</span> <span class="o">==</span> <span class="kc">false</span><span class="p">))</span>
+</code></pre></div>
+<p>This says "take the eduction <code>zip(A, B) |&gt; MapSplat(f) |&gt; ReduceIf(x::Bool -&gt; x == false)</code> and fold over it with <code>&amp;</code>. <a href="https://github.com/search?q=Transducers.jl&amp;type=Repositories">Transducers.jl</a> has all sorts of clever ways to optimize these sorts of reductions better than naive iterators.</p>
+<p>Looking at some benchmarks, it seems that there's really not a huge win here compared to allocating an intermediate array:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">let</span> <span class="n">n</span> <span class="o">=</span> <span class="mi">500</span>
+           <span class="n">A</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="o">.+</span> <span class="mi">1</span>
+           <span class="n">B</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+           <span class="k">function</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+               <span class="n">x</span> <span class="o">&gt;</span> <span class="n">y</span>
+           <span class="k">end</span>
+           <span class="nd">@btime</span> <span class="n">all</span><span class="p">(</span><span class="n">map</span><span class="p">(</span><span class="o">$</span><span class="n">f</span><span class="p">,</span> <span class="o">$</span><span class="n">A</span><span class="p">,</span> <span class="o">$</span><span class="n">B</span><span class="p">))</span>
+           <span class="nd">@btime</span> <span class="n">tr_all</span><span class="p">(</span><span class="o">$</span><span class="n">f</span><span class="p">,</span> <span class="o">$</span><span class="n">A</span><span class="p">,</span> <span class="o">$</span><span class="n">B</span><span class="p">)</span>
+       <span class="k">end</span>
+  <span class="mf">612.653</span> <span class="n">ns</span> <span class="p">(</span><span class="mi">1</span> <span class="n">allocation</span><span class="o">:</span> <span class="mi">624</span> <span class="n">bytes</span><span class="p">)</span>
+  <span class="mf">574.342</span> <span class="n">ns</span> <span class="p">(</span><span class="mi">0</span> <span class="n">allocations</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">)</span>
+<span class="kc">true</span>
+</code></pre></div>
+<p>and it seems there is still some overhead compared to the way <code>all</code> works</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">let</span> <span class="n">n</span> <span class="o">=</span> <span class="mi">100_000</span>
+           <span class="n">A</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="o">.+</span> <span class="mi">1</span>
+           <span class="n">B</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+           <span class="k">function</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+               <span class="n">exp</span><span class="p">(</span><span class="n">sin</span><span class="p">(</span><span class="n">x</span><span class="p">))</span> <span class="o">&gt;</span> <span class="n">exp</span><span class="p">(</span><span class="n">sin</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
+           <span class="k">end</span>
+           <span class="nd">@btime</span> <span class="n">all</span><span class="p">(</span><span class="n">map</span><span class="p">(</span><span class="o">$</span><span class="n">f</span><span class="p">,</span> <span class="o">$</span><span class="n">A</span><span class="p">,</span> <span class="o">$</span><span class="n">B</span><span class="p">))</span>
+           <span class="nd">@btime</span> <span class="n">tr_all</span><span class="p">(</span><span class="o">$</span><span class="n">f</span><span class="p">,</span> <span class="o">$</span><span class="n">A</span><span class="p">,</span> <span class="o">$</span><span class="n">B</span><span class="p">)</span>
+       <span class="k">end</span>
+  <span class="mf">2.497</span> <span class="n">ms</span> <span class="p">(</span><span class="mi">2</span> <span class="n">allocations</span><span class="o">:</span> <span class="mf">97.77</span> <span class="n">KiB</span><span class="p">)</span>
+  <span class="mf">2.501</span> <span class="n">ms</span> <span class="p">(</span><span class="mi">0</span> <span class="n">allocations</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">)</span>
+<span class="kc">true</span>
+</code></pre></div>
+<p>Perhaps there is a better way I could have written the transducer.</p>
+
+
+
+<a name="229727199"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229727199" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229727199">(Mar 10 2021 at 19:27)</a>:</h4>
+<p>Ahh! Thanks for taking the time. I was just trying to wrap my head around the documentation.</p>
+
+
+
+<a name="229727540"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229727540" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229727540">(Mar 10 2021 at 19:29)</a>:</h4>
+<p>I would like to ensure that <code>axes(A) == axes(B)</code>. I am guessing that  <code>zip(A, B)</code> doesn't do that for me.</p>
+
+
+
+<a name="229727831"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229727831" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229727831">(Mar 10 2021 at 19:30)</a>:</h4>
+<p>Now lets look at multithreading. The nice thing about transducers is that they can be multithreaded pretty easily by just replacing <code>foldl</code> with <code>foldlxt</code>:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">tr_all_xt</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span> <span class="o">=</span> <span class="n">foldxt</span><span class="p">(</span><span class="o">&amp;</span><span class="p">,</span> <span class="n">zip</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">MapSplat</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">ReduceIf</span><span class="p">(</span><span class="n">x</span><span class="o">::</span><span class="kt">Bool</span> <span class="o">-&gt;</span> <span class="n">x</span> <span class="o">==</span> <span class="kc">false</span><span class="p">))</span>
+<span class="n">tr_all_xt</span> <span class="p">(</span><span class="n">generic</span> <span class="k">function</span> <span class="n">with</span> <span class="mi">1</span> <span class="n">method</span><span class="p">)</span>
+</code></pre></div>
+<p>Now let's see how it compares</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">let</span> <span class="n">n</span> <span class="o">=</span> <span class="mi">100_000</span>
+           <span class="n">A</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="o">.+</span> <span class="mi">1</span>
+           <span class="n">B</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+           <span class="k">function</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+               <span class="n">x</span> <span class="o">&gt;</span> <span class="n">y</span>
+           <span class="k">end</span>
+           <span class="nd">@btime</span> <span class="n">all</span><span class="p">(</span><span class="n">map</span><span class="p">(</span><span class="o">$</span><span class="n">f</span><span class="p">,</span> <span class="o">$</span><span class="n">A</span><span class="p">,</span> <span class="o">$</span><span class="n">B</span><span class="p">))</span>
+           <span class="nd">@btime</span> <span class="n">tr_all</span><span class="p">(</span><span class="o">$</span><span class="n">f</span><span class="p">,</span> <span class="o">$</span><span class="n">A</span><span class="p">,</span> <span class="o">$</span><span class="n">B</span><span class="p">)</span>
+           <span class="nd">@btime</span> <span class="n">tr_all_xt</span><span class="p">(</span><span class="o">$</span><span class="n">f</span><span class="p">,</span> <span class="o">$</span><span class="n">A</span><span class="p">,</span> <span class="o">$</span><span class="n">B</span><span class="p">)</span>
+       <span class="k">end</span>
+  <span class="mf">110.539</span> <span class="n">μs</span> <span class="p">(</span><span class="mi">2</span> <span class="n">allocations</span><span class="o">:</span> <span class="mf">97.77</span> <span class="n">KiB</span><span class="p">)</span>
+  <span class="mf">114.949</span> <span class="n">μs</span> <span class="p">(</span><span class="mi">0</span> <span class="n">allocations</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">)</span>
+  <span class="mf">35.380</span> <span class="n">μs</span> <span class="p">(</span><span class="mi">64</span> <span class="n">allocations</span><span class="o">:</span> <span class="mf">5.41</span> <span class="n">KiB</span><span class="p">)</span>
+<span class="kc">true</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="k">let</span> <span class="n">n</span> <span class="o">=</span> <span class="mi">100_000</span>
+           <span class="n">A</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="o">.+</span> <span class="mi">1</span>
+           <span class="n">B</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+           <span class="k">function</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+               <span class="n">exp</span><span class="p">(</span><span class="n">sin</span><span class="p">(</span><span class="n">x</span><span class="p">))</span> <span class="o">&gt;</span> <span class="n">exp</span><span class="p">(</span><span class="n">sin</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
+           <span class="k">end</span>
+           <span class="nd">@btime</span> <span class="n">all</span><span class="p">(</span><span class="n">map</span><span class="p">(</span><span class="o">$</span><span class="n">f</span><span class="p">,</span> <span class="o">$</span><span class="n">A</span><span class="p">,</span> <span class="o">$</span><span class="n">B</span><span class="p">))</span>
+           <span class="nd">@btime</span> <span class="n">tr_all</span><span class="p">(</span><span class="o">$</span><span class="n">f</span><span class="p">,</span> <span class="o">$</span><span class="n">A</span><span class="p">,</span> <span class="o">$</span><span class="n">B</span><span class="p">)</span>
+           <span class="nd">@btime</span> <span class="n">tr_all_xt</span><span class="p">(</span><span class="o">$</span><span class="n">f</span><span class="p">,</span> <span class="o">$</span><span class="n">A</span><span class="p">,</span> <span class="o">$</span><span class="n">B</span><span class="p">)</span>
+       <span class="k">end</span>
+  <span class="mf">2.490</span> <span class="n">ms</span> <span class="p">(</span><span class="mi">2</span> <span class="n">allocations</span><span class="o">:</span> <span class="mf">97.77</span> <span class="n">KiB</span><span class="p">)</span>
+  <span class="mf">2.464</span> <span class="n">ms</span> <span class="p">(</span><span class="mi">0</span> <span class="n">allocations</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">)</span>
+  <span class="mf">638.910</span> <span class="n">μs</span> <span class="p">(</span><span class="mi">65</span> <span class="n">allocations</span><span class="o">:</span> <span class="mf">5.44</span> <span class="n">KiB</span><span class="p">)</span>
+<span class="kc">true</span>
+</code></pre></div>
+
+
+
+<a name="229728019"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229728019" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229728019">(Mar 10 2021 at 19:31)</a>:</h4>
+<p>I'm trying to understand the intent of the name "Reduce If ".  "Do reduce if predicate"? Doesn't seem to make sense to me.<br>
+Early return, in any case, makes sense. What about writing it just as <code>ReduceIf(!)</code> ?</p>
+
+
+
+<a name="229728188"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229728188" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229728188">(Mar 10 2021 at 19:32)</a>:</h4>
+<p>Yes, you could just write <code>ReduceIf(!)</code>. I figured it might be more clear what it was doing if I wrote <code>x -&gt; x == false</code> but I guess I was wrong</p>
+
+
+
+<a name="229728275"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229728275" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229728275">(Mar 10 2021 at 19:32)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="217494">Gustavo Goretkin</span> said:</p>
+<blockquote>
+<p>I would like to ensure that <code>axes(A) == axes(B)</code>. I am guessing that  <code>zip(A, B)</code> doesn't do that for me.</p>
+</blockquote>
+<p>yeah that's right. You could just stick in an <code>@assert axes(A) == axes(B)</code> in that case</p>
+
+
+
+<a name="229728478"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229728478" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229728478">(Mar 10 2021 at 19:34)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269150">Mason Protter</span> [said](https://julialang.zulipchat.com/#narrow/stream/225540-gripes/topic/multi-arg.20.60mapreduce.60.20is.20just.20.60reduce(.2E.2E.2E.2C.20map(.2E.2E.2E.60/near/229728188):</p>
+<blockquote>
+<p>Yes, you could just write <code>ReduceIf(!)</code>. I figured it might be more clear what it was doing if I wrote <code>x -&gt; x == false</code> but I guess I was wrong</p>
+</blockquote>
+<p>I'm not sure you were wrong :)</p>
+<p>What does it mean to just bail out of the fold? If we were expressing "any" we'd like to bail out as soon as we see <code>true</code>, but by early-returning <code>true</code>.</p>
+
+
+
+<a name="229728749"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229728749" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229728749">(Mar 10 2021 at 19:35)</a>:</h4>
+<p>Yeah that's right. For any, we'd just write</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">tr_any_xt</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span> <span class="o">=</span> <span class="n">foldxt</span><span class="p">(</span><span class="o">|</span><span class="p">,</span> <span class="n">zip</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">MapSplat</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">ReduceIf</span><span class="p">(</span><span class="n">x</span><span class="o">::</span><span class="kt">Bool</span> <span class="o">-&gt;</span> <span class="n">x</span> <span class="o">==</span> <span class="kc">true</span><span class="p">))</span>
+</code></pre></div>
+
+
+
+<a name="229729017"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229729017" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229729017">(Mar 10 2021 at 19:37)</a>:</h4>
+<p>Wait, so it returns early with whatever the value of <code>x</code> is?</p>
+
+
+
+<a name="229729043"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229729043" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229729043">(Mar 10 2021 at 19:37)</a>:</h4>
+<p>Yes</p>
+
+
+
+<a name="229729167"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229729167" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229729167">(Mar 10 2021 at 19:38)</a>:</h4>
+<p>Oh, okay. Something about that seems surprising, but it's exactly what is needed for any / all.</p>
+
+
+
+<a name="229729171"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229729171" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229729171">(Mar 10 2021 at 19:38)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">collect</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span> <span class="o">|&gt;</span> <span class="n">ReduceIf</span><span class="p">(</span><span class="n">x</span> <span class="o">-&gt;</span> <span class="n">x</span> <span class="o">&gt;=</span> <span class="mi">5</span><span class="p">))</span>
+<span class="mi">5</span><span class="o">-</span><span class="n">element</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">Int64</span><span class="p">}</span><span class="o">:</span>
+ <span class="mi">1</span>
+ <span class="mi">2</span>
+ <span class="mi">3</span>
+ <span class="mi">4</span>
+ <span class="mi">5</span>
+</code></pre></div>
+
+
+
+<a name="229729251"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229729251" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229729251">(Mar 10 2021 at 19:39)</a>:</h4>
+<p>Oh, I think I had misunderstood. This stops the "iteration".</p>
+
+
+
+<a name="229729312"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229729312" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229729312">(Mar 10 2021 at 19:39)</a>:</h4>
+<p><code>ReduceIf</code> is indeed a bit of a confusing name.</p>
+
+
+
+<a name="229729345"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229729345" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229729345">(Mar 10 2021 at 19:39)</a>:</h4>
+<p>it's not exactly an early return. But of course <code>fold</code> will now return, because the iteration stopped.</p>
+
+
+
+<a name="229729556"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229729556" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229729556">(Mar 10 2021 at 19:41)</a>:</h4>
+<p>e.g. <code>StopIf(x -&gt; false)</code> is an identity on  ...eductions?</p>
+
+
+
+<a name="229729602"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229729602" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229729602">(Mar 10 2021 at 19:41)</a>:</h4>
+<p>(Oops, I renamed <code>ReduceIf</code> to <code>StopIf</code> in my mind.)</p>
+
+
+
+<a name="229729664"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229729664" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229729664">(Mar 10 2021 at 19:42)</a>:</h4>
+<p>I believe it's modelled off of writing</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">res</span> <span class="o">=</span> <span class="n">_initial_value</span>
+<span class="k">for</span> <span class="n">x</span> <span class="kp">in</span> <span class="n">iter</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">res</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">cond</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+      <span class="k">return</span> <span class="n">res</span>
+   <span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="229729827"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229729827" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229729827">(Mar 10 2021 at 19:43)</a>:</h4>
+<p>Oh, for me it seems more like <code>Iterators.takewhile</code></p>
+
+
+
+<a name="229729844"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229729844" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229729844">(Mar 10 2021 at 19:43)</a>:</h4>
+<p>Yeah, <code>ReduceIf(_ -&gt; false)</code> would be a do-nothing operation</p>
+
+
+
+<a name="229729893"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229729893" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229729893">(Mar 10 2021 at 19:43)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269150">Mason Protter</span> [said](https://julialang.zulipchat.com/#narrow/stream/225540-gripes/topic/multi-arg.20.60mapreduce.60.20is.20just.20.60reduce(.2E.2E.2E.2C.20map(.2E.2E.2E.60/near/229729171):</p>
+<blockquote>
+<p><div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">collect</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span> <span class="o">|&gt;</span> <span class="n">ReduceIf</span><span class="p">(</span><span class="n">x</span> <span class="o">-&gt;</span> <span class="n">x</span> <span class="o">&gt;=</span> <span class="mi">5</span><span class="p">))</span>
+<span class="mi">5</span><span class="o">-</span><span class="n">element</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">Int64</span><span class="p">}</span><span class="o">:</span>
+ <span class="mi">1</span>
+ <span class="mi">2</span>
+ <span class="mi">3</span>
+ <span class="mi">4</span>
+ <span class="mi">5</span>
+</code></pre></div><br>
+</p>
+</blockquote>
+<p>since this returned not just <code>5</code>.</p>
+
+
+
+<a name="229730040"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229730040" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229730040">(Mar 10 2021 at 19:44)</a>:</h4>
+<p>(Is there a bug in Zulip? Why is quote-and-reply broken? I saw you edited yours earlier to fix it, but I don't know what the syntax is)</p>
+
+
+
+<a name="229730051"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229730051" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229730051">(Mar 10 2021 at 19:44)</a>:</h4>
+<p>That's because I used collect, not fold.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">foldl</span><span class="p">(</span><span class="n">right</span><span class="p">,</span> <span class="mi">1</span><span class="o">:</span><span class="mi">10</span> <span class="o">|&gt;</span> <span class="n">ReduceIf</span><span class="p">(</span><span class="n">x</span> <span class="o">-&gt;</span> <span class="n">x</span> <span class="o">&gt;=</span> <span class="mi">5</span><span class="p">))</span>
+<span class="mi">5</span>
+</code></pre></div>
+
+
+
+<a name="229730109"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229730109" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229730109">(Mar 10 2021 at 19:45)</a>:</h4>
+<p>Yeah, it seems there's some bug in the quote reply</p>
+
+
+
+<a name="229730153"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229730153" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229730153">(Mar 10 2021 at 19:45)</a>:</h4>
+<p>But that's because you're using <code>right</code> and not, e.g. <code>+</code>, which would give 1 + 2 + 3 + 4 + 5, right?</p>
+
+
+
+<a name="229730323"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229730323" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229730323">(Mar 10 2021 at 19:46)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">foldl</span><span class="p">(</span><span class="o">+</span><span class="p">,</span> <span class="mi">1</span><span class="o">:</span><span class="mi">10</span> <span class="o">|&gt;</span> <span class="n">ReduceIf</span><span class="p">(</span><span class="n">x</span> <span class="o">-&gt;</span> <span class="n">x</span> <span class="o">&gt;=</span> <span class="mi">5</span><span class="p">))</span>
+<span class="mi">15</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="mi">5</span><span class="p">)</span>
+<span class="mi">15</span>
+</code></pre></div>
+
+
+
+<a name="229730332"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229730332" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229730332">(Mar 10 2021 at 19:46)</a>:</h4>
+<p>In my notional machine, <code>1:10 |&gt; ReduceIf(x -&gt; x &gt;= 5)</code> evaluates to equivalent to  <code>1:5</code>,  not to <code>5</code>. That's why it feels like <code>ReduceIf</code> is like <code>takewhile</code></p>
+
+
+
+<a name="229730733"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229730733" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229730733">(Mar 10 2021 at 19:48)</a>:</h4>
+<p>yeah, it seems like it's basically <code>iter |&gt; ReduceIf(pred) ≈ takewhile(!pred, iter)</code></p>
+
+
+
+<a name="229730907"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229730907" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229730907">(Mar 10 2021 at 19:49)</a>:</h4>
+<p>Not quite because there's different behaviour with the final element</p>
+
+
+
+<a name="229731038"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229731038" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229731038">(Mar 10 2021 at 19:50)</a>:</h4>
+<p>Right, yeah, the predicate is negated. Maybe I'll be annoying and open an issue suggesting it be called <code>StopIf</code> or <code>StopWhen</code>. <code>Reduce</code> seems like it is quite the wrong word in this context, since it approximately means "fold", and in fact is called <code>reduce</code> and <code>mapreduce</code> in <code>Base</code>.</p>
+
+
+
+<a name="229731143"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229731143" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229731143">(Mar 10 2021 at 19:51)</a>:</h4>
+<p>Yeah, I think <span class="user-mention" data-user-id="297129">@Takafumi Arakaki (tkf)</span> would appreciate feedback on this</p>
+
+
+
+<a name="229731144"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229731144" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229731144">(Mar 10 2021 at 19:51)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269150">Mason Protter</span> [said](https://julialang.zulipchat.com/#narrow/stream/225540-gripes/topic/multi-arg.20.60mapreduce.60.20is.20just.20.60reduce(.2E.2E.2E.2C.20map(.2E.2E.2E.60/near/229730907):</p>
+<blockquote>
+<p>Not quite because there's different behaviour with the final element</p>
+</blockquote>
+<p>Pesky boundary case. It's hard to encode that in a name...</p>
+
+
+
+<a name="229731584"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229731584" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229731584">(Mar 10 2021 at 19:54)</a>:</h4>
+<p>By the way, do you mind if I transfer this thread to <a class="stream" data-stream-id="274208" href="/#narrow/stream/274208-helpdesk-.28published.29">#helpdesk (published)</a>  or <a class="stream" data-stream-id="225542" href="/#narrow/stream/225542-helpdesk">#helpdesk</a>? I get that the base behaviour is gripe worthy, but I think there's information here that might be useful here to future readers.</p>
+
+
+
+<a name="229732092"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229732092" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229732092">(Mar 10 2021 at 19:57)</a>:</h4>
+<p>That would be great. <a class="stream" data-stream-id="274208" href="/#narrow/stream/274208-helpdesk-.28published.29">#helpdesk (published)</a> is fine.</p>
+<p>I wonder if [the link to the discussion in this thread](https://julialang.zulipchat.com/#narrow/stream/225540-gripes/topic/multi-arg.20.60mapreduce.60.20is.20just.20.60reduce(.2E.2E.2E.2C.20map(.2E.2E.2E.60) will still work after the discussion is moved.</p>
+
+
+
+<a name="229732873"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229732873" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229732873">(Mar 10 2021 at 20:01)</a>:</h4>
+<p>Yeah, I'm not sure about the links either <span aria-label="confused" class="emoji emoji-1f615" role="img" title="confused">:confused:</span> Just before I move it, would you mind editing the first line of your post to include what you wrote on the topic? I'm going to rename the topic to "nonallocating multiarg <code>any</code>" if that's okay. </p>
+<p>If I change it now, the first line might be a bit confusing</p>
+
+
+
+<a name="229733686"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229733686" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229733686">(Mar 10 2021 at 20:06)</a>:</h4>
+<p>Changed!</p>
+
+
+
+<a name="229733778"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229733778" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229733778">(Mar 10 2021 at 20:06)</a>:</h4>
+<p>This topic was moved here from <a class="stream-topic" data-stream-id="225540" href="/#narrow/stream/225540-gripes/topic/no.20subject">#gripes &gt; no subject</a> by <span class="user-mention silent" data-user-id="269150">Mason Protter</span></p>
+
+
+
+<a name="229734130"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229734130" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229734130">(Mar 10 2021 at 20:08)</a>:</h4>
+<p>For the record, the link broke.</p>
+
+
+
+<a name="229734179"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229734179" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229734179">(Mar 10 2021 at 20:09)</a>:</h4>
+<p><span aria-label="confused" class="emoji emoji-1f615" role="img" title="confused">:confused:</span></p>
+
+
+
+<a name="229734438"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229734438" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229734438">(Mar 10 2021 at 20:10)</a>:</h4>
+<p>Oh! By the way, the link formatting wasn't working because my original subject contained unmatched parentheses. Hahaha! Perils of in-band signalling.</p>
+
+
+
+<a name="229744913"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229744913" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229744913">(Mar 10 2021 at 21:08)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="217494">Gustavo Goretkin</span> <a href="#narrow/stream/274208-helpdesk-(published)/topic/nonallocating.20multiarg.20.60any.60/near/229731038">said</a>:</p>
+<blockquote>
+<p>Right, yeah, the predicate is negated. Maybe I'll be annoying and open an issue suggesting it be called <code>StopIf</code> or <code>StopWhen</code>. <code>Reduce</code> seems like it is quite the wrong word in this context, since it approximately means "fold", and in fact is called <code>reduce</code> and <code>mapreduce</code> in <code>Base</code>.</p>
+</blockquote>
+<p>Thanks for the feedback <span aria-label="+1" class="emoji emoji-1f44d" role="img" title="+1">:+1:</span>. Yeah, I can see <code>ReduceIf</code> might be confusing. A lot of terminologies are borrowed from Clojure while I was learning about it. So, there are some messes in the terminologies that I have to cleanup.</p>
+
+
+
+<a name="229744980"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229744980" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229744980">(Mar 10 2021 at 21:08)</a>:</h4>
+<p>I wonder if we can communicate that the current element would be processed. Maybe <code>StopAfter</code>?</p>
+
+
+
+<a name="229745898"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229745898" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229745898">(Mar 10 2021 at 21:14)</a>:</h4>
+<p>Some other suggestions</p>
+<ul>
+<li><code>FinishIf</code></li>
+<li><code>ExitEarlyIf</code></li>
+<li><code>StopIf</code></li>
+</ul>
+
+
+
+<a name="229746880"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229746880" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229746880">(Mar 10 2021 at 21:20)</a>:</h4>
+<p>Do you think <code>$(Stopish)If</code> is more appropriate? ATM I'm inclined to <code>$(Stopish)After</code> or <code>$(Stopish)At</code>. Maybe <code>$(Stopish)AtIf</code>?</p>
+
+
+
+<a name="229747212"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229747212" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229747212">(Mar 10 2021 at 21:22)</a>:</h4>
+<p>I don't really like <code>After</code>, <code>At</code> or <code>AtIf</code> personally</p>
+
+
+
+<a name="229747546"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229747546" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229747546">(Mar 10 2021 at 21:25)</a>:</h4>
+<p>I wonder if there are other ways to convey the difference to <code>TakeWhile ∘ !</code>?</p>
+
+
+
+<a name="229747705"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229747705" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229747705">(Mar 10 2021 at 21:26)</a>:</h4>
+<p>Another idea is to ditch <code>TakeWhile</code> and have <code>StopIf</code> and <code>AbortIf</code> (which is <code>TakeWhile ∘ !</code>), since "abort" sounds more immediate.</p>
+
+
+
+<a name="229750157"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229750157" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229750157">(Mar 10 2021 at 21:42)</a>:</h4>
+<p>Then the transducer does one more step than is actually needed for the computation though right?</p>
+
+
+
+<a name="229750880"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229750880" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229750880">(Mar 10 2021 at 21:46)</a>:</h4>
+<p>I think it's case-dependent that if you want to process the current item or not. It all depends on the function passed by the user. I think it makes sense to have both.</p>
+
+
+
+<a name="229751337"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229751337" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229751337">(Mar 10 2021 at 21:49)</a>:</h4>
+<p>I also considered <code>After</code> to convey the handling of the final element, and yet I also agree with <span class="user-mention" data-user-id="269150">@Mason Protter</span></p>
+
+
+
+<a name="229751585"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229751585" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229751585">(Mar 10 2021 at 21:51)</a>:</h4>
+<p>re: abort, FWIW <a href="https://developers.google.com/style/word-list?hl=en#letter-a">https://developers.google.com/style/word-list?hl=en#letter-a</a> and <a href="https://developers.google.com/style/word-list?hl=en#letter-t">https://developers.google.com/style/word-list?hl=en#letter-t</a></p>
+
+
+
+<a name="229751595"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229751595" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229751595">(Mar 10 2021 at 21:51)</a>:</h4>
+<p>oh my, naming is hard</p>
+
+
+
+<a name="229751976"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229751976" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229751976">(Mar 10 2021 at 21:54)</a>:</h4>
+<p>If you wanted to make a while loop whose body still ran once more after the condition is false, that is a do-while loop, right? As opposed to "while-do".</p>
+<p>So maybe that's an argument for <code>StopIf</code>. and then <code>TakeWhile ∘ !</code> is like "IfStop"</p>
+
+
+
+<a name="229752196"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229752196" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229752196">(Mar 10 2021 at 21:55)</a>:</h4>
+<p>Or maybe it's the opposite argument. Like you said, naming is hard :-/</p>
+
+
+
+<a name="229752306"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229752306" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229752306">(Mar 10 2021 at 21:56)</a>:</h4>
+<p>(btw, just a quick glance, but the world list link looks pretty useful. thanks!)</p>
+
+
+
+<a name="229752672"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229752672" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229752672">(Mar 10 2021 at 21:58)</a>:</h4>
+<p>the analogy to while-do makes me think that we can keep <code>TakeWhile</code> and create <code>ProcessWhile = ReduceIf ∘ !</code></p>
+
+
+
+<a name="229752846"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229752846" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229752846">(Mar 10 2021 at 21:59)</a>:</h4>
+<p>wait, nah, it doesn't make sense <span aria-label="rolling on the floor laughing" class="emoji emoji-1f923" role="img" title="rolling on the floor laughing">:rolling_on_the_floor_laughing:</span></p>
+
+
+
+<a name="229753917"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229753917" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229753917">(Mar 10 2021 at 22:03)</a>:</h4>
+<p>Out of curiosity, is the ¿eduction? (sorry if that's not the right term) analogous to  <code>TakeWhile ∘ !</code> useful in <a href="https://github.com/search?q=Transducers.jl&amp;type=Repositories">Transducers.jl</a>?</p>
+
+
+
+<a name="229754229"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229754229" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229754229">(Mar 10 2021 at 22:04)</a>:</h4>
+<p>I am trying to figure out if it is necessary to distinguish between the two ways, where the final element is or isn't "emitted".</p>
+
+
+
+<a name="229754780"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229754780" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229754780">(Mar 10 2021 at 22:06)</a>:</h4>
+<p>Now I'm wondering about declarative vs imperative wording. "StopIf" is imperative. "MakeEnd" or "IsEnd" (interpreted as a constraint, not as a predicate) is declarative.</p>
+
+
+
+<a name="229754953"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229754953" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229754953">(Mar 10 2021 at 22:07)</a>:</h4>
+<p>IsEnd and WasEnd for "This is the end" and "That was the end"... :-p</p>
+
+
+
+<a name="229755622"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229755622" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229755622">(Mar 10 2021 at 22:10)</a>:</h4>
+<p>I think both are useful. For example, some reduce-based high-level APIs like <code>findfirst</code> requires <code>ReduceIf</code> and not implementable with <code>TakeWhile</code>:</p>
+<p><a href="https://github.com/tkf/ThreadsX.jl/blob/3ff8264f1c4b92318e836a1994a38ffde0433553/src/reduce.jl#L89-L97">https://github.com/tkf/ThreadsX.jl/blob/3ff8264f1c4b92318e836a1994a38ffde0433553/src/reduce.jl#L89-L97</a></p>
+<p>(there's the same code in <a href="https://github.com/search?q=Folds.jl&amp;type=Repositories">Folds.jl</a>, but would look more complicated)</p>
+
+
+
+<a name="229756042"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229756042" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229756042">(Mar 10 2021 at 22:12)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="297129">Takafumi Arakaki (tkf)</span> <a href="#narrow/stream/274208-helpdesk-(published)/topic/nonallocating.20multiarg.20.60any.60/near/229755622">said</a>:</p>
+<blockquote>
+<p>I think both are useful. For example, some reduce-based high-level APIs like <code>findfirst</code> requires <code>ReduceIf</code> and not implementable with <code>TakeWhile</code>:</p>
+<p><a href="https://github.com/tkf/ThreadsX.jl/blob/3ff8264f1c4b92318e836a1994a38ffde0433553/src/reduce.jl#L89-L97">https://github.com/tkf/ThreadsX.jl/blob/3ff8264f1c4b92318e836a1994a38ffde0433553/src/reduce.jl#L89-L97</a></p>
+<p>(there's the same code in <a href="https://github.com/search?q=Folds.jl&amp;type=Repositories">Folds.jl</a>, but would look more complicated)</p>
+</blockquote>
+<p>Right, but if all you had was <code>ReduceIf</code> and you did not have <code>TakeWhile</code>, would that be okay?</p>
+
+
+
+<a name="229756049"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229756049" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229756049">(Mar 10 2021 at 22:12)</a>:</h4>
+<p>OTOH, I think it perfectly reasonable to want, e.g., "give me all first consecutive positive numbers"</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">xs</span> <span class="o">|&gt;</span> <span class="n">TakeWhile</span><span class="p">(</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span> <span class="o">|&gt;</span> <span class="n">collect</span>
+</code></pre></div>
+<p>and I don't think you want to get non-positive numbers in the output in this case.</p>
+
+
+
+<a name="229756158"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229756158" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229756158">(Mar 10 2021 at 22:12)</a>:</h4>
+<p>Ah, yeah, okay that answers my question. So it would be good to distinguish both.</p>
+
+
+
+<a name="229756236"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229756236" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229756236">(Mar 10 2021 at 22:12)</a>:</h4>
+<p>yeah I think so</p>
+
+
+
+<a name="229756620"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229756620" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229756620">(Mar 10 2021 at 22:13)</a>:</h4>
+<p>I think a similar example is <code>eachline</code> in Base. it has <code>keep</code> argument to control the inclusion of the last element (i..e, <code>\n</code>)</p>
+
+
+
+<a name="229756773"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229756773" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229756773">(Mar 10 2021 at 22:14)</a>:</h4>
+<p>oh yeah, I think I ran into that recently.</p>
+
+
+
+<a name="229756923"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229756923" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229756923">(Mar 10 2021 at 22:15)</a>:</h4>
+<p>So, I am a big fan of using as few names as possible, so I'm tempted to suggest something like <code>KeepIf{0}(predicate)</code> and <code>KeepIf{1}(predicate)</code></p>
+
+
+
+<a name="229757061"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229757061" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229757061">(Mar 10 2021 at 22:15)</a>:</h4>
+<p>where the number indicates how many elements to keep after the transition of the predicate.</p>
+
+
+
+<a name="229757286"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229757286" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229757286">(Mar 10 2021 at 22:16)</a>:</h4>
+<p>(And then aliases could be introduced on top of that if it's too ugly for everyday usage. Or perhaps a default could be chosen when the type parameter is omitted)</p>
+
+
+
+<a name="229757494"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229757494" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gustavo Goretkin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229757494">(Mar 10 2021 at 22:18)</a>:</h4>
+<p>I put it as a type parameter, but I suppose that one could rely on constant propagation. The point is that the two operations are quite, quite related, and there's just a "flag", like the <code>keep</code> argument you mentioned, to choose behavior.</p>
+
+
+
+<a name="229761713"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/nonallocating%20multiarg%20%60any%60/near/229761713" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/nonallocating.20multiarg.20.60any.60.html#229761713">(Mar 10 2021 at 22:50)</a>:</h4>
+<p>yeah, a flag like <code>keep</code> might be the least confusing option</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

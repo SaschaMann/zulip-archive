@@ -1,0 +1,159 @@
+<html>
+<head><meta charset="utf-8"><title>Convenient initialisation of vector of `NamedTuple`s · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Convenient.20initialisation.20of.20vector.20of.20.60NamedTuple.60s.html">Convenient initialisation of vector of `NamedTuple`s</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="417411212"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Convenient%20initialisation%20of%20vector%20of%20%60NamedTuple%60s/near/417411212" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Convenient.20initialisation.20of.20vector.20of.20.60NamedTuple.60s.html#417411212">(Jan 23 2024 at 10:08)</a>:</h4>
+<p>I'm porting some C++ code to Julia where there's a lot of this pattern:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">List</span><span class="w"> </span><span class="n">out</span><span class="p">(</span><span class="n">num_folds</span><span class="p">);</span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">int</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">k</span><span class="o">&lt;</span><span class="n">num_folds</span><span class="p">;</span><span class="w"> </span><span class="n">k</span><span class="o">++</span><span class="p">){</span>
+<span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="kt">List</span><span class="w"> </span><span class="kt">tmp_uv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">initialize_uv</span><span class="p">(</span><span class="o">...</span><span class="p">);</span>
+<span class="kt">List</span><span class="w"> </span><span class="kt">fold_k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">List</span><span class="o">::</span><span class="kt">create</span><span class="p">(</span><span class="kt">Named</span><span class="p">(</span><span class="s">"u"</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">tmp_uv</span><span class="p">[</span><span class="s">"u"</span><span class="p">],</span>
+<span class="w">                               </span><span class="kt">Named</span><span class="p">(</span><span class="s">"v"</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">tmp_uv</span><span class="p">[</span><span class="s">"v"</span><span class="p">],</span>
+<span class="w">                               </span><span class="kt">Named</span><span class="p">(</span><span class="s">"lambda_L_max"</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">tmp_uv</span><span class="p">[</span><span class="s">"lambda_L_max"</span><span class="p">],</span>
+<span class="w">                               </span><span class="kt">Named</span><span class="p">(</span><span class="s">"fold_mask"</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">fold_mask</span><span class="p">);</span>
+<span class="w">    </span><span class="kt">out</span><span class="p">[</span><span class="kt">k</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">fold_k</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">out</span><span class="p">;</span>
+</code></pre></div>
+<p>to me it seemed a <code>NamedTuple</code> would be the most comparable Julia construct to use, so I do:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Vector</span><span class="p">{</span><span class="kt">NamedTuple</span><span class="p">{(</span><span class="ss">:u</span><span class="p">,</span><span class="w"> </span><span class="ss">:v</span><span class="p">,</span><span class="w"> </span><span class="ss">:λ_L_max</span><span class="p">,</span><span class="w"> </span><span class="ss">:fold_mask</span><span class="p">),</span><span class="w"> </span><span class="kt">Tuple</span><span class="p">{</span><span class="kt">Float64</span><span class="p">,</span><span class="w"> </span><span class="kt">Float64</span><span class="p">,</span><span class="w"> </span><span class="kt">Float64</span><span class="p">,</span><span class="w"> </span><span class="kt">Matrix</span><span class="p">{</span><span class="kt">Bool</span><span class="p">}}}}(</span><span class="nb">undef</span><span class="p">,</span><span class="w"> </span><span class="n">num_folds</span><span class="p">)</span>
+
+<span class="k">for</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">∈</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="n">num_fold</span>
+<span class="w">    </span><span class="p">(;</span><span class="w"> </span><span class="n">u</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">λ_L_max</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">initialize_uv</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="w">    </span><span class="n">out</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(;</span><span class="w"> </span><span class="n">u</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">λ_L_max</span><span class="p">,</span><span class="w"> </span><span class="n">fold_mask</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="k">return</span><span class="w"> </span><span class="n">out</span>
+</code></pre></div>
+<p>which looks a lot better, with the exception of the initalisation of <code>out</code>. Is there anythying more convenient to initialise this vector, or a better pattern altogether?</p>
+
+
+
+<a name="417411814"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Convenient%20initialisation%20of%20vector%20of%20%60NamedTuple%60s/near/417411814" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Convenient.20initialisation.20of.20vector.20of.20.60NamedTuple.60s.html#417411814">(Jan 23 2024 at 10:11)</a>:</h4>
+<p>You might prefer using <code>Vector{@NamedTuple{u::Float64, v::Float64, ...}}</code> instead.</p>
+
+
+
+<a name="417411864"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Convenient%20initialisation%20of%20vector%20of%20%60NamedTuple%60s/near/417411864" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Convenient.20initialisation.20of.20vector.20of.20.60NamedTuple.60s.html#417411864">(Jan 23 2024 at 10:11)</a>:</h4>
+<p>beat me to it <span aria-label="sweat smile" class="emoji emoji-1f605" role="img" title="sweat smile">:sweat_smile:</span></p>
+
+
+
+<a name="417412917"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Convenient%20initialisation%20of%20vector%20of%20%60NamedTuple%60s/near/417412917" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Convenient.20initialisation.20of.20vector.20of.20.60NamedTuple.60s.html#417412917">(Jan 23 2024 at 10:17)</a>:</h4>
+<p>If you don't want to declare the eltype of the vector, one thing you <strong>could</strong> do if you like is write</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">MicroCollections</span><span class="p">,</span><span class="w"> </span><span class="n">BangBang</span>
+<span class="n">out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EmptyVector</span><span class="p">()</span>
+<span class="k">for</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">∈</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="n">num_fold</span>
+<span class="w">    </span><span class="p">(;</span><span class="w"> </span><span class="n">u</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">λ_L_max</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">initialize_uv</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="w">    </span><span class="n">out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">push!!</span><span class="p">(</span><span class="n">out</span><span class="p">,</span><span class="w"> </span><span class="p">(;</span><span class="w"> </span><span class="n">u</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">λ_L_max</span><span class="p">,</span><span class="w"> </span><span class="n">fold_mask</span><span class="p">))</span>
+<span class="k">end</span>
+
+<span class="k">return</span><span class="w"> </span><span class="n">out</span>
+</code></pre></div>
+
+
+
+<a name="417412993"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Convenient%20initialisation%20of%20vector%20of%20%60NamedTuple%60s/near/417412993" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Convenient.20initialisation.20of.20vector.20of.20.60NamedTuple.60s.html#417412993">(Jan 23 2024 at 10:17)</a>:</h4>
+<p>Thanks, that saves 12 characters in this case! Still not exactly concise but I guess there can't really be a way around specifing the names and types of all elements of a <code>NamedTuple</code> (the clue is almost in the name...)</p>
+<p>What are the pros/cons of this over using a <code>Dict</code>?</p>
+
+
+
+<a name="417413185"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Convenient%20initialisation%20of%20vector%20of%20%60NamedTuple%60s/near/417413185" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Convenient.20initialisation.20of.20vector.20of.20.60NamedTuple.60s.html#417413185">(Jan 23 2024 at 10:18)</a>:</h4>
+<p><code>EmptyVector</code> is like a more efficient version of <code>Union{}[]</code></p>
+
+
+
+<a name="417413627"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Convenient%20initialisation%20of%20vector%20of%20%60NamedTuple%60s/near/417413627" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Convenient.20initialisation.20of.20vector.20of.20.60NamedTuple.60s.html#417413627">(Jan 23 2024 at 10:20)</a>:</h4>
+<p>and <code>push!!(coll, x)</code> is like</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">if</span><span class="w"> </span><span class="kt">x</span><span class="w"> </span><span class="o">&lt;:</span><span class="w"> </span><span class="n">eltype</span><span class="p">(</span><span class="n">coll</span><span class="p">)</span>
+<span class="w">    </span><span class="n">push!</span><span class="p">(</span><span class="n">coll</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">)</span>
+<span class="k">else</span>
+<span class="w">    </span><span class="n">coll</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="c">#make a new version of coll that has a wider eltype</span>
+<span class="w">    </span><span class="n">push!</span><span class="p">(</span><span class="n">coll</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="417413746"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Convenient%20initialisation%20of%20vector%20of%20%60NamedTuple%60s/near/417413746" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Convenient.20initialisation.20of.20vector.20of.20.60NamedTuple.60s.html#417413746">(Jan 23 2024 at 10:21)</a>:</h4>
+<p>so you always need to do <code>coll = push!!(coll, x)</code> instead of just <code>push!!(coll, x)</code></p>
+
+
+
+<a name="417414831"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Convenient%20initialisation%20of%20vector%20of%20%60NamedTuple%60s/near/417414831" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Convenient.20initialisation.20of.20vector.20of.20.60NamedTuple.60s.html#417414831">(Jan 23 2024 at 10:27)</a>:</h4>
+<p>Okay, actually on second thought, I'm now unsure why I I didn't just suggest you use <code>map</code> actually</p>
+
+
+
+<a name="417414922"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Convenient%20initialisation%20of%20vector%20of%20%60NamedTuple%60s/near/417414922" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Convenient.20initialisation.20of.20vector.20of.20.60NamedTuple.60s.html#417414922">(Jan 23 2024 at 10:28)</a>:</h4>
+<p>all you need to write is </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">map</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="n">num_fold</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">k</span>
+<span class="w">    </span><span class="p">(;</span><span class="w"> </span><span class="n">u</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">λ_L_max</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">initialize_uv</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="w">    </span><span class="p">(;</span><span class="w"> </span><span class="n">u</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">λ_L_max</span><span class="p">,</span><span class="w"> </span><span class="n">fold_mask</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="417416095"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Convenient%20initialisation%20of%20vector%20of%20%60NamedTuple%60s/near/417416095" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Convenient.20initialisation.20of.20vector.20of.20.60NamedTuple.60s.html#417416095">(Jan 23 2024 at 10:34)</a>:</h4>
+<p>Do you mean this?</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">map</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="n">num_fold</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">k</span>
+<span class="w">    </span><span class="p">(;</span><span class="w"> </span><span class="n">u</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">λ_L_max</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">initialize_uv</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="w">    </span><span class="p">(;</span><span class="w"> </span><span class="n">u</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">λ_L_max</span><span class="p">,</span><span class="w"> </span><span class="n">fold_mask</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="417416284"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Convenient%20initialisation%20of%20vector%20of%20%60NamedTuple%60s/near/417416284" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Convenient.20initialisation.20of.20vector.20of.20.60NamedTuple.60s.html#417416284">(Jan 23 2024 at 10:35)</a>:</h4>
+<p>On that note, I wonder if this compiles equivalently? (assuming <code>initialise_uv</code> doesn't have any extra info you want to ignore)</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">map</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="n">num_fold</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">k</span>
+<span class="w">    </span><span class="p">(;</span><span class="w"> </span><span class="n">initialize_uv</span><span class="p">(</span><span class="o">...</span><span class="p">)</span><span class="o">...</span><span class="p">,</span><span class="w"> </span><span class="n">fold_mask</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="417421574"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Convenient%20initialisation%20of%20vector%20of%20%60NamedTuple%60s/near/417421574" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Convenient.20initialisation.20of.20vector.20of.20.60NamedTuple.60s.html#417421574">(Jan 23 2024 at 11:04)</a>:</h4>
+<blockquote>
+<p>Do you mean this?</p>
+</blockquote>
+<p>Whoops, yeah I copy-pasted the wrong code section <span aria-label="face palm" class="emoji emoji-1f926" role="img" title="face palm">:face_palm:</span>, I've edited my post</p>
+
+
+
+<a name="417499052"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Convenient%20initialisation%20of%20vector%20of%20%60NamedTuple%60s/near/417499052" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> aplavin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Convenient.20initialisation.20of.20vector.20of.20.60NamedTuple.60s.html#417499052">(Jan 23 2024 at 17:55)</a>:</h4>
+<blockquote>
+<p>What are the pros/cons of this over using a Dict?</p>
+</blockquote>
+<p>NamedTuple is typically much lighterweight and more performant in such scenarios, so it's the natural choice indeed.<br>
+For even more efficiency, or if you need whole-column access, use StructArrays instead of regular Vector.</p>
+<p>And anyway, in this scenario <code>map</code> is the most straightforward solution, as suggested above. Manual <code>out[k] = ...</code> or <code>push!!()</code> is for more complicated processing that doesn't fit <code>map</code> semantics.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

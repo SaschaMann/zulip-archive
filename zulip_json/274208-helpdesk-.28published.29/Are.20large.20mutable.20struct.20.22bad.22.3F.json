@@ -1,0 +1,74 @@
+[
+    {
+        "content": "<p>For the efficiency seekers. I'm developing a plotting package, and for the code design, I'm creating a collection for mutable structs in order to store \"all\" styling information about the plot. For example:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"nd\">@with_kw</span> <span class=\"k\">mutable struct</span> <span class=\"kt\">Axis</span>\n    <span class=\"n\">length</span><span class=\"o\">::</span><span class=\"kt\">Real</span>\n    <span class=\"n\">lims</span><span class=\"o\">::</span><span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"kt\">Real</span><span class=\"p\">,</span><span class=\"kt\">Real</span><span class=\"p\">}</span>\n    <span class=\"n\">color</span><span class=\"o\">::</span><span class=\"kt\">Color</span> <span class=\"o\">=</span> <span class=\"n\">parse</span><span class=\"p\">(</span><span class=\"n\">Colorant</span><span class=\"p\">,</span> <span class=\"s\">\"gray\"</span><span class=\"p\">)</span>\n    <span class=\"n\">scale</span><span class=\"o\">::</span><span class=\"kt\">Symbol</span> <span class=\"o\">=</span> <span class=\"ss\">:linear</span>\n    <span class=\"n\">linethickness</span><span class=\"o\">::</span><span class=\"kt\">Real</span> <span class=\"o\">=</span> <span class=\"mi\">1</span>\n    <span class=\"n\">style</span><span class=\"o\">::</span><span class=\"kt\">String</span> <span class=\"o\">=</span> <span class=\"s\">\"solid\"</span>\n\n    <span class=\"n\">majorticks</span><span class=\"o\">::</span><span class=\"kt\">Ticks</span> <span class=\"o\">=</span> <span class=\"n\">Ticks</span><span class=\"p\">()</span>\n    <span class=\"n\">minorticks</span><span class=\"o\">::</span><span class=\"kt\">Ticks</span> <span class=\"o\">=</span> <span class=\"n\">Ticks</span><span class=\"p\">(;</span> <span class=\"n\">qtd</span><span class=\"o\">=</span><span class=\"mi\">0</span><span class=\"p\">,</span> <span class=\"n\">tickthickness</span><span class=\"o\">=</span><span class=\"mf\">0.25</span><span class=\"p\">,</span> <span class=\"n\">length</span><span class=\"o\">=</span><span class=\"mi\">2</span><span class=\"p\">)</span>\n\n    <span class=\"n\">label</span><span class=\"o\">::</span><span class=\"kt\">Union</span><span class=\"p\">{</span><span class=\"kt\">String</span><span class=\"p\">,</span><span class=\"kt\">LaTeXString</span><span class=\"p\">}</span> <span class=\"o\">=</span> <span class=\"s\">\"\"</span>\n    <span class=\"c\"># using underscore to avoid chocking with Luxor function `fontsize`</span>\n    <span class=\"n\">font_size</span><span class=\"o\">::</span><span class=\"kt\">Real</span> <span class=\"o\">=</span> <span class=\"mi\">10</span>\n    <span class=\"n\">font_family</span><span class=\"o\">::</span><span class=\"kt\">String</span> <span class=\"o\">=</span> <span class=\"s\">\"Roboto Light\"</span>\n    <span class=\"n\">labelangle</span><span class=\"o\">::</span><span class=\"kt\">Real</span> <span class=\"o\">=</span> <span class=\"mi\">0</span>\n    <span class=\"n\">labelcolor</span><span class=\"o\">::</span><span class=\"kt\">Color</span> <span class=\"o\">=</span> <span class=\"n\">parse</span><span class=\"p\">(</span><span class=\"n\">Colorant</span><span class=\"p\">,</span> <span class=\"s\">\"gray\"</span><span class=\"p\">)</span>\n\n    <span class=\"c\"># Drawing fields</span>\n    <span class=\"n\">startpoint</span><span class=\"o\">::</span><span class=\"kt\">Point</span> <span class=\"o\">=</span> <span class=\"n\">O</span>\n    <span class=\"n\">endpoint</span><span class=\"o\">::</span><span class=\"kt\">Point</span> <span class=\"o\">=</span> <span class=\"n\">O</span>\n    <span class=\"n\">startarrow</span><span class=\"o\">::</span><span class=\"kt\">Bool</span> <span class=\"o\">=</span> <span class=\"nb\">false</span>\n    <span class=\"n\">finisharrow</span><span class=\"o\">::</span><span class=\"kt\">Bool</span> <span class=\"o\">=</span> <span class=\"nb\">false</span>\n    <span class=\"n\">arrowheadlength</span><span class=\"o\">::</span><span class=\"kt\">Real</span> <span class=\"o\">=</span> <span class=\"mi\">10</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>I'm wondering if this will cause bad performance, or if it's a bad design for Julia.<br>\nMy idea was to apply functions in order to set these properties, and then a separate function to draw it.<br>\nIn the first iteration of the code, I was placing these properties as arguments in the drawing functions. But I changed my mind, since some of these attributes are reused.</p>",
+        "id": 269409424,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1643203519
+    },
+    {
+        "content": "<p>I don't think so, as some packages use it.<br>\nA performance issue in structs are fields with abstract type annotation.<br>\nThat is, if you can avoid abstract type annotation in struct fields, do so.</p>",
+        "id": 269410120,
+        "sender_full_name": "Elias Carvalho",
+        "timestamp": 1643203826
+    },
+    {
+        "content": "<p>In your code you can change the <code>length</code> type annotation from <code>Real</code> to <code>Int</code> for example.</p>",
+        "id": 269410690,
+        "sender_full_name": "Elias Carvalho",
+        "timestamp": 1643204081
+    },
+    {
+        "content": "<p>There was a nice article of Chris Rackauckas regarding optimizations. One of the key ideas was that you should optimize only things that require optimization. Ask yourself: how often this function is called in a usual application? If it is intended to be called thousands or millions of times per second, then yes, you should optimize it as much as possible.</p>\n<p>If you call it once per few minutes and it's execution time is milliseconds, you shouldn't care about optimization at all.</p>",
+        "id": 269414292,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1643205382
+    },
+    {
+        "content": "<p>Well, of course there are also compile time efficiency (with strict types your function is going to be compiled once), but this is a different thing.</p>",
+        "id": 269414413,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1643205434
+    },
+    {
+        "content": "<p>Thank you both. I forgot to mention that precompilation time was another variable that I want to consider.</p>",
+        "id": 269414487,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1643205463
+    },
+    {
+        "content": "<p>Does the large mutable struct create precompilation latency?</p>",
+        "id": 269414519,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1643205480
+    },
+    {
+        "content": "<p>I doubt that (but I am not an expert). Most of the precompile time is related to method invalidation, as far as I know.</p>\n<p>You can read more about that in Tim Holy blog: <a href=\"https://julialang.org/blog/2021/01/precompile_tutorial/\">https://julialang.org/blog/2021/01/precompile_tutorial/</a></p>",
+        "id": 269415358,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1643205763
+    },
+    {
+        "content": "<p>This post is in my sticky notes for \"Read this!\" since yesterday hehe</p>",
+        "id": 269416603,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1643206216
+    },
+    {
+        "content": "<p>What's the selling point of the new plotting package?</p>",
+        "id": 269516248,
+        "sender_full_name": "jar",
+        "timestamp": 1643248863
+    },
+    {
+        "content": "<p><span aria-label=\"silence\" class=\"emoji emoji-1f910\" role=\"img\" title=\"silence\">:silence:</span></p>",
+        "id": 269569790,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1643289372
+    },
+    {
+        "content": "<p>I don't know what the depth of your plotting package is, but did you consider developing your package as a Makie recipy ? <br>\nFor example this styling Information you mentioned could be Makie attributes.</p>",
+        "id": 276733977,
+        "sender_full_name": "Filippos Christou",
+        "timestamp": 1648312306
+    }
+]

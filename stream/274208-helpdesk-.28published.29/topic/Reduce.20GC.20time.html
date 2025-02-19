@@ -1,0 +1,474 @@
+<html>
+<head><meta charset="utf-8"><title>Reduce GC time · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html">Reduce GC time</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="313920055"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313920055" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313920055">(Dec 05 2022 at 09:24)</a>:</h4>
+<p>I have a task which spends 10% of the time on GC when executed on a single thread, but as soon as I thread it 70% of the execution time is GC. Might anyone have general suggestions on how I could improve this situation?</p>
+
+
+
+<a name="313920572"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313920572" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313920572">(Dec 05 2022 at 09:27)</a>:</h4>
+<p>unfortunately, the only "real" thing you can do right now is to allocate less in the threaded sections</p>
+
+
+
+<a name="313920651"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313920651" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313920651">(Dec 05 2022 at 09:28)</a>:</h4>
+<p>reason being that GC runs stop other threads from executing as well</p>
+
+
+
+<a name="313920700"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313920700" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313920700">(Dec 05 2022 at 09:28)</a>:</h4>
+<p>so lots of GC in a threaded section also means a large slowdown</p>
+
+
+
+<a name="313936418"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313936418" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313936418">(Dec 05 2022 at 10:56)</a>:</h4>
+<p>That's a pity to hear. I've got to say, it's a bit disappointing when doing something embarrassingly parallel that when going from 1 thread to 60 performance only improves by ~1.4x.</p>
+
+
+
+<a name="313936935"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313936935" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Max Köhler <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313936935">(Dec 05 2022 at 10:58)</a>:</h4>
+<p>related to this: is there a chance to get another GC strategy in the near future (if at all possible)?</p>
+
+
+
+<a name="313938484"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313938484" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313938484">(Dec 05 2022 at 11:07)</a>:</h4>
+<p>you can always preallocate your working memory</p>
+
+
+
+<a name="313938824"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313938824" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313938824">(Dec 05 2022 at 11:09)</a>:</h4>
+<p>I think <span class="user-mention" data-user-id="362527">@Gabriel Baraldi</span>  does some investigative work, but nothing in the near future. There is some <a href="https://github.com/JuliaLang/julia/pull/47292">work on parallelizing GC</a> entirely, but no ETA on that.</p>
+
+
+
+<a name="313938954"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313938954" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Max Köhler <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313938954">(Dec 05 2022 at 11:09)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="306754">Sukera</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time/near/313938484">said</a>:</p>
+<blockquote>
+<p>you can always preallocate your working memory</p>
+</blockquote>
+<p>yes I know, this is what I do. I was just wondering if other strategies exist and if so, if investigations are carried out</p>
+
+
+
+<a name="313939172"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313939172" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313939172">(Dec 05 2022 at 11:10)</a>:</h4>
+<p>it's a difficult problem and even with a parallel GC, you're going to want to minimize interaction with it either way <span aria-label="shrug" class="emoji emoji-1f937" role="img" title="shrug">:shrug:</span></p>
+
+
+
+<a name="313939233"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313939233" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313939233">(Dec 05 2022 at 11:11)</a>:</h4>
+<p>memory management is expensive, no matter whether it's julia, C, C++ or Java</p>
+
+
+
+<a name="313939300"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313939300" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313939300">(Dec 05 2022 at 11:11)</a>:</h4>
+<p>(relatively speaking to a hot loop)</p>
+
+
+
+<a name="313939429"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313939429" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313939429">(Dec 05 2022 at 11:12)</a>:</h4>
+<p>that said, <span class="user-mention" data-user-id="400021">@Timothy</span>  if you only observe a speedup of 1.4x when you expect 60x, it suggests to me that your single threaded path is not at all optimized, so I'd suggest starting with that</p>
+
+
+
+<a name="313940270"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313940270" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313940270">(Dec 05 2022 at 11:17)</a>:</h4>
+<p>I don't really see what the optimisation of the single-threaded path has to do with how well it paralelizes if there's no interaction between threads.</p>
+
+
+
+<a name="313940362"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313940362" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313940362">(Dec 05 2022 at 11:18)</a>:</h4>
+<p>because GC is interacting across threads.</p>
+
+
+
+<a name="313940394"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313940394" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313940394">(Dec 05 2022 at 11:18)</a>:</h4>
+<p>Oh, you're talking about optimising it to produce less GC?</p>
+
+
+
+<a name="313940399"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313940399" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313940399">(Dec 05 2022 at 11:18)</a>:</h4>
+<p>yes</p>
+
+
+
+<a name="313940477"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313940477" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313940477">(Dec 05 2022 at 11:19)</a>:</h4>
+<p>GC is single threaded, so if any thread wants to allocate memory, it needs to take a lock and blocks all other threads from allocating, IIRC.</p>
+
+
+
+<a name="313940612"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313940612" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313940612">(Dec 05 2022 at 11:19)</a>:</h4>
+<p>on top of that, depending on how you're threading, you may accidentally share data/state between threads, which can lead to more boxing/allocations</p>
+
+
+
+<a name="313940693"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313940693" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313940693">(Dec 05 2022 at 11:20)</a>:</h4>
+<p>the easiest way to tackle both is to optimize the single threaded version</p>
+
+
+
+<a name="313940699"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313940699" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313940699">(Dec 05 2022 at 11:20)</a>:</h4>
+<p>That would be nice, but I have a feeling that would be quite difficult. The code is basically doing two major things:</p>
+<ul>
+<li>Constructing and evaluating decision trees (from <code>DecisionTree.jl</code>)</li>
+<li>Calculating permutation importance</li>
+</ul>
+
+
+
+<a name="313940858"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313940858" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313940858">(Dec 05 2022 at 11:21)</a>:</h4>
+<p>do you have an example?</p>
+
+
+
+<a name="313941099"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313941099" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313941099">(Dec 05 2022 at 11:22)</a>:</h4>
+<p>keep in mind that e.g. <code>Threads.@threads</code> more or less has to create an anonymous function under the hood, so anything you capture in there is shared across threads</p>
+
+
+
+<a name="313941124"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313941124" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313941124">(Dec 05 2022 at 11:22)</a>:</h4>
+<p>and that capturing may too lead to type instabilities, boxing etc.</p>
+
+
+
+<a name="313941256"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313941256" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313941256">(Dec 05 2022 at 11:23)</a>:</h4>
+<p>This is the rough structure of the code (which uses <code>Transducers.jl</code>)</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="p">(</span><span class="n">sample</span><span class="w"> </span><span class="n">generator</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"></span>
+<span class="w">  </span><span class="n">Map</span><span class="p">(</span><span class="n">pairs</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">zip</span><span class="p">(</span><span class="n">pairs</span><span class="o">...</span><span class="p">)</span><span class="w"> </span><span class="o">.|&gt;</span><span class="w"> </span><span class="n">Iterators</span><span class="o">.</span><span class="n">flatten</span><span class="w"> </span><span class="o">.|&gt;</span><span class="w"> </span><span class="n">collect</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"></span>
+<span class="w">  </span><span class="n">Map</span><span class="p">(</span><span class="k">function</span><span class="w"> </span><span class="p">((</span><span class="n">train</span><span class="p">,</span><span class="w"> </span><span class="n">test</span><span class="p">),)</span><span class="w"></span>
+<span class="w">    </span><span class="n">tree</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">train</span><span class="p">(</span><span class="n">decision</span><span class="w"> </span><span class="n">tree</span><span class="w"> </span><span class="n">on</span><span class="w"> </span><span class="n">train</span><span class="w"> </span><span class="n">data</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">oob</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">predict</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span><span class="w"> </span><span class="n">test</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">importance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">permutation_importance</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span><span class="w"> </span><span class="n">test</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="p">(;</span><span class="w"> </span><span class="n">tree</span><span class="p">,</span><span class="w"> </span><span class="n">oob</span><span class="p">,</span><span class="w"> </span><span class="n">importance</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">end</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">tcollect</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="313941453"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313941453" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313941453">(Dec 05 2022 at 11:24)</a>:</h4>
+<p>The actual code is a bit more complicated, but if you're interested you can find it here: <a href="http://ix.io/4hNh">http://ix.io/4hNh</a></p>
+
+
+
+<a name="313941556"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313941556" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313941556">(Dec 05 2022 at 11:25)</a>:</h4>
+<p>how large is <code>pairs</code>?</p>
+
+
+
+<a name="313941692"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313941692" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313941692">(Dec 05 2022 at 11:26)</a>:</h4>
+<p>Usually a single-element vector (hence the <code>if</code> statement in the full version)</p>
+
+
+
+<a name="313941767"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313941767" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313941767">(Dec 05 2022 at 11:26)</a>:</h4>
+<p>your full version is type unstable - you only assign <code>importance</code> conditionally</p>
+
+
+
+<a name="313941908"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313941908" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313941908">(Dec 05 2022 at 11:27)</a>:</h4>
+<p>Yea, <code>importance</code> and <code>oob</code> are both <code>Union{Nothing, X}</code>s, but I'm assuming that type instability isn't having a big impact overall.</p>
+
+
+
+<a name="313942004"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313942004" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313942004">(Dec 05 2022 at 11:28)</a>:</h4>
+<p>unprofiled assumptions are bad for making a decision :)</p>
+
+
+
+<a name="313942037"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313942037" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313942037">(Dec 05 2022 at 11:28)</a>:</h4>
+<p><code>trainX</code> also creates a copy, does it really need to?</p>
+
+
+
+<a name="313942107"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313942107" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313942107">(Dec 05 2022 at 11:28)</a>:</h4>
+<p>since slicing copies here <code>trainX, trainY = X1[train, :], y1[train]</code></p>
+
+
+
+<a name="313942156"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313942156" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313942156">(Dec 05 2022 at 11:29)</a>:</h4>
+<p>It doesn't need to be a copy, but neither that or <code>Matrix(testX)</code> seem to have much of an impact overall</p>
+
+
+
+<a name="313942202"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313942202" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313942202">(Dec 05 2022 at 11:29)</a>:</h4>
+<p>because both copy</p>
+
+
+
+<a name="313942211"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313942211" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313942211">(Dec 05 2022 at 11:29)</a>:</h4>
+<p>why not a <code>@view</code>?</p>
+
+
+
+<a name="313942258"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313942258" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313942258">(Dec 05 2022 at 11:29)</a>:</h4>
+<p>I suppose I could prefix <code>@views</code> just for fun</p>
+
+
+
+<a name="313942322"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313942322" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313942322">(Dec 05 2022 at 11:30)</a>:</h4>
+<p>same general thought goes for <code>zip(pairs...)</code>, do you really need to <code>collect</code> it, thereby allocating new memory?</p>
+
+
+
+<a name="313942495"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313942495" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313942495">(Dec 05 2022 at 11:30)</a>:</h4>
+<p>I'm not <code>|&gt;</code> collecting, I'm <code>.|&gt;</code> collecting, so it changes the structure</p>
+
+
+
+<a name="313942570"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313942570" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313942570">(Dec 05 2022 at 11:31)</a>:</h4>
+<p>same thought though, do you need to collect each flattened array?</p>
+
+
+
+<a name="313942863"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313942863" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313942863">(Dec 05 2022 at 11:33)</a>:</h4>
+<p>and I also think the broadcast (which allocates yet-another array) can be elided by using <code>Iterators.map(Iterators.flatten, zip(pairs...))</code></p>
+
+
+
+<a name="313942879"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313942879" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313942879">(Dec 05 2022 at 11:33)</a>:</h4>
+<p>Yes, otherwise I get a method error</p>
+
+
+
+<a name="313942900"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313942900" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313942900">(Dec 05 2022 at 11:33)</a>:</h4>
+<p>Also, in this particular case, I know that branch is never hit</p>
+
+
+
+<a name="313943124"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313943124" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313943124">(Dec 05 2022 at 11:34)</a>:</h4>
+<p>I'm not saying doing just that change will fix things, I'm just pointing out where you get those allocations</p>
+
+
+
+<a name="313943150"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313943150" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313943150">(Dec 05 2022 at 11:34)</a>:</h4>
+<p>I appreciate it :)</p>
+
+
+
+<a name="313943174"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313943174" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313943174">(Dec 05 2022 at 11:34)</a>:</h4>
+<p>The <code>map</code> change is nice, I'll make that regardless of the impact</p>
+
+
+
+<a name="313943262"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313943262" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313943262">(Dec 05 2022 at 11:35)</a>:</h4>
+<p>tbh, transducers are supposed to compose, so I think you should be able to use the <a href="https://github.com/search?q=Transducers.jl&amp;type=Repositories">Transducers.jl</a> native Map just as well</p>
+
+
+
+<a name="313943419"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313943419" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313943419">(Dec 05 2022 at 11:36)</a>:</h4>
+<p>regardless, every broadcast in there (like <code>getproperty.(submachines, :test)</code> later on) has to allocate a result array</p>
+
+
+
+<a name="313943502"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313943502" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313943502">(Dec 05 2022 at 11:36)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="400021">Timothy</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time/near/313942879">said</a>:</p>
+<blockquote>
+<p>Yes, otherwise I get a method error</p>
+</blockquote>
+<p>I'm very happy to discover that I'm wrong here! and it does help a bit!</p>
+
+
+
+<a name="313943510"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313943510" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313943510">(Dec 05 2022 at 11:36)</a>:</h4>
+<p>the <code>mapreduce</code> over dictionaries is going to be expensive too, since it needs to allocate a new dictionary and rehash all entries</p>
+
+
+
+<a name="313943632"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313943632" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313943632">(Dec 05 2022 at 11:37)</a>:</h4>
+<p>Any recommendations there?</p>
+
+
+
+<a name="313943900"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313943900" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313943900">(Dec 05 2022 at 11:39)</a>:</h4>
+<p>put the <code>getproperty</code> thing into the <code>map</code> of the <code>mapreduce</code></p>
+
+
+
+<a name="313943904"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313943904" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313943904">(Dec 05 2022 at 11:39)</a>:</h4>
+<p>you're already mapping</p>
+
+
+
+<a name="313943923"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313943923" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313943923">(Dec 05 2022 at 11:39)</a>:</h4>
+<p>so why have another loop allocating memory before that?</p>
+
+
+
+<a name="313944017"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313944017" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313944017">(Dec 05 2022 at 11:39)</a>:</h4>
+<p>(or get rid of the <code>Dict</code> entirely, but that is probably a bit more of an undertaking)</p>
+
+
+
+<a name="313944167"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313944167" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313944167">(Dec 05 2022 at 11:40)</a>:</h4>
+<p>Since the keys are the same, I suppose I could sort each importance list on the keys and then directly sum the vectors of values?</p>
+
+
+
+<a name="313944202"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313944202" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313944202">(Dec 05 2022 at 11:41)</a>:</h4>
+<p>that's also an option, yeah</p>
+
+
+
+<a name="313944259"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313944259" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313944259">(Dec 05 2022 at 11:41)</a>:</h4>
+<p>or you just iterate over <code>keys(..)</code> of one importance list and sum all entries of all lists</p>
+
+
+
+<a name="313945042"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313945042" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313945042">(Dec 05 2022 at 11:46)</a>:</h4>
+<p>Ok, with the <code>.|&gt; collection</code> removal and <code>Iterators.map</code> the 60x thread increase now causes a 1.9x perf improvement</p>
+
+
+
+<a name="313945625"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313945625" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313945625">(Dec 05 2022 at 11:50)</a>:</h4>
+<p>so still 30x missing, possibly due to the other places with copy slicing instead of views</p>
+
+
+
+<a name="313945677"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313945677" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313945677">(Dec 05 2022 at 11:50)</a>:</h4>
+<p>and depending on how much the code you're calling allocates, of course</p>
+
+
+
+<a name="313945947"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313945947" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313945947">(Dec 05 2022 at 11:52)</a>:</h4>
+<p>I could share <code>tree_permutation_importance</code> too, if that's of interest?</p>
+
+
+
+<a name="313946064"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313946064" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313946064">(Dec 05 2022 at 11:53)</a>:</h4>
+<p>I'm a bit short on time for indepth reviews, sorry :/</p>
+
+
+
+<a name="313946309"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/313946309" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#313946309">(Dec 05 2022 at 11:54)</a>:</h4>
+<p>That's fine, the 1.4 -&gt; 1.9x improvement is already very much appreciated :)</p>
+
+
+
+<a name="314081509"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/314081509" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#314081509">(Dec 05 2022 at 17:08)</a>:</h4>
+<p>If allocations can't be avoided, running multi-processing (e.g. <code>Distributed</code>) can help since then each instance gets its own allocator and gc.</p>
+<p>It has its own sets of drawbacks (sending data over sockets, multiple compilations etc.) so it is absolutely no silver bullet.</p>
+
+
+
+<a name="314345937"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/314345937" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#314345937">(Dec 06 2022 at 23:20)</a>:</h4>
+<p>I use <code>Distributed</code> a lot for this reason.</p>
+
+
+
+<a name="314348835"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/314348835" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#314348835">(Dec 06 2022 at 23:44)</a>:</h4>
+<p>Or <a href="https://github.com/search?q=MPI.jl&amp;type=Repositories">MPI.jl</a>, if it makes sense</p>
+
+
+
+<a name="314360244"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/314360244" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#314360244">(Dec 07 2022 at 01:24)</a>:</h4>
+<p>Yea, the problem I have with distributed + a few packages + a large data sets is an explosion in memory required.</p>
+
+
+
+<a name="314361389"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/314361389" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#314361389">(Dec 07 2022 at 01:36)</a>:</h4>
+<p>My solution to that has been just buying a lot of ram, though sometimes it's not enough</p>
+
+
+
+<a name="314361562"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/314361562" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#314361562">(Dec 07 2022 at 01:38)</a>:</h4>
+<p>I have 128G and it's not enough <span aria-label="sweat smile" class="emoji emoji-1f605" role="img" title="sweat smile">:sweat_smile:</span></p>
+
+
+
+<a name="314361791"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/314361791" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#314361791">(Dec 07 2022 at 01:41)</a>:</h4>
+<p>there's always swap</p>
+
+
+
+<a name="314362008"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/314362008" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#314362008">(Dec 07 2022 at 01:44)</a>:</h4>
+<p>When I installed the OS I assumed I'd need no swap with so much memory <span aria-label="laughter tears" class="emoji emoji-1f602" role="img" title="laughter tears">:laughter_tears:</span></p>
+
+
+
+<a name="318354577"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reduce%20GC%20time/near/318354577" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time.html#318354577">(Dec 29 2022 at 03:32)</a>:</h4>
+<p><a href="/user_uploads/7178/kjJ8DZiLW4sHHfbe6p9F-Woe/image.png">image.png</a> it's not always fast but it does go</p>
+<div class="message_inline_image"><a href="/user_uploads/7178/kjJ8DZiLW4sHHfbe6p9F-Woe/image.png" title="image.png"><img src="/user_uploads/7178/kjJ8DZiLW4sHHfbe6p9F-Woe/image.png"></a></div>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

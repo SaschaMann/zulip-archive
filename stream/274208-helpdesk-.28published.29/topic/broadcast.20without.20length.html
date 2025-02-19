@@ -1,0 +1,100 @@
+<html>
+<head><meta charset="utf-8"><title>broadcast without length · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/broadcast.20without.20length.html">broadcast without length</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="229199757"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/broadcast%20without%20length/near/229199757" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/broadcast.20without.20length.html#229199757">(Mar 07 2021 at 16:29)</a>:</h4>
+<p>Is it possible to define broadcasting behavior for a type without having to define <code>Base.length</code>?</p>
+
+
+
+<a name="229203416"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/broadcast%20without%20length/near/229203416" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/broadcast.20without.20length.html#229203416">(Mar 07 2021 at 17:25)</a>:</h4>
+<p>Yeah. One way woudl be to just overload <code>Base.broadcasted</code>:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">struct</span> <span class="n">MyVector</span><span class="p">{</span><span class="n">T</span><span class="p">}</span>
+           <span class="n">data</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="n">T</span><span class="p">}</span>
+       <span class="k">end</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">v</span> <span class="o">=</span> <span class="n">MyVector</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">])</span>
+<span class="n">MyVector</span><span class="p">{</span><span class="kt">Int64</span><span class="p">}([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">Base</span><span class="o">.</span><span class="n">broadcasted</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">v</span><span class="o">::</span><span class="n">MyVector</span><span class="p">,</span> <span class="n">args</span><span class="o">...</span><span class="p">)</span> <span class="o">=</span> <span class="n">Base</span><span class="o">.</span><span class="n">broadcasted</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">args</span><span class="o">...</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="p">(</span><span class="n">v</span> <span class="o">.+</span> <span class="mi">1</span><span class="p">)</span>
+<span class="mi">3</span><span class="o">-</span><span class="n">element</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}</span><span class="o">:</span>
+  <span class="mf">7.38905609893065</span>
+ <span class="mf">20.085536923187668</span>
+ <span class="mf">54.598150033144236</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">length</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+<span class="n">ERROR</span><span class="o">:</span> <span class="kt">MethodError</span><span class="o">:</span> <span class="n">no</span> <span class="n">method</span> <span class="n">matching</span> <span class="n">length</span><span class="p">(</span><span class="o">::</span><span class="n">MyVector</span><span class="p">{</span><span class="kt">Int64</span><span class="p">})</span>
+</code></pre></div>
+
+
+
+<a name="229203482"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/broadcast%20without%20length/near/229203482" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/broadcast.20without.20length.html#229203482">(Mar 07 2021 at 17:26)</a>:</h4>
+<p>A more robust way would be to define a custom broadcast style as explained here: <a href="https://docs.julialang.org/en/v1/manual/interfaces/#man-interfaces-broadcasting">https://docs.julialang.org/en/v1/manual/interfaces/#man-interfaces-broadcasting</a></p>
+
+
+
+<a name="229203521"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/broadcast%20without%20length/near/229203521" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/broadcast.20without.20length.html#229203521">(Mar 07 2021 at 17:27)</a>:</h4>
+<p>Unfortunately, the docs on custom broadcast styles are kinda lacking in examples that aren't basically just standard arrays.</p>
+
+
+
+<a name="229203647"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/broadcast%20without%20length/near/229203647" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/broadcast.20without.20length.html#229203647">(Mar 07 2021 at 17:29)</a>:</h4>
+<p>Actually, the easiest thing here would probably be to use <code>Base.broadcastable</code> instead. So instead of defining <code>broadcasted</code> above, you'd just do</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">struct</span> <span class="n">MyVector</span><span class="p">{</span><span class="n">T</span><span class="p">}</span>
+           <span class="n">data</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="n">T</span><span class="p">}</span>
+       <span class="k">end</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">v</span> <span class="o">=</span> <span class="n">MyVector</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">])</span>
+<span class="n">MyVector</span><span class="p">{</span><span class="kt">Int64</span><span class="p">}([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">Base</span><span class="o">.</span><span class="n">broadcastable</span><span class="p">(</span><span class="n">v</span><span class="o">::</span><span class="n">MyVector</span><span class="p">)</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">data</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">log</span><span class="o">.</span><span class="p">(</span><span class="mi">1</span> <span class="o">.+</span> <span class="mi">3</span> <span class="o">.+</span> <span class="n">v</span><span class="p">)</span>
+<span class="mi">3</span><span class="o">-</span><span class="n">element</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}</span><span class="o">:</span>
+ <span class="mf">1.6094379124341003</span>
+ <span class="mf">1.791759469228055</span>
+ <span class="mf">1.9459101490553132</span>
+</code></pre></div>
+
+
+
+<a name="229267429"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/broadcast%20without%20length/near/229267429" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Philipp Gabler <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/broadcast.20without.20length.html#229267429">(Mar 08 2021 at 09:05)</a>:</h4>
+<p>Maybe now it's time for someone to answer <a href="https://stackoverflow.com/questions/50517457/how-to-overload-general-broadcasting-for-a-custom-type">this really old SO question of mine</a>?</p>
+
+
+
+<a name="229286893"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/broadcast%20without%20length/near/229286893" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Chad Scherrer <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/broadcast.20without.20length.html#229286893">(Mar 08 2021 at 11:58)</a>:</h4>
+<p>Upvoted <span aria-label="+1" class="emoji emoji-1f44d" role="img" title="+1">:+1:</span></p>
+
+
+
+<a name="229349390"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/broadcast%20without%20length/near/229349390" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/broadcast.20without.20length.html#229349390">(Mar 08 2021 at 18:28)</a>:</h4>
+<p>Thank you <span class="user-mention" data-user-id="269150">@Mason Protter</span> and everyone else. I will read the links to learn more about custom broadcasts.</p>
+
+
+
+<a name="229349778"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/broadcast%20without%20length/near/229349778" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/broadcast.20without.20length.html#229349778">(Mar 08 2021 at 18:30)</a>:</h4>
+<p>It would be nice if someone with more experience in custom broadcasting styles could write a blog post for the community. This is a topic that Julia can really shine and yet very few of us understand it well even after years playing with the language.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

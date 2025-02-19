@@ -1,0 +1,202 @@
+<html>
+<head><meta charset="utf-8"><title>Converting Int64 to Float64 · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Converting.20Int64.20to.20Float64.html">Converting Int64 to Float64</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="244438061"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Converting%20Int64%20to%20Float64/near/244438061" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Converting.20Int64.20to.20Float64.html#244438061">(Jun 30 2021 at 15:06)</a>:</h4>
+<p>Hello again. I'm trying to make a package that fetches random numbers from an API. I can get them as UInt8 and UInt16s. I use bit shifting to get UInt32,64,128 and some random bools for Int8,16,32,64,128. However, I'm stuck on Floats. It would get great if I could just tell Julia to take an Int64 and then treat the same pointer as a Float64 ... but my google-fu has not revealed a way to do so.<br>
+Any suggestions?</p>
+
+
+
+<a name="244438610"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Converting%20Int64%20to%20Float64/near/244438610" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Converting.20Int64.20to.20Float64.html#244438610">(Jun 30 2021 at 15:09)</a>:</h4>
+<p>Like this (using <a href="https://docs.julialang.org/en/v1/base/arrays/#Base.reinterpret"><code>reinterpret</code></a>)?</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">x</span> <span class="o">=</span> <span class="mh">0x400921fb54442d18</span><span class="p">;</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">reinterpret</span><span class="p">(</span><span class="kt">Float64</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+<span class="mf">3.141592653589793</span>
+</code></pre></div>
+
+
+
+<a name="244439108"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Converting%20Int64%20to%20Float64/near/244439108" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Converting.20Int64.20to.20Float64.html#244439108">(Jun 30 2021 at 15:12)</a>:</h4>
+<p>That looks great! Thanks</p>
+
+
+
+<a name="244439405"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Converting%20Int64%20to%20Float64/near/244439405" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Converting.20Int64.20to.20Float64.html#244439405">(Jun 30 2021 at 15:14)</a>:</h4>
+<p>Looks like I just need to find a way to set the exponent bits now...</p>
+
+
+
+<a name="244439440"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Converting%20Int64%20to%20Float64/near/244439440" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Converting.20Int64.20to.20Float64.html#244439440">(Jun 30 2021 at 15:14)</a>:</h4>
+<p>Probably easier if I do that with the UInt64</p>
+
+
+
+<a name="244439883"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Converting%20Int64%20to%20Float64/near/244439883" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Simeon Schaub <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Converting.20Int64.20to.20Float64.html#244439883">(Jun 30 2021 at 15:17)</a>:</h4>
+<p>You might be looking for <code>frexp</code></p>
+
+
+
+<a name="244440834"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Converting%20Int64%20to%20Float64/near/244440834" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Converting.20Int64.20to.20Float64.html#244440834">(Jun 30 2021 at 15:22)</a>:</h4>
+<p><code>frexp.(reinterpret.(Float64, rand(UInt64, 20)))</code> looks promising, but I'm thinking try bitwise operations first</p>
+
+
+
+<a name="244441036"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Converting%20Int64%20to%20Float64/near/244441036" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Converting.20Int64.20to.20Float64.html#244441036">(Jun 30 2021 at 15:24)</a>:</h4>
+<p>I <em>think</em> as long as I set the start to <code>0b001111111100</code> then I should get a Float in <code>[0, 1]</code></p>
+
+
+
+<a name="244443060"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Converting%20Int64%20to%20Float64/near/244443060" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gunnar Farnebäck <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Converting.20Int64.20to.20Float64.html#244443060">(Jun 30 2021 at 15:35)</a>:</h4>
+<p>You might want to think about what kind of distribution you want. Assuming your random sources are uniformly distributed you're about to construct a uniform distribution on the representable floating point numbers in <code>[0, 1]</code>, which is rather different from a uniform distribution on the real numbers in  <code>[0, 1]</code>.</p>
+
+
+
+<a name="244443176"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Converting%20Int64%20to%20Float64/near/244443176" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Converting.20Int64.20to.20Float64.html#244443176">(Jun 30 2021 at 15:36)</a>:</h4>
+<p>The target here is a uniform distribution on <code>[0, 1]</code></p>
+
+
+
+<a name="244443239"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Converting%20Int64%20to%20Float64/near/244443239" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Converting.20Int64.20to.20Float64.html#244443239">(Jun 30 2021 at 15:36)</a>:</h4>
+<p>Since the <code>UInt64</code>should be uniform, I interpret that as each bit being fairly random (in the "fair coin" sense of fair).</p>
+
+
+
+<a name="244444732"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Converting%20Int64%20to%20Float64/near/244444732" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Converting.20Int64.20to.20Float64.html#244444732">(Jun 30 2021 at 15:47)</a>:</h4>
+<p>Turns out looking at the IEE 754 spec was helpful, who would have thought <span aria-label="stuck out tongue" class="emoji emoji-1f61b" role="img" title="stuck out tongue">:stuck_out_tongue:</span>. Result looks good<br>
+<a href="/user_uploads/7178/UJOei-9L9eU4PdUOERZXvaWR/image.png">image.png</a></p>
+<div class="message_inline_image"><a href="/user_uploads/7178/UJOei-9L9eU4PdUOERZXvaWR/image.png" title="image.png"><img src="/user_uploads/7178/UJOei-9L9eU4PdUOERZXvaWR/image.png"></a></div>
+
+
+
+<a name="244450266"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Converting%20Int64%20to%20Float64/near/244450266" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Converting.20Int64.20to.20Float64.html#244450266">(Jun 30 2021 at 16:22)</a>:</h4>
+<p>If you want <code>(0,1)</code> instead of <code>[0,1]</code>, an easy way is to mask the random <code>UInt64</code> it into <code>[1,2)</code> and then subtract <code>prevfloat(1.0)</code>.</p>
+
+
+
+<a name="244450773"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Converting%20Int64%20to%20Float64/near/244450773" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Converting.20Int64.20to.20Float64.html#244450773">(Jun 30 2021 at 16:26)</a>:</h4>
+<p>That's what I'm doing actually <span aria-label="smile" class="emoji emoji-1f642" role="img" title="smile">:smile:</span></p>
+
+
+
+<a name="244451152"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Converting%20Int64%20to%20Float64/near/244451152" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Converting.20Int64.20to.20Float64.html#244451152">(Jun 30 2021 at 16:29)</a>:</h4>
+<p>Unfortunately, it turns out that <code>Random</code> deals with <code>Float64</code> in a different way ... which means I'm currently just getting error <span aria-label="frown" class="emoji emoji-1f641" role="img" title="frown">:frown:</span></p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gr">ERROR: StackOverflowError:</span>
+<span class="gr">Stacktrace:</span>
+<span class="gr">     [1] _rand52(r::ANUQRNG, #unused#::Type{Float64})</span>
+<span class="gr">       @ Random /home/abuild/rpmbuild/BUILD/julia-1.6.0/usr/share/julia/stdlib/v1.6/Random/src/generation.jl:117</span>
+<span class="gr">     [2] rand(r::ANUQRNG, #unused#::Random.SamplerTrivial{Random.UInt52Raw{UInt64}, UInt64})</span>
+<span class="gr">       @ Random /home/abuild/rpmbuild/BUILD/julia-1.6.0/usr/share/julia/stdlib/v1.6/Random/src/generation.jl:114</span>
+<span class="gr">     [3] rand(rng::ANUQRNG, X::Random.UInt52Raw{UInt64})</span>
+<span class="gr">       @ Random /home/abuild/rpmbuild/BUILD/julia-1.6.0/usr/share/julia/stdlib/v1.6/Random/src/Random.jl:253</span>
+<span class="gr">     [4] rand(r::ANUQRNG, #unused#::Random.SamplerTrivial{Random.UInt52{UInt64}, UInt64})</span>
+<span class="gr">       @ Random /home/abuild/rpmbuild/BUILD/julia-1.6.0/usr/share/julia/stdlib/v1.6/Random/src/generation.jl:125</span>
+<span class="gr">     [5] rand(rng::ANUQRNG, X::Random.UInt52{UInt64})</span>
+<span class="gr">       @ Random /home/abuild/rpmbuild/BUILD/julia-1.6.0/usr/share/julia/stdlib/v1.6/Random/src/Random.jl:253</span>
+<span class="gr">     [6] rand(r::ANUQRNG, #unused#::Random.SamplerTrivial{Random.CloseOpen12{Float64}, Float64})</span>
+<span class="gr">       @ Random /home/abuild/rpmbuild/BUILD/julia-1.6.0/usr/share/julia/stdlib/v1.6/Random/src/generation.jl:32</span>
+<span class="gr">     [7] rand(rng::ANUQRNG, X::Random.CloseOpen12{Float64})</span>
+<span class="gr">       @ Random /home/abuild/rpmbuild/BUILD/julia-1.6.0/usr/share/julia/stdlib/v1.6/Random/src/Random.jl:253</span>
+<span class="gr">--- the last 7 lines are repeated 11425 more times ---</span>
+<span class="gr"> [79983] _rand52(r::ANUQRNG, #unused#::Type{Float64})</span>
+<span class="gr">       @ Random /home/abuild/rpmbuild/BUILD/julia-1.6.0/usr/share/julia/stdlib/v1.6/Random/src/generation.jl:117</span>
+</code></pre></div>
+
+
+
+<a name="244452620"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Converting%20Int64%20to%20Float64/near/244452620" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Converting.20Int64.20to.20Float64.html#244452620">(Jun 30 2021 at 16:41)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@inline</span> <span class="n">setbits</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">&amp;</span> <span class="n">m</span><span class="p">)</span> <span class="o">|</span> <span class="n">y</span>
+<span class="n">setbits</span> <span class="p">(</span><span class="n">generic</span> <span class="k">function</span> <span class="n">with</span> <span class="mi">1</span> <span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@inline</span> <span class="n">floatbitmask</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">::</span><span class="kt">Type</span><span class="p">{</span><span class="kt">Float64</span><span class="p">})</span> <span class="o">=</span> <span class="n">reinterpret</span><span class="p">(</span><span class="kt">Float64</span><span class="p">,</span> <span class="n">setbits</span><span class="p">(</span><span class="n">reinterpret</span><span class="p">(</span><span class="kt">UInt64</span><span class="p">,</span> <span class="n">x</span><span class="p">),</span> <span class="mh">0x3ff0000000000000</span><span class="p">,</span> <span class="mh">0x000fffffffffffff</span><span class="p">))</span>
+<span class="n">floatbitmask</span> <span class="p">(</span><span class="n">generic</span> <span class="k">function</span> <span class="n">with</span> <span class="mi">1</span> <span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@inline</span> <span class="n">floatbitmask</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">::</span><span class="kt">Type</span><span class="p">{</span><span class="kt">Float32</span><span class="p">})</span> <span class="o">=</span> <span class="n">reinterpret</span><span class="p">(</span><span class="kt">Float32</span><span class="p">,</span> <span class="n">setbits</span><span class="p">(</span><span class="n">reinterpret</span><span class="p">(</span><span class="kt">UInt32</span><span class="p">,</span> <span class="n">x</span><span class="p">),</span> <span class="mh">0x3f800000</span><span class="p">,</span> <span class="mh">0x007fffff</span><span class="p">))</span>
+<span class="n">floatbitmask</span> <span class="p">(</span><span class="n">generic</span> <span class="k">function</span> <span class="n">with</span> <span class="mi">2</span> <span class="n">methods</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">floatbitmask</span><span class="p">(</span><span class="n">rand</span><span class="p">(</span><span class="kt">UInt64</span><span class="p">),</span> <span class="kt">Float64</span><span class="p">)</span> <span class="o">-</span> <span class="n">prevfloat</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="mf">0.05111789230783048</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">floatbitmask</span><span class="p">(</span><span class="n">rand</span><span class="p">(</span><span class="kt">UInt64</span><span class="p">),</span> <span class="kt">Float64</span><span class="p">)</span> <span class="o">-</span> <span class="n">prevfloat</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="mf">0.20961601722925594</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">floatbitmask</span><span class="p">(</span><span class="n">rand</span><span class="p">(</span><span class="kt">UInt64</span><span class="p">),</span> <span class="kt">Float64</span><span class="p">)</span> <span class="o">-</span> <span class="n">prevfloat</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="mf">0.9792547222862796</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">floatbitmask</span><span class="p">(</span><span class="n">rand</span><span class="p">(</span><span class="kt">UInt64</span><span class="p">),</span> <span class="kt">Float64</span><span class="p">)</span> <span class="o">-</span> <span class="n">prevfloat</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="mf">0.1771319766794791</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">floatbitmask</span><span class="p">(</span><span class="n">rand</span><span class="p">(</span><span class="kt">UInt64</span><span class="p">),</span> <span class="kt">Float64</span><span class="p">)</span> <span class="o">-</span> <span class="n">prevfloat</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="mf">0.7201901350024212</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">floatbitmask</span><span class="p">(</span><span class="n">typemin</span><span class="p">(</span><span class="kt">UInt64</span><span class="p">),</span> <span class="kt">Float64</span><span class="p">)</span> <span class="o">-</span> <span class="n">prevfloat</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="mf">1.1102230246251565e-16</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">floatbitmask</span><span class="p">(</span><span class="n">typemax</span><span class="p">(</span><span class="kt">UInt64</span><span class="p">),</span> <span class="kt">Float64</span><span class="p">)</span> <span class="o">-</span> <span class="n">prevfloat</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="mf">0.9999999999999999</span>
+</code></pre></div>
+
+
+
+<a name="244452645"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Converting%20Int64%20to%20Float64/near/244452645" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Converting.20Int64.20to.20Float64.html#244452645">(Jun 30 2021 at 16:41)</a>:</h4>
+<p>Not sure what you're trying to do that resulted in that error?</p>
+
+
+
+<a name="244452763"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Converting%20Int64%20to%20Float64/near/244452763" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Converting.20Int64.20to.20Float64.html#244452763">(Jun 30 2021 at 16:42)</a>:</h4>
+<p>I'm directly generating random <code>Float64</code>s and apparently <code>Random</code> isn't built to accept that easily...</p>
+
+
+
+<a name="244452910"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Converting%20Int64%20to%20Float64/near/244452910" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Converting.20Int64.20to.20Float64.html#244452910">(Jun 30 2021 at 16:43)</a>:</h4>
+<p>What does directly generating them mean?<br>
+What're you calling?</p>
+
+
+
+<a name="244453127"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Converting%20Int64%20to%20Float64/near/244453127" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Converting.20Int64.20to.20Float64.html#244453127">(Jun 30 2021 at 16:45)</a>:</h4>
+<p>Well, for all the Int types (<code>UInt8</code>, <code>UInt16</code>, ..., <code>Int64, </code>Int128`) I'm defining a function</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">rand!</span><span class="p">(</span><span class="n">r</span><span class="o">::</span><span class="kt">ANUQRNG</span><span class="p">,</span> <span class="n">A</span><span class="o">::</span><span class="kt">Array</span><span class="p">{</span><span class="o">$</span><span class="kt">T</span><span class="p">},</span> <span class="n">sp</span><span class="o">::</span><span class="kt">Random</span><span class="o">.</span><span class="kt">SamplerType</span><span class="p">{</span><span class="o">$</span><span class="kt">T</span><span class="p">})</span>
+</code></pre></div>
+<p>but having the same for floats doesn't allow for random floats to be generated.</p>
+
+
+
+<a name="244453821"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Converting%20Int64%20to%20Float64/near/244453821" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Converting.20Int64.20to.20Float64.html#244453821">(Jun 30 2021 at 16:50)</a>:</h4>
+<p>Ah! Found what I need:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">rand!</span><span class="p">(</span><span class="n">r</span><span class="o">::</span><span class="kt">ANUQRNG</span><span class="p">,</span> <span class="n">A</span><span class="o">::</span><span class="kt">Array</span><span class="p">{</span><span class="kt">Float64</span><span class="p">},</span> <span class="n">sp</span><span class="o">::</span><span class="kt">Random</span><span class="o">.</span><span class="kt">SamplerTrivial</span><span class="p">{</span><span class="kt">Random</span><span class="o">.</span><span class="kt">CloseOpen01</span><span class="p">{</span><span class="kt">Float64</span><span class="p">},</span> <span class="kt">Float64</span><span class="p">})</span>
+</code></pre></div>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

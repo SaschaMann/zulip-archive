@@ -1,0 +1,63 @@
+<html>
+<head><meta charset="utf-8"><title>Add more types to Tuple · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Add.20more.20types.20to.20Tuple.html">Add more types to Tuple</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="233455231"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Add%20more%20types%20to%20Tuple/near/233455231" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Add.20more.20types.20to.20Tuple.html#233455231">(Apr 07 2021 at 09:09)</a>:</h4>
+<p>Well, topic's name is strange, but I do not know how to name it better.</p>
+<p>The question is the following: I have some <code>Tuple</code> type, for example <code>T1 = Tuple{Int, Int, Float64}</code>. And I want to add more types inside curly brackets, for example, <code>Tuple{String, Int, Int, Float64}</code>. Ideally it should be a function (or macros?) which do something like:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">f</span><span class="p">(</span><span class="o">::</span><span class="kt">Type</span><span class="p">{</span><span class="n">S</span><span class="p">},</span> <span class="o">::</span><span class="kt">Type</span><span class="p">{</span><span class="kt">Tuple</span><span class="p">{</span><span class="o">???</span><span class="p">}})</span> <span class="o">=</span> <span class="o">???</span> <span class="c"># should produces Tuple{S, ???...}</span>
+</code></pre></div>
+
+
+
+<a name="233455693"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Add%20more%20types%20to%20Tuple/near/233455693" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Add.20more.20types.20to.20Tuple.html#233455693">(Apr 07 2021 at 09:13)</a>:</h4>
+<p>May be from another angle, same question can be also asked like that. I have following structure</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="n">Foo</span><span class="p">{</span><span class="n">S</span><span class="p">,</span> <span class="n">T</span> <span class="o">&lt;:</span> <span class="kt">Tuple</span><span class="p">}</span>
+  <span class="n">x</span><span class="o">::</span><span class="n">S</span>
+  <span class="n">y</span><span class="o">::</span><span class="n">T</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>And I want to have</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">Tables</span><span class="o">.</span><span class="n">schema</span><span class="p">(</span><span class="n">foo</span><span class="o">::</span><span class="n">Foo</span><span class="p">{</span><span class="n">S</span><span class="p">,</span> <span class="n">T</span><span class="p">})</span> <span class="n">where</span> <span class="p">{</span><span class="n">S</span><span class="p">,</span> <span class="n">T</span><span class="p">}</span> <span class="o">=</span> <span class="n">Tables</span><span class="o">.</span><span class="n">Schema</span><span class="p">(</span><span class="n">names</span><span class="p">(</span><span class="n">foo</span><span class="p">),</span> <span class="kt">Tuple</span><span class="p">{</span><span class="n">S</span><span class="p">,</span> <span class="n">T</span><span class="o">...</span><span class="p">})</span>
+</code></pre></div>
+<p>Of course <code>T...</code> is not working here, because it is a type.</p>
+
+
+
+<a name="233466074"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Add%20more%20types%20to%20Tuple/near/233466074" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Paul Bayer <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Add.20more.20types.20to.20Tuple.html#233466074">(Apr 07 2021 at 10:42)</a>:</h4>
+<p><code>f(::Type{S}, ::Type{T}) where {S,T&lt;:Tuple} = Tuple{S,T.types...}</code>  should do</p>
+
+
+
+<a name="233466145"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Add%20more%20types%20to%20Tuple/near/233466145" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Paul Bayer <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Add.20more.20types.20to.20Tuple.html#233466145">(Apr 07 2021 at 10:43)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">(</span><span class="n">String</span><span class="p">,</span> <span class="kt">Tuple</span><span class="p">{</span><span class="kt">Int64</span><span class="p">,</span> <span class="kt">Int64</span><span class="p">,</span> <span class="kt">Float64</span><span class="p">})</span>
+<span class="kt">Tuple</span><span class="p">{</span><span class="n">String</span><span class="p">,</span> <span class="kt">Int64</span><span class="p">,</span> <span class="kt">Int64</span><span class="p">,</span> <span class="kt">Float64</span><span class="p">}</span>
+</code></pre></div>
+
+
+
+<a name="233466312"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Add%20more%20types%20to%20Tuple/near/233466312" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Add.20more.20types.20to.20Tuple.html#233466312">(Apr 07 2021 at 10:44)</a>:</h4>
+<p>Ah, this is amazing, thank you!</p>
+
+
+
+<a name="233466368"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Add%20more%20types%20to%20Tuple/near/233466368" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Add.20more.20types.20to.20Tuple.html#233466368">(Apr 07 2021 at 10:45)</a>:</h4>
+<p>I was so close :-))</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

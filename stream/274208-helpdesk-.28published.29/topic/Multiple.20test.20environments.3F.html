@@ -1,0 +1,162 @@
+<html>
+<head><meta charset="utf-8"><title>Multiple test environments? · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multiple.20test.20environments.3F.html">Multiple test environments?</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="453281105"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multiple%20test%20environments%3F/near/453281105" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel Wennberg <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multiple.20test.20environments.3F.html#453281105">(Jul 22 2024 at 21:28)</a>:</h4>
+<p>Is there an ergonomic way to run a subset of tests in a separate environment from the rest of the test suite? The context is that one of my test dependencies has very restrictive compat bounds and ends up downgrading several low-level packages compared to how the main environment is resolved. I'd prefer to isolate the tests that require this dependency in their own environment.</p>
+
+
+
+<a name="453281468"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multiple%20test%20environments%3F/near/453281468" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel Wennberg <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multiple.20test.20environments.3F.html#453281468">(Jul 22 2024 at 21:32)</a>:</h4>
+<p>I know this normally wouldn't matter if everyone follows semver, however, I'm testing things that are not guaranteed by semver such as inference and allocations.</p>
+
+
+
+<a name="453281908"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multiple%20test%20environments%3F/near/453281908" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multiple.20test.20environments.3F.html#453281908">(Jul 22 2024 at 21:36)</a>:</h4>
+<p><a href="https://juliahub.com/ui/Packages/General/SafeTestsets">SafeTestsets.jl</a> does that if I recall correctly</p>
+
+
+
+<a name="453282142"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multiple%20test%20environments%3F/near/453282142" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel Wennberg <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multiple.20test.20environments.3F.html#453282142">(Jul 22 2024 at 21:39)</a>:</h4>
+<p>Looks like SafeTestsets puts each testset in a separate module, which is not quite the same as a separate environment</p>
+
+
+
+<a name="453291161"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multiple%20test%20environments%3F/near/453291161" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multiple.20test.20environments.3F.html#453291161">(Jul 22 2024 at 23:02)</a>:</h4>
+<p>oh, whoops yeah I misread the question</p>
+
+
+
+<a name="453291515"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multiple%20test%20environments%3F/near/453291515" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel Wennberg <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multiple.20test.20environments.3F.html#453291515">(Jul 22 2024 at 23:07)</a>:</h4>
+<p>I tried to hack it together using Pkg operations inside a safetestset, but precompilation fails for reasons I don't understand.</p>
+
+
+
+<a name="453291951"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multiple%20test%20environments%3F/near/453291951" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multiple.20test.20environments.3F.html#453291951">(Jul 22 2024 at 23:12)</a>:</h4>
+<p>Use a separate Project.toml + Manifest.toml and spawn a new process is probably the easiest.</p>
+
+
+
+<a name="453292348"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multiple%20test%20environments%3F/near/453292348" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel Wennberg <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multiple.20test.20environments.3F.html#453292348">(Jul 22 2024 at 23:17)</a>:</h4>
+<p>Yeah, that's where I'm heading. Is it possible to start a <a href="https://juliahub.com/ui/Packages/General/Distributed">Distributed.jl</a> worker in a separate environment, or is it better to just use <code>run(`julia --project="extratests" "extratests/extratests.jl"`)</code>?</p>
+
+
+
+<a name="453293157"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multiple%20test%20environments%3F/near/453293157" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multiple.20test.20environments.3F.html#453293157">(Jul 22 2024 at 23:28)</a>:</h4>
+<p>The latter seems much easier (but you can pass <code>exeflags</code> to <code>Distributed.addprocs</code> if you want to go down that route).</p>
+
+
+
+<a name="453332511"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multiple%20test%20environments%3F/near/453332511" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel Wennberg <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multiple.20test.20environments.3F.html#453332511">(Jul 23 2024 at 05:43)</a>:</h4>
+<p>For posterity, here's how I ended up configuring the separate test process to mimic the launch configuration for normal tests as closely as possible:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="nd">@testset</span><span class="w"> </span><span class="s">"SpecialTests"</span><span class="w"> </span><span class="k">begin</span>
+<span class="w">    </span><span class="n">code</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"using Pkg; Pkg.update(); include(</span><span class="se">\"</span><span class="s">SpecialTests/runtests.jl</span><span class="se">\"</span><span class="s">)"</span>
+<span class="w">    </span><span class="n">cmd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">addenv</span><span class="p">(</span>
+<span class="w">        </span><span class="kt">Cmd</span><span class="p">(</span><span class="sb">`</span><span class="si">$</span><span class="p">(</span><span class="n">Base</span><span class="o">.</span><span class="n">julia_cmd</span><span class="p">())</span><span class="sb"> --eval "</span><span class="si">$code</span><span class="sb">"`</span><span class="p">),</span>
+<span class="w">        </span><span class="kt">Dict</span><span class="p">(</span><span class="s">"JULIA_LOAD_PATH"</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">"@:SpecialTests"</span><span class="p">,</span><span class="w"> </span><span class="s">"JULIA_PROJECT"</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nb">nothing</span><span class="p">),</span>
+<span class="w">    </span><span class="p">)</span>
+<span class="w">    </span><span class="nd">@test</span><span class="w"> </span><span class="n">success</span><span class="p">(</span><span class="n">run</span><span class="p">(</span><span class="n">cmd</span><span class="p">))</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="454611053"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multiple%20test%20environments%3F/near/454611053" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multiple.20test.20environments.3F.html#454611053">(Jul 28 2024 at 13:10)</a>:</h4>
+<p>See how OrdinaryDiffEq does it</p>
+
+
+
+<a name="454611078"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multiple%20test%20environments%3F/near/454611078" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multiple.20test.20environments.3F.html#454611078">(Jul 28 2024 at 13:10)</a>:</h4>
+<p>We have different safetestsets which have if statements over them based on environment variables, and then CI is spawned over many environment variables</p>
+
+
+
+<a name="454611086"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multiple%20test%20environments%3F/near/454611086" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multiple.20test.20environments.3F.html#454611086">(Jul 28 2024 at 13:11)</a>:</h4>
+<p>That allows for separate CI runs to run different parts of the test, parallelizing the tests as well</p>
+
+
+
+<a name="454611104"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multiple%20test%20environments%3F/near/454611104" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multiple.20test.20environments.3F.html#454611104">(Jul 28 2024 at 13:11)</a>:</h4>
+<p>Distributed for that parallelism doesn't work too well because then you're limited by the core size you get on the free machine, which isn't much</p>
+
+
+
+<a name="454620466"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multiple%20test%20environments%3F/near/454620466" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nathan Zimmerberg <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multiple.20test.20environments.3F.html#454620466">(Jul 28 2024 at 14:52)</a>:</h4>
+<p>I'm using <a href="https://juliahub.com/ui/Packages/General/Malt">Malt.jl</a> for a similare case where I need to test that the data produced by<code>ZipArchives.jl</code> can be read by <code>ZipStreams.jl</code> even if they may have incompatible dependancies. <a href="https://github.com/JuliaIO/ZipArchives.jl/blob/479436a31c01b2378861f456d67474205795776b/test/test_writer.jl#L126-L168">https://github.com/JuliaIO/ZipArchives.jl/blob/479436a31c01b2378861f456d67474205795776b/test/test_writer.jl#L126-L168</a> </p>
+<p>I found <a href="https://juliahub.com/ui/Packages/General/Malt">Malt.jl</a> is much nicer than <a href="https://juliahub.com/ui/Packages/General/Distributed">Distributed.jl</a> for the case where the worker is in a different environment.</p>
+
+
+
+<a name="454659423"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multiple%20test%20environments%3F/near/454659423" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel Wennberg <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multiple.20test.20environments.3F.html#454659423">(Jul 28 2024 at 20:00)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="278119">Christopher Rackauckas</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Multiple.20test.20environments.3F/near/454611078">said</a>:</p>
+<blockquote>
+<p>We have different safetestsets which have if statements over them based on environment variables, and then CI is spawned over many environment variables</p>
+</blockquote>
+<p>This is local small-potatoes exploratory development, I haven't set up CI on a hosting service for now (and I wouldn't want to push every dead-end attempt I make to the cloud anyway), so I'd like to be able to run the entire test suite with a simple <code>]test MyPackage</code> in the REPL and no faffing with environment variables.</p>
+<p>But what I take from OrdinaryDiffEq's setup is that I can of course just call <code>Pkg.activate</code> in the main test process rather than spawning a separate process. If I make sure the <code>SpecialTests</code> testset is the last one to run, that's really all I need.</p>
+<p>Now to figure out if there's a safe way to do <code>Pkg.activate</code> when using <code>TestItems</code> and <code>TestItemRunner</code>, given that they run the testitems in unspecified order and in parallel.</p>
+
+
+
+<a name="454664063"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multiple%20test%20environments%3F/near/454664063" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel Wennberg <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multiple.20test.20environments.3F.html#454664063">(Jul 28 2024 at 20:31)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="368583">Daniel Wennberg</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Multiple.20test.20environments.3F/near/454659423">said</a>:</p>
+<blockquote>
+<p>I can of course just call <code>Pkg.activate</code> in the main test process rather than spawning a separate process</p>
+</blockquote>
+<p>Hm, no, it's probably not a good idea to do this in a process where other versions of packages are already loaded. I'll stick to my solution with <code>run</code> from above, it's working great. But I'll follow OrdinaryDiffEq and put <code>Pkg.develop</code> in the code I'm evaluating rather than having the package already <code>dev</code>-ed in the SpecialTests environment---that way I don't have to check in the Manifest.</p>
+
+
+
+<a name="454665504"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multiple%20test%20environments%3F/near/454665504" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel Wennberg <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multiple.20test.20environments.3F.html#454665504">(Jul 28 2024 at 20:42)</a>:</h4>
+<p>Updated solution:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="nd">@testset</span><span class="w"> </span><span class="s">"SpecialTests"</span><span class="w"> </span><span class="k">begin</span>
+<span class="w">    </span><span class="n">code</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"""</span>
+<span class="s">        using Pkg</span>
+<span class="s">        Pkg.develop(path="..")</span>
+<span class="s">        Pkg.instantiate()</span>
+<span class="s">        try</span>
+<span class="s">            include("SpecialTests/runtests.jl")</span>
+<span class="s">        finally</span>
+<span class="s">            redirect_stderr(devnull) do</span>
+<span class="s">                Pkg.rm("MyPackage")</span>
+<span class="s">                rm("SpecialTests/Manifest.toml")</span>
+<span class="s">            end</span>
+<span class="s">        end</span>
+<span class="s">    """</span>
+<span class="w">    </span><span class="n">cmd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">addenv</span><span class="p">(</span>
+<span class="w">        </span><span class="kt">Cmd</span><span class="p">(</span><span class="sb">`</span><span class="si">$</span><span class="p">(</span><span class="n">Base</span><span class="o">.</span><span class="n">julia_cmd</span><span class="p">())</span><span class="sb"> --eval "</span><span class="si">$code</span><span class="sb">"`</span><span class="p">),</span>
+<span class="w">        </span><span class="kt">Dict</span><span class="p">(</span><span class="s">"JULIA_LOAD_PATH"</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">"@:SpecialTests"</span><span class="p">,</span><span class="w"> </span><span class="s">"JULIA_PROJECT"</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nb">nothing</span><span class="p">),</span>
+<span class="w">    </span><span class="p">)</span>
+<span class="w">    </span><span class="nd">@test</span><span class="w"> </span><span class="n">success</span><span class="p">(</span><span class="n">run</span><span class="p">(</span><span class="n">cmd</span><span class="p">))</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

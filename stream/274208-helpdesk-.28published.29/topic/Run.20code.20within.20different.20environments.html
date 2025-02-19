@@ -1,0 +1,46 @@
+<html>
+<head><meta charset="utf-8"><title>Run code within different environments · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Run.20code.20within.20different.20environments.html">Run code within different environments</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="339538426"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Run%20code%20within%20different%20environments/near/339538426" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Run.20code.20within.20different.20environments.html#339538426">(Mar 04 2023 at 11:46)</a>:</h4>
+<p>I've recently given DaemonMode a second look, and realised it's almost what I'd need it to be for use in my own workflows.</p>
+<p>One major stumbling block for me, is that it does not support running code in different projects/environments. I'd think this would be akin to how when you do <code>using &lt;module&gt;</code> the module itself is loaded using its own environment. What I'm hoping, is that there's a way I could instantiate different environments and then run the (DaemonMode-constructed) anonymous modules in their appropriate environment.</p>
+<p>E.g. something like this (in effect)</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">constructenvfromprojectpath</span><span class="p">(</span><span class="s">"/path/to/project/folder"</span><span class="p">)</span>
+<span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">anon_module_within</span><span class="p">(</span><span class="n">env</span><span class="p">)</span>
+<span class="n">Core</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="ss">:stuff</span><span class="p">)</span><span class="w"> </span><span class="c"># executed within the project ^</span>
+</code></pre></div>
+<p>Is this possible? The docs don't seem to be particularly informative when it comes to this sort of usage.</p>
+<p>Ideally, I'd also like to be able to load different versions of the same package within different project environments.</p>
+
+
+
+<a name="339798964"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Run%20code%20within%20different%20environments/near/339798964" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Run.20code.20within.20different.20environments.html#339798964">(Mar 06 2023 at 08:07)</a>:</h4>
+<p>The answer I seem to be arriving at is "you can't"</p>
+
+
+
+<a name="339805890"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Run%20code%20within%20different%20environments/near/339805890" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> c42f <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Run.20code.20within.20different.20environments.html#339805890">(Mar 06 2023 at 08:42)</a>:</h4>
+<p>Yes, you can't.  In fact, there's basically no way to do this at all within a given julia process (DaemonMode or not): once you've loaded a library once, you can't load a different version of it.  Because the package is identified by its UUID internally when it's loaded, and that UUID is fixed across versions.</p>
+<p>(In principle, you could maybe subvert this mechanism in a very dirty way by fooling the system with a new set of UUIDs for each new environment.  Which would mean writing a pile of environment management code yourself.)</p>
+
+
+
+<a name="339806682"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Run%20code%20within%20different%20environments/near/339806682" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Run.20code.20within.20different.20environments.html#339806682">(Mar 06 2023 at 08:46)</a>:</h4>
+<p>Mmm, since Saturday I've started up a new project that could end up being what I hoped DaemonMode was, with workers started up per environment. I'm currently got a few pieces of it working.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

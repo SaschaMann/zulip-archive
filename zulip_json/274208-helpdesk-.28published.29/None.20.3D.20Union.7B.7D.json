@@ -1,0 +1,86 @@
+[
+    {
+        "content": "<p>I'm looking at some older code, and I see <code>const None = Union{}</code>. I get the feeling that this originated with some old Julia version. Does anyone know if that was the case?</p>",
+        "id": 235212380,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1618850766
+    },
+    {
+        "content": "<p>Was this an older version of <code>nothing</code> ?</p>",
+        "id": 235212567,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1618850845
+    },
+    {
+        "content": "<p>Hm, I don't know the history here but I assume not. <code>Union{}</code> can't be instantiated as a value whereas <code>Nothing</code> can. That means that <code>Union{}</code> <strong>only</strong> exists as a type level construct</p>",
+        "id": 235218279,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1618853338
+    },
+    {
+        "content": "<p>Nowadays, we call <code>Union{}</code> by the name <code>TypeofBottom</code>, meaning it's the 'bottom' of the type hierarchy (where <code>Any</code> is the top)</p>",
+        "id": 235218368,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1618853385
+    },
+    {
+        "content": "<p><a href=\"https://github.com/JuliaLang/julia/blob/1b6efc7ab297b7b8aea4d7cb0b52fb589392042b/base/deprecated.jl#L133-L134\">https://github.com/JuliaLang/julia/blob/1b6efc7ab297b7b8aea4d7cb0b52fb589392042b/base/deprecated.jl#L133-L134</a></p>",
+        "id": 235218808,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1618853553
+    },
+    {
+        "content": "<p><a href=\"https://github.com/JuliaLang/julia/blob/dbe775c128a960382e1734a1ad62c09a19e3b592/base/deprecated.jl#L122-L126\">https://github.com/JuliaLang/julia/blob/dbe775c128a960382e1734a1ad62c09a19e3b592/base/deprecated.jl#L122-L126</a></p>",
+        "id": 235218926,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1618853599
+    },
+    {
+        "content": "<p>Right, so that shows that <code>None</code> was not an early version of <code>Nothing</code></p>",
+        "id": 235218972,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1618853631
+    },
+    {
+        "content": "<p>Perhaps to be concrete, I'm currently looking at <a href=\"https://github.com/jheinen/GR.jl/blob/master/src/GR.jl#L250-L253\">https://github.com/jheinen/GR.jl/blob/master/src/GR.jl#L250-L253</a> . I'm thinking these globals should be converted to <code>const Ref</code> but I would need a fixed type or a perhaps a <code>Union</code>.</p>",
+        "id": 235224099,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1618855828
+    },
+    {
+        "content": "<p>Yeah, that's tricky. Do you know how many possible types this variable can take on?</p>",
+        "id": 235243141,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1618863924
+    },
+    {
+        "content": "<p>I think most of these could be directly converted to <code>Union{Nothing, String}</code> or <code>Union{Nothing, Int}</code>. In the <code>String</code> case, it looks like we might be able to use empty string. In the Int case, a negative sentinel might work instead.</p>\n<p>Perhaps the other question then is how performant is</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">r</span> <span class=\"o\">=</span> <span class=\"kt\">Ref</span><span class=\"p\">{</span><span class=\"kt\">Union</span><span class=\"p\">{</span><span class=\"n\">Nothing</span><span class=\"p\">,</span><span class=\"kt\">Int</span><span class=\"p\">}}(</span><span class=\"mi\">5</span><span class=\"p\">)</span>\n<span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">RefValue</span><span class=\"p\">{</span><span class=\"kt\">Union</span><span class=\"p\">{</span><span class=\"n\">Nothing</span><span class=\"p\">,</span> <span class=\"kt\">Int64</span><span class=\"p\">}}(</span><span class=\"mi\">5</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">r</span><span class=\"p\">[]</span> <span class=\"o\">=</span> <span class=\"nb\">nothing</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">r</span><span class=\"p\">[]</span> <span class=\"o\">=</span> <span class=\"mi\">5</span>\n<span class=\"mi\">5</span>\n</code></pre></div>",
+        "id": 235257151,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1618870018
+    },
+    {
+        "content": "<p>It's extremely efficient - usually optimally efficient. Especially when used with heap-allocated structs</p>",
+        "id": 235292487,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1618899143
+    },
+    {
+        "content": "<p>A Union{Nothing, String} takes up only 8 bytes</p>",
+        "id": 235292504,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1618899164
+    },
+    {
+        "content": "<p>And on master, a few important improvements to the compiler means that unions are handled more efficiently. So the only issue is e.g. Union{Int, Nothing} being 16 bytes.</p>",
+        "id": 235292888,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1618899479
+    },
+    {
+        "content": "<p>Edit: Turns out I was wrong - it's only optimized for bitstypes.</p>",
+        "id": 235344636,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1618925847
+    }
+]

@@ -1,0 +1,131 @@
+<html>
+<head><meta charset="utf-8"><title>✔ Structs with &quot;optional&quot; fields · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Structs.20with.20.22optional.22.20fields.html">✔ Structs with &quot;optional&quot; fields</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="267720104"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Structs%20with%20%22optional%22%20fields/near/267720104" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Davi Sales Barreira <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Structs.20with.20.22optional.22.20fields.html#267720104">(Jan 12 2022 at 13:00)</a>:</h4>
+<p>Consider the following struct using <code>Parameters.jl</code>:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="nd">@with_kw</span> <span class="k">struct</span> <span class="kt">MyStruct</span>
+ <span class="n">color1</span><span class="o">::</span><span class="kt">String</span> <span class="o">=</span> <span class="s">"white"</span>
+ <span class="n">color2</span><span class="o">::</span><span class="kt">String</span> <span class="o">=</span> <span class="s">"black"</span>
+ <span class="n">style1</span><span class="o">::</span><span class="kt">String</span> <span class="o">=</span> <span class="s">"cool"</span>
+ <span class="n">style2</span><span class="o">::</span><span class="kt">String</span> <span class="o">=</span> <span class="s">"hot"</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>Now, what I'd like to do is to enable the user to create a new instance of this struct with something like:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">s</span> <span class="o">=</span> <span class="n">MyStruct</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s">"blue"</span><span class="p">)</span>
+</code></pre></div>
+<p>This should be equivalent to <code>s = MyStruct(color1="blue", color2="blue")</code>. Similarly for style, thus,<br>
+<code>s = MyStruct(color="red", style="none")</code>.</p>
+<p>Is there any "elegant" solution for such a problem?</p>
+
+
+
+<a name="267722154"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Structs%20with%20%22optional%22%20fields/near/267722154" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Elias Carvalho <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Structs.20with.20.22optional.22.20fields.html#267722154">(Jan 12 2022 at 13:17)</a>:</h4>
+<p>You can use multiple dispatch using <code>NamedTuple</code>s:<br>
+<a href="/user_uploads/7178/H87TMhFiIaGSahlBpYxyW2ns/image.png">image.png</a></p>
+<div class="message_inline_image"><a href="/user_uploads/7178/H87TMhFiIaGSahlBpYxyW2ns/image.png" title="image.png"><img src="/user_uploads/7178/H87TMhFiIaGSahlBpYxyW2ns/image.png"></a></div>
+
+
+
+<a name="267722345"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Structs%20with%20%22optional%22%20fields/near/267722345" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Patrick Toche <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Structs.20with.20.22optional.22.20fields.html#267722345">(Jan 12 2022 at 13:19)</a>:</h4>
+<p>not that I'm competent to answer, but how about adding a field <code>color</code> and an inner constructor that would check that <code>color1 == color2</code> to set its value?</p>
+
+
+
+<a name="267732719"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Structs%20with%20%22optional%22%20fields/near/267732719" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Davi Sales Barreira <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Structs.20with.20.22optional.22.20fields.html#267732719">(Jan 12 2022 at 14:37)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="416587">Patrick Toche</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Structs.20with.20.22optional.22.20fields/near/267722345">said</a>:</p>
+<blockquote>
+<p>not that I'm competent to answer, but how about adding a field <code>color</code> and an inner constructor that would check that <code>color1 == color2</code> to set its value?</p>
+</blockquote>
+<p>Can you give an example? The thing is, the <code>color</code> field should be optional. It would be just a faster way of attributing <code>color1</code> and <code>color2</code>.</p>
+
+
+
+<a name="267732936"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Structs%20with%20%22optional%22%20fields/near/267732936" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Davi Sales Barreira <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Structs.20with.20.22optional.22.20fields.html#267732936">(Jan 12 2022 at 14:38)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="463400">Elias Carvalho</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Structs.20with.20.22optional.22.20fields/near/267722154">said</a>:</p>
+<blockquote>
+<p>You can use multiple dispatch using <code>NamedTuple</code>s:<br>
+<a href="/user_uploads/7178/H87TMhFiIaGSahlBpYxyW2ns/image.png">image.png</a></p>
+</blockquote>
+<p>Thanks, this seems to work. Although, it does not seems to work perfectly, because I have more fields other than <code>color1</code>and <code>color2</code>. And also, I'm using <code>Parameters.jl</code>. The <code>MyStruct(;kwargs...)</code> seems to break the constructor from <a href="https://github.com/search?q=Parameters.jl&amp;type=Repositories">Parameters.jl</a></p>
+
+
+
+<a name="267734471"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Structs%20with%20%22optional%22%20fields/near/267734471" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Davi Sales Barreira <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Structs.20with.20.22optional.22.20fields.html#267734471">(Jan 12 2022 at 14:50)</a>:</h4>
+<p>Ok, I think I came up with a nice solution:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="nd">@with_kw</span> <span class="k">struct</span> <span class="kt">_Struct</span>
+    <span class="n">color</span><span class="o">::</span><span class="kt">Union</span><span class="p">{</span><span class="kt">String</span><span class="p">,</span><span class="kt">Nothing</span><span class="p">}</span> <span class="o">=</span> <span class="nb">nothing</span>
+    <span class="n">color1</span><span class="o">::</span><span class="kt">String</span> <span class="o">=</span> <span class="n">color</span> <span class="o">===</span> <span class="nb">nothing</span> <span class="o">?</span> <span class="s">"white"</span> <span class="o">:</span> <span class="n">color</span>
+    <span class="n">color2</span><span class="o">::</span><span class="kt">String</span> <span class="o">=</span> <span class="n">color</span> <span class="o">===</span> <span class="nb">nothing</span> <span class="o">?</span> <span class="s">"black"</span> <span class="o">:</span> <span class="n">color</span>
+    <span class="n">style</span><span class="o">::</span><span class="kt">Union</span><span class="p">{</span><span class="kt">String</span><span class="p">,</span><span class="kt">Nothing</span><span class="p">}</span> <span class="o">=</span> <span class="nb">nothing</span>
+    <span class="n">style1</span><span class="o">::</span><span class="kt">String</span> <span class="o">=</span> <span class="n">style</span> <span class="o">===</span> <span class="nb">nothing</span> <span class="o">?</span> <span class="s">"blue"</span>  <span class="o">:</span> <span class="n">style</span>
+    <span class="n">style2</span><span class="o">::</span><span class="kt">String</span> <span class="o">=</span> <span class="n">style</span> <span class="o">===</span> <span class="nb">nothing</span> <span class="o">?</span> <span class="s">"white"</span> <span class="o">:</span> <span class="n">style</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="267759865"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Structs%20with%20%22optional%22%20fields/near/267759865" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Structs.20with.20.22optional.22.20fields.html#267759865">(Jan 12 2022 at 17:42)</a>:</h4>
+<p>This is overcomplicated, you can just put it in a regular constructor.</p>
+
+
+
+<a name="267774995"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Structs%20with%20%22optional%22%20fields/near/267774995" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Structs.20with.20.22optional.22.20fields.html#267774995">(Jan 12 2022 at 19:37)</a>:</h4>
+<p>For example</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="kt">MyStruct</span>
+ <span class="n">color1</span><span class="o">::</span><span class="kt">String</span>
+ <span class="n">color2</span><span class="o">::</span><span class="kt">String</span>
+ <span class="n">style1</span><span class="o">::</span><span class="kt">String</span>
+ <span class="n">style2</span><span class="o">::</span><span class="kt">String</span>
+<span class="k">end</span>
+
+<span class="n">MyStruct</span><span class="p">(;</span> <span class="n">color</span> <span class="o">=</span> <span class="nb">nothing</span><span class="p">,</span>
+           <span class="n">color1</span> <span class="o">=</span> <span class="n">color</span> <span class="o">===</span> <span class="nb">nothing</span> <span class="o">?</span> <span class="s">"white"</span> <span class="o">:</span> <span class="n">color</span><span class="p">,</span>
+           <span class="n">color2</span> <span class="o">=</span> <span class="n">color</span> <span class="o">===</span> <span class="nb">nothing</span> <span class="o">?</span> <span class="s">"black"</span> <span class="o">:</span> <span class="n">color</span><span class="p">,</span>
+           <span class="n">style</span> <span class="o">=</span> <span class="nb">nothing</span><span class="p">,</span>
+           <span class="n">style1</span> <span class="o">=</span> <span class="n">style</span> <span class="o">===</span> <span class="nb">nothing</span> <span class="o">?</span> <span class="s">"cool"</span> <span class="o">:</span> <span class="n">style</span><span class="p">,</span>
+           <span class="n">style2</span> <span class="o">=</span> <span class="n">style</span> <span class="o">===</span> <span class="nb">nothing</span> <span class="o">?</span> <span class="s">"hot"</span> <span class="o">:</span> <span class="n">style</span><span class="p">)</span> <span class="o">=</span>
+    <span class="n">MyStruct</span><span class="p">(</span><span class="n">color1</span><span class="p">,</span> <span class="n">color2</span><span class="p">,</span> <span class="n">style1</span><span class="p">,</span> <span class="n">style2</span><span class="p">)</span>
+</code></pre></div>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">MyStruct</span><span class="p">(</span><span class="n">color</span> <span class="o">=</span> <span class="s">"green"</span><span class="p">,</span> <span class="n">style1</span> <span class="o">=</span> <span class="s">"warm"</span><span class="p">)</span>
+<span class="n">MyStruct</span><span class="p">(</span><span class="s">"green"</span><span class="p">,</span> <span class="s">"green"</span><span class="p">,</span> <span class="s">"warm"</span><span class="p">,</span> <span class="s">"hot"</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="267789760"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Structs%20with%20%22optional%22%20fields/near/267789760" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Davi Sales Barreira <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Structs.20with.20.22optional.22.20fields.html#267789760">(Jan 12 2022 at 21:39)</a>:</h4>
+<p><span class="user-mention" data-user-id="272771">@Andrey Oskin</span> ,  your solution didn't work for me :/<br>
+The issue is that I'm using <code>Parameters.jl</code>. So things get more complicated.</p>
+
+
+
+<a name="267790136"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Structs%20with%20%22optional%22%20fields/near/267790136" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Structs.20with.20.22optional.22.20fields.html#267790136">(Jan 12 2022 at 21:42)</a>:</h4>
+<p>But <a href="https://github.com/search?q=Parameters.jl&amp;type=Repositories">Parameters.jl</a> is doing exactly that, it generates keyword constructor. Just instead of relying on macro you can generate it explicitly. There is no need to restrict yourself to Parameters default.</p>
+
+
+
+<a name="268522256"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Structs%20with%20%22optional%22%20fields/near/268522256" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Structs.20with.20.22optional.22.20fields.html#268522256">(Jan 19 2022 at 10:59)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="358317">Davi Sales Barreira</span> has marked this topic as resolved.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

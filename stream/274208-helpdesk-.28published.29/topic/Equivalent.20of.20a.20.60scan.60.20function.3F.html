@@ -1,0 +1,172 @@
+<html>
+<head><meta charset="utf-8"><title>Equivalent of a `scan` function? · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Equivalent.20of.20a.20.60scan.60.20function.3F.html">Equivalent of a `scan` function?</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="284237838"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Equivalent%20of%20a%20%60scan%60%20function%3F/near/284237838" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Equivalent.20of.20a.20.60scan.60.20function.3F.html#284237838">(May 28 2022 at 16:54)</a>:</h4>
+<p>Copied from Slack and hoping for some more expert opinions here :)</p>
+<p>Do we have an equivalent to <a href="https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.scan.html">https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.scan.html</a>? <code>accumulate</code> is the closest stdlib I know of, but it doesn't allow for carrying of non-output intermediate states. <a href="https://juliafolds.github.io/Transducers.jl/dev/reference/manual/#Transducers.ScanEmit">https://juliafolds.github.io/Transducers.jl/dev/reference/manual/#Transducers.ScanEmit</a> was the best example I could find in the broader ecosystem, but I'm not sure if there's a way to extract uₙ from it.</p>
+
+
+
+<a name="284246550"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Equivalent%20of%20a%20%60scan%60%20function%3F/near/284246550" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Equivalent.20of.20a.20.60scan.60.20function.3F.html#284246550">(May 28 2022 at 20:15)</a>:</h4>
+<p><span class="user-mention" data-user-id="278065">@Brian Chen</span> yeah, the <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>u</mi><mi>n</mi></msub></mrow><annotation encoding="application/x-tex">u_n</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.5806em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">u</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">n</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> should be available at least depending on what you're planning to do with them</p>
+
+
+
+<a name="284246702"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Equivalent%20of%20a%20%60scan%60%20function%3F/near/284246702" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Equivalent.20of.20a.20.60scan.60.20function.3F.html#284246702">(May 28 2022 at 20:19)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">3</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">ScanEmit</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">u</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="w"></span>
+<span class="w">           </span><span class="nd">@show</span><span class="w"> </span><span class="n">u</span><span class="w"></span>
+<span class="w">           </span><span class="p">(</span><span class="n">x</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
+<span class="w">       </span><span class="k">end</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">collect</span><span class="w"></span>
+<span class="n">u</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="w"></span>
+<span class="n">u</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">2</span><span class="w"></span>
+<span class="n">u</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">3</span><span class="w"></span>
+<span class="mi">3</span><span class="o">-</span><span class="n">element</span><span class="w"> </span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Int64</span><span class="p">}</span><span class="o">:</span><span class="w"></span>
+<span class="w"> </span><span class="mi">2</span><span class="w"></span>
+<span class="w"> </span><span class="mi">3</span><span class="w"></span>
+<span class="w"> </span><span class="mi">4</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="284246814"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Equivalent%20of%20a%20%60scan%60%20function%3F/near/284246814" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Equivalent.20of.20a.20.60scan.60.20function.3F.html#284246814">(May 28 2022 at 20:22)</a>:</h4>
+<p>The jax readme was not very enlightening to me, maybe you could give a julian pseudoexample of what you want?</p>
+
+
+
+<a name="284247220"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Equivalent%20of%20a%20%60scan%60%20function%3F/near/284247220" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Equivalent.20of.20a.20.60scan.60.20function.3F.html#284247220">(May 28 2022 at 20:33)</a>:</h4>
+<p>It's available but not returned, unfortunately. For comparison JAX's scan would return <code>(-3, [2, 3, 4])</code>.</p>
+
+
+
+<a name="284247268"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Equivalent%20of%20a%20%60scan%60%20function%3F/near/284247268" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Equivalent.20of.20a.20.60scan.60.20function.3F.html#284247268">(May 28 2022 at 20:34)</a>:</h4>
+<p>I could try a local var, but closure boxing makes that difficult. A Ref or other mutable struct is a no-go to because Zygote</p>
+
+
+
+<a name="284247405"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Equivalent%20of%20a%20%60scan%60%20function%3F/near/284247405" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Equivalent.20of.20a.20.60scan.60.20function.3F.html#284247405">(May 28 2022 at 20:38)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269150">Mason Protter</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Equivalent.20of.20a.20.60scan.60.20function.3F/near/284246814">said</a>:</p>
+<blockquote>
+<p>maybe you could give a julian pseudoexample of what you want?</p>
+</blockquote>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">scan</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="p">,</span><span class="w"> </span><span class="n">xs</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="n">acc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">init</span><span class="w"></span>
+<span class="w">  </span><span class="n">ys</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[]</span><span class="w"></span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">xs</span><span class="w"></span>
+<span class="w">    </span><span class="n">acc</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">f</span><span class="p">(</span><span class="n">acc</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">push!</span><span class="p">(</span><span class="n">ys</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">end</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">acc</span><span class="p">,</span><span class="w"> </span><span class="n">ys</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="284247586"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Equivalent%20of%20a%20%60scan%60%20function%3F/near/284247586" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Equivalent.20of.20a.20.60scan.60.20function.3F.html#284247586">(May 28 2022 at 20:44)</a>:</h4>
+<p>This is the minimal version. JAX does a bunch of extra stuff with dim handling and SoA inputs, but all I want for Flux/Lux is <code>new_rnn_state, output_seq = scan(rnn_forward, rnn_state, input_seq)</code>.</p>
+
+
+
+<a name="284251856"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Equivalent%20of%20a%20%60scan%60%20function%3F/near/284251856" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Equivalent.20of.20a.20.60scan.60.20function.3F.html#284251856">(May 28 2022 at 22:37)</a>:</h4>
+<p>Hm, maybe the <code>onlast</code> option can do that?</p>
+
+
+
+<a name="284259553"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Equivalent%20of%20a%20%60scan%60%20function%3F/near/284259553" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Equivalent.20of.20a.20.60scan.60.20function.3F.html#284259553">(May 29 2022 at 02:14)</a>:</h4>
+<p><span class="user-mention" data-user-id="297129">@Takafumi Arakaki (tkf)</span> any ideas?</p>
+
+
+
+<a name="284262923"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Equivalent%20of%20a%20%60scan%60%20function%3F/near/284262923" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Equivalent.20of.20a.20.60scan.60.20function.3F.html#284262923">(May 29 2022 at 03:46)</a>:</h4>
+<p>You can do</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">rf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ScanEmit</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">u</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="w"></span>
+<span class="w">           </span><span class="nd">@show</span><span class="w"> </span><span class="n">u</span><span class="w"></span>
+<span class="w">           </span><span class="p">(</span><span class="n">x</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
+<span class="w">       </span><span class="k">end</span><span class="o">'</span><span class="p">(</span><span class="n">push!!</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">Completing</span><span class="w"></span>
+<span class="w">       </span><span class="n">acc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Transducers</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">rf</span><span class="p">,</span><span class="w"> </span><span class="kt">Int</span><span class="p">[])</span><span class="w"></span>
+<span class="w">       </span><span class="n">acc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Transducers</span><span class="o">.</span><span class="n">foldl_nocomplete</span><span class="p">(</span><span class="n">rf</span><span class="p">,</span><span class="w"> </span><span class="n">acc</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">3</span><span class="p">);</span><span class="w"></span>
+<span class="n">u</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="w"></span>
+<span class="n">u</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">2</span><span class="w"></span>
+<span class="n">u</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">3</span><span class="w"></span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Transducers</span><span class="o">.</span><span class="n">unwrap</span><span class="p">(</span><span class="n">rf</span><span class="p">,</span><span class="w"> </span><span class="n">acc</span><span class="p">)</span><span class="w">  </span><span class="c"># (u, ys)</span><span class="w"></span>
+<span class="p">(</span><span class="o">-</span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">])</span><span class="w"></span>
+</code></pre></div>
+<p>although <code>Transducers.foldl_nocomplete</code> is not documented</p>
+<p>Edit: s/append!!/push!!/</p>
+
+
+
+<a name="284263940"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Equivalent%20of%20a%20%60scan%60%20function%3F/near/284263940" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Equivalent.20of.20a.20.60scan.60.20function.3F.html#284263940">(May 29 2022 at 04:14)</a>:</h4>
+<p>That works! Now I need to figure out how to make it Zygote-friendly...</p>
+
+
+
+<a name="284265268"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Equivalent%20of%20a%20%60scan%60%20function%3F/near/284265268" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Equivalent.20of.20a.20.60scan.60.20function.3F.html#284265268">(May 29 2022 at 04:55)</a>:</h4>
+<p>I'd guess that this is not very Zygote friendly, unfortunately...  As this is a very generic concept, why not actually write it by hand and also define the chain rule (i.e., make it effectively a "builtin")?</p>
+<p>(The foldl part can be optimized by <a href="https://github.com/JuliaFolds/FoldsChainRules.jl">https://github.com/JuliaFolds/FoldsChainRules.jl</a> but we still have <code>push!!</code>)</p>
+
+
+
+<a name="284265385"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Equivalent%20of%20a%20%60scan%60%20function%3F/near/284265385" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Equivalent.20of.20a.20.60scan.60.20function.3F.html#284265385">(May 29 2022 at 04:57)</a>:</h4>
+<p>Was thinking of how to write one :) a function like <code>push!!</code> would make the rule itself trivial (well, trivial for <code>Vector</code>s at least), but nested differentiation makes my head hurt</p>
+
+
+
+<a name="284265387"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Equivalent%20of%20a%20%60scan%60%20function%3F/near/284265387" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Equivalent.20of.20a.20.60scan.60.20function.3F.html#284265387">(May 29 2022 at 04:57)</a>:</h4>
+<p>Any chance you think for something like this to be in Base?</p>
+
+
+
+<a name="284265596"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Equivalent%20of%20a%20%60scan%60%20function%3F/near/284265596" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Equivalent.20of.20a.20.60scan.60.20function.3F.html#284265596">(May 29 2022 at 05:01)</a>:</h4>
+<p>One advantage jax has is that they enforce inputs/outputs to be scalar numbers, arrays or structures of arrays. That allows for tricks like pre-allocating an output buffer for scanning over the first dimension of a multi-dimensional array.</p>
+
+
+
+<a name="284276589"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Equivalent%20of%20a%20%60scan%60%20function%3F/near/284276589" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Equivalent.20of.20a.20.60scan.60.20function.3F.html#284276589">(May 29 2022 at 09:52)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="278065">Brian Chen</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Equivalent.20of.20a.20.60scan.60.20function.3F/near/284265596">said</a>:</p>
+<blockquote>
+<p>One advantage jax has is that they enforce inputs/outputs to be scalar numbers, arrays or structures of arrays.</p>
+</blockquote>
+<p>Yes, I agree it is an advantage for the compiler/library authors. But it sounds like a flip side of a disadvantage (= limit the kind of program written easily) on the user side to me. In Julia, I think it'd be more natural to let the users express the constraints (output is an array, output shape is known, output element type, etc.) through an API function call. I think it'd be some extension of the "into" PR I opened in <code>julia</code>.</p>
+
+
+
+<a name="284287303"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Equivalent%20of%20a%20%60scan%60%20function%3F/near/284287303" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Equivalent.20of.20a.20.60scan.60.20function.3F.html#284287303">(May 29 2022 at 13:52)</a>:</h4>
+<p>I agree 100%, but the perfect is also kind of the enemy of the good here. Given very limited time as a library author, I'm more likely to leave the status quo of bad performance than to try rolling my own little subsystem for this.</p>
+
+
+
+<a name="284289799"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Equivalent%20of%20a%20%60scan%60%20function%3F/near/284289799" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Equivalent.20of.20a.20.60scan.60.20function.3F.html#284289799">(May 29 2022 at 14:52)</a>:</h4>
+<p>Also double-checked that I am indeed subscribed to that into PR <span aria-label="big smile" class="emoji emoji-1f604" role="img" title="big smile">:big_smile:</span></p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

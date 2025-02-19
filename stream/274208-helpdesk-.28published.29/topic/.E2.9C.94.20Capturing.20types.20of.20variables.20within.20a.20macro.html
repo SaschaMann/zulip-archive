@@ -1,0 +1,282 @@
+<html>
+<head><meta charset="utf-8"><title>✔ Capturing types of variables within a macro · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html">✔ Capturing types of variables within a macro</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="284939518"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/284939518" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#284939518">(Jun 03 2022 at 22:23)</a>:</h4>
+<p>Say I want to write a macro</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="nd">@foo</span><span class="w"> </span><span class="n">f</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">c</span><span class="p">)</span><span class="w"></span>
+</code></pre></div>
+<p>that captures and modifies a function call <code>f(a,b,c)</code>. Is there any way to get the types of the arguments <code>a</code>,<code>b</code>, etc. within the macro?</p>
+
+
+
+<a name="284939833"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/284939833" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#284939833">(Jun 03 2022 at 22:27)</a>:</h4>
+<p>Within the macro they're all just <code>Symbol</code>s within the captured Expr, so I can't just use <code>typeof</code> directly...</p>
+
+
+
+<a name="284939859"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/284939859" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#284939859">(Jun 03 2022 at 22:28)</a>:</h4>
+<p>The only way I can think of is something along the lines of </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">macro</span><span class="w"> </span><span class="n">bad_form</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">argtypes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ntuple</span><span class="p">(</span><span class="n">i</span><span class="o">-&gt;</span><span class="n">typeof</span><span class="p">(</span><span class="n">eval</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">])),</span><span class="w"> </span><span class="n">length</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">args</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="o">:</span><span class="p">(</span><span class="o">$</span><span class="n">argtypes</span><span class="p">)</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="284939935"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/284939935" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#284939935">(Jun 03 2022 at 22:29)</a>:</h4>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mf">2.0</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="o">//</span><span class="mi">4</span><span class="w"></span>
+<span class="go">(1, 2.0, 3//4)</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="nd">@bad_form</span><span class="w"> </span><span class="n">f</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">c</span><span class="p">)</span><span class="w"></span>
+<span class="go">(Int64, Float64, Rational{Int64})</span>
+</code></pre></div>
+<p>which works in global scope but is a massive code smell AFAIU</p>
+
+
+
+<a name="284940222"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/284940222" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#284940222">(Jun 03 2022 at 22:33)</a>:</h4>
+<p>N.b. I can't do something like</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">macro</span><span class="w"> </span><span class="n">good_form_but_not_helpful</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="o">:</span><span class="p">(</span><span class="n">typeof</span><span class="p">(</span><span class="o">$</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">2</span><span class="p">])))</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+<p>because I need access to the types within the body of the macro</p>
+
+
+
+<a name="284942690"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/284942690" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#284942690">(Jun 03 2022 at 23:06)</a>:</h4>
+<p>No, you cannot do this</p>
+
+
+
+<a name="284942714"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/284942714" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#284942714">(Jun 03 2022 at 23:07)</a>:</h4>
+<p>The only real way is with a generated function</p>
+
+
+
+<a name="284942811"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/284942811" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#284942811">(Jun 03 2022 at 23:08)</a>:</h4>
+<p>e.g.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">macro</span><span class="w"> </span><span class="n">foo</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span><span class="w"></span>
+<span class="w">     </span><span class="n">some_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">extract_info</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span><span class="w"></span>
+<span class="w">     </span><span class="o">:</span><span class="p">(</span><span class="o">$</span><span class="n">foo</span><span class="p">(</span><span class="o">$</span><span class="n">some_data</span><span class="p">))</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+
+<span class="nd">@generated</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">foo</span><span class="p">(</span><span class="n">some_data</span><span class="o">::</span><span class="kt">T</span><span class="p">)</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="p">{</span><span class="kt">T</span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="c"># code generation dending on T here</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="284943759"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/284943759" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#284943759">(Jun 03 2022 at 23:24)</a>:</h4>
+<p>Huh, bummer.</p>
+
+
+
+<a name="284943763"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/284943763" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#284943763">(Jun 03 2022 at 23:24)</a>:</h4>
+<p>It's funny because it doesn't seem that hard</p>
+
+
+
+<a name="284943808"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/284943808" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#284943808">(Jun 03 2022 at 23:25)</a>:</h4>
+<p>But I guess that explains why the <code>@ccall</code> macro makes you manually annotate the types of everything rather than being able to just figure them out itself</p>
+
+
+
+<a name="284943818"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/284943818" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#284943818">(Jun 03 2022 at 23:25)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="293896">Brenhin Keller</span> has marked this topic as resolved.</p>
+
+
+
+<a name="284949426"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/284949426" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mosè Giordano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#284949426">(Jun 04 2022 at 01:24)</a>:</h4>
+<p>Don't the <code>@code_*</code> macros do exactly this? How do they work? Do they use the generated function suggested above? I'm away from computer, can't easily check myself.</p>
+<p>Note that <code>@ccall</code> shouldn't infer the type of the arguments, you can pass a value with a different type as long as it can be converted to the actual type required by the library</p>
+
+
+
+<a name="284949891"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/284949891" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mosè Giordano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#284949891">(Jun 04 2022 at 01:36)</a>:</h4>
+<p>Ok, I browsed a bit the repo on the phone and found it: <a href="https://github.com/JuliaLang/julia/blob/bd8dbc388c7b89f68838ca554ed7ba91740cce75/stdlib/InteractiveUtils/src/macros.jl#L34">https://github.com/JuliaLang/julia/blob/bd8dbc388c7b89f68838ca554ed7ba91740cce75/stdlib/InteractiveUtils/src/macros.jl#L34</a></p>
+
+
+
+<a name="284949980"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/284949980" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mosè Giordano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#284949980">(Jun 04 2022 at 01:39)</a>:</h4>
+<p>I don't see any generated function anywhere</p>
+
+
+
+<a name="284950460"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/284950460" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#284950460">(Jun 04 2022 at 01:52)</a>:</h4>
+<p>Oh woah!</p>
+
+
+
+<a name="284950468"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/284950468" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#284950468">(Jun 04 2022 at 01:52)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="293896">Brenhin Keller</span> has marked this topic as unresolved.</p>
+
+
+
+<a name="284952108"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/284952108" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#284952108">(Jun 04 2022 at 02:32)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269186">Mosè Giordano</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Capturing.20types.20of.20variables.20within.20a.20macro/near/284949426">said</a>:</p>
+<blockquote>
+<p>Don't the <code>@code_*</code> macros do exactly this? How do they work? Do they use the generated function suggested above? I'm away from computer, can't easily check myself.</p>
+<p>Note that <code>@ccall</code> shouldn't infer the type of the arguments, you can pass a value with a different type as long as it can be converted to the actual type required by the library</p>
+</blockquote>
+<p>The <code>@code_*</code> macros do not do anything with the type in their body.</p>
+
+
+
+<a name="284952194"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/284952194" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#284952194">(Jun 04 2022 at 02:34)</a>:</h4>
+<p>You can check with <code>@macroexpand</code>.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="nd">@macroexpand</span><span class="w"> </span><span class="nd">@code_typed</span><span class="w"> </span><span class="n">sin</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span><span class="w"></span>
+<span class="k">quote</span><span class="w"></span>
+<span class="w">    </span><span class="k">local</span><span class="w"> </span><span class="sa">var</span><span class="s">"#1263#results"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">InteractiveUtils</span><span class="o">.</span><span class="n">code_typed</span><span class="p">(</span><span class="n">sin</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">Base</span><span class="o">.</span><span class="n">typesof</span><span class="p">)(</span><span class="mf">1.0</span><span class="p">))</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">InteractiveUtils</span><span class="o">.</span><span class="n">length</span><span class="p">(</span><span class="sa">var</span><span class="s">"#1263#results"</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="w"></span>
+<span class="w">        </span><span class="sa">var</span><span class="s">"#1263#results"</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"></span>
+<span class="w">    </span><span class="k">else</span><span class="w"></span>
+<span class="w">        </span><span class="sa">var</span><span class="s">"#1263#results"</span><span class="w"></span>
+<span class="w">    </span><span class="k">end</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+<p>That is, it just becomes <code>code_typed(sin, (Base.typesof)(1.0))</code></p>
+
+
+
+<a name="284952205"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/284952205" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#284952205">(Jun 04 2022 at 02:34)</a>:</h4>
+<p>I only brought up generated functions because <span class="user-mention" data-user-id="293896">@Brenhin Keller</span> wanted the code generation itself to depend on the types</p>
+
+
+
+<a name="284952216"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/284952216" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#284952216">(Jun 04 2022 at 02:35)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="293896">Brenhin Keller</span> has marked this topic as resolved.</p>
+
+
+
+<a name="285497348"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/285497348" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#285497348">(Jun 09 2022 at 07:42)</a>:</h4>
+<p>Ok, so turns out there <em>is</em> also <code>Core.eval</code>, which <code>@static</code> uses in a very similar context... I wonder if anything makes this unsafe:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">macro</span><span class="w"> </span><span class="n">static_types</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">argtypes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ntuple</span><span class="p">(</span><span class="n">i</span><span class="o">-&gt;</span><span class="n">typeof</span><span class="p">(</span><span class="n">Core</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">__module__</span><span class="p">,</span><span class="w"> </span><span class="n">expr</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">])),</span><span class="w"> </span><span class="n">length</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">args</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="o">:</span><span class="p">(</span><span class="o">$</span><span class="n">argtypes</span><span class="p">)</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ones</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span><span class="w"> </span><span class="mf">3.0</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="w"></span>
+<span class="go">([1.0, 1.0], 3.0, false)</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="nd">@static_types</span><span class="w"> </span><span class="n">f</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">c</span><span class="p">)</span><span class="w"></span>
+<span class="go">(Vector{Float64}, Float64, Bool)</span>
+</code></pre></div>
+
+
+
+<a name="285497512"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/285497512" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#285497512">(Jun 09 2022 at 07:44)</a>:</h4>
+<p>unsafe in what regard?</p>
+
+
+
+<a name="285497537"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/285497537" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#285497537">(Jun 09 2022 at 07:44)</a>:</h4>
+<p>that still just looks up the argument in global scope</p>
+
+
+
+<a name="285497557"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/285497557" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#285497557">(Jun 09 2022 at 07:44)</a>:</h4>
+<p>Dunno, I was just always told "you're not supposed to use <code>eval</code>in a macro"</p>
+
+
+
+<a name="285497559"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/285497559" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#285497559">(Jun 09 2022 at 07:44)</a>:</h4>
+<p>so I think the macro only works in global scope</p>
+
+
+
+<a name="285497606"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/285497606" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#285497606">(Jun 09 2022 at 07:45)</a>:</h4>
+<p>yeah, but that's because <code>eval</code>ing the code created by the macro is redundant when you can just return the expression from the macro in the first place</p>
+
+
+
+<a name="285498011"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/285498011" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#285498011">(Jun 09 2022 at 07:50)</a>:</h4>
+<p>I guess it pretty much has the same limitations <code>@static</code> does</p>
+
+
+
+<a name="285498212"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/285498212" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#285498212">(Jun 09 2022 at 07:52)</a>:</h4>
+<p>Works fine in a module but only works off variables in the global scope of that module</p>
+
+
+
+<a name="285498272"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/285498272" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#285498272">(Jun 09 2022 at 07:53)</a>:</h4>
+<p>Still could be useful for some things (the difference from just returning from the macro being you can know earlier in compilation pipeline, so can use that information inside the body of the macro to, e.g., interpolate into an llvmcall, etc.)</p>
+
+
+
+<a name="285616501"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/285616501" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#285616501">(Jun 10 2022 at 01:06)</a>:</h4>
+<p><span class="user-mention" data-user-id="293896">@Brenhin Keller</span> all the problems with <code>@eval</code> here apply to <code>Core.eval</code>.</p>
+
+
+
+<a name="285616732"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/285616732" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#285616732">(Jun 10 2022 at 01:07)</a>:</h4>
+<p>In fact,</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="nd">@macroexpand1</span><span class="w"> </span><span class="p">(</span><span class="nd">@eval</span><span class="w"> </span><span class="n">Foo</span><span class="w"> </span><span class="n">bar</span><span class="p">)</span><span class="w"></span>
+<span class="o">:</span><span class="p">(</span><span class="n">Core</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">Foo</span><span class="p">,</span><span class="w"> </span><span class="ss">:bar</span><span class="p">))</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="285617102"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/285617102" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#285617102">(Jun 10 2022 at 01:09)</a>:</h4>
+<p>But yeah, there are contexts where <code>eval</code> is fine to use in a macro. Anything that is supposed to be evaluated when the code is <strong>parsed</strong> and doesn't actually depend on runtime or compile time info is fine. It's just something that's commonly misused</p>
+
+
+
+<a name="285619540"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/285619540" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#285619540">(Jun 10 2022 at 01:21)</a>:</h4>
+<p>Yeah, that makes sense</p>
+
+
+
+<a name="285619544"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Capturing%20types%20of%20variables%20within%20a%20macro/near/285619544" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Capturing.20types.20of.20variables.20within.20a.20macro.html#285619544">(Jun 10 2022 at 01:21)</a>:</h4>
+<p>thanks!</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

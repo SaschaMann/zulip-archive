@@ -1,0 +1,45 @@
+<html>
+<head><meta charset="utf-8"><title>Row-major arrays · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Row-major.20arrays.html">Row-major arrays</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="267911054"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Row-major%20arrays/near/267911054" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> James Wrigley <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Row-major.20arrays.html#267911054">(Jan 13 2022 at 18:32)</a>:</h4>
+<p>Hey all,<br>
+My use-case with Julia is working with very large 3D/4D arrays of images. For example, a 3D array might have dimensions <code>(time, x, y)</code>. Generally these images will be processed individually so the ideal memory layout would be row-major, such that the pixels (floats) for each image will be stored contiguously.</p>
+<p>Since Julia's arrays are column-major I had the idea of reversing the dimensions, e.g. <code>(y, x, time)</code>, to have the right memory layout, and then maybe making a custom Array type that would automatically handle this inversion. So if a user creates a <code>RowMajorArray{Float32}(undef, 1, 2, 3)</code> it will actually create a <code>Array{Float32}(undef, 3, 2, 1)</code>, and indexing it at <code>A[1, :, :]</code> would turn into <code>A[:, :, 1]</code>. Does that sound like a good idea? I'd be interested to know if anyone else has done something like this.</p>
+<p>Relevant things I found while Googling:</p>
+<ul>
+<li><a href="https://github.com/JuliaLang/julia/issues/5932">https://github.com/JuliaLang/julia/issues/5932</a></li>
+<li>PyCall uses this trick with <code>PyReverseDims()</code>: <a href="https://github.com/JuliaPy/PyCall.jl#from-julia-to-python">https://github.com/JuliaPy/PyCall.jl#from-julia-to-python</a></li>
+</ul>
+
+
+
+<a name="267940925"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Row-major%20arrays/near/267940925" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Row-major.20arrays.html#267940925">(Jan 13 2022 at 22:32)</a>:</h4>
+<p><code>PermutedDimsArray</code> does this. <code>PermutedDimsArray(rand(1,2,3), (3,2,1))</code>.</p>
+
+
+
+<a name="267941114"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Row-major%20arrays/near/267941114" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Row-major.20arrays.html#267941114">(Jan 13 2022 at 22:34)</a>:</h4>
+<p>But why not work with column major arrays?<br>
+E.g., why not work with <code>y</code> x <code>x</code> x <code>time</code>, or permute to <code>x</code> x <code>y</code> x <code>time</code>?</p>
+
+
+
+<a name="267997843"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Row-major%20arrays/near/267997843" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> James Wrigley <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Row-major.20arrays.html#267997843">(Jan 14 2022 at 10:51)</a>:</h4>
+<p>Oh neat, didn't know about <code>PermutedDimsArray</code>. I guess the main reason to avoid working with column-major arrays is to keep a similar interface to arrays from Numpy/C, which is what most people working with my code will be used to. But maybe I should try it anyway...</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

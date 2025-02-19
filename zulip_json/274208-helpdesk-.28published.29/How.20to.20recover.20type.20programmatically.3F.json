@@ -1,0 +1,74 @@
+[
+    {
+        "content": "<p>Suppose I have a parametric type:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"kt\">Foo</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span>\n  <span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">T</span>\n<span class=\"k\">end</span>\n\n<span class=\"n\">Foo</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">,</span> <span class=\"n\">b</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">Foo</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">+</span><span class=\"n\">b</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>and an instance of this type:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">foo</span> <span class=\"o\">=</span> <span class=\"n\">Foo</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"mi\">2</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>How do I retrieve the type <code>Foo</code> from the instance <code>foo</code> for future instantiations?</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">foo</span><span class=\"p\">)</span> <span class=\"c\"># returns Foo{Int}, I just want Foo</span>\n</code></pre></div>",
+        "id": 264785166,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1639437628
+    },
+    {
+        "content": "<p>This  comes up about once a month or so, and the answer is that there is no officially supported way to do that without accessing undocumented language internals  and that the Julia devs insist you shouldn't want to do it.</p>",
+        "id": 264785629,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1639437926
+    },
+    {
+        "content": "<p>I'm always wondering what context this occurs in</p>",
+        "id": 264785661,
+        "sender_full_name": "Sukera",
+        "timestamp": 1639437960
+    },
+    {
+        "content": "<p>always.</p>",
+        "id": 264785706,
+        "sender_full_name": "Sukera",
+        "timestamp": 1639437968
+    },
+    {
+        "content": "<p>On current versions of julia, if you feel the need to do this, you can do this</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">striptype</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">})</span> <span class=\"k\">where</span> <span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span> <span class=\"o\">=</span>  <span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">typename</span><span class=\"p\">(</span><span class=\"n\">T</span><span class=\"p\">)</span><span class=\"o\">.</span><span class=\"n\">wrapper</span>\n<span class=\"n\">striptype</span> <span class=\"p\">(</span><span class=\"n\">generic</span> <span class=\"k\">function</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">striptype</span><span class=\"p\">(</span><span class=\"kt\">String</span><span class=\"p\">)</span>\n<span class=\"kt\">String</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">striptype</span><span class=\"p\">(</span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Int</span><span class=\"p\">})</span>\n<span class=\"kt\">Array</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">striptype</span><span class=\"p\">(</span><span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">String</span><span class=\"p\">,</span> <span class=\"mi\">4</span><span class=\"p\">})</span>\n<span class=\"kt\">Array</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">striptype</span><span class=\"p\">(</span><span class=\"kt\">Complex</span><span class=\"p\">{</span><span class=\"kt\">Int</span><span class=\"p\">})</span>\n<span class=\"kt\">Complex</span>\n</code></pre></div>\n<p>But of course, these internals are subject to change</p>",
+        "id": 264786264,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1639438383
+    },
+    {
+        "content": "<p>Notably, that wrapper is not always a valid constructor name</p>",
+        "id": 264786349,
+        "sender_full_name": "Sukera",
+        "timestamp": 1639438443
+    },
+    {
+        "content": "<p>Often this comes up in the context of headaches with type promotion, and this seems like an easy way out. But yes, it is problematic.</p>",
+        "id": 264786396,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1639438469
+    },
+    {
+        "content": "<p>The context here is that we have instances of structs for which only some fields are \"trusted\" or fine tuned by end users. We need to recover the type and some of the fields and then do some algorithmic work to fill in the remaining fields that are not ok yet.</p>",
+        "id": 264786480,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1639438536
+    },
+    {
+        "content": "<p>sounds like you'd want to wrap those untrusted fields into their own struct and pass that as a configuration parameter</p>",
+        "id": 264786597,
+        "sender_full_name": "Sukera",
+        "timestamp": 1639438620
+    },
+    {
+        "content": "<p>but I'd guess we need more details/information to give proper help here</p>",
+        "id": 264786630,
+        "sender_full_name": "Sukera",
+        "timestamp": 1639438648
+    },
+    {
+        "content": "<p>If you don’t need it for all parametric types but just for a few, you could just write some methods like this, right?</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">unwrap</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"o\">&lt;:</span><span class=\"kt\">Foo</span><span class=\"p\">})</span> <span class=\"o\">=</span> <span class=\"n\">Foo</span>\n</code></pre></div>",
+        "id": 264875532,
+        "sender_full_name": "Eric Hanson",
+        "timestamp": 1639496134
+    },
+    {
+        "content": "<p>I essentially asked this on SO: <a href=\"https://stackoverflow.com/questions/70043313/get-simple-name-of-type-in-julia\">https://stackoverflow.com/questions/70043313/get-simple-name-of-type-in-julia</a></p>",
+        "id": 264963138,
+        "sender_full_name": "Alec",
+        "timestamp": 1639541520
+    }
+]

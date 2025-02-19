@@ -1,0 +1,56 @@
+[
+    {
+        "content": "<p>Is there some annotation that I can use to give permission to the compiler to elide e.g. <code>x = foo(y)</code> if <code>x</code> is not used? And would it possibly work across function-call boundaries? I'd like to do something like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">compute</span><span class=\"p\">(</span><span class=\"n\">input</span><span class=\"p\">,</span> <span class=\"n\">callback</span><span class=\"p\">)</span>\n  <span class=\"n\">x</span> <span class=\"o\">=</span> <span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"n\">input</span><span class=\"p\">)</span>\n  <span class=\"n\">y</span> <span class=\"o\">=</span> <span class=\"n\">bar</span><span class=\"p\">(</span><span class=\"n\">input</span><span class=\"p\">)</span>\n  <span class=\"n\">z</span> <span class=\"o\">=</span> <span class=\"n\">baz</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span> <span class=\"n\">y</span><span class=\"p\">)</span>\n  <span class=\"k\">return</span> <span class=\"n\">callback</span><span class=\"p\">((;</span><span class=\"n\">x</span><span class=\"p\">,</span> <span class=\"n\">y</span><span class=\"p\">,</span> <span class=\"n\">z</span><span class=\"p\">))</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>and depending on what fields  <code>callback</code> accesses, perhaps only <code>foo</code> is called. Or only <code>bar</code>. Or both. Or all three. </p>\n<p>I'm pretty sure <code>Base.@pure</code> is the wrong answer.</p>",
+        "id": 227376673,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1614049777
+    },
+    {
+        "content": "<p>I asked here: <a href=\"https://discourse.julialang.org/t/annotation-to-elide-function-call-if-the-return-value-is-unused/55904\">https://discourse.julialang.org/t/annotation-to-elide-function-call-if-the-return-value-is-unused/55904</a></p>",
+        "id": 227533351,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1614129428
+    },
+    {
+        "content": "<p>I remember discussing this with <span class=\"user-mention\" data-user-id=\"209534\">@Lyndon White</span> a while ago on Slack I think. We concluded essentially that this might be possible with a compiler pass, but in general it’s a hard thing to do due to Julia’s eager semantics.</p>",
+        "id": 227535224,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614130910
+    },
+    {
+        "content": "<p>I wonder what difficulties you foresee? It seems like you could \"just\" knock out lines from the SSA form where the right-hand side has the annotation and nothing refers to the left-hand side.</p>",
+        "id": 227538802,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1614133975
+    },
+    {
+        "content": "<p>You must prove that the calculation of the unused outputs does not have any side effect which will no longer happen if you remove the calculation. I have no experience with this stuff so maybe that is trivial, but might not be, or might be expensive etc.</p>",
+        "id": 227640575,
+        "sender_full_name": "Fredrik Bagge Carlson",
+        "timestamp": 1614188461
+    },
+    {
+        "content": "<p>I agree with \"You must prove\" if you mean, \"you, the entity that decides to place this annotation on the function call\".  It's not something the compiler needs to figure out.</p>",
+        "id": 227679081,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1614203421
+    },
+    {
+        "content": "<p>In the example on discourse, I used printing to stdout to indicate that a computation was performed. That's a side-effect.</p>",
+        "id": 227679185,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1614203476
+    },
+    {
+        "content": "<p>Is there a way to sneak extra attributes into the <code>CodeInfo</code> using <code>pushmeta!</code> or something similar? I thought <code>@inline</code> would be a good example, but  it appears to be special-cased in <a href=\"https://github.com/JuliaLang/julia/blob/master/src/method.c#L272\">https://github.com/JuliaLang/julia/blob/master/src/method.c#L272</a></p>",
+        "id": 227701371,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1614214232
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"278065\">@Brian Chen</span> I wish I knew the answer.  The comment at the end of <a href=\"https://docs.julialang.org/en/v1.1/devdocs/meta/\">https://docs.julialang.org/en/v1.1/devdocs/meta/</a> slightly suggests the answer is no:</p>\n<blockquote>\n<p>Not yet provided is a convenient infrastructure for parsing <code>:meta</code> expressions from C++.</p>\n</blockquote>\n<p>But that doc hasn't been touched since 2016.</p>",
+        "id": 229893670,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1615484510
+    }
+]

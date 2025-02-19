@@ -1,0 +1,356 @@
+<html>
+<head><meta charset="utf-8"><title>✔ What is the overhead of `gensym`? · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F.html">✔ What is the overhead of `gensym`?</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="287396217"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20What%20is%20the%20overhead%20of%20%60gensym%60%3F/near/287396217" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F.html#287396217">(Jun 24 2022 at 23:21)</a>:</h4>
+<p>Should I refrain from calling it in a hot loop?</p>
+
+
+
+<a name="287396297"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20What%20is%20the%20overhead%20of%20%60gensym%60%3F/near/287396297" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F.html#287396297">(Jun 24 2022 at 23:23)</a>:</h4>
+<p>Benchmarking suggests the overhead is non-negligible, which makes sense:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">f1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"></span>
+<span class="w">           </span><span class="n">total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"></span>
+<span class="w">           </span><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="n">x</span><span class="w"></span>
+<span class="w">               </span><span class="n">total</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">i</span><span class="w"></span>
+<span class="w">           </span><span class="k">end</span><span class="w"></span>
+<span class="w">           </span><span class="k">return</span><span class="w"> </span><span class="n">total</span><span class="w"></span>
+<span class="w">       </span><span class="k">end</span><span class="w"></span>
+<span class="go">f1 (generic function with 1 method)</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="nd">@code_native</span><span class="w"> </span><span class="n">f1</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span><span class="w"></span>
+<span class="go">    .text</span>
+<span class="go">; ┌ @ REPL[37]:3 within `f1`</span>
+<span class="go">; │┌ @ range.jl:5 within `Colon`</span>
+<span class="go">; ││┌ @ range.jl:354 within `UnitRange`</span>
+<span class="go">; │││┌ @ range.jl:359 within `unitrange_last`</span>
+<span class="go">    testq   %rdi, %rdi</span>
+<span class="go">; │└└└</span>
+<span class="go">    jle L43</span>
+<span class="go">; │ @ REPL[37] within `f1`</span>
+<span class="go">    movq    %rdi, %rax</span>
+<span class="go">    sarq    $63, %rax</span>
+<span class="go">    andnq   %rdi, %rax, %rax</span>
+<span class="go">; │ @ REPL[37]:4 within `f1`</span>
+<span class="go">    leaq    -1(%rax), %rdx</span>
+<span class="go">    leaq    -2(%rax), %rcx</span>
+<span class="go">    mulxq   %rcx, %rcx, %rdx</span>
+<span class="go">    shldq   $63, %rcx, %rdx</span>
+<span class="go">    leaq    (%rdx,%rax,2), %rax</span>
+<span class="go">    decq    %rax</span>
+<span class="go">; │ @ REPL[37]:6 within `f1`</span>
+<span class="go">    retq</span>
+<span class="go">; │ @ REPL[37] within `f1`</span>
+<span class="go">L43:</span>
+<span class="go">    xorl    %eax, %eax</span>
+<span class="go">; │ @ REPL[37]:6 within `f1`</span>
+<span class="go">    retq</span>
+<span class="go">    nop</span>
+<span class="go">; └</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">f2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"></span>
+<span class="w">           </span><span class="n">total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"></span>
+<span class="w">           </span><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="n">x</span><span class="w"></span>
+<span class="w">               </span><span class="nd">@gensym</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="n">e</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="n">g</span><span class="w"></span>
+<span class="w">               </span><span class="n">total</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">i</span><span class="w"></span>
+<span class="w">           </span><span class="k">end</span><span class="w"></span>
+<span class="w">           </span><span class="k">return</span><span class="w"> </span><span class="n">total</span><span class="w"></span>
+<span class="w">       </span><span class="k">end</span><span class="w"></span>
+<span class="go">f2 (generic function with 1 method)</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="nd">@code_native</span><span class="w"> </span><span class="n">f2</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span><span class="w"></span>
+<span class="go">    .text</span>
+<span class="go">; ┌ @ REPL[40]:3 within `f2`</span>
+<span class="go">; │┌ @ range.jl:5 within `Colon`</span>
+<span class="go">; ││┌ @ range.jl:354 within `UnitRange`</span>
+<span class="go">; │││┌ @ REPL[40]:1 within `unitrange_last`</span>
+<span class="go">    pushq   %rbp</span>
+<span class="go">    pushq   %r15</span>
+<span class="go">    pushq   %r14</span>
+<span class="go">    pushq   %r13</span>
+<span class="go">    pushq   %r12</span>
+<span class="go">    pushq   %rbx</span>
+<span class="go">    subq    $40, %rsp</span>
+<span class="go">; │││└</span>
+<span class="go">; │││┌ @ range.jl:359 within `unitrange_last`</span>
+<span class="go">    testq   %rdi, %rdi</span>
+<span class="go">; │└└└</span>
+<span class="go">    jle L253</span>
+<span class="go">; │ @ REPL[40] within `f2`</span>
+<span class="go">    movq    %rdi, %rax</span>
+<span class="go">    sarq    $63, %rax</span>
+<span class="go">    andnq   %rdi, %rax, %rax</span>
+<span class="go">    movabsq $139821397918949, %r12          # imm = 0x7F2AB4C144E5</span>
+<span class="go">; │ @ REPL[40]:5 within `f2`</span>
+<span class="go">    negq    %rax</span>
+<span class="go">    movq    %rax, 32(%rsp)</span>
+<span class="go">    movl    $1, %r13d</span>
+<span class="go">    xorl    %ebx, %ebx</span>
+<span class="go">    leaq    -178798797(%r12), %rax</span>
+<span class="go">    movq    %rax, 24(%rsp)</span>
+<span class="go">    leaq    -178798637(%r12), %rax</span>
+<span class="go">    movq    %rax, 16(%rsp)</span>
+<span class="go">    leaq    -178798477(%r12), %rax</span>
+<span class="go">    movq    %rax, 8(%rsp)</span>
+<span class="go">    leaq    -178798317(%r12), %rax</span>
+<span class="go">    movq    %rax, (%rsp)</span>
+<span class="go">    leaq    -178798157(%r12), %rbp</span>
+<span class="go">    leaq    -178797997(%r12), %r14</span>
+<span class="go">    leaq    -178797837(%r12), %r15</span>
+<span class="go">    nopl    (%rax,%rax)</span>
+<span class="go">; │ @ REPL[40]:4 within `f2`</span>
+<span class="go">; │┌ @ expr.jl:12 within `gensym`</span>
+<span class="go">L144:</span>
+<span class="go">    movl    $1, %esi</span>
+<span class="go">    movq    24(%rsp), %rdi</span>
+<span class="go">    callq   *%r12</span>
+<span class="go">    movl    $1, %esi</span>
+<span class="go">    movq    16(%rsp), %rdi</span>
+<span class="go">    callq   *%r12</span>
+<span class="go">    movl    $1, %esi</span>
+<span class="go">    movq    8(%rsp), %rdi</span>
+<span class="go">    callq   *%r12</span>
+<span class="go">    movl    $1, %esi</span>
+<span class="go">    movq    (%rsp), %rdi</span>
+<span class="go">    callq   *%r12</span>
+<span class="go">    movl    $1, %esi</span>
+<span class="go">    movq    %rbp, %rdi</span>
+<span class="go">    callq   *%r12</span>
+<span class="go">    movl    $1, %esi</span>
+<span class="go">    movq    %r14, %rdi</span>
+<span class="go">    callq   *%r12</span>
+<span class="go">    movl    $1, %esi</span>
+<span class="go">    movq    %r15, %rdi</span>
+<span class="go">    callq   *%r12</span>
+<span class="go">; │└</span>
+<span class="go">; │ @ REPL[40]:5 within `f2`</span>
+<span class="go">; │┌ @ int.jl:87 within `+`</span>
+<span class="go">    addq    %r13, %rbx</span>
+<span class="go">    movq    32(%rsp), %rax</span>
+<span class="go">; │└</span>
+<span class="go">; │┌ @ range.jl:837 within `iterate`</span>
+<span class="go">; ││┌ @ promotion.jl:468 within `==`</span>
+<span class="go">    addq    %r13, %rax</span>
+<span class="go">    incq    %rax</span>
+<span class="go">; ││└</span>
+<span class="go">    incq    %r13</span>
+<span class="go">; ││┌ @ promotion.jl:468 within `==`</span>
+<span class="go">    cmpq    $1, %rax</span>
+<span class="go">; │└└</span>
+<span class="go">    jne L144</span>
+<span class="go">    jmp L255</span>
+<span class="go">; │ @ REPL[40] within `f2`</span>
+<span class="go">L253:</span>
+<span class="go">    xorl    %ebx, %ebx</span>
+<span class="go">; │ @ REPL[40]:7 within `f2`</span>
+<span class="go">L255:</span>
+<span class="go">    movq    %rbx, %rax</span>
+<span class="go">    addq    $40, %rsp</span>
+<span class="go">    popq    %rbx</span>
+<span class="go">    popq    %r12</span>
+<span class="go">    popq    %r13</span>
+<span class="go">    popq    %r14</span>
+<span class="go">    popq    %r15</span>
+<span class="go">    popq    %rbp</span>
+<span class="go">    retq</span>
+<span class="go">    nopw    %cs:(%rax,%rax)</span>
+<span class="go">; └</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="nd">@benchmark</span><span class="w"> </span><span class="n">f1</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span><span class="w"></span>
+<span class="go">BenchmarkTools.Trial: 10000 samples with 1000 evaluations.</span>
+<span class="go"> Range (min … max):  1.152 ns … 69.760 ns  ┊ GC (min … max): 0.00% … 0.00%</span>
+<span class="go"> Time  (median):     1.160 ns              ┊ GC (median):    0.00%</span>
+<span class="go"> Time  (mean ± σ):   1.171 ns ±  0.712 ns  ┊ GC (mean ± σ):  0.00% ± 0.00%</span>
+
+<span class="go">                                █</span>
+<span class="go">  ▂▁▁▆▁▁▁▄▁▁▁▄▁▁▁▃▁▁▁▂▁▁▁▂▁▁▁▃▁▁█▁▁▁▅▁▁▁▂▁▁▁▄▁▁▁█▁▁▁▆▁▁▁▇▁▁▂ ▂</span>
+<span class="go">  1.15 ns        Histogram: frequency by time        1.17 ns &lt;</span>
+
+<span class="go"> Memory estimate: 0 bytes, allocs estimate: 0.</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="nd">@benchmark</span><span class="w"> </span><span class="n">f2</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span><span class="w"></span>
+<span class="go">BenchmarkTools.Trial: 641 samples with 1 evaluation.</span>
+<span class="go"> Range (min … max):  7.365 ms …  10.314 ms  ┊ GC (min … max): 0.00% … 0.00%</span>
+<span class="go"> Time  (median):     7.726 ms               ┊ GC (median):    0.00%</span>
+<span class="go"> Time  (mean ± σ):   7.795 ms ± 346.021 μs  ┊ GC (mean ± σ):  0.00% ± 0.00%</span>
+
+<span class="go">    ▁    ▁▂█▆▆▆▆▁▃▁▃▂▂</span>
+<span class="go">  ▅▆█▆▅█▅█████████████▆▅▃▃▃▃▂▃▁▃▃▃▃▁▄▄▃▃▃▃▃▃▂▁▁▂▁▂▂▁▁▁▂▂▁▁▂▁▃ ▄</span>
+<span class="go">  7.36 ms         Histogram: frequency by time        9.05 ms &lt;</span>
+
+<span class="go"> Memory estimate: 0 bytes, allocs estimate: 0.</span>
+</code></pre></div>
+
+
+
+<a name="287397865"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20What%20is%20the%20overhead%20of%20%60gensym%60%3F/near/287397865" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jeffrey Sarnoff <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F.html#287397865">(Jun 24 2022 at 23:48)</a>:</h4>
+<p>You answered the question by benchmarking  both ways and  noting  the relative slowdown  exceeds 5000x.<br>
+You will be happier reorganizing the code, lift the gensym out of the loop -- pregen batches of these symbols.</p>
+
+
+
+<a name="287398037"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20What%20is%20the%20overhead%20of%20%60gensym%60%3F/near/287398037" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F.html#287398037">(Jun 24 2022 at 23:51)</a>:</h4>
+<p>gensym comes from Common Lisp where it is only supposed to be used at macro-expansion time. string-interning symbols as Julia calls it, is not cheap.</p>
+
+
+
+<a name="287398044"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20What%20is%20the%20overhead%20of%20%60gensym%60%3F/near/287398044" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F.html#287398044">(Jun 24 2022 at 23:51)</a>:</h4>
+<p>I was trying to get a better sense of the absolute unit overhead. Some more local benchmarking seemed to suggest 1-2us, but that's subject to noise and possibly other factors</p>
+
+
+
+<a name="287398317"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20What%20is%20the%20overhead%20of%20%60gensym%60%3F/near/287398317" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F.html#287398317">(Jun 24 2022 at 23:56)</a>:</h4>
+<p>If it's anything like CL, there is more than string-interning involved too, since it has to keep a generation counter to ensure uniqueness.</p>
+
+
+
+<a name="287398381"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20What%20is%20the%20overhead%20of%20%60gensym%60%3F/near/287398381" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F.html#287398381">(Jun 24 2022 at 23:56)</a>:</h4>
+<p>Yup, this one specifically: <a href="https://github.com/JuliaLang/julia/blob/87ded5a9aa502cfc4e03cbf230cb9bba86c85cc1/src/symbol.c#L126">https://github.com/JuliaLang/julia/blob/87ded5a9aa502cfc4e03cbf230cb9bba86c85cc1/src/symbol.c#L126</a></p>
+
+
+
+<a name="287398448"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20What%20is%20the%20overhead%20of%20%60gensym%60%3F/near/287398448" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F.html#287398448">(Jun 24 2022 at 23:57)</a>:</h4>
+<p>I think I can fulfill my use case using a custom macro (basically <code>@static_gensym x, y, ...</code>), but will have to try. Edit: it worked!</p>
+
+
+
+<a name="287399718"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20What%20is%20the%20overhead%20of%20%60gensym%60%3F/near/287399718" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F.html#287399718">(Jun 25 2022 at 00:18)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="278065">Brian Chen</span> has marked this topic as resolved.</p>
+
+
+
+<a name="287412106"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20What%20is%20the%20overhead%20of%20%60gensym%60%3F/near/287412106" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F.html#287412106">(Jun 25 2022 at 04:48)</a>:</h4>
+<p>oh boy, did not know that <code>@gensym</code> does a <code>ccall</code></p>
+
+
+
+<a name="287412135"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20What%20is%20the%20overhead%20of%20%60gensym%60%3F/near/287412135" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F.html#287412135">(Jun 25 2022 at 04:49)</a>:</h4>
+<p>I would expect this particular benchmark to be fast, since the gensymmed variables are never used, but the <code>ccall</code> may have sideeffects the compiler can't see, so it can't be eliminated</p>
+
+
+
+<a name="287414588"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20What%20is%20the%20overhead%20of%20%60gensym%60%3F/near/287414588" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F.html#287414588">(Jun 25 2022 at 05:35)</a>:</h4>
+<p>Isn't side effect inference for ccall a nightly only feature?</p>
+
+
+
+<a name="287414679"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20What%20is%20the%20overhead%20of%20%60gensym%60%3F/near/287414679" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F.html#287414679">(Jun 25 2022 at 05:37)</a>:</h4>
+<p>I don't think there's any sideeffect inference on ccalls</p>
+
+
+
+<a name="287414694"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20What%20is%20the%20overhead%20of%20%60gensym%60%3F/near/287414694" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F.html#287414694">(Jun 25 2022 at 05:37)</a>:</h4>
+<p>are you talking about the <code>@assume_effects</code> macro?</p>
+
+
+
+<a name="287414740"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20What%20is%20the%20overhead%20of%20%60gensym%60%3F/near/287414740" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F.html#287414740">(Jun 25 2022 at 05:38)</a>:</h4>
+<p>I was more thinking about <code>a</code> being a dead variable, since it's never used</p>
+
+
+
+<a name="287422992"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20What%20is%20the%20overhead%20of%20%60gensym%60%3F/near/287422992" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mosè Giordano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F.html#287422992">(Jun 25 2022 at 08:32)</a>:</h4>
+<p>I'm not sure the benchmarks were realistic, I think f1 was constant propagated, no? Summing 1000 elements took 1 ns</p>
+
+
+
+<a name="287423155"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20What%20is%20the%20overhead%20of%20%60gensym%60%3F/near/287423155" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F.html#287423155">(Jun 25 2022 at 08:37)</a>:</h4>
+<p>oh yeah, 100% - it got folded to <del>eulers</del> gauss formula, there isn't even a jump there anymore</p>
+
+
+
+<a name="287423166"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20What%20is%20the%20overhead%20of%20%60gensym%60%3F/near/287423166" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F.html#287423166">(Jun 25 2022 at 08:37)</a>:</h4>
+<p>to me at least the <code>@gensym</code> should not have made a difference for that case</p>
+
+
+
+<a name="287423399"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20What%20is%20the%20overhead%20of%20%60gensym%60%3F/near/287423399" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mosè Giordano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F.html#287423399">(Jun 25 2022 at 08:42)</a>:</h4>
+<p>did you mean to say Gauss or I'm missing a new formula? <span aria-label="sweat smile" class="emoji emoji-1f605" role="img" title="sweat smile">:sweat_smile:</span></p>
+
+
+
+<a name="287423421"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20What%20is%20the%20overhead%20of%20%60gensym%60%3F/near/287423421" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F.html#287423421">(Jun 25 2022 at 08:43)</a>:</h4>
+<p>ah, yes of course</p>
+
+
+
+<a name="287423457"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20What%20is%20the%20overhead%20of%20%60gensym%60%3F/near/287423457" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F.html#287423457">(Jun 25 2022 at 08:44)</a>:</h4>
+<p>always hard to remember which of the gazillion famous formulas is from which of the two</p>
+
+
+
+<a name="287435820"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20What%20is%20the%20overhead%20of%20%60gensym%60%3F/near/287435820" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F.html#287435820">(Jun 25 2022 at 13:45)</a>:</h4>
+<p><span class="user-mention" data-user-id="269186">@Mosè Giordano</span> the goal was just to have the function body not optimized away entirely. I wanted to use donotdelete but didn't want to switch versions :P</p>
+
+
+
+<a name="287435872"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20What%20is%20the%20overhead%20of%20%60gensym%60%3F/near/287435872" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F.html#287435872">(Jun 25 2022 at 13:46)</a>:</h4>
+<p>Ended up just testing a single iteration and explicit calls because those are kept around still</p>
+
+
+
+<a name="287439121"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20What%20is%20the%20overhead%20of%20%60gensym%60%3F/near/287439121" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mosè Giordano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F.html#287439121">(Jun 25 2022 at 14:52)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="278065">Brian Chen</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F/near/287435820">said</a>:</p>
+<blockquote>
+<p><span class="user-mention silent" data-user-id="269186">Mosè Giordano</span> the goal was just to have the function body not optimized away entirely. I wanted to use donotdelete but didn't want to switch versions :P</p>
+</blockquote>
+<p>on nightly I get</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="nd">@benchmark</span><span class="w"> </span><span class="n">f1</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span><span class="w"></span>
+<span class="n">BenchmarkTools</span><span class="o">.</span><span class="n">Trial</span><span class="o">:</span><span class="w"> </span><span class="mi">10000</span><span class="w"> </span><span class="n">samples</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="mi">1000</span><span class="w"> </span><span class="n">evaluations</span><span class="o">.</span><span class="w"></span>
+<span class="w"> </span><span class="n">Range</span><span class="w"> </span><span class="p">(</span><span class="n">min</span><span class="w"> </span><span class="o">…</span><span class="w"> </span><span class="n">max</span><span class="p">)</span><span class="o">:</span><span class="w">  </span><span class="mf">2.460</span><span class="w"> </span><span class="n">ns</span><span class="w"> </span><span class="o">…</span><span class="w"> </span><span class="mf">20.945</span><span class="w"> </span><span class="n">ns</span><span class="w">  </span><span class="n">┊</span><span class="w"> </span><span class="n">GC</span><span class="w"> </span><span class="p">(</span><span class="n">min</span><span class="w"> </span><span class="o">…</span><span class="w"> </span><span class="n">max</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="mf">0.00</span><span class="o">%</span><span class="w"> </span><span class="o">…</span><span class="w"> </span><span class="mf">0.00</span><span class="o">%</span><span class="w"></span>
+<span class="w"> </span><span class="n">Time</span><span class="w">  </span><span class="p">(</span><span class="n">median</span><span class="p">)</span><span class="o">:</span><span class="w">     </span><span class="mf">2.472</span><span class="w"> </span><span class="n">ns</span><span class="w">              </span><span class="n">┊</span><span class="w"> </span><span class="n">GC</span><span class="w"> </span><span class="p">(</span><span class="n">median</span><span class="p">)</span><span class="o">:</span><span class="w">    </span><span class="mf">0.00</span><span class="o">%</span><span class="w"></span>
+<span class="w"> </span><span class="n">Time</span><span class="w">  </span><span class="p">(</span><span class="n">mean</span><span class="w"> </span><span class="o">±</span><span class="w"> </span><span class="n">σ</span><span class="p">)</span><span class="o">:</span><span class="w">   </span><span class="mf">2.511</span><span class="w"> </span><span class="n">ns</span><span class="w"> </span><span class="o">±</span><span class="w">  </span><span class="mf">0.566</span><span class="w"> </span><span class="n">ns</span><span class="w">  </span><span class="n">┊</span><span class="w"> </span><span class="n">GC</span><span class="w"> </span><span class="p">(</span><span class="n">mean</span><span class="w"> </span><span class="o">±</span><span class="w"> </span><span class="n">σ</span><span class="p">)</span><span class="o">:</span><span class="w">  </span><span class="mf">0.00</span><span class="o">%</span><span class="w"> </span><span class="o">±</span><span class="w"> </span><span class="mf">0.00</span><span class="o">%</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">█▄</span><span class="w">   </span><span class="n">▃</span><span class="w">    </span><span class="n">▃</span><span class="w">                                                </span><span class="n">▁</span><span class="w"></span>
+<span class="w">  </span><span class="n">██▃▃▁█▁▃▁▁█▇▄▁▁▁▃▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▇</span><span class="w"> </span><span class="n">█</span><span class="w"></span>
+<span class="w">  </span><span class="mf">2.46</span><span class="w"> </span><span class="n">ns</span><span class="w">      </span><span class="n">Histogram</span><span class="o">:</span><span class="w"> </span><span class="n">log</span><span class="p">(</span><span class="n">frequency</span><span class="p">)</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="n">time</span><span class="w">     </span><span class="mf">3.26</span><span class="w"> </span><span class="n">ns</span><span class="w"> </span><span class="o">&lt;</span><span class="w"></span>
+
+<span class="w"> </span><span class="n">Memory</span><span class="w"> </span><span class="n">estimate</span><span class="o">:</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">bytes</span><span class="p">,</span><span class="w"> </span><span class="n">allocs</span><span class="w"> </span><span class="n">estimate</span><span class="o">:</span><span class="w"> </span><span class="mf">0.</span><span class="w"></span>
+</code></pre></div>
+<p>which would also suggests it isn't doing much in practice.  these damned compilers eliminating everything...</p>
+
+
+
+<a name="287454005"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20What%20is%20the%20overhead%20of%20%60gensym%60%3F/near/287454005" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F.html#287454005">(Jun 25 2022 at 20:35)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269186">Mosè Giordano</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F/near/287422992">said</a>:</p>
+<blockquote>
+<p>I'm not sure the benchmarks were realistic, I think f1 was constant propagated, no? Summing 1000 elements took 1 ns</p>
+</blockquote>
+<p>LLVM will turn that sum into <code>binomial(x+1,2)</code>.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

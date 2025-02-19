@@ -1,0 +1,311 @@
+<html>
+<head><meta charset="utf-8"><title>mutating array of structs · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/mutating.20array.20of.20structs.html">mutating array of structs</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="268585021"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/mutating%20array%20of%20structs/near/268585021" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Frank van der Meulen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/mutating.20array.20of.20structs.html#268585021">(Jan 19 2022 at 18:43)</a>:</h4>
+<p>Suppose I have the struct</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="kt">M</span>
+    <span class="n">a</span>
+    <span class="n">b</span>
+    <span class="n">c</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>and</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="n">M</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">),</span> <span class="n">M</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">),</span> <span class="n">M</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">9</span><span class="p">)]</span>
+</code></pre></div>
+<p>Now I wish to loop over each element of <code>x</code> and for each element adjust some fields. For example, if </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">ind</span> <span class="o">=</span> <span class="p">[</span><span class="ss">:a</span><span class="p">,</span> <span class="ss">:b</span><span class="p">]</span>
+<span class="n">vals</span> <span class="o">=</span><span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">300</span><span class="p">]</span>
+</code></pre></div>
+<p>the desired output would be </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="p">[</span><span class="n">M</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">300</span><span class="p">,</span><span class="mi">3</span><span class="p">),</span> <span class="n">M</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">300</span><span class="p">,</span><span class="mi">6</span><span class="p">),</span> <span class="n">M</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">300</span><span class="p">,</span><span class="mi">9</span><span class="p">)]</span>
+</code></pre></div>
+<p>The following does the job, but I wonder if this is the righ tway to go...</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span> <span class="n">Setfield</span>
+<span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="n">eachindex</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">xi</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="nd">@set!</span> <span class="n">xi</span><span class="o">.</span><span class="n">a</span><span class="o">=</span><span class="mi">10</span>
+    <span class="nd">@set!</span> <span class="n">xi</span><span class="o">.</span><span class="n">b</span><span class="o">=</span><span class="mi">300</span>
+    <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">xi</span>
+<span class="k">end</span>
+<span class="n">x</span>
+</code></pre></div>
+<p>Any suggestions?</p>
+
+
+
+<a name="268586210"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/mutating%20array%20of%20structs/near/268586210" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/mutating.20array.20of.20structs.html#268586210">(Jan 19 2022 at 18:52)</a>:</h4>
+<p>That's how I'd do it, yeah.</p>
+
+
+
+<a name="268586715"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/mutating%20array%20of%20structs/near/268586715" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/mutating.20array.20of.20structs.html#268586715">(Jan 19 2022 at 18:55)</a>:</h4>
+<p>I assume you did it for ease of example, but just in case you don't know, leaving the fields of your struct untyped can carry a hefty performance price.</p>
+
+
+
+<a name="268587224"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/mutating%20array%20of%20structs/near/268587224" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Frank van der Meulen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/mutating.20array.20of.20structs.html#268587224">(Jan 19 2022 at 18:59)</a>:</h4>
+<p>Yes, that was for each of example indeed. Ok, good to hear.</p>
+<p>Now in this code I explicitly wrote like <code>xi.a=10</code>,  and similarly <code>xi.b=100</code>, but I would rather loop over <code>ind</code>. I don't know how to do that.</p>
+
+
+
+<a name="268587403"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/mutating%20array%20of%20structs/near/268587403" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/mutating.20array.20of.20structs.html#268587403">(Jan 19 2022 at 19:00)</a>:</h4>
+<p>I wonder, maybe it's possible to use <code>map!</code>?</p>
+
+
+
+<a name="268587568"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/mutating%20array%20of%20structs/near/268587568" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/mutating.20array.20of.20structs.html#268587568">(Jan 19 2022 at 19:01)</a>:</h4>
+<p>yeah,</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">map!</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span> <span class="k">do</span> <span class="n">xi</span>
+    <span class="nd">@set!</span> <span class="n">xi</span><span class="o">.</span><span class="n">a</span><span class="o">=</span><span class="mi">10</span>
+    <span class="nd">@set!</span> <span class="n">xi</span><span class="o">.</span><span class="n">b</span><span class="o">=</span><span class="mi">300</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>should work</p>
+
+
+
+<a name="268587783"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/mutating%20array%20of%20structs/near/268587783" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/mutating.20array.20of.20structs.html#268587783">(Jan 19 2022 at 19:02)</a>:</h4>
+<p>I think you're looking for</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code>    <span class="k">for</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span> <span class="o">∈</span> <span class="n">zip</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="n">ind</span><span class="p">)</span>
+        <span class="n">setproperty!</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
+    <span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="268587826"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/mutating%20array%20of%20structs/near/268587826" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/mutating.20array.20of.20structs.html#268587826">(Jan 19 2022 at 19:02)</a>:</h4>
+<p>Setproperty won't work for immutable structs</p>
+
+
+
+<a name="268587873"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/mutating%20array%20of%20structs/near/268587873" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/mutating.20array.20of.20structs.html#268587873">(Jan 19 2022 at 19:03)</a>:</h4>
+<p>Sorry, I just noticed that this was immutable, yeah you need to use whatever is the equivalent from <code>Setfield</code></p>
+
+
+
+<a name="268587891"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/mutating%20array%20of%20structs/near/268587891" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/mutating.20array.20of.20structs.html#268587891">(Jan 19 2022 at 19:03)</a>:</h4>
+<p>or do it by explicitly creating new structs</p>
+
+
+
+<a name="268587975"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/mutating%20array%20of%20structs/near/268587975" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/mutating.20array.20of.20structs.html#268587975">(Jan 19 2022 at 19:03)</a>:</h4>
+<p>Here is what <code>@set!</code> does:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@macroexpand</span> <span class="nd">@set!</span> <span class="n">xi</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="k">quote</span>
+    <span class="cm">#= /home/mason/.julia/packages/Setfield/NshXm/src/sugar.jl:191 =#</span>
+    <span class="sa">var</span><span class="s">"#54###lens#274"</span> <span class="o">=</span> <span class="p">(</span><span class="n">identity</span><span class="p">)((</span><span class="n">Setfield</span><span class="o">.</span><span class="n">compose</span><span class="p">)((</span><span class="n">Setfield</span><span class="o">.</span><span class="n">PropertyLens</span><span class="p">){</span><span class="ss">:a</span><span class="p">}()))</span>
+    <span class="cm">#= /home/mason/.julia/packages/Setfield/NshXm/src/sugar.jl:192 =#</span>
+    <span class="n">xi</span> <span class="o">=</span> <span class="p">(</span><span class="n">Setfield</span><span class="o">.</span><span class="n">set</span><span class="p">)(</span><span class="n">xi</span><span class="p">,</span> <span class="sa">var</span><span class="s">"#54###lens#274"</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>so you can just copy and adapt that</p>
+
+
+
+<a name="268588120"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/mutating%20array%20of%20structs/near/268588120" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/mutating.20array.20of.20structs.html#268588120">(Jan 19 2022 at 19:04)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">map!</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span> <span class="k">do</span> <span class="n">xi</span>
+           <span class="k">for</span> <span class="p">(</span><span class="n">prop</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span> <span class="o">∈</span> <span class="p">(</span><span class="ss">:a</span> <span class="o">=&gt;</span> <span class="mi">10</span><span class="p">,</span> <span class="ss">:b</span> <span class="o">=&gt;</span> <span class="mi">300</span><span class="p">)</span>
+               <span class="n">l</span> <span class="o">=</span> <span class="n">Setfield</span><span class="o">.</span><span class="kt">PropertyLens</span><span class="p">{</span><span class="kt">prop</span><span class="p">}()</span>
+               <span class="n">xi</span> <span class="o">=</span> <span class="n">Setfield</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+           <span class="k">end</span>
+           <span class="n">xi</span>
+       <span class="k">end</span>
+<span class="mi">3</span><span class="o">-</span><span class="n">element</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">M</span><span class="p">}</span><span class="o">:</span>
+ <span class="n">M</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">300</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+ <span class="n">M</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">300</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+ <span class="n">M</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">300</span><span class="p">,</span> <span class="mi">9</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="268588178"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/mutating%20array%20of%20structs/near/268588178" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/mutating.20array.20of.20structs.html#268588178">(Jan 19 2022 at 19:04)</a>:</h4>
+<p>If I were doing this I would probably structure it as a <code>map!</code> over a function that takes an <code>M</code> and returns another <code>M</code>.</p>
+
+
+
+<a name="268588732"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/mutating%20array%20of%20structs/near/268588732" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Frank van der Meulen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/mutating.20array.20of.20structs.html#268588732">(Jan 19 2022 at 19:08)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269150">Mason Protter</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/mutating.20array.20of.20structs/near/268588120">said</a>:</p>
+<blockquote>
+<p><div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">map!</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span> <span class="k">do</span> <span class="n">xi</span>
+           <span class="k">for</span> <span class="p">(</span><span class="n">prop</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span> <span class="o">∈</span> <span class="p">(</span><span class="ss">:a</span> <span class="o">=&gt;</span> <span class="mi">10</span><span class="p">,</span> <span class="ss">:b</span> <span class="o">=&gt;</span> <span class="mi">300</span><span class="p">)</span>
+               <span class="n">l</span> <span class="o">=</span> <span class="n">Setfield</span><span class="o">.</span><span class="kt">PropertyLens</span><span class="p">{</span><span class="kt">prop</span><span class="p">}()</span>
+               <span class="n">xi</span> <span class="o">=</span> <span class="n">Setfield</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+           <span class="k">end</span>
+           <span class="n">xi</span>
+       <span class="k">end</span>
+<span class="mi">3</span><span class="o">-</span><span class="n">element</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">M</span><span class="p">}</span><span class="o">:</span>
+ <span class="n">M</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">300</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+ <span class="n">M</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">300</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+ <span class="n">M</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">300</span><span class="p">,</span> <span class="mi">9</span><span class="p">)</span>
+</code></pre></div><br>
+</p>
+</blockquote>
+<p>Yes, that looks like what I need.</p>
+
+
+
+<a name="268588816"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/mutating%20array%20of%20structs/near/268588816" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/mutating.20array.20of.20structs.html#268588816">(Jan 19 2022 at 19:09)</a>:</h4>
+<p>One thing I'll also note is that if the property being modified isn't known as a compile time constant, this will also incur some hefty performance penalties.</p>
+
+
+
+<a name="268588888"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/mutating%20array%20of%20structs/near/268588888" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/mutating.20array.20of.20structs.html#268588888">(Jan 19 2022 at 19:09)</a>:</h4>
+<p>So you really want your <code>ind</code> to not be a vector, but a <code>Tuple</code> and you ideally want it to be constant propagated into the function.</p>
+
+
+
+<a name="268589336"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/mutating%20array%20of%20structs/near/268589336" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/mutating.20array.20of.20structs.html#268589336">(Jan 19 2022 at 19:13)</a>:</h4>
+<p>There's <code>ConstructionBase.setproperties</code> if you want to update multiple fields in a <code>struct</code> at once <a href="https://juliaobjects.github.io/ConstructionBase.jl/dev/#ConstructionBase.setproperties">https://juliaobjects.github.io/ConstructionBase.jl/dev/#ConstructionBase.setproperties</a></p>
+<p><a href="https://github.com/search?q=Setfields.jl&amp;type=Repositories">Setfields.jl</a> and <a href="https://github.com/search?q=Accessors.jl&amp;type=Repositories">Accessors.jl</a> both use <code>setproperties</code> internally</p>
+
+
+
+<a name="268589415"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/mutating%20array%20of%20structs/near/268589415" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/mutating.20array.20of.20structs.html#268589415">(Jan 19 2022 at 19:13)</a>:</h4>
+<p>Also, if you don't have any GC-managed objects in the struct (= it's <code>Base.datatype_pointerfree</code>), you can also do an evil pointer hack to mutate the field directly... :) Ref: <a href="https://github.com/tkf/RecordArrays.jl">https://github.com/tkf/RecordArrays.jl</a></p>
+
+
+
+<a name="268589647"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/mutating%20array%20of%20structs/near/268589647" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/mutating.20array.20of.20structs.html#268589647">(Jan 19 2022 at 19:15)</a>:</h4>
+<p>One other thing: If <code>M</code> is an <code>isbits</code> struct, then you have another that might interest you. </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">struct</span> <span class="kt">N</span>
+           <span class="n">a</span><span class="o">::</span><span class="kt">Int</span>
+           <span class="n">b</span><span class="o">::</span><span class="kt">Int</span>
+           <span class="n">c</span><span class="o">::</span><span class="kt">Int</span>
+       <span class="k">end</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="n">N</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">),</span> <span class="n">N</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">),</span> <span class="n">N</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">)];</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">Y</span> <span class="o">=</span> <span class="n">reinterpret</span><span class="p">(</span><span class="n">reshape</span><span class="p">,</span> <span class="kt">Int</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+<span class="mi">3</span><span class="o">×</span><span class="mi">3</span> <span class="n">reinterpret</span><span class="p">(</span><span class="n">reshape</span><span class="p">,</span> <span class="kt">Int64</span><span class="p">,</span> <span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">N</span><span class="p">})</span> <span class="n">with</span> <span class="n">eltype</span> <span class="kt">Int64</span><span class="o">:</span>
+ <span class="mi">1</span>  <span class="mi">4</span>  <span class="mi">7</span>
+ <span class="mi">2</span>  <span class="mi">5</span>  <span class="mi">8</span>
+ <span class="mi">3</span>  <span class="mi">6</span>  <span class="mi">9</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">Y</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="o">:</span><span class="p">]</span> <span class="o">.=</span> <span class="mi">10</span><span class="p">;</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">Y</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="o">:</span><span class="p">]</span> <span class="o">.=</span> <span class="mi">300</span><span class="p">;</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">Y</span>
+<span class="mi">3</span><span class="o">×</span><span class="mi">3</span> <span class="n">reinterpret</span><span class="p">(</span><span class="n">reshape</span><span class="p">,</span> <span class="kt">Int64</span><span class="p">,</span> <span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">N</span><span class="p">})</span> <span class="n">with</span> <span class="n">eltype</span> <span class="kt">Int64</span><span class="o">:</span>
+  <span class="mi">10</span>   <span class="mi">10</span>   <span class="mi">10</span>
+ <span class="mi">300</span>  <span class="mi">300</span>  <span class="mi">300</span>
+   <span class="mi">3</span>    <span class="mi">6</span>    <span class="mi">9</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">y</span>
+<span class="mi">3</span><span class="o">-</span><span class="n">element</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">N</span><span class="p">}</span><span class="o">:</span>
+ <span class="n">N</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">300</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+ <span class="n">N</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">300</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+ <span class="n">N</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">300</span><span class="p">,</span> <span class="mi">9</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="268589807"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/mutating%20array%20of%20structs/near/268589807" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Frank van der Meulen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/mutating.20array.20of.20structs.html#268589807">(Jan 19 2022 at 19:16)</a>:</h4>
+<p>No problem to make it a tuple. I simplified the actual problem a bit. So not sure about the <code>isbits</code> solution.</p>
+
+
+
+<a name="268658606"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/mutating%20array%20of%20structs/near/268658606" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Frank van der Meulen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/mutating.20array.20of.20structs.html#268658606">(Jan 20 2022 at 08:38)</a>:</h4>
+<p>The actual problem where I wish to use this is slightly more complicated, and there the solution using <code>ConstructionBase</code> does not seem to work, I tried to adapt <span class="user-mention" data-user-id="269150">@Mason Protter</span> code snippet using <code>Setfield.PropertyLens</code>, but failed. </p>
+<p>So what is the more complicated problem? The structs <code>M</code> are in fact a field of another struct, say <code>Q</code>.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span> <span class="n">ConstructionBase</span>
+<span class="k">struct</span> <span class="kt">Q</span>
+    <span class="n">z</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>The following fails</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="n">Q</span><span class="p">(</span><span class="n">M</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)),</span> <span class="n">Q</span><span class="p">(</span><span class="n">M</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">)),</span> <span class="n">Q</span><span class="p">(</span><span class="n">M</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">9</span><span class="p">))]</span><span class="o">.</span> <span class="c"># wish to adjust fields a and b of M in all elements of the vector x</span>
+<span class="n">tup</span> <span class="o">=</span> <span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span><span class="n">b</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="n">eachindex</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+   <span class="n">xi</span> <span class="o">=</span>  <span class="n">setproperties</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">z</span><span class="p">,</span> <span class="n">tup</span><span class="p">)</span>
+   <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span><span class="n">xi</span>
+<span class="k">end</span>
+<span class="n">x</span>
+
+<span class="n">ERROR</span><span class="o">:</span> <span class="kt">LoadError</span><span class="o">:</span> <span class="kt">MethodError</span><span class="o">:</span> <span class="n">Cannot</span> <span class="sb">`convert`</span> <span class="n">an</span> <span class="n">object</span> <span class="n">of</span> <span class="n">type</span> <span class="n">M</span> <span class="n">to</span> <span class="n">an</span> <span class="n">object</span> <span class="n">of</span> <span class="n">type</span> <span class="n">Q</span>
+<span class="n">Closest</span> <span class="n">candidates</span> <span class="n">are</span><span class="o">:</span>
+  <span class="n">convert</span><span class="p">(</span><span class="o">::</span><span class="kt">Type</span><span class="p">{</span><span class="kt">T</span><span class="p">},</span> <span class="o">::</span><span class="kt">RObject</span><span class="p">{</span><span class="kt">S</span><span class="p">})</span> <span class="k">where</span> <span class="p">{</span><span class="kt">T</span><span class="p">,</span> <span class="kt">S</span><span class="o">&lt;:</span><span class="kt">Sxp</span><span class="p">}</span> <span class="n">at</span> <span class="o">~/.</span><span class="n">julia</span><span class="o">/</span><span class="n">packages</span><span class="o">/</span><span class="n">RCall</span><span class="o">/</span><span class="n">iMDW2</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">convert</span><span class="o">/</span><span class="n">base</span><span class="o">.</span><span class="n">jl</span><span class="o">:</span><span class="mi">1</span>
+  <span class="n">convert</span><span class="p">(</span><span class="o">::</span><span class="kt">Type</span><span class="p">{</span><span class="kt">T</span><span class="p">},</span> <span class="o">::</span><span class="kt">T</span><span class="p">)</span> <span class="k">where</span> <span class="kt">T</span> <span class="n">at</span> <span class="o">/</span><span class="n">Applications</span><span class="o">/</span><span class="n">Julia</span><span class="o">-</span><span class="mf">1.7</span><span class="o">.</span><span class="n">app</span><span class="o">/</span><span class="n">Contents</span><span class="o">/</span><span class="n">Resources</span><span class="o">/</span><span class="n">julia</span><span class="o">/</span><span class="n">share</span><span class="o">/</span><span class="n">julia</span><span class="o">/</span><span class="n">base</span><span class="o">/</span><span class="n">essentials</span><span class="o">.</span><span class="n">jl</span><span class="o">:</span><span class="mi">218</span>
+  <span class="n">Q</span><span class="p">(</span><span class="o">::</span><span class="kt">Any</span><span class="p">)</span> <span class="n">at</span> <span class="o">~/.</span><span class="n">julia</span><span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">Bffg_sde</span><span class="o">/</span><span class="n">srcold</span><span class="o">/</span><span class="n">testscript</span><span class="o">.</span><span class="n">jl</span><span class="o">:</span><span class="mi">217</span>
+<span class="n">Stacktrace</span><span class="o">:</span>
+ <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="n">setindex!</span><span class="p">(</span><span class="n">A</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Q</span><span class="p">},</span> <span class="n">x</span><span class="o">::</span><span class="kt">M</span><span class="p">,</span> <span class="n">i1</span><span class="o">::</span><span class="kt">Int64</span><span class="p">)</span>
+   <span class="err">@</span> <span class="n">Base</span> <span class="o">./</span><span class="n">array</span><span class="o">.</span><span class="n">jl</span><span class="o">:</span><span class="mi">903</span>
+ <span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="n">top</span><span class="o">-</span><span class="n">level</span> <span class="n">scope</span>
+   <span class="err">@</span> <span class="o">~/.</span><span class="n">julia</span><span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">Bffg_sde</span><span class="o">/</span><span class="n">srcold</span><span class="o">/</span><span class="n">testscript</span><span class="o">.</span><span class="n">jl</span><span class="o">:</span><span class="mi">223</span>
+<span class="k">in</span> <span class="n">expression</span> <span class="n">starting</span> <span class="n">at</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">frankvandermeulen</span><span class="o">/.</span><span class="n">julia</span><span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">Bffg_sde</span><span class="o">/</span><span class="n">srcold</span><span class="o">/</span><span class="n">testscript</span><span class="o">.</span><span class="n">jl</span><span class="o">:</span><span class="mi">221</span>
+</code></pre></div>
+
+
+
+<a name="268665603"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/mutating%20array%20of%20structs/near/268665603" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Frank van der Meulen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/mutating.20array.20of.20structs.html#268665603">(Jan 20 2022 at 09:39)</a>:</h4>
+<p>Nevermind, should have done</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="n">eachindex</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">Q</span><span class="p">(</span><span class="n">setproperties</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">z</span><span class="p">,</span> <span class="n">tup</span><span class="p">))</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="276739361"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/mutating%20array%20of%20structs/near/276739361" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/mutating.20array.20of.20structs.html#276739361">(Mar 26 2022 at 18:34)</a>:</h4>
+<p>That's a little bit weird for me. How is it possible to mutate an unmutable struct ? Does this <code>@set!</code> macro instantiates a whole new struct which replaces the old one ?</p>
+
+
+
+<a name="276913198"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/mutating%20array%20of%20structs/near/276913198" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/mutating.20array.20of.20structs.html#276913198">(Mar 28 2022 at 18:25)</a>:</h4>
+<p>Yes, that's correct.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">using</span> <span class="n">Setfield</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="k">let</span> <span class="n">nt</span> <span class="o">=</span> <span class="p">(;</span><span class="n">a</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+           <span class="nd">@macroexpand</span> <span class="nd">@set!</span> <span class="n">nt</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+       <span class="k">end</span>
+<span class="k">quote</span>
+    <span class="cm">#= /Users/mason/.julia/packages/Setfield/AS2xF/src/sugar.jl:196 =#</span>
+    <span class="sa">var</span><span class="s">"#62###lens#291"</span> <span class="o">=</span> <span class="p">(</span><span class="n">identity</span><span class="p">)((</span><span class="n">Setfield</span><span class="o">.</span><span class="n">compose</span><span class="p">)((</span><span class="n">Setfield</span><span class="o">.</span><span class="n">PropertyLens</span><span class="p">){</span><span class="ss">:b</span><span class="p">}()))</span>
+    <span class="cm">#= /Users/mason/.julia/packages/Setfield/AS2xF/src/sugar.jl:197 =#</span>
+    <span class="n">nt</span> <span class="o">=</span> <span class="p">(</span><span class="n">Setfield</span><span class="o">.</span><span class="n">set</span><span class="p">)(</span><span class="n">nt</span><span class="p">,</span> <span class="sa">var</span><span class="s">"#62###lens#291"</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="276913365"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/mutating%20array%20of%20structs/near/276913365" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/mutating.20array.20of.20structs.html#276913365">(Mar 28 2022 at 18:26)</a>:</h4>
+<p>So it's basically just making a copy of the struct with one field changed and all others the same, and then rebinding the old variable name to that. It's a quite elegant trick</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

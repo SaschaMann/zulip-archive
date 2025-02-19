@@ -1,0 +1,49 @@
+<html>
+<head><meta charset="utf-8"><title>Updating Torch.jl for NNlib &gt;= v0.8, Flux &gt;= 0.13, Metalhead · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Updating.20Torch.2Ejl.20for.20NNlib.20.3E.3D.20v0.2E8.2C.20Flux.20.3E.3D.200.2E13.2C.20Metalhead.html">Updating Torch.jl for NNlib &gt;= v0.8, Flux &gt;= 0.13, Metalhead</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="481561042"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Updating%20Torch.jl%20for%20NNlib%20%3E%3D%20v0.8%2C%20Flux%20%3E%3D%200.13%2C%20Metalhead/near/481561042" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jesper Stemann Andersen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Updating.20Torch.2Ejl.20for.20NNlib.20.3E.3D.20v0.2E8.2C.20Flux.20.3E.3D.200.2E13.2C.20Metalhead.html#481561042">(Nov 10 2024 at 13:17)</a>:</h4>
+<p>Any tips for for updating the Flux example/test for <a href="https://juliahub.com/ui/Packages/General/Torch">Torch.jl</a> for NNlib &gt;= v0.8?</p>
+<p>Currently affected by an issue which leads to <a href="https://fluxml.ai/Zygote.jl/stable/limitations/#Foreign-call-expressions-1">trouble with differentiating a foreigncall expression</a>:  <a href="https://github.com/stemann/Torch.jl/blob/feature/torch_1.10.2/test/flux_tests.jl#L23">https://github.com/stemann/Torch.jl/blob/feature/torch_1.10.2/test/flux_tests.jl#L23</a></p>
+<p>Call stack:</p>
+<ul>
+<li>Differentiating <code>Torch.Wrapper.at_dim</code>: <a href="https://buildkite.com/julialang/torch-dot-jl/builds/269#0193115b-342e-4b34-bf9c-48cbf9f37eef/339-544">https://buildkite.com/julialang/torch-dot-jl/builds/269#0193115b-342e-4b34-bf9c-48cbf9f37eef/339-544</a></li>
+<li>Due to <code>gradient</code> call for a <code>Metalhead.ResNet(18)</code>: <a href="https://buildkite.com/julialang/torch-dot-jl/builds/269#0193115b-342e-4b34-bf9c-48cbf9f37eef/339-591">https://buildkite.com/julialang/torch-dot-jl/builds/269#0193115b-342e-4b34-bf9c-48cbf9f37eef/339-591</a></li>
+</ul>
+
+
+
+<a name="481754135"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Updating%20Torch.jl%20for%20NNlib%20%3E%3D%20v0.8%2C%20Flux%20%3E%3D%200.13%2C%20Metalhead/near/481754135" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Updating.20Torch.2Ejl.20for.20NNlib.20.3E.3D.20v0.2E8.2C.20Flux.20.3E.3D.200.2E13.2C.20Metalhead.html#481754135">(Nov 11 2024 at 15:52)</a>:</h4>
+<p>I'm guessing some functions need to be marked as <code>@non_differentiable</code></p>
+
+
+
+<a name="481756732"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Updating%20Torch.jl%20for%20NNlib%20%3E%3D%20v0.8%2C%20Flux%20%3E%3D%200.13%2C%20Metalhead/near/481756732" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jesper Stemann Andersen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Updating.20Torch.2Ejl.20for.20NNlib.20.3E.3D.20v0.2E8.2C.20Flux.20.3E.3D.200.2E13.2C.20Metalhead.html#481756732">(Nov 11 2024 at 16:05)</a>:</h4>
+<p>Related question: Is the current approach with <code>ZygoteRules.@adjoint</code> up to date or should they be replaced with <code>ChainRulesCore.rrule</code>s (at some point)?</p>
+
+
+
+<a name="481777216"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Updating%20Torch.jl%20for%20NNlib%20%3E%3D%20v0.8%2C%20Flux%20%3E%3D%200.13%2C%20Metalhead/near/481777216" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Abbott <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Updating.20Torch.2Ejl.20for.20NNlib.20.3E.3D.20v0.2E8.2C.20Flux.20.3E.3D.200.2E13.2C.20Metalhead.html#481777216">(Nov 11 2024 at 17:49)</a>:</h4>
+<p>IMO little is gained by replacing <code>@adjoint</code> with <code>rrule</code> now, so I wouldn't bother.</p>
+
+
+
+<a name="481800298"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Updating%20Torch.jl%20for%20NNlib%20%3E%3D%20v0.8%2C%20Flux%20%3E%3D%200.13%2C%20Metalhead/near/481800298" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Updating.20Torch.2Ejl.20for.20NNlib.20.3E.3D.20v0.2E8.2C.20Flux.20.3E.3D.200.2E13.2C.20Metalhead.html#481800298">(Nov 11 2024 at 20:04)</a>:</h4>
+<p>The only reason <code>@adjoint</code> still exists is that nobody has had the bandwidth to try deprecating it properly.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

@@ -1,0 +1,38 @@
+[
+    {
+        "content": "<p>Suppose I have an abstract parametric type with two subtypes:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">abstract type</span> <span class=\"kt\">A</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span> <span class=\"k\">end</span>\n<span class=\"k\">struct</span> <span class=\"kt\">B</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span> <span class=\"o\">&lt;:</span> <span class=\"kt\">A</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span> <span class=\"k\">end</span>\n<span class=\"k\">struct</span> <span class=\"kt\">C</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span> <span class=\"o\">&lt;:</span> <span class=\"kt\">A</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span> <span class=\"k\">end</span>\n</code></pre></div>\n<p>I want to write a general function that takes either of these types with some <code>T</code>, and returns the same type — but with a different parameter.  I'm having a hard time searching for this because I don't even know what words to use for this concept.</p>\n<p>Obviously, I could code these up explicitly:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">B</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">})</span> <span class=\"k\">where</span> <span class=\"kt\">T</span> <span class=\"o\">=</span> <span class=\"kt\">B</span><span class=\"p\">{</span><span class=\"kt\">Float64</span><span class=\"p\">}()</span>\n<span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">C</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">})</span> <span class=\"k\">where</span> <span class=\"kt\">T</span> <span class=\"o\">=</span> <span class=\"kt\">C</span><span class=\"p\">{</span><span class=\"kt\">Float64</span><span class=\"p\">}()</span>\n</code></pre></div>\n<p>But we're all much too sensible and lazy for that.  I know that I could loop over <code>[:B, :C]</code> and <code>@eval</code> these methods into existence, but that's getting complicated quickly.  Is there some simpler and/or more elegant method?</p>\n<p>I feel like I should be able to do something like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">D</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">})</span> <span class=\"k\">where</span> <span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">,</span> <span class=\"kt\">D</span><span class=\"o\">&lt;:</span><span class=\"kt\">A</span><span class=\"p\">}</span> <span class=\"o\">=</span> <span class=\"kt\">D</span><span class=\"p\">{</span><span class=\"kt\">Float64</span><span class=\"p\">}()</span>\n</code></pre></div>\n<p>But all my attempts are being rejected.</p>",
+        "id": 242919274,
+        "sender_full_name": "Mike",
+        "timestamp": 1623866739
+    },
+    {
+        "content": "<p>From this very old discussion <a href=\"https://discourse.julialang.org/t/extract-type-name-only-from-parametric-type/14188/20\">https://discourse.julialang.org/t/extract-type-name-only-from-parametric-type/14188/20</a></p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">T</span><span class=\"p\">)</span> <span class=\"k\">where</span> <span class=\"p\">{</span><span class=\"kt\">T</span> <span class=\"o\">&lt;:</span> <span class=\"kt\">A</span><span class=\"p\">}</span> <span class=\"o\">=</span> <span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">typename</span><span class=\"p\">(</span><span class=\"n\">T</span><span class=\"p\">)</span><span class=\"o\">.</span><span class=\"kt\">wrapper</span><span class=\"p\">{</span><span class=\"kt\">Float64</span><span class=\"p\">}()</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">x</span> <span class=\"o\">=</span> <span class=\"kt\">B</span><span class=\"p\">{</span><span class=\"kt\">Int</span><span class=\"p\">}()</span>\n<span class=\"kt\">B</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">}()</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n<span class=\"kt\">B</span><span class=\"p\">{</span><span class=\"kt\">Float64</span><span class=\"p\">}()</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">x</span> <span class=\"o\">=</span> <span class=\"kt\">C</span><span class=\"p\">{</span><span class=\"kt\">Int</span><span class=\"p\">}()</span>\n<span class=\"kt\">C</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">}()</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n<span class=\"kt\">C</span><span class=\"p\">{</span><span class=\"kt\">Float64</span><span class=\"p\">}()</span>\n</code></pre></div>",
+        "id": 242921165,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1623867604
+    },
+    {
+        "content": "<p>It's somewhat scary of course, but still valid.<br>\nProbably there are better ways already.</p>",
+        "id": 242921214,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1623867626
+    },
+    {
+        "content": "<p>This looks like a good solution.  Should also work when somebody else comes along and creates another subtype; my loop over <code>[:B, :C]</code> wouldn't work for those types.  Thanks!</p>",
+        "id": 242925651,
+        "sender_full_name": "Mike",
+        "timestamp": 1623869704
+    },
+    {
+        "content": "<p>Yeah, this is something that for whatever reason, the julia devs seem to thing is not important enough to be an actual language feature and I don't understand why</p>",
+        "id": 242926421,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1623870016
+    },
+    {
+        "content": "<p>I think the recent comments in <a href=\"https://github.com/JuliaLang/julia/issues/35543\">https://github.com/JuliaLang/julia/issues/35543</a> suggest it will be made a language feature soon-ish</p>",
+        "id": 242997286,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1623925070
+    }
+]

@@ -1,0 +1,32 @@
+[
+    {
+        "content": "<p>I think I have need of an vector of fixed size, where <code>push!</code>ing a new value basically shifts everything down, so that the first element gets dropped, the thing at index 2 goes to index 1, etc. The use-case is that I'm writing a wrapper for a web API that has a rate-limit of 5 requests / sec. I'm thinking of basically storing the time of the last 5 requests, and if the first one (<code>earliest</code>) is &lt; 1 sec ago,  pause for long enough to make it &gt; 1 sec ago, then do the new request.</p>\n<p>I have an idea of how to do this with a <code>mutable struct</code> that just stores the vector and an index that cycles 1-5 , but I'm wondering if there's some data structure like this that already exists / has a julia implementation.</p>",
+        "id": 275672363,
+        "sender_full_name": "Kevin Bonham",
+        "timestamp": 1647531440
+    },
+    {
+        "content": "<p>I think this is called a circular buffer. Have a look at <a href=\"https://github.com/search?q=DataStructures.jl&amp;type=Repositories\">DataStructures.jl</a> which provides a <code>CircularBuffer</code> type.</p>",
+        "id": 275673416,
+        "sender_full_name": "Felix Kastner",
+        "timestamp": 1647531797
+    },
+    {
+        "content": "<p><a href=\"https://juliacollections.github.io/DataStructures.jl/latest/circ_buffer/\">https://juliacollections.github.io/DataStructures.jl/latest/circ_buffer/</a></p>",
+        "id": 275673487,
+        "sender_full_name": "Felix Kastner",
+        "timestamp": 1647531818
+    },
+    {
+        "content": "<p>Ahh, exactly!</p>",
+        "id": 275678993,
+        "sender_full_name": "Kevin Bonham",
+        "timestamp": 1647533237
+    },
+    {
+        "content": "<p>Though thinking through it, I think given my specific use case, the custom solution is maybe lighter weight. Here's what I have:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">mutable struct</span> <span class=\"kt\">Timer</span>\n    <span class=\"n\">idx</span><span class=\"o\">::</span><span class=\"kt\">Int</span>\n    <span class=\"n\">last5</span><span class=\"o\">::</span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">DateTime</span><span class=\"p\">}</span>\n\n    <span class=\"kt\">Timer</span><span class=\"p\">()</span> <span class=\"o\">=</span> <span class=\"n\">new</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"n\">zeros</span><span class=\"p\">(</span><span class=\"n\">DateTime</span><span class=\"p\">,</span> <span class=\"mi\">5</span><span class=\"p\">))</span>\n<span class=\"k\">end</span>\n\n<span class=\"k\">function</span> <span class=\"n\">_ratelimit!</span><span class=\"p\">(</span><span class=\"n\">t</span><span class=\"o\">::</span><span class=\"kt\">Timer</span><span class=\"p\">)</span>\n    <span class=\"n\">n</span> <span class=\"o\">=</span> <span class=\"n\">now</span><span class=\"p\">()</span>\n    <span class=\"n\">e</span> <span class=\"o\">=</span> <span class=\"n\">t</span><span class=\"o\">.</span><span class=\"n\">last5</span><span class=\"p\">[</span><span class=\"n\">t</span><span class=\"o\">.</span><span class=\"n\">idx</span><span class=\"p\">]</span>\n    <span class=\"n\">rl</span> <span class=\"o\">=</span> <span class=\"n\">n</span> <span class=\"o\">-</span> <span class=\"n\">e</span>\n    <span class=\"k\">if</span> <span class=\"n\">rl</span> <span class=\"o\">&lt;</span> <span class=\"n\">Millisecond</span><span class=\"p\">(</span><span class=\"mi\">1000</span><span class=\"p\">)</span>\n        <span class=\"n\">sleep</span><span class=\"p\">(</span><span class=\"n\">Millisecond</span><span class=\"p\">(</span><span class=\"mi\">1000</span><span class=\"p\">)</span> <span class=\"o\">-</span> <span class=\"n\">rl</span><span class=\"p\">)</span>\n        <span class=\"n\">n</span> <span class=\"o\">=</span> <span class=\"n\">now</span><span class=\"p\">()</span>\n    <span class=\"k\">end</span>\n\n    <span class=\"n\">t</span><span class=\"o\">.</span><span class=\"n\">last5</span><span class=\"p\">[</span><span class=\"n\">t</span><span class=\"o\">.</span><span class=\"n\">idx</span><span class=\"p\">]</span> <span class=\"o\">=</span> <span class=\"n\">n</span>\n    <span class=\"n\">t</span><span class=\"o\">.</span><span class=\"n\">idx</span> <span class=\"o\">=</span> <span class=\"mi\">1</span> <span class=\"o\">+</span> <span class=\"p\">(</span><span class=\"n\">t</span><span class=\"o\">.</span><span class=\"n\">idx</span> <span class=\"o\">%</span> <span class=\"mi\">5</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 275679484,
+        "sender_full_name": "Kevin Bonham",
+        "timestamp": 1647533330
+    }
+]

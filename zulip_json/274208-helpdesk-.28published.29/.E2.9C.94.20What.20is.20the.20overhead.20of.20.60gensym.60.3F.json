@@ -1,0 +1,152 @@
+[
+    {
+        "content": "<p>Should I refrain from calling it in a hot loop?</p>",
+        "id": 287396217,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1656112918
+    },
+    {
+        "content": "<p>Benchmarking suggests the overhead is non-negligible, which makes sense:</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">f1</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"n\">total</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mi\">0</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">i</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">x</span><span class=\"w\"></span>\n<span class=\"w\">               </span><span class=\"n\">total</span><span class=\"w\"> </span><span class=\"o\">+=</span><span class=\"w\"> </span><span class=\"n\">i</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"k\">return</span><span class=\"w\"> </span><span class=\"n\">total</span><span class=\"w\"></span>\n<span class=\"w\">       </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"go\">f1 (generic function with 1 method)</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"nd\">@code_native</span><span class=\"w\"> </span><span class=\"n\">f1</span><span class=\"p\">(</span><span class=\"mi\">1000</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"go\">    .text</span>\n<span class=\"go\">; ┌ @ REPL[37]:3 within `f1`</span>\n<span class=\"go\">; │┌ @ range.jl:5 within `Colon`</span>\n<span class=\"go\">; ││┌ @ range.jl:354 within `UnitRange`</span>\n<span class=\"go\">; │││┌ @ range.jl:359 within `unitrange_last`</span>\n<span class=\"go\">    testq   %rdi, %rdi</span>\n<span class=\"go\">; │└└└</span>\n<span class=\"go\">    jle L43</span>\n<span class=\"go\">; │ @ REPL[37] within `f1`</span>\n<span class=\"go\">    movq    %rdi, %rax</span>\n<span class=\"go\">    sarq    $63, %rax</span>\n<span class=\"go\">    andnq   %rdi, %rax, %rax</span>\n<span class=\"go\">; │ @ REPL[37]:4 within `f1`</span>\n<span class=\"go\">    leaq    -1(%rax), %rdx</span>\n<span class=\"go\">    leaq    -2(%rax), %rcx</span>\n<span class=\"go\">    mulxq   %rcx, %rcx, %rdx</span>\n<span class=\"go\">    shldq   $63, %rcx, %rdx</span>\n<span class=\"go\">    leaq    (%rdx,%rax,2), %rax</span>\n<span class=\"go\">    decq    %rax</span>\n<span class=\"go\">; │ @ REPL[37]:6 within `f1`</span>\n<span class=\"go\">    retq</span>\n<span class=\"go\">; │ @ REPL[37] within `f1`</span>\n<span class=\"go\">L43:</span>\n<span class=\"go\">    xorl    %eax, %eax</span>\n<span class=\"go\">; │ @ REPL[37]:6 within `f1`</span>\n<span class=\"go\">    retq</span>\n<span class=\"go\">    nop</span>\n<span class=\"go\">; └</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">f2</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"n\">total</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mi\">0</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">i</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">x</span><span class=\"w\"></span>\n<span class=\"w\">               </span><span class=\"nd\">@gensym</span><span class=\"w\"> </span><span class=\"n\">a</span><span class=\"w\"> </span><span class=\"n\">b</span><span class=\"w\"> </span><span class=\"n\">c</span><span class=\"w\"> </span><span class=\"n\">d</span><span class=\"w\"> </span><span class=\"n\">e</span><span class=\"w\"> </span><span class=\"n\">f</span><span class=\"w\"> </span><span class=\"n\">g</span><span class=\"w\"></span>\n<span class=\"w\">               </span><span class=\"n\">total</span><span class=\"w\"> </span><span class=\"o\">+=</span><span class=\"w\"> </span><span class=\"n\">i</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"k\">return</span><span class=\"w\"> </span><span class=\"n\">total</span><span class=\"w\"></span>\n<span class=\"w\">       </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"go\">f2 (generic function with 1 method)</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"nd\">@code_native</span><span class=\"w\"> </span><span class=\"n\">f2</span><span class=\"p\">(</span><span class=\"mi\">1000</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"go\">    .text</span>\n<span class=\"go\">; ┌ @ REPL[40]:3 within `f2`</span>\n<span class=\"go\">; │┌ @ range.jl:5 within `Colon`</span>\n<span class=\"go\">; ││┌ @ range.jl:354 within `UnitRange`</span>\n<span class=\"go\">; │││┌ @ REPL[40]:1 within `unitrange_last`</span>\n<span class=\"go\">    pushq   %rbp</span>\n<span class=\"go\">    pushq   %r15</span>\n<span class=\"go\">    pushq   %r14</span>\n<span class=\"go\">    pushq   %r13</span>\n<span class=\"go\">    pushq   %r12</span>\n<span class=\"go\">    pushq   %rbx</span>\n<span class=\"go\">    subq    $40, %rsp</span>\n<span class=\"go\">; │││└</span>\n<span class=\"go\">; │││┌ @ range.jl:359 within `unitrange_last`</span>\n<span class=\"go\">    testq   %rdi, %rdi</span>\n<span class=\"go\">; │└└└</span>\n<span class=\"go\">    jle L253</span>\n<span class=\"go\">; │ @ REPL[40] within `f2`</span>\n<span class=\"go\">    movq    %rdi, %rax</span>\n<span class=\"go\">    sarq    $63, %rax</span>\n<span class=\"go\">    andnq   %rdi, %rax, %rax</span>\n<span class=\"go\">    movabsq $139821397918949, %r12          # imm = 0x7F2AB4C144E5</span>\n<span class=\"go\">; │ @ REPL[40]:5 within `f2`</span>\n<span class=\"go\">    negq    %rax</span>\n<span class=\"go\">    movq    %rax, 32(%rsp)</span>\n<span class=\"go\">    movl    $1, %r13d</span>\n<span class=\"go\">    xorl    %ebx, %ebx</span>\n<span class=\"go\">    leaq    -178798797(%r12), %rax</span>\n<span class=\"go\">    movq    %rax, 24(%rsp)</span>\n<span class=\"go\">    leaq    -178798637(%r12), %rax</span>\n<span class=\"go\">    movq    %rax, 16(%rsp)</span>\n<span class=\"go\">    leaq    -178798477(%r12), %rax</span>\n<span class=\"go\">    movq    %rax, 8(%rsp)</span>\n<span class=\"go\">    leaq    -178798317(%r12), %rax</span>\n<span class=\"go\">    movq    %rax, (%rsp)</span>\n<span class=\"go\">    leaq    -178798157(%r12), %rbp</span>\n<span class=\"go\">    leaq    -178797997(%r12), %r14</span>\n<span class=\"go\">    leaq    -178797837(%r12), %r15</span>\n<span class=\"go\">    nopl    (%rax,%rax)</span>\n<span class=\"go\">; │ @ REPL[40]:4 within `f2`</span>\n<span class=\"go\">; │┌ @ expr.jl:12 within `gensym`</span>\n<span class=\"go\">L144:</span>\n<span class=\"go\">    movl    $1, %esi</span>\n<span class=\"go\">    movq    24(%rsp), %rdi</span>\n<span class=\"go\">    callq   *%r12</span>\n<span class=\"go\">    movl    $1, %esi</span>\n<span class=\"go\">    movq    16(%rsp), %rdi</span>\n<span class=\"go\">    callq   *%r12</span>\n<span class=\"go\">    movl    $1, %esi</span>\n<span class=\"go\">    movq    8(%rsp), %rdi</span>\n<span class=\"go\">    callq   *%r12</span>\n<span class=\"go\">    movl    $1, %esi</span>\n<span class=\"go\">    movq    (%rsp), %rdi</span>\n<span class=\"go\">    callq   *%r12</span>\n<span class=\"go\">    movl    $1, %esi</span>\n<span class=\"go\">    movq    %rbp, %rdi</span>\n<span class=\"go\">    callq   *%r12</span>\n<span class=\"go\">    movl    $1, %esi</span>\n<span class=\"go\">    movq    %r14, %rdi</span>\n<span class=\"go\">    callq   *%r12</span>\n<span class=\"go\">    movl    $1, %esi</span>\n<span class=\"go\">    movq    %r15, %rdi</span>\n<span class=\"go\">    callq   *%r12</span>\n<span class=\"go\">; │└</span>\n<span class=\"go\">; │ @ REPL[40]:5 within `f2`</span>\n<span class=\"go\">; │┌ @ int.jl:87 within `+`</span>\n<span class=\"go\">    addq    %r13, %rbx</span>\n<span class=\"go\">    movq    32(%rsp), %rax</span>\n<span class=\"go\">; │└</span>\n<span class=\"go\">; │┌ @ range.jl:837 within `iterate`</span>\n<span class=\"go\">; ││┌ @ promotion.jl:468 within `==`</span>\n<span class=\"go\">    addq    %r13, %rax</span>\n<span class=\"go\">    incq    %rax</span>\n<span class=\"go\">; ││└</span>\n<span class=\"go\">    incq    %r13</span>\n<span class=\"go\">; ││┌ @ promotion.jl:468 within `==`</span>\n<span class=\"go\">    cmpq    $1, %rax</span>\n<span class=\"go\">; │└└</span>\n<span class=\"go\">    jne L144</span>\n<span class=\"go\">    jmp L255</span>\n<span class=\"go\">; │ @ REPL[40] within `f2`</span>\n<span class=\"go\">L253:</span>\n<span class=\"go\">    xorl    %ebx, %ebx</span>\n<span class=\"go\">; │ @ REPL[40]:7 within `f2`</span>\n<span class=\"go\">L255:</span>\n<span class=\"go\">    movq    %rbx, %rax</span>\n<span class=\"go\">    addq    $40, %rsp</span>\n<span class=\"go\">    popq    %rbx</span>\n<span class=\"go\">    popq    %r12</span>\n<span class=\"go\">    popq    %r13</span>\n<span class=\"go\">    popq    %r14</span>\n<span class=\"go\">    popq    %r15</span>\n<span class=\"go\">    popq    %rbp</span>\n<span class=\"go\">    retq</span>\n<span class=\"go\">    nopw    %cs:(%rax,%rax)</span>\n<span class=\"go\">; └</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"nd\">@benchmark</span><span class=\"w\"> </span><span class=\"n\">f1</span><span class=\"p\">(</span><span class=\"mi\">1000</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"go\">BenchmarkTools.Trial: 10000 samples with 1000 evaluations.</span>\n<span class=\"go\"> Range (min … max):  1.152 ns … 69.760 ns  ┊ GC (min … max): 0.00% … 0.00%</span>\n<span class=\"go\"> Time  (median):     1.160 ns              ┊ GC (median):    0.00%</span>\n<span class=\"go\"> Time  (mean ± σ):   1.171 ns ±  0.712 ns  ┊ GC (mean ± σ):  0.00% ± 0.00%</span>\n\n<span class=\"go\">                                █</span>\n<span class=\"go\">  ▂▁▁▆▁▁▁▄▁▁▁▄▁▁▁▃▁▁▁▂▁▁▁▂▁▁▁▃▁▁█▁▁▁▅▁▁▁▂▁▁▁▄▁▁▁█▁▁▁▆▁▁▁▇▁▁▂ ▂</span>\n<span class=\"go\">  1.15 ns        Histogram: frequency by time        1.17 ns &lt;</span>\n\n<span class=\"go\"> Memory estimate: 0 bytes, allocs estimate: 0.</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"nd\">@benchmark</span><span class=\"w\"> </span><span class=\"n\">f2</span><span class=\"p\">(</span><span class=\"mi\">1000</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"go\">BenchmarkTools.Trial: 641 samples with 1 evaluation.</span>\n<span class=\"go\"> Range (min … max):  7.365 ms …  10.314 ms  ┊ GC (min … max): 0.00% … 0.00%</span>\n<span class=\"go\"> Time  (median):     7.726 ms               ┊ GC (median):    0.00%</span>\n<span class=\"go\"> Time  (mean ± σ):   7.795 ms ± 346.021 μs  ┊ GC (mean ± σ):  0.00% ± 0.00%</span>\n\n<span class=\"go\">    ▁    ▁▂█▆▆▆▆▁▃▁▃▂▂</span>\n<span class=\"go\">  ▅▆█▆▅█▅█████████████▆▅▃▃▃▃▂▃▁▃▃▃▃▁▄▄▃▃▃▃▃▃▂▁▁▂▁▂▂▁▁▁▂▂▁▁▂▁▃ ▄</span>\n<span class=\"go\">  7.36 ms         Histogram: frequency by time        9.05 ms &lt;</span>\n\n<span class=\"go\"> Memory estimate: 0 bytes, allocs estimate: 0.</span>\n</code></pre></div>",
+        "id": 287396297,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1656112985
+    },
+    {
+        "content": "<p>You answered the question by benchmarking  both ways and  noting  the relative slowdown  exceeds 5000x.<br>\nYou will be happier reorganizing the code, lift the gensym out of the loop -- pregen batches of these symbols.</p>",
+        "id": 287397865,
+        "sender_full_name": "Jeffrey Sarnoff",
+        "timestamp": 1656114492
+    },
+    {
+        "content": "<p>gensym comes from Common Lisp where it is only supposed to be used at macro-expansion time. string-interning symbols as Julia calls it, is not cheap.</p>",
+        "id": 287398037,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656114662
+    },
+    {
+        "content": "<p>I was trying to get a better sense of the absolute unit overhead. Some more local benchmarking seemed to suggest 1-2us, but that's subject to noise and possibly other factors</p>",
+        "id": 287398044,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1656114666
+    },
+    {
+        "content": "<p>If it's anything like CL, there is more than string-interning involved too, since it has to keep a generation counter to ensure uniqueness.</p>",
+        "id": 287398317,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1656114960
+    },
+    {
+        "content": "<p>Yup, this one specifically: <a href=\"https://github.com/JuliaLang/julia/blob/87ded5a9aa502cfc4e03cbf230cb9bba86c85cc1/src/symbol.c#L126\">https://github.com/JuliaLang/julia/blob/87ded5a9aa502cfc4e03cbf230cb9bba86c85cc1/src/symbol.c#L126</a></p>",
+        "id": 287398381,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1656115003
+    },
+    {
+        "content": "<p>I think I can fulfill my use case using a custom macro (basically <code>@static_gensym x, y, ...</code>), but will have to try. Edit: it worked!</p>",
+        "id": 287398448,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1656115071
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"278065\">Brian Chen</span> has marked this topic as resolved.</p>",
+        "id": 287399718,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1656116310
+    },
+    {
+        "content": "<p>oh boy, did not know that <code>@gensym</code> does a <code>ccall</code></p>",
+        "id": 287412106,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656132525
+    },
+    {
+        "content": "<p>I would expect this particular benchmark to be fast, since the gensymmed variables are never used, but the <code>ccall</code> may have sideeffects the compiler can't see, so it can't be eliminated</p>",
+        "id": 287412135,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656132567
+    },
+    {
+        "content": "<p>Isn't side effect inference for ccall a nightly only feature?</p>",
+        "id": 287414588,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1656135335
+    },
+    {
+        "content": "<p>I don't think there's any sideeffect inference on ccalls</p>",
+        "id": 287414679,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656135445
+    },
+    {
+        "content": "<p>are you talking about the <code>@assume_effects</code> macro?</p>",
+        "id": 287414694,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656135456
+    },
+    {
+        "content": "<p>I was more thinking about <code>a</code> being a dead variable, since it's never used</p>",
+        "id": 287414740,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656135484
+    },
+    {
+        "content": "<p>I'm not sure the benchmarks were realistic, I think f1 was constant propagated, no? Summing 1000 elements took 1 ns</p>",
+        "id": 287422992,
+        "sender_full_name": "Mosè Giordano",
+        "timestamp": 1656145971
+    },
+    {
+        "content": "<p>oh yeah, 100% - it got folded to <del>eulers</del> gauss formula, there isn't even a jump there anymore</p>",
+        "id": 287423155,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656146241
+    },
+    {
+        "content": "<p>to me at least the <code>@gensym</code> should not have made a difference for that case</p>",
+        "id": 287423166,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656146265
+    },
+    {
+        "content": "<p>did you mean to say Gauss or I'm missing a new formula? <span aria-label=\"sweat smile\" class=\"emoji emoji-1f605\" role=\"img\" title=\"sweat smile\">:sweat_smile:</span></p>",
+        "id": 287423399,
+        "sender_full_name": "Mosè Giordano",
+        "timestamp": 1656146544
+    },
+    {
+        "content": "<p>ah, yes of course</p>",
+        "id": 287423421,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656146623
+    },
+    {
+        "content": "<p>always hard to remember which of the gazillion famous formulas is from which of the two</p>",
+        "id": 287423457,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656146644
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"269186\">@Mosè Giordano</span> the goal was just to have the function body not optimized away entirely. I wanted to use donotdelete but didn't want to switch versions :P</p>",
+        "id": 287435820,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1656164731
+    },
+    {
+        "content": "<p>Ended up just testing a single iteration and explicit calls because those are kept around still</p>",
+        "id": 287435872,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1656164772
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"278065\">Brian Chen</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F/near/287435820\">said</a>:</p>\n<blockquote>\n<p><span class=\"user-mention silent\" data-user-id=\"269186\">Mosè Giordano</span> the goal was just to have the function body not optimized away entirely. I wanted to use donotdelete but didn't want to switch versions :P</p>\n</blockquote>\n<p>on nightly I get</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"nd\">@benchmark</span><span class=\"w\"> </span><span class=\"n\">f1</span><span class=\"p\">(</span><span class=\"mi\">1000</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"n\">BenchmarkTools</span><span class=\"o\">.</span><span class=\"n\">Trial</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"mi\">10000</span><span class=\"w\"> </span><span class=\"n\">samples</span><span class=\"w\"> </span><span class=\"n\">with</span><span class=\"w\"> </span><span class=\"mi\">1000</span><span class=\"w\"> </span><span class=\"n\">evaluations</span><span class=\"o\">.</span><span class=\"w\"></span>\n<span class=\"w\"> </span><span class=\"n\">Range</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">min</span><span class=\"w\"> </span><span class=\"o\">…</span><span class=\"w\"> </span><span class=\"n\">max</span><span class=\"p\">)</span><span class=\"o\">:</span><span class=\"w\">  </span><span class=\"mf\">2.460</span><span class=\"w\"> </span><span class=\"n\">ns</span><span class=\"w\"> </span><span class=\"o\">…</span><span class=\"w\"> </span><span class=\"mf\">20.945</span><span class=\"w\"> </span><span class=\"n\">ns</span><span class=\"w\">  </span><span class=\"n\">┊</span><span class=\"w\"> </span><span class=\"n\">GC</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">min</span><span class=\"w\"> </span><span class=\"o\">…</span><span class=\"w\"> </span><span class=\"n\">max</span><span class=\"p\">)</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"mf\">0.00</span><span class=\"o\">%</span><span class=\"w\"> </span><span class=\"o\">…</span><span class=\"w\"> </span><span class=\"mf\">0.00</span><span class=\"o\">%</span><span class=\"w\"></span>\n<span class=\"w\"> </span><span class=\"n\">Time</span><span class=\"w\">  </span><span class=\"p\">(</span><span class=\"n\">median</span><span class=\"p\">)</span><span class=\"o\">:</span><span class=\"w\">     </span><span class=\"mf\">2.472</span><span class=\"w\"> </span><span class=\"n\">ns</span><span class=\"w\">              </span><span class=\"n\">┊</span><span class=\"w\"> </span><span class=\"n\">GC</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">median</span><span class=\"p\">)</span><span class=\"o\">:</span><span class=\"w\">    </span><span class=\"mf\">0.00</span><span class=\"o\">%</span><span class=\"w\"></span>\n<span class=\"w\"> </span><span class=\"n\">Time</span><span class=\"w\">  </span><span class=\"p\">(</span><span class=\"n\">mean</span><span class=\"w\"> </span><span class=\"o\">±</span><span class=\"w\"> </span><span class=\"n\">σ</span><span class=\"p\">)</span><span class=\"o\">:</span><span class=\"w\">   </span><span class=\"mf\">2.511</span><span class=\"w\"> </span><span class=\"n\">ns</span><span class=\"w\"> </span><span class=\"o\">±</span><span class=\"w\">  </span><span class=\"mf\">0.566</span><span class=\"w\"> </span><span class=\"n\">ns</span><span class=\"w\">  </span><span class=\"n\">┊</span><span class=\"w\"> </span><span class=\"n\">GC</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">mean</span><span class=\"w\"> </span><span class=\"o\">±</span><span class=\"w\"> </span><span class=\"n\">σ</span><span class=\"p\">)</span><span class=\"o\">:</span><span class=\"w\">  </span><span class=\"mf\">0.00</span><span class=\"o\">%</span><span class=\"w\"> </span><span class=\"o\">±</span><span class=\"w\"> </span><span class=\"mf\">0.00</span><span class=\"o\">%</span><span class=\"w\"></span>\n\n<span class=\"w\">  </span><span class=\"n\">█▄</span><span class=\"w\">   </span><span class=\"n\">▃</span><span class=\"w\">    </span><span class=\"n\">▃</span><span class=\"w\">                                                </span><span class=\"n\">▁</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">██▃▃▁█▁▃▁▁█▇▄▁▁▁▃▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▇</span><span class=\"w\"> </span><span class=\"n\">█</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"mf\">2.46</span><span class=\"w\"> </span><span class=\"n\">ns</span><span class=\"w\">      </span><span class=\"n\">Histogram</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"n\">log</span><span class=\"p\">(</span><span class=\"n\">frequency</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"n\">by</span><span class=\"w\"> </span><span class=\"n\">time</span><span class=\"w\">     </span><span class=\"mf\">3.26</span><span class=\"w\"> </span><span class=\"n\">ns</span><span class=\"w\"> </span><span class=\"o\">&lt;</span><span class=\"w\"></span>\n\n<span class=\"w\"> </span><span class=\"n\">Memory</span><span class=\"w\"> </span><span class=\"n\">estimate</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"mi\">0</span><span class=\"w\"> </span><span class=\"n\">bytes</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">allocs</span><span class=\"w\"> </span><span class=\"n\">estimate</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"mf\">0.</span><span class=\"w\"></span>\n</code></pre></div>\n<p>which would also suggests it isn't doing much in practice.  these damned compilers eliminating everything...</p>",
+        "id": 287439121,
+        "sender_full_name": "Mosè Giordano",
+        "timestamp": 1656168730
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269186\">Mosè Giordano</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20What.20is.20the.20overhead.20of.20.60gensym.60.3F/near/287422992\">said</a>:</p>\n<blockquote>\n<p>I'm not sure the benchmarks were realistic, I think f1 was constant propagated, no? Summing 1000 elements took 1 ns</p>\n</blockquote>\n<p>LLVM will turn that sum into <code>binomial(x+1,2)</code>.</p>",
+        "id": 287454005,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1656189302
+    }
+]

@@ -1,0 +1,82 @@
+<html>
+<head><meta charset="utf-8"><title>Storing data in type parameters · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Storing.20data.20in.20type.20parameters.html">Storing data in type parameters</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="317281729"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Storing%20data%20in%20type%20parameters/near/317281729" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Storing.20data.20in.20type.20parameters.html#317281729">(Dec 22 2022 at 02:57)</a>:</h4>
+<p>I figured out today that one can "store data" in type parameters, like in:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="kt">Z</span><span class="p">{</span><span class="kt">T1</span><span class="p">,</span><span class="w"> </span><span class="kt">T2</span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">x</span><span class="o">::</span><span class="kt">T1</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+<p>I don't even know if this is a good idea, but the language allows it. I was wondering how to instantiate objects of type <code>Z</code>. I figured I can do this, for example:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="n">Z</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Z</span><span class="p">{</span><span class="kt">typeof</span><span class="p">(</span><span class="kt">x</span><span class="p">),</span><span class="w"> </span><span class="mi">10</span><span class="p">}(</span><span class="n">x</span><span class="p">)</span><span class="w"></span>
+<span class="go">Z</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">Z</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
+<span class="go">Z{Int64, 10}(1)</span>
+</code></pre></div>
+<p>Is there a better way to define the <code>Z</code> constructor? For example, avoiding the ugly <code>typeof(x)</code>?</p>
+
+
+
+<a name="317282700"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Storing%20data%20in%20type%20parameters/near/317282700" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Storing.20data.20in.20type.20parameters.html#317282700">(Dec 22 2022 at 03:11)</a>:</h4>
+<p>You could write </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">Z</span><span class="p">(</span><span class="n">x</span><span class="o">::</span><span class="kt">T</span><span class="p">)</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="kt">T</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Z</span><span class="p">{</span><span class="kt">T</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">}(</span><span class="n">x</span><span class="p">)</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="317282842"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Storing%20data%20in%20type%20parameters/near/317282842" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Storing.20data.20in.20type.20parameters.html#317282842">(Dec 22 2022 at 03:13)</a>:</h4>
+<p>If the data is ‘static data’ which you expect to be type stable and you want your programs to specialize on it, then yes this is a very useful pattern.</p>
+
+
+
+<a name="317282872"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Storing%20data%20in%20type%20parameters/near/317282872" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Storing.20data.20in.20type.20parameters.html#317282872">(Dec 22 2022 at 03:13)</a>:</h4>
+<p>For instance, if you inspect a NamedTuple, you’ll find that it stores the ‘names’ this way</p>
+
+
+
+<a name="317376517"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Storing%20data%20in%20type%20parameters/near/317376517" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Storing.20data.20in.20type.20parameters.html#317376517">(Dec 22 2022 at 14:20)</a>:</h4>
+<p>Thanks, that was very useful!</p>
+
+
+
+<a name="317413641"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Storing%20data%20in%20type%20parameters/near/317413641" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Storing.20data.20in.20type.20parameters.html#317413641">(Dec 22 2022 at 17:15)</a>:</h4>
+<p>I do this in <a href="https://github.com/search?q=AVRDevices.jl&amp;type=Repositories">AVRDevices.jl</a> - it's incredibly useful if you know that something is a constant in your code for any given object and you need it often when working with that object</p>
+
+
+
+<a name="317415819"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Storing%20data%20in%20type%20parameters/near/317415819" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Storing.20data.20in.20type.20parameters.html#317415819">(Dec 22 2022 at 17:26)</a>:</h4>
+<p>Yep; that's where I thought this could be useful. I just had never written structs with parameters that were not related to the types of its fields.</p>
+
+
+
+<a name="317420582"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Storing%20data%20in%20type%20parameters/near/317420582" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Bagge Carlson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Storing.20data.20in.20type.20parameters.html#317420582">(Dec 22 2022 at 17:50)</a>:</h4>
+<p>A perhaps familiar exsmple: The Array type stores the dimension as the second type parameter.</p>
+
+
+
+<a name="317424721"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Storing%20data%20in%20type%20parameters/near/317424721" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Storing.20data.20in.20type.20parameters.html#317424721">(Dec 22 2022 at 18:13)</a>:</h4>
+<p>Indeed -- but somehow it never clicked for me that the dimension parameter is actually arbitrary; I still considered it to be somehow dependent on the type, if that makes sense.</p>
+<p>I think part of my problem (beyond obtuseness) is that the documentation almost always associates type parameters to field types, although to be fair it does mention the case of arrays, and it sort of hints at this functionality in the discussion on value types.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

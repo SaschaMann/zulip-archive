@@ -1,0 +1,36 @@
+<html>
+<head><meta charset="utf-8"><title>INT extended; discontinuous rank order · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/INT.20extended.3B.20discontinuous.20rank.20order.html">INT extended; discontinuous rank order</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="248509742"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/INT%20extended%3B%20discontinuous%20rank%20order/near/248509742" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kevin Bonham <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/INT.20extended.3B.20discontinuous.20rank.20order.html#248509742">(Aug 05 2021 at 17:33)</a>:</h4>
+<p>Related to <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Inverse.20normal.20transformation">this question</a>, with a new wrinkle - my data is zero-in flated, so I'm running into this: <a href="/user_uploads/7178/kDltT4Po3YOUWJp2uUqtOIqM/image.png">image.png</a> </p>
+<div class="message_inline_image"><a href="/user_uploads/7178/kDltT4Po3YOUWJp2uUqtOIqM/image.png" title="image.png"><img src="/user_uploads/7178/kDltT4Po3YOUWJp2uUqtOIqM/image.png"></a></div><p>I need a way to make <code>rank</code> discontinuous, so equivalent values are given the same rank. Eg for <code>[1,0,0,2,0,1]</code>, I'd need ranks <code>[4,1,1,6,1,4]</code>. Though really, as long as all zeros get rank 1, that should be fine as a short-term solution. Here's a mock up of that solution</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">getrank</span><span class="p">(</span><span class="n">v</span><span class="p">;</span> <span class="n">flattenzeros</span><span class="o">=</span><span class="nb">true</span><span class="p">)</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">invperm</span><span class="p">(</span><span class="n">sortperm</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">flattenzeros</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">findall</span><span class="p">(</span><span class="n">iszero</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+        <span class="n">r</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">.=</span> <span class="mi">1</span>
+    <span class="k">end</span>
+    <span class="k">return</span> <span class="n">r</span>
+<span class="k">end</span>
+
+<span class="k">function</span> <span class="n">invnormaltransform</span><span class="p">(</span><span class="n">v</span><span class="p">;</span> <span class="n">μ</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">σ</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="mi">3</span><span class="o">/</span><span class="mi">8</span><span class="p">,</span> <span class="n">flattenzeros</span><span class="o">=</span><span class="nb">true</span><span class="p">)</span>
+    <span class="n">rank</span> <span class="o">=</span> <span class="n">getrank</span><span class="p">(</span><span class="n">v</span><span class="p">;</span> <span class="n">flattenzeros</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">norminvcdf</span><span class="p">(</span><span class="n">μ</span><span class="p">,</span> <span class="n">σ</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">c</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">N</span> <span class="o">-</span> <span class="mi">2</span><span class="n">c</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span> <span class="k">for</span> <span class="n">x</span> <span class="k">in</span> <span class="n">rank</span><span class="p">]</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>which gives me <a href="/user_uploads/7178/omg943Od1ez4hkvRDSWor5k-/image.png">image.png</a></p>
+<div class="message_inline_image"><a href="/user_uploads/7178/omg943Od1ez4hkvRDSWor5k-/image.png" title="image.png"><img src="/user_uploads/7178/omg943Od1ez4hkvRDSWor5k-/image.png"></a></div>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

@@ -1,0 +1,134 @@
+[
+    {
+        "content": "<p>I can't quite understand difference between <code>__init__</code> function and regular code written in module.</p>\n<p>So, the problem is the following: I want to store some configuration parameters in a toml file, somewhere in a file system, and I want to read it during <code>using</code> step. Where should I put initialization steps?</p>\n<p>Version №1</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">module</span> <span class=\"n\">Foo</span>\n<span class=\"k\">using</span> <span class=\"n\">TOML</span>\n<span class=\"k\">const</span> <span class=\"n\">OPTIONS</span> <span class=\"o\">=</span> <span class=\"kt\">Ref</span><span class=\"p\">(</span><span class=\"mi\">0</span><span class=\"p\">)</span>\n\n<span class=\"n\">OPTIONS</span><span class=\"p\">[]</span> <span class=\"o\">=</span> <span class=\"n\">TOML</span><span class=\"o\">.</span><span class=\"n\">parsefile</span><span class=\"p\">(</span><span class=\"s\">\"/config.toml\"</span><span class=\"p\">)[</span><span class=\"s\">\"var\"</span><span class=\"p\">]</span>\n\n<span class=\"k\">end</span> <span class=\"c\">#module</span>\n</code></pre></div>\n<p>or Version №2</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">module</span> <span class=\"n\">Foo</span>\n<span class=\"k\">using</span> <span class=\"n\">TOML</span>\n<span class=\"k\">const</span> <span class=\"n\">OPTIONS</span> <span class=\"o\">=</span> <span class=\"kt\">Ref</span><span class=\"p\">(</span><span class=\"mi\">0</span><span class=\"p\">)</span>\n\n<span class=\"k\">function</span> <span class=\"n\">__init__</span><span class=\"p\">()</span>\n  <span class=\"n\">OPTIONS</span><span class=\"p\">[]</span> <span class=\"o\">=</span> <span class=\"n\">TOML</span><span class=\"o\">.</span><span class=\"n\">parsefile</span><span class=\"p\">(</span><span class=\"s\">\"/config.toml\"</span><span class=\"p\">)[</span><span class=\"s\">\"var\"</span><span class=\"p\">]</span>\n  <span class=\"k\">return</span>\n<span class=\"k\">end</span>\n\n<span class=\"k\">end</span> <span class=\"c\">#module</span>\n</code></pre></div>\n<p>Which one is a correct way of initializing variables?</p>",
+        "id": 272776531,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1645521041
+    },
+    {
+        "content": "<p>And second question, is there any common Julia path, where I can keep this configuration file? I can do it in <code>~/.config/...</code> but I would prefer something more system independent.</p>",
+        "id": 272776926,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1645521298
+    },
+    {
+        "content": "<p>Idk if there's a julia version of <a href=\"https://pypi.org/project/appdirs/\">appdirs</a> but I think that's the platform-agnostic application-agnostic answer to \"which directory\". Julia itself should use the XDG dirs too but currently doesn't.</p>",
+        "id": 272777400,
+        "sender_full_name": "jar",
+        "timestamp": 1645521619
+    },
+    {
+        "content": "<p>The first will run when precompiling the package, the second when <code>using</code> the package.</p>",
+        "id": 272777433,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1645521659
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"272771\">Andrey Oskin</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/When.20should.20I.20read.20config.20file.3F/near/272776926\">said</a>:</p>\n<blockquote>\n<p>And second question, is there any common Julia path, where I can keep this configuration file? I can do it in <code>~/.config/...</code> but I would prefer something more system independent.</p>\n</blockquote>\n<p>Maybe have a look at <a href=\"https://github.com/JuliaPackaging/Preferences.jl\">https://github.com/JuliaPackaging/Preferences.jl</a></p>",
+        "id": 272777568,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1645521751
+    },
+    {
+        "content": "<p>Thank you, so I suppose I need second, if I want to change settings between runs.</p>",
+        "id": 272779306,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1645522730
+    },
+    {
+        "content": "<p>Between restarts, yes.</p>",
+        "id": 272779386,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1645522770
+    },
+    {
+        "content": "<p>Thank you.</p>\n<p>I do not quite get the idea of <a href=\"https://github.com/search?q=Preferences.jl&amp;type=Repositories\">Preferences.jl</a>. It can store preferences in <code>LocalPreferences.toml</code> file of the package. But packages usually have path <code>~/.julia/packages/Foo/&lt;some random token&gt;/...</code> where random token is different between package versions. So what, each time I get a new version of the file, my LocalPreferences will be forgotten? It doesn't look convinient.</p>",
+        "id": 272780004,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1645523132
+    },
+    {
+        "content": "<p>No that is not how it works, the <code>LocalPreferences.toml</code> file is stored in your <em>current</em> project, for example:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"o\">$</span> <span class=\"n\">ls</span>\n<span class=\"n\">LocalPreferences</span><span class=\"o\">.</span><span class=\"n\">toml</span>  <span class=\"n\">Manifest</span><span class=\"o\">.</span><span class=\"n\">toml</span>  <span class=\"n\">Project</span><span class=\"o\">.</span><span class=\"n\">toml</span>\n\n<span class=\"o\">$</span> <span class=\"n\">cat</span> <span class=\"n\">Project</span><span class=\"o\">.</span><span class=\"n\">toml</span>\n<span class=\"p\">[</span><span class=\"n\">deps</span><span class=\"p\">]</span>\n<span class=\"n\">Example</span> <span class=\"o\">=</span> <span class=\"s\">\"7876af07-990d-54b4-ab0e-23690620f79a\"</span>\n\n<span class=\"o\">$</span> <span class=\"n\">cat</span> <span class=\"n\">LocalPreferences</span><span class=\"o\">.</span><span class=\"n\">toml</span>\n<span class=\"p\">[</span><span class=\"n\">Example</span><span class=\"p\">]</span>\n<span class=\"n\">foo</span> <span class=\"o\">=</span> <span class=\"s\">\"bar\"</span>\n</code></pre></div>",
+        "id": 272780120,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1645523203
+    },
+    {
+        "content": "<p>And global in <code>Project.toml</code> of the package?</p>\n<p>Yeah, it's not what I really want. I am always running julia with <code>julia --project=.</code> so each time I have isolated environment.</p>",
+        "id": 272780369,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1645523364
+    },
+    {
+        "content": "<p>It is exactly what you want, if you run <code>julia --project=.</code> it will pick up preferences from the <code>LocalPreferences.toml</code> file next to your <code>Project.toml</code>.</p>",
+        "id": 272780458,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1645523409
+    },
+    {
+        "content": "<p>But thank you, this package gave me few good ideas.</p>",
+        "id": 272780491,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1645523431
+    },
+    {
+        "content": "<p>I guess in my case, I can do the same as thing as <code>PyCall</code>: </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">const</span> <span class=\"n\">prefsfile</span> <span class=\"o\">=</span> <span class=\"n\">joinpath</span><span class=\"p\">(</span><span class=\"n\">first</span><span class=\"p\">(</span><span class=\"nb\">DEPOT_PATH</span><span class=\"p\">),</span> <span class=\"s\">\"prefs\"</span><span class=\"p\">,</span> <span class=\"s\">\"Foo.toml\"</span><span class=\"p\">)</span>\n<span class=\"n\">mkpath</span><span class=\"p\">(</span><span class=\"n\">dirname</span><span class=\"p\">(</span><span class=\"n\">prefsfile</span><span class=\"p\">))</span>\n</code></pre></div>",
+        "id": 272780874,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1645523661
+    },
+    {
+        "content": "<p><a href=\"https://github.com/search?q=PyCall.jl&amp;type=Repositories\">PyCall.jl</a> is moving to <a href=\"https://github.com/search?q=Preferences.jl&amp;type=Repositories\">Preferences.jl</a> too (<a href=\"https://github.com/JuliaPy/PyCall.jl/pull/945\">https://github.com/JuliaPy/PyCall.jl/pull/945</a>). I don't understand why <a href=\"https://github.com/search?q=Preferences.jl&amp;type=Repositories\">Preferences.jl</a> is not exactly what you want?</p>",
+        "id": 272781108,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1645523818
+    },
+    {
+        "content": "<p>Guess we are both do not understand each other (and I do not understand <a href=\"https://github.com/search?q=Preferences.jl&amp;type=Repositories\">Preferences.jl</a>). Thank you for your patience, let me explain what I want in more details.</p>\n<p>Suppose that I have package Foo, which can do some calculations and it produces some output for these calculations. It can be long description and it can be short description. So, I have to choose which type of description is default, but I do not want to set it in code, I want to make it optional.</p>\n<p>My idea is the following: I can create system wide config file, where I can set <code>output = compact</code> or <code>output = long</code>.</p>\n<p>For example I set this config file to <code>output = compact</code></p>\n<p>Now, I can go to directory 1 and run </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span> <span class=\"o\">--</span><span class=\"n\">project</span><span class=\"o\">=.</span>\n\n<span class=\"k\">using</span> <span class=\"n\">Foo</span><span class=\"o\">:</span> <span class=\"n\">Bar</span>\n\n<span class=\"n\">x</span> <span class=\"o\">=</span> <span class=\"n\">Bar</span><span class=\"p\">()</span>\n<span class=\"n\">calc</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n<span class=\"c\"># Compact output</span>\n</code></pre></div>\n<p>I can go to directory 2 and run</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span> <span class=\"o\">--</span><span class=\"n\">project</span><span class=\"o\">=.</span> <span class=\"c\"># it is new Project.toml and everything else</span>\n\n<span class=\"k\">using</span> <span class=\"n\">Foo</span><span class=\"o\">:</span> <span class=\"n\">Bar</span>\n\n<span class=\"n\">x</span> <span class=\"o\">=</span> <span class=\"n\">Bar</span><span class=\"p\">()</span>\n<span class=\"n\">calc</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n<span class=\"c\"># Compact output, since I still use system wide preferences</span>\n</code></pre></div>\n<p>If I change settings to <code>output = long</code> then in each directory I run the same code, I'll see long output, because that's what I want. I kind of changes my desire for default behaviour.</p>\n<p>Now, if I get it right, then <a href=\"https://github.com/search?q=Preferences.jl&amp;type=Repositories\">Preferences.jl</a> do something different. It allows me to set my settings in each directory individually, but if I am not doing it, then it uses default value from the package.  I.e. each time I should do</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">cd</span> <span class=\"n\">dir3</span>\n<span class=\"n\">julia</span> <span class=\"o\">--</span><span class=\"n\">project</span><span class=\"o\">=.</span>\n\n<span class=\"n\">setpreferences</span><span class=\"p\">(</span><span class=\"n\">output</span><span class=\"o\">=</span><span class=\"n\">compact</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>otherwise I get package default, not my default.</p>",
+        "id": 272782440,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1645524509
+    },
+    {
+        "content": "<p>Hope it makes it more clear.<br>\nBut may be I misunderstood general idea of <a href=\"https://github.com/search?q=Preferences.jl&amp;type=Repositories\">Preferences.jl</a></p>",
+        "id": 272782484,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1645524539
+    },
+    {
+        "content": "<p>Okay, I believe you can have global preferences with <a href=\"https://github.com/search?q=Preferences.jl&amp;type=Repositories\">Preferences.jl</a> too.</p>",
+        "id": 272782724,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1645524678
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"272771\">Andrey Oskin</span> has marked this topic as resolved.</p>",
+        "id": 272785169,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1645526281
+    },
+    {
+        "content": "<p>You can have preferences stored in your default environments Project.toml or a LocalPreferences.toml at the same location. The only drawback is that the package for which you want to record preferences has to be added to that environment.<br>\nSo</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span> <span class=\"n\">Preferences</span>\n<span class=\"k\">using</span> <span class=\"n\">Example</span>\n<span class=\"n\">set_preferences!</span><span class=\"p\">(</span><span class=\"n\">Example</span><span class=\"p\">,</span> <span class=\"s\">\"foo\"</span> <span class=\"o\">=&gt;</span> <span class=\"s\">\"bar\"</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>stores it in ~/.julia/environments/v1.7/LocalPreferences.toml.<br>\nThis can then be loaded using <code>load_preference(Example, \"foo\")</code> which will traverse the LOAD_PATH to look for stored preferences.</p>",
+        "id": 272825470,
+        "sender_full_name": "Felix Kastner",
+        "timestamp": 1645546307
+    },
+    {
+        "content": "<p>It will read from <code>~/.julia/environments/v1.7/LocalPreferences.toml</code> even when I start Julia with <code>--project=.</code> flag? It's going hierarchically? If it can't find local preferences in current directory it will read from global? If yes, it can make this approach more interesting (of course min 1.6 is still a huge drawback)</p>",
+        "id": 272831965,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1645548739
+    },
+    {
+        "content": "<p>I guess I should just try it and see how it goes.</p>",
+        "id": 272832085,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1645548778
+    },
+    {
+        "content": "<p>Yes, that should work. Since Julia versions &lt; 1.6 are not supported versions anymore I don't think it is a drawback really.</p>",
+        "id": 272832169,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1645548802
+    }
+]

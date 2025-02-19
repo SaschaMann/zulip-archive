@@ -1,0 +1,201 @@
+<html>
+<head><meta charset="utf-8"><title>Detecting SIMD capability · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Detecting.20SIMD.20capability.html">Detecting SIMD capability</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="371263322"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Detecting%20SIMD%20capability/near/371263322" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Detecting.20SIMD.20capability.html#371263322">(Jun 30 2023 at 18:18)</a>:</h4>
+<p>Is there currently a solid way of checking whether it's safe to precompile code making use of specific CPU instructions?<br>
+I have this package that uses <code>llvmcall</code>, by checking which CPU instructions the host CPU supports. Problem is, when the user then sets <code>export JULIA_CPU_TARGET="generic"</code>, it produces the wrong code and crashes.<br>
+How does LoopVectorization handle this? cc <span class="user-mention" data-user-id="284680">@chriselrod</span></p>
+
+
+
+<a name="371267784"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Detecting%20SIMD%20capability/near/371267784" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Detecting.20SIMD.20capability.html#371267784">(Jun 30 2023 at 18:35)</a>:</h4>
+<p>Looks like the JuliaSIMD packages use <a href="https://github.com/JuliaSIMD/HostCPUFeatures.jl">https://github.com/JuliaSIMD/HostCPUFeatures.jl</a></p>
+
+
+
+<a name="371268408"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Detecting%20SIMD%20capability/near/371268408" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Detecting.20SIMD.20capability.html#371268408">(Jun 30 2023 at 18:38)</a>:</h4>
+<p>e.g. </p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">HostCPUFeatures</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">HostCPUFeatures</span><span class="o">.</span><span class="n">simd_integer_register_size</span><span class="p">()</span>
+<span class="go">static(32)</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">HostCPUFeatures</span><span class="o">.</span><span class="n">pick_vector_width</span><span class="p">(</span><span class="kt">Float64</span><span class="p">)</span>
+<span class="go">static(4)</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">HostCPUFeatures</span><span class="o">.</span><span class="n">pick_vector_width</span><span class="p">(</span><span class="kt">Float16</span><span class="p">)</span>
+<span class="go">static(8)</span>
+</code></pre></div>
+
+
+
+<a name="371271929"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Detecting%20SIMD%20capability/near/371271929" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Detecting.20SIMD.20capability.html#371271929">(Jun 30 2023 at 18:51)</a>:</h4>
+<p>Looks like it, but then there is <a href="https://github.com/JuliaSIMD/HostCPUFeatures.jl/issues/12">https://github.com/JuliaSIMD/HostCPUFeatures.jl/issues/12</a> in which it's not quite clear if it was fixed.<br>
+Anyway, I can try it!</p>
+
+
+
+<a name="371272718"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Detecting%20SIMD%20capability/near/371272718" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Detecting.20SIMD.20capability.html#371272718">(Jun 30 2023 at 18:54)</a>:</h4>
+<p>It seems like the PR that closed the issue should fix that issue right?</p>
+
+
+
+<a name="371274848"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Detecting%20SIMD%20capability/near/371274848" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Detecting.20SIMD.20capability.html#371274848">(Jun 30 2023 at 19:02)</a>:</h4>
+<p>Oh yeah it does seem to work actually <span aria-label="smiley" class="emoji emoji-1f603" role="img" title="smiley">:smiley:</span></p>
+
+
+
+<a name="371275015"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Detecting%20SIMD%20capability/near/371275015" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Detecting.20SIMD.20capability.html#371275015">(Jun 30 2023 at 19:03)</a>:</h4>
+<p>nice!</p>
+
+
+
+<a name="371283684"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Detecting%20SIMD%20capability/near/371283684" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Detecting.20SIMD.20capability.html#371283684">(Jun 30 2023 at 19:36)</a>:</h4>
+<p>Nevermind, it doesn't work still</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">ScanByte</span>
+<span class="p">[</span><span class="w"> </span><span class="n">Info</span><span class="o">:</span><span class="w"> </span><span class="n">Precompiling</span><span class="w"> </span><span class="n">ScanByte</span><span class="w"> </span><span class="p">[</span><span class="mi">7</span><span class="n">b38b023</span><span class="o">-</span><span class="n">a4d7</span><span class="o">-</span><span class="mi">4</span><span class="n">c5e</span><span class="o">-</span><span class="mi">8</span><span class="n">d43</span><span class="o">-</span><span class="mf">3f3097</span><span class="n">f304eb</span><span class="p">]</span>
+<span class="n">LLVM</span><span class="w"> </span><span class="n">ERROR</span><span class="o">:</span><span class="w"> </span><span class="n">Do</span><span class="w"> </span><span class="n">not</span><span class="w"> </span><span class="n">know</span><span class="w"> </span><span class="n">how</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">split</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">this</span><span class="w"> </span><span class="n">operator!</span>
+</code></pre></div>
+
+
+
+<a name="371286338"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Detecting%20SIMD%20capability/near/371286338" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Detecting.20SIMD.20capability.html#371286338">(Jun 30 2023 at 19:47)</a>:</h4>
+<p>Ah that's too bad. I'd maybe open a new issue or try to get that old one re-opened</p>
+
+
+
+<a name="371403022"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Detecting%20SIMD%20capability/near/371403022" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Detecting.20SIMD.20capability.html#371403022">(Jul 01 2023 at 08:46)</a>:</h4>
+<p>it's basically branching on whaat <code>Base.Sys</code> claims</p>
+
+
+
+<a name="371413736"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Detecting%20SIMD%20capability/near/371413736" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Detecting.20SIMD.20capability.html#371413736">(Jul 01 2023 at 09:24)</a>:</h4>
+<p>As far as I can tell, it is just not possible to robustly write ISA-specific code in Julia, because there is no documented or even semi-legit looking method of checking which code can be validly emitted <span aria-label="frown" class="emoji emoji-1f641" role="img" title="frown">:frown:</span> Too bad</p>
+
+
+
+<a name="371414139"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Detecting%20SIMD%20capability/near/371414139" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Detecting.20SIMD.20capability.html#371414139">(Jul 01 2023 at 09:25)</a>:</h4>
+<p>yup</p>
+
+
+
+<a name="371414295"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Detecting%20SIMD%20capability/near/371414295" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Detecting.20SIMD.20capability.html#371414295">(Jul 01 2023 at 09:26)</a>:</h4>
+<p>there's no API checking for the kind of architecture you're actually being compiled for</p>
+
+
+
+<a name="371414364"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Detecting%20SIMD%20capability/near/371414364" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Detecting.20SIMD.20capability.html#371414364">(Jul 01 2023 at 09:26)</a>:</h4>
+<p><code>Base.Sys</code> only tells you the host system, after all</p>
+
+
+
+<a name="371597044"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Detecting%20SIMD%20capability/near/371597044" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Detecting.20SIMD.20capability.html#371597044">(Jul 02 2023 at 00:34)</a>:</h4>
+<p>Missed this -- <br>
+HostCPUFeature can only detect the host's features (which is why it's not called <code>TargetCPUFeatures.jl</code>).<br>
+We don't have an API for actually detecting Julia's LLVM's JIT target, even though one has easy/direct access to this from within LLVM. Which is another one of the motivations for working as an LLVM pass; then things like sys image multiversioning, setting pkg image targets, etc should all "just work", as they do with every other LLVM-level optimization.</p>
+
+
+
+<a name="371597159"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Detecting%20SIMD%20capability/near/371597159" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Detecting.20SIMD.20capability.html#371597159">(Jul 02 2023 at 00:35)</a>:</h4>
+<p>So the JuliaSIMD approach is to generate code for the host, and on <code>__init__</code> try to detect if the host is wrong. If so, it'll try and <code>@eval</code> some methods to fix things, and invalidate any cached compiled code that may now be invalid.</p>
+
+
+
+<a name="371597228"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Detecting%20SIMD%20capability/near/371597228" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Detecting.20SIMD.20capability.html#371597228">(Jul 02 2023 at 00:36)</a>:</h4>
+<p>(This is why all queries are functions, rather than global consts, so we get backedges)</p>
+
+
+
+<a name="371597465"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Detecting%20SIMD%20capability/near/371597465" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Detecting.20SIMD.20capability.html#371597465">(Jul 02 2023 at 00:37)</a>:</h4>
+<p>Even though sysimages for generic targets have existed for ages now, I didn't pay enough attention to the fact that precompilation like that could fail. I guess we weren't running/actually compiling enough code, even for sysimage use cases, to run into that.</p>
+
+
+
+<a name="371598061"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Detecting%20SIMD%20capability/near/371598061" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Detecting.20SIMD.20capability.html#371598061">(Jul 02 2023 at 00:42)</a>:</h4>
+<p>The most correct thing to do would be to get builtin support for the queries:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">have_fma</span><span class="p">(</span><span class="o">::</span><span class="kt">Type</span><span class="p">{</span><span class="kt">T</span><span class="p">})</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="p">{</span><span class="kt">T</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Core</span><span class="o">.</span><span class="n">Intrinsics</span><span class="o">.</span><span class="n">have_fma</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+<span class="n">have_fma</span><span class="w"> </span><span class="p">(</span><span class="n">generic</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">have_fma</span><span class="p">(</span><span class="kt">Float64</span><span class="p">)</span>
+<span class="nb">true</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Core</span><span class="o">.</span><span class="n">Intrinsics</span><span class="o">.</span><span class="n">have_fma</span><span class="p">(</span><span class="kt">Float64</span><span class="p">)</span>
+<span class="nb">false</span>
+</code></pre></div>
+<p>Note that it actually needs to compile to not give a safe/conservative/possibly pessimizing answer.</p>
+
+
+
+<a name="371598263"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Detecting%20SIMD%20capability/near/371598263" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Detecting.20SIMD.20capability.html#371598263">(Jul 02 2023 at 00:43)</a>:</h4>
+<p>But failing that, as discussed in the issue, I would set it up to check on precompilation whether the ENV variable has been set. If so, load the appropriate generic set of capabilities.<br>
+This is pretty bad, but better than nothing.</p>
+
+
+
+<a name="371598579"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Detecting%20SIMD%20capability/near/371598579" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Detecting.20SIMD.20capability.html#371598579">(Jul 02 2023 at 00:45)</a>:</h4>
+<p>Note also that LLVM is able to legalize many, but not all, generic intrinsics.<br>
+It probably cannot legalize instruction-specific intrsinsics.<br>
+And some generic ones can also cause aborts, until LLVM actually implements legalizing fallbacks.</p>
+<p>For example, the matmul intrinsics, or the compressed stores/expand loads on older versions of LLVM (recent LLVM versions can scalarize these; I haven't checked if they can scalarize or vetorize the matmul intrinsics, but maybe; these are obviously aimed at tensor cores).</p>
+
+
+
+<a name="371640907"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Detecting%20SIMD%20capability/near/371640907" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Detecting.20SIMD.20capability.html#371640907">(Jul 02 2023 at 07:03)</a>:</h4>
+<p>Ok - I'll try to make a PR to HostCPUFeatures today or one of the next days, but to me it looks like a relatively easy feature to add to Base itself. I'll also make an issue in Julia itself.</p>
+
+
+
+<a name="371641492"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Detecting%20SIMD%20capability/near/371641492" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Detecting.20SIMD.20capability.html#371641492">(Jul 02 2023 at 07:07)</a>:</h4>
+<p>wait, which feature is easy to add to Base?</p>
+
+
+
+<a name="371641540"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Detecting%20SIMD%20capability/near/371641540" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Detecting.20SIMD.20capability.html#371641540">(Jul 02 2023 at 07:07)</a>:</h4>
+<p>"detecting SIMD capability" can mean a whole lot of things</p>
+
+
+
+<a name="371747060"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Detecting%20SIMD%20capability/near/371747060" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Detecting.20SIMD.20capability.html#371747060">(Jul 02 2023 at 14:51)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="306754">Sukera</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Detecting.20SIMD.20capability/near/371641540">said</a>:</p>
+<blockquote>
+<p>"detecting SIMD capability" can mean a whole lot of things</p>
+</blockquote>
+<p>I haven't looked at how <code>have_fma</code> is implemented, but at least Thayer a template we should be able to follow.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

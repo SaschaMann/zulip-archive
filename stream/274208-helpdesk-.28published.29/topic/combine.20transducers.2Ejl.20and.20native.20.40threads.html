@@ -1,0 +1,119 @@
+<html>
+<head><meta charset="utf-8"><title>combine transducers.jl and native @threads · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/combine.20transducers.2Ejl.20and.20native.20.40threads.html">combine transducers.jl and native @threads</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="395565988"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/combine%20transducers.jl%20and%20native%20%40threads/near/395565988" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/combine.20transducers.2Ejl.20and.20native.20.40threads.html#395565988">(Oct 08 2023 at 18:24)</a>:</h4>
+<p>After using <a href="https://juliahub.com/ui/Packages/General/Transducers">Transducers.jl</a> operations in a script and then switching to <code>@threads</code> SOMETIMES I get an error.<br>
+Sorry for the vagueness, but it's all I have now and I still didn't manage to reproduce the error.<br>
+All I know is that sometimes this fails on the <code>Threads.@threads</code></p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">objs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tcollect</span><span class="p">([</span><span class="n">dosomething</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">X</span><span class="w"> </span><span class="p">])</span>
+<span class="n">Threads</span><span class="o">.</span><span class="nd">@threads</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">eachindex</span><span class="p">(</span><span class="n">objs</span><span class="p">)</span>
+<span class="w">  </span><span class="n">dosomethingelse</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+<div class="spoiler-block"><div class="spoiler-header">
+<p>The error looks as the following:</p>
+</div><div class="spoiler-content" aria-hidden="true">
+<p>ERROR: LoadError: TaskFailedException</p>
+<div class="codehilite"><pre><span></span><code>nested task error: Could not load glyph 0x0000000000000097 from FTFont (family = TeX Gyre Heros Makie, style = Regular) to get extent. with error: 20
+Stacktrace:
+   [1] error(s::String)
+     @ Base ./error.jl:35
+   [2] check_error
+     @ ~/.julia/packages/FreeTypeAbstraction/b8EQ2/src/types.jl:1 [inlined]
+   [3] internal_get_extent(face::FreeTypeAbstraction.FTFont, glyphspec::UInt64)
+     @ FreeTypeAbstraction ~/.julia/packages/FreeTypeAbstraction/b8EQ2/src/types.jl:214
+   [4] #9
+     @ ~/.julia/packages/FreeTypeAbstraction/b8EQ2/src/types.jl:192 [inlined]
+   [5] get!(default::FreeTypeAbstraction.var&quot;#9#10&quot;{FreeTypeAbstraction.FTFont, UInt64}, h::Dict{UInt64, FreeTypeAbstraction.FontExtent{Float32}}, key::UInt64)
+     @ Base ./dict.jl:468
+   [6] get_extent
+     @ ~/.julia/packages/FreeTypeAbstraction/b8EQ2/src/types.jl:191 [inlined]
+   [7] Makie.GlyphExtent(font::FreeTypeAbstraction.FTFont, char::Char)
+     @ Makie ~/.julia/packages/Makie/1hq9u/src/types.jl:324
+   [8] #923
+     @ ~/.julia/packages/Makie/1hq9u/src/layouting/layouting.jl:84 [inlined]
+   [9] _broadcast_getindex_evalf
+</code></pre></div>
+
+<p>Stacktrace:<br>
+ [1] threading_run(fun::var"<a href="https://github.com/JuliaLang/julia/issues/418">#418</a>#threadsfor_fun#63"{var"<a href="https://github.com/JuliaLang/julia/issues/418">#418</a>#threadsfor_fun#61#64"{Base.OneTo{Int64}}}, static::Bool)<br>
+   @ Base.Threads ./threadingconstructs.jl:157<br>
+ [2] top-level scope<br>
+   @ ./threadingconstructs.jl:205</p>
+</div></div>
+<p>Initially I thought this was related to Makie but after googling "Could not load glyph" it appears other people also had problems with this when multiprocessing.</p>
+<p>Has something similar ever been an issue to you?</p>
+
+
+
+<a name="395566176"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/combine%20transducers.jl%20and%20native%20%40threads/near/395566176" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/combine.20transducers.2Ejl.20and.20native.20.40threads.html#395566176">(Oct 08 2023 at 18:27)</a>:</h4>
+<p>Makie does not support multithreading. Unpredictable behavior is expected.</p>
+
+
+
+<a name="395574469"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/combine%20transducers.jl%20and%20native%20%40threads/near/395574469" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/combine.20transducers.2Ejl.20and.20native.20.40threads.html#395574469">(Oct 08 2023 at 20:36)</a>:</h4>
+<p>Plotting packages tend to use a lot of globals.  Too many, in my opinion.  Some of this is kind of understandable because they are usually aspiring to a very convenient user interface and they want to avoid burdening the user with handling objects they probably don't care about.</p>
+
+
+
+<a name="395581335"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/combine%20transducers.jl%20and%20native%20%40threads/near/395581335" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/combine.20transducers.2Ejl.20and.20native.20.40threads.html#395581335">(Oct 08 2023 at 22:38)</a>:</h4>
+<p>Yeah, plotting packages and web frameworks take liberties with global variables and it's for the worse.</p>
+
+
+
+<a name="395582966"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/combine%20transducers.jl%20and%20native%20%40threads/near/395582966" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/combine.20transducers.2Ejl.20and.20native.20.40threads.html#395582966">(Oct 08 2023 at 23:07)</a>:</h4>
+<p>At least web frameworks know they'll be run in a shared-almost-nothing, usually single-threaded environment</p>
+
+
+
+<a name="395583902"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/combine%20transducers.jl%20and%20native%20%40threads/near/395583902" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/combine.20transducers.2Ejl.20and.20native.20.40threads.html#395583902">(Oct 08 2023 at 23:23)</a>:</h4>
+<p>Often that's true, though it's at least partly a consequence of being designed that way. And mutable global state isn't generally to my taste even in single-threaded environments.</p>
+
+
+
+<a name="395584415"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/combine%20transducers.jl%20and%20native%20%40threads/near/395584415" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/combine.20transducers.2Ejl.20and.20native.20.40threads.html#395584415">(Oct 08 2023 at 23:32)</a>:</h4>
+<p>Web frameworks seem super goddamn weird to me.  I had a number of complaints about <a href="https://juliahub.com/ui/Packages/General/Oxygen">Oxygen.jl</a> and only later did I realize that the things I was complaining about were common web framework stuff (among them: inexplicably excessive use of globals).</p>
+
+
+
+<a name="395584581"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/combine%20transducers.jl%20and%20native%20%40threads/near/395584581" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/combine.20transducers.2Ejl.20and.20native.20.40threads.html#395584581">(Oct 08 2023 at 23:35)</a>:</h4>
+<p>Thankfully there are a lot of web frameworks out there, including some that share my design sensibilities.</p>
+
+
+
+<a name="395609143"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/combine%20transducers.jl%20and%20native%20%40threads/near/395609143" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/combine.20transducers.2Ejl.20and.20native.20.40threads.html#395609143">(Oct 09 2023 at 03:39)</a>:</h4>
+<p>Oh, I was thinking about frontend libraries. I agree that having global variable state in server/backend ones is far less optimal, given those often run with a _high_ degree of both concurrency and parallelism</p>
+
+
+
+<a name="395624745"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/combine%20transducers.jl%20and%20native%20%40threads/near/395624745" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/combine.20transducers.2Ejl.20and.20native.20.40threads.html#395624745">(Oct 09 2023 at 06:06)</a>:</h4>
+<p>that sounds reasonable. thanks. it's a pity though. Actually what's happening inside <code>@threads</code> is not generating the figures but saving them to the disk.</p>
+
+
+
+<a name="395685621"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/combine%20transducers.jl%20and%20native%20%40threads/near/395685621" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/combine.20transducers.2Ejl.20and.20native.20.40threads.html#395685621">(Oct 09 2023 at 12:15)</a>:</h4>
+<p>pretty much anything you do involving Makie should be assumed to be thread-unsafe.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

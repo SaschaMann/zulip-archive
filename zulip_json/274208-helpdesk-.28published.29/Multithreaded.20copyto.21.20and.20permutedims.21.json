@@ -1,0 +1,290 @@
+[
+    {
+        "content": "<p>Is there an accelerated version of <code>copyto!</code> and <code>permutedims!</code> somewhere?</p>\n<p>My initial experiments with <a href=\"https://github.com/search?q=SIMD.jl&amp;type=Repositories\">SIMD.jl</a> show it is possible to speed up these procedures. I'm wondering if someone has already done this?</p>",
+        "id": 282243415,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1652447245
+    },
+    {
+        "content": "<p>Here is a concrete problem I have. I want to make the following faster:</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">A</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">UInt16</span><span class=\"p\">}(</span><span class=\"nb\">undef</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">4608</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2592</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">128</span><span class=\"p\">);</span><span class=\"w\"></span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">B</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">UInt16</span><span class=\"p\">}(</span><span class=\"nb\">undef</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">4608</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2688</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">128</span><span class=\"p\">);</span><span class=\"w\"></span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"nd\">@time</span><span class=\"w\"> </span><span class=\"n\">copyto!</span><span class=\"p\">(</span><span class=\"nd\">@view</span><span class=\"p\">(</span><span class=\"n\">B</span><span class=\"p\">[</span><span class=\"o\">:</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">axes</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">)[</span><span class=\"mi\">2</span><span class=\"p\">],</span><span class=\"w\"> </span><span class=\"o\">:</span><span class=\"p\">]),</span><span class=\"w\"> </span><span class=\"n\">A</span><span class=\"p\">);</span><span class=\"w\"></span>\n<span class=\"go\">  3.951746 seconds (13 allocations: 384 bytes)</span>\n</code></pre></div>",
+        "id": 282284999,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1652465568
+    },
+    {
+        "content": "<p>I could do this, but is there a faster way?</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"nd\">@time</span><span class=\"w\"> </span><span class=\"n\">Threads</span><span class=\"o\">.</span><span class=\"nd\">@threads</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">i</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">128</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"n\">copyto!</span><span class=\"p\">(</span><span class=\"nd\">@view</span><span class=\"p\">(</span><span class=\"n\">B</span><span class=\"p\">[</span><span class=\"o\">:</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">axes</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">)[</span><span class=\"mi\">2</span><span class=\"p\">],</span><span class=\"w\"> </span><span class=\"o\">:</span><span class=\"p\">]),</span><span class=\"w\"> </span><span class=\"nd\">@view</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">[</span><span class=\"o\">:</span><span class=\"p\">,</span><span class=\"o\">:</span><span class=\"p\">,</span><span class=\"n\">i</span><span class=\"p\">]))</span><span class=\"w\"></span>\n<span class=\"w\">       </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"go\">  0.647388 seconds (21.29 k allocations: 1.134 MiB, 6.40% compilation time)</span>\n</code></pre></div>",
+        "id": 282285309,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1652465727
+    },
+    {
+        "content": "<p>Chris Elrod is your friend here.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">LoopVectorization</span><span class=\"w\"></span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">my_copyto_tturbo!</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">B</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"nd\">@tturbo</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">i</span><span class=\"w\"> </span><span class=\"o\">∈</span><span class=\"w\"> </span><span class=\"n\">eachindex</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">B</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">               </span><span class=\"n\">A</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">B</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"n\">A</span><span class=\"w\"></span>\n<span class=\"w\">       </span><span class=\"k\">end</span><span class=\"p\">;</span><span class=\"w\"></span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"k\">let</span><span class=\"w\"> </span><span class=\"n\">A</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">UInt16</span><span class=\"p\">}(</span><span class=\"nb\">undef</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">4608</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2592</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">128</span><span class=\"p\">),</span><span class=\"w\">  </span><span class=\"n\">B</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">UInt16</span><span class=\"p\">}(</span><span class=\"nb\">undef</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">4608</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2688</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">128</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"nd\">@btime</span><span class=\"w\"> </span><span class=\"n\">copyto!</span><span class=\"p\">(</span><span class=\"nd\">@view</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">B</span><span class=\"p\">[</span><span class=\"o\">:</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">axes</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">)[</span><span class=\"mi\">2</span><span class=\"p\">],</span><span class=\"w\"> </span><span class=\"o\">:</span><span class=\"p\">]),</span><span class=\"w\"> </span><span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">);</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"nd\">@btime</span><span class=\"w\"> </span><span class=\"n\">my_copyto_tturbo!</span><span class=\"p\">(</span><span class=\"nd\">@view</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">B</span><span class=\"p\">[</span><span class=\"o\">:</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">axes</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">)[</span><span class=\"mi\">2</span><span class=\"p\">],</span><span class=\"w\"> </span><span class=\"o\">:</span><span class=\"p\">]),</span><span class=\"w\"> </span><span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">);</span><span class=\"w\"></span>\n<span class=\"w\">       </span><span class=\"k\">end</span><span class=\"p\">;</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"mf\">4.636</span><span class=\"w\"> </span><span class=\"n\">s</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">0</span><span class=\"w\"> </span><span class=\"n\">allocations</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"mi\">0</span><span class=\"w\"> </span><span class=\"n\">bytes</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"mf\">200.800</span><span class=\"w\"> </span><span class=\"n\">ms</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">0</span><span class=\"w\"> </span><span class=\"n\">allocations</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"mi\">0</span><span class=\"w\"> </span><span class=\"n\">bytes</span><span class=\"p\">)</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 282286008,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652466092
+    },
+    {
+        "content": "<p>For <code>permutedims!</code>, btw, <a href=\"https://github.com/search?q=TensorOperations.jl&amp;type=Repositories\">TensorOperations.jl</a> is often very fast:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">TensorOperations</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">LoopVectorization</span><span class=\"w\"></span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">my_permute_tturbo!</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">B</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"nd\">@tturbo</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">i</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">axes</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">,</span><span class=\"mi\">1</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">j</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">axes</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">k</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">axes</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">,</span><span class=\"mi\">3</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">               </span><span class=\"n\">B</span><span class=\"p\">[</span><span class=\"n\">k</span><span class=\"p\">,</span><span class=\"n\">j</span><span class=\"p\">,</span><span class=\"n\">i</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">A</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">,</span><span class=\"n\">j</span><span class=\"p\">,</span><span class=\"n\">k</span><span class=\"p\">]</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"n\">A</span><span class=\"w\"></span>\n<span class=\"w\">       </span><span class=\"k\">end</span><span class=\"p\">;</span><span class=\"w\"></span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"k\">let</span><span class=\"w\"> </span><span class=\"n\">A</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"kt\">UInt16</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">4608</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2592</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">128</span><span class=\"p\">),</span><span class=\"w\">  </span><span class=\"n\">B</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">UInt16</span><span class=\"p\">}(</span><span class=\"nb\">undef</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">128</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2592</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">4608</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"nd\">@btime</span><span class=\"w\"> </span><span class=\"n\">permutedims!</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">B</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">3</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"mi\">1</span><span class=\"p\">))</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"nd\">@btime</span><span class=\"w\"> </span><span class=\"n\">my_permute_tturbo!</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">B</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"nd\">@btime</span><span class=\"w\"> </span><span class=\"nd\">@tensor</span><span class=\"w\"> </span><span class=\"o\">$</span><span class=\"n\">B</span><span class=\"p\">[</span><span class=\"n\">k</span><span class=\"p\">,</span><span class=\"n\">j</span><span class=\"p\">,</span><span class=\"n\">i</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"o\">$</span><span class=\"n\">A</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">,</span><span class=\"n\">j</span><span class=\"p\">,</span><span class=\"n\">k</span><span class=\"p\">]</span><span class=\"w\"></span>\n<span class=\"w\">       </span><span class=\"k\">end</span><span class=\"p\">;</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"mf\">13.564</span><span class=\"w\"> </span><span class=\"n\">s</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">0</span><span class=\"w\"> </span><span class=\"n\">allocations</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"mi\">0</span><span class=\"w\"> </span><span class=\"n\">bytes</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"mf\">6.656</span><span class=\"w\"> </span><span class=\"n\">s</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">0</span><span class=\"w\"> </span><span class=\"n\">allocations</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"mi\">0</span><span class=\"w\"> </span><span class=\"n\">bytes</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"mf\">1.068</span><span class=\"w\"> </span><span class=\"n\">s</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">62</span><span class=\"w\"> </span><span class=\"n\">allocations</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"mf\">4.89</span><span class=\"w\"> </span><span class=\"n\">KiB</span><span class=\"p\">)</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 282318490,
+        "sender_full_name": "Michael Abbott",
+        "timestamp": 1652484030
+    },
+    {
+        "content": "<p>LoopVectorization's multithreading seems to be doing something bad here. </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">my_permute_polyester!</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">B</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"nd\">@batch</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">j</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">axes</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"nd\">@turbo</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">i</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">axes</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">,</span><span class=\"mi\">1</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">k</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">axes</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">,</span><span class=\"mi\">3</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">               </span><span class=\"n\">B</span><span class=\"p\">[</span><span class=\"n\">k</span><span class=\"p\">,</span><span class=\"n\">j</span><span class=\"p\">,</span><span class=\"n\">i</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">A</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">,</span><span class=\"n\">j</span><span class=\"p\">,</span><span class=\"n\">k</span><span class=\"p\">]</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"k\">end</span><span class=\"p\">;</span><span class=\"w\"> </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"n\">A</span><span class=\"w\"></span>\n<span class=\"w\">       </span><span class=\"k\">end</span><span class=\"p\">;</span><span class=\"w\"></span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"k\">let</span><span class=\"w\"> </span><span class=\"n\">A</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"kt\">UInt16</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">4608</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2592</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">128</span><span class=\"p\">),</span><span class=\"w\">  </span><span class=\"n\">B</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">UInt16</span><span class=\"p\">}(</span><span class=\"nb\">undef</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">128</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2592</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">4608</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"nd\">@time</span><span class=\"w\"> </span><span class=\"n\">permutedims!</span><span class=\"p\">(</span><span class=\"n\">B</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">A</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">3</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"mi\">1</span><span class=\"p\">))</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"nd\">@time</span><span class=\"w\"> </span><span class=\"n\">my_permute_tturbo!</span><span class=\"p\">(</span><span class=\"n\">B</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">A</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"nd\">@time</span><span class=\"w\"> </span><span class=\"n\">my_permute_polyester!</span><span class=\"p\">(</span><span class=\"n\">B</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">A</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">           </span><span class=\"nd\">@time</span><span class=\"w\"> </span><span class=\"nd\">@tensor</span><span class=\"w\"> </span><span class=\"n\">B</span><span class=\"p\">[</span><span class=\"n\">k</span><span class=\"p\">,</span><span class=\"n\">j</span><span class=\"p\">,</span><span class=\"n\">i</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">A</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">,</span><span class=\"n\">j</span><span class=\"p\">,</span><span class=\"n\">k</span><span class=\"p\">]</span><span class=\"w\"></span>\n<span class=\"w\">       </span><span class=\"k\">end</span><span class=\"p\">;</span><span class=\"w\"></span>\n<span class=\"w\"> </span><span class=\"mf\">14.993049</span><span class=\"w\"> </span><span class=\"n\">seconds</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"mf\">3.187791</span><span class=\"w\"> </span><span class=\"n\">seconds</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">3</span><span class=\"w\"> </span><span class=\"n\">allocations</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"mi\">96</span><span class=\"w\"> </span><span class=\"n\">bytes</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"mf\">0.495429</span><span class=\"w\"> </span><span class=\"n\">seconds</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"mf\">0.721222</span><span class=\"w\"> </span><span class=\"n\">seconds</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">515</span><span class=\"w\"> </span><span class=\"n\">allocations</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"mf\">41.172</span><span class=\"w\"> </span><span class=\"n\">KiB</span><span class=\"p\">)</span><span class=\"w\"></span>\n</code></pre></div>\n<p>The allocation is because I'm using <code>@time</code>, and Polyester's threads have to wake up.</p>",
+        "id": 282320169,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1652485664
+    },
+    {
+        "content": "<p>Anyway, as the <code>Polyester</code> example shows, LV is obviously making a stupid threading decision. I doubt my <code>@batch</code> on axis 2 is particularly smart, either, it was just the first thing I tried, and apparently 6x less stupid.</p>",
+        "id": 282320475,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1652485973
+    },
+    {
+        "content": "<p>I noticed with the <code>copyto!</code> example, there was no advantage to using <code>@tturbo</code> vs <code>@turbo</code> even though it was taking hundreds of miliseconds, so probably a bad heuristic there too</p>",
+        "id": 282320571,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652486054
+    },
+    {
+        "content": "<p>I think it isn't picking good loops to thread.</p>",
+        "id": 282320759,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1652486290
+    },
+    {
+        "content": "<p>Also, <code>copyto!</code> will likely be faster than <code>@turbo</code>.</p>",
+        "id": 282320767,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1652486307
+    },
+    {
+        "content": "<p><code>copyto!</code> forwards to memcpy which can have optimized implementations using non-temporal stores (as well as arch-based dispatch).</p>",
+        "id": 282320792,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1652486367
+    },
+    {
+        "content": "<p><code>vmapnt!(identity, dst, src)</code> matched it in that example, but of course the advantage of the memcpy implementations is that they'll only use non-temporal stores for large arrays, where early copied elements are going to be flushed from your cache anyway.</p>",
+        "id": 282320918,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1652486448
+    },
+    {
+        "content": "<p><code>ls</code> corresponds to <code>my_permute_tturbo!</code>:</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">LoopVectorization</span><span class=\"o\">.</span><span class=\"n\">choose_order</span><span class=\"p\">(</span><span class=\"n\">ls</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"go\">([:k, :i, :j], :i, :k, :i, 1, 1)</span>\n</code></pre></div>\n<p>So it looks like it's putting the <code>j</code> loop as the inner-most loop, and then threading the <code>k</code> and <code>i</code> loop. The <code>i</code> loop is also what it is vectorizing, meaning it is going with contiguous loads + scatters, which also seems questionable. gathers + contiguous stores should be faster, but I think as a heuristic it prefers faster loads as you're more likely to be bottlenecked on latency.</p>\n<p>Actually, a really clever thing I should try to get the rewrite to do is have a combined kernel that uses both gathers + contiguous stores and contiguous loads + scatters, to balance loads and store (in proportion to the actual number of each the CPU is capable of)...</p>",
+        "id": 282321118,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1652486663
+    },
+    {
+        "content": "<p>It's a pity Base's <code>permutedims!</code> is so much slower, even without multithreading. Maybe TO's algorithm should be built-in? BLAS doesn't do this if google is telling the truth, but do libraries like MKL have fast routines? <code>copyto!</code> is just tripping over the <code>view</code> somehow, costing 20x.</p>",
+        "id": 282322217,
+        "sender_full_name": "Michael Abbott",
+        "timestamp": 1652487967
+    },
+    {
+        "content": "<p>(IIRC there are actually at 2 or 3 different blocking stories for <code>permutedims!</code> in different parts of Base.)</p>",
+        "id": 282322240,
+        "sender_full_name": "Michael Abbott",
+        "timestamp": 1652488033
+    },
+    {
+        "content": "<p>Locally:</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"nd\">@time</span><span class=\"w\"> </span><span class=\"n\">my_permute_tturbo!</span><span class=\"p\">(</span><span class=\"n\">B</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">A</span><span class=\"p\">);</span><span class=\"w\"></span>\n<span class=\"go\">  0.145698 seconds</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"nd\">@time</span><span class=\"w\"> </span><span class=\"n\">my_permute_tturbo!</span><span class=\"p\">(</span><span class=\"n\">B</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">A</span><span class=\"p\">);</span><span class=\"w\"></span>\n<span class=\"go\">  0.139114 seconds</span>\n</code></pre></div>",
+        "id": 282322627,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1652488549
+    },
+    {
+        "content": "<p>I just pushed to master.<br>\nIt is still far from optimal, but I at least made a minimal tweak to fix the really bad behavior seen currently.</p>\n<p>I don't want to make more substantial changes, as my LV efforts are being focused on the rewrite.<br>\nBut possibly handling something like this really well via balanced gather/scatters is an interesting idea I'll try and get around to trying out eventually...<br>\nOf course, part of the trick there is that you need to divide up the iteration space, and then fuse overlapping pieces.<br>\nThat could perhaps be guarded by a \"I don't care how much code you're generating!\" flag.</p>",
+        "id": 282322794,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1652488750
+    },
+    {
+        "content": "<p>The <code>@tturbo</code> version's performance should be better with the newly released LoopVectorization v0.12.109.</p>",
+        "id": 282326424,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1652493821
+    },
+    {
+        "content": "<p>do the polyester threads already play nice with the \"normal\" base julia threads?</p>",
+        "id": 282367024,
+        "sender_full_name": "Maarten",
+        "timestamp": 1652554635
+    },
+    {
+        "content": "<p>AFAIK no, and there’s no plans for that.</p>",
+        "id": 282369042,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652557592
+    },
+    {
+        "content": "<p>Polyester threads are better anyways <span aria-label=\"grinning\" class=\"emoji emoji-1f600\" role=\"img\" title=\"grinning\">:grinning:</span></p>",
+        "id": 282370625,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1652560038
+    },
+    {
+        "content": "<p>Kiran was in Boston for a week a few weeks ago (and was the hecklee at a CAJUN \"heckle a Julia developer\").<br>\nImproving performance of Base threads was a priority of his.</p>\n<p>He also said he'd create a benchmark repo that contains Julia and OpenMP versions for comparison, and would accept a PR that also adds Polyester/LV versions for comparison as well.</p>\n<p>Hopefully things will get better, but I do remain a bit skeptical.</p>",
+        "id": 282371954,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1652562109
+    },
+    {
+        "content": "<p>Oh that'd be cool!</p>",
+        "id": 282373054,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1652563881
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"293896\">Brenhin Keller</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto!.20and.20permutedims!/near/282370625\">said</a>:</p>\n<blockquote>\n<p>Polyester threads are better anyways <span aria-label=\"grinning\" class=\"emoji emoji-1f600\" role=\"img\" title=\"grinning\">:grinning:</span></p>\n</blockquote>\n<p>IMO they're not better, but they are very useful.</p>",
+        "id": 282373181,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652564052
+    },
+    {
+        "content": "<p>If I was to have a language with only one threading system, I wouldn't choose Polyester's set of tradeoffs. But as a choice of one way to thread code, it's fantastic</p>",
+        "id": 282373209,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652564109
+    },
+    {
+        "content": "<p>Oh not being too serious or anything -- and \"better\" is super subjective. That said, while it's great that there is multithreading in base, and the async / spawn approach is cool and all, for me personally the cases where multithreading is super useful are kind of squeezed between the efficiency you can get from a single thread with SIMD on one side, and multiprocessing on the other side. For the cases in-between where I want more than one thread, but don't want to reach all the way over to message passing and such, low overhead is kinda the key priority personally.</p>",
+        "id": 282374181,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1652565415
+    },
+    {
+        "content": "<p>I have never worked in/with HPC, but I've been told people who do really want composable task-based systems (i.e., base Julia, not Polyester).</p>",
+        "id": 282375968,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1652567756
+    },
+    {
+        "content": "<p>Dynamic scheduling will also become increasingly important as architectures becoming increasingly heterogenous.</p>",
+        "id": 282376016,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1652567810
+    },
+    {
+        "content": "<p>In principle, the idea of a few big cores optimized for single threaded performance + a bunch of little cores optimized for performance/die area makes a lot of sense for maximizing a CPU's performance.<br>\nMany programs just aren't going to scale beyond a few cores, so have a few big cores to make them fast. For programs that do scale well with more cores, throw as many as you can at them.<br>\nIntel is going this route, with their next generation of CPUs being rumored to have 16 little cores.<br>\nI'm not sure about Apple, which tends to have much fewer little cores aimed at background processes rather than doing work?<br>\nI watched a presentation by Tenstorrent that advertised a similar concept (fast big core + tons of small ones) for ML work.</p>\n<p>So maybe breadth first or work stealing work well here; i.e. we want something dynamic to best be able to take advantage of heterogenous compute, where it would be difficult to know how to actually divide work up a priori.</p>",
+        "id": 282376080,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1652567983
+    },
+    {
+        "content": "<p>There's a decent chance Julia moves to work stealing in the future. With work stealing, we can't be better than the competition, but -- given it is what the competition uses -- at least we'll actually be able to match it.</p>\n<p>Kiran maintains that depth first is the better algorithm in theory, but there's a lot of unsolved issues for a good implementation, while work stealing is much more of a known entity.</p>",
+        "id": 282376144,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1652568052
+    },
+    {
+        "content": "<p>Julia probably wants heterogenous architectures.<br>\nCompiling sucks on the A64FX, which is basically just a bunch of small cores (that have big vectors). Bolting a big core or two on there to at least run the JIT would make it much nicer for Julia</p>",
+        "id": 282376350,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1652568410
+    },
+    {
+        "content": "<p>Yeah, that does make sense. I'm probably an outlier; real HPC folks have been all about \"hierarchical parallelism\" for a while now</p>",
+        "id": 282376450,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1652568602
+    },
+    {
+        "content": "<p>Man, I've been doing benchmarks on a64fx, it's sooooo slow</p>",
+        "id": 282376491,
+        "sender_full_name": "Mosè Giordano",
+        "timestamp": 1652568617
+    },
+    {
+        "content": "<p>Haha, oh no</p>",
+        "id": 282376561,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1652568748
+    },
+    {
+        "content": "<p>With parallel precompilation in v1.7, I have to go through Julia-1.0-level precompilation times. It is very common to stare the screen for 5-10 minutes for precompilation to complete</p>",
+        "id": 282376620,
+        "sender_full_name": "Mosè Giordano",
+        "timestamp": 1652568877
+    },
+    {
+        "content": "<p>A blast from the past <span aria-label=\"laughing\" class=\"emoji emoji-1f606\" role=\"img\" title=\"laughing\">:laughing:</span></p>",
+        "id": 282376636,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1652568920
+    },
+    {
+        "content": "<p>What's the clock speed on those again?</p>",
+        "id": 282376683,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1652568983
+    },
+    {
+        "content": "<p>2.0-2.2 GHz</p>",
+        "id": 282376888,
+        "sender_full_name": "Mosè Giordano",
+        "timestamp": 1652569258
+    },
+    {
+        "content": "<p>Oh huh, so slow but not insanely slow.. so then it's lack of cache and low instructions-per-cycle and such then that limits precompilation?</p>",
+        "id": 282376988,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1652569425
+    },
+    {
+        "content": "<p>I'm not sure about <em>why</em> it's so slow, maybe Chris has some ideas. In general Julia's compilation is very slow on some aarch64 boards with low memory, but I don't think this is the case for this CPU. In any case the experience is pretty bad.</p>\n<p>In the last weeks I'm doing some MPI performance to measure latency when using <a href=\"https://github.com/search?q=MPI.jl&amp;type=Repositories\">MPI.jl</a> and Julia overhead compared to C. Some results are good, others less so, but I want to run more benchmarks in the next weeks.</p>",
+        "id": 282378296,
+        "sender_full_name": "Mosè Giordano",
+        "timestamp": 1652571515
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"284680\">chriselrod</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto!.20and.20permutedims!/near/282371954\">said</a>:</p>\n<blockquote>\n<p>but I do remain a bit skeptical.</p>\n</blockquote>\n<p>skeptical about what specifically?</p>",
+        "id": 282380555,
+        "sender_full_name": "Mosè Giordano",
+        "timestamp": 1652575313
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269186\">Mosè Giordano</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto!.20and.20permutedims!/near/282380555\">said</a>:</p>\n<blockquote>\n<p><span class=\"user-mention silent\" data-user-id=\"284680\">chriselrod</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto!.20and.20permutedims!/near/282371954\">said</a>:</p>\n<blockquote>\n<p>but I do remain a bit skeptical.</p>\n</blockquote>\n<p>skeptical about what specifically?</p>\n</blockquote>\n<p>Skeptical may not have been the right word. I guess I could say \"skeptical that the approach will be able enable small multithreaded BLAS that is competitive with MKL\", but that's also not really the use case they're targeting, and other than looking good on benchmarks, I have to wonder how valuable that really is.</p>",
+        "id": 282383193,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1652579845
+    },
+    {
+        "content": "<p>The A64FX really doesn't look that bad on paper: <a href=\"https://www.stonybrook.edu/commcms/ookami/support/_docs/A64FX_Microarchitecture_Manual_en_1.3.pdf\">https://www.stonybrook.edu/commcms/ookami/support/_docs/A64FX_Microarchitecture_Manual_en_1.3.pdf</a></p>",
+        "id": 282383197,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1652579871
+    },
+    {
+        "content": "<p>E.g., it has 128 floating point registers, vs 168 in Intel Skylake-X.</p>",
+        "id": 282383244,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1652579935
+    },
+    {
+        "content": "<p>\"Commit stack entry\" of 128, which if I'm reading correctly, should be compared with Skylake's ROB of 224.</p>",
+        "id": 282383341,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1652580024
+    },
+    {
+        "content": "<p>Both can decode 4 instructions/cycle.</p>",
+        "id": 282383356,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1652580037
+    },
+    {
+        "content": "<p>I.e., it looks slower than Skylake on paper, but compare that with chips like the A53 and A55, which are only dual-issue (half the A64FX's 4, which basically matches Skylake).</p>",
+        "id": 282383496,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1652580248
+    },
+    {
+        "content": "<p>I'm just catching up here. Thank you for the great tips.</p>",
+        "id": 282666559,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1652804442
+    }
+]

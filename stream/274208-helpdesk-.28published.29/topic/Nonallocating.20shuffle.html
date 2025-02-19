@@ -1,0 +1,359 @@
+<html>
+<head><meta charset="utf-8"><title>Nonallocating shuffle · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html">Nonallocating shuffle</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="243487137"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243487137" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243487137">(Jun 22 2021 at 08:43)</a>:</h4>
+<p>Is there any package, which provides non allocating shuffle for tuples or SVectors?</p>
+<p>I've tried to use <a href="https://github.com/search?q=StaticArrays.jl&amp;type=Repositories">StaticArrays.jl</a>, but default algorithm works only with <code>MVector</code> and it allocates</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span> <span class="n">Random</span>
+<span class="k">using</span> <span class="n">StaticArrays</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">MVector</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@btime</span> <span class="n">Random</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="o">$</span><span class="n">x</span><span class="p">)</span>
+  <span class="mf">38.575</span> <span class="n">ns</span> <span class="p">(</span><span class="mi">1</span> <span class="n">allocation</span><span class="o">:</span> <span class="mi">48</span> <span class="n">bytes</span><span class="p">)</span>
+</code></pre></div>
+<p>I can use <code>Random.shuffle!</code>, but then I still need to allocate initial <code>MVector</code>.</p>
+<p>Interestingly enough, it is easy to write non allocating version, but it is slower than <code>MVector</code> version</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span> <span class="n">Setfield</span>
+
+<span class="k">function</span> <span class="n">myshuffle</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">L</span> <span class="o">=</span> <span class="n">length</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="p">(</span><span class="n">L</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">j</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="n">i</span><span class="o">:</span><span class="n">L</span><span class="p">)</span>
+        <span class="n">i</span> <span class="o">==</span> <span class="n">j</span> <span class="o">&amp;&amp;</span> <span class="k">continue</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="nd">@set!</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+        <span class="nd">@set!</span> <span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span>
+    <span class="k">end</span>
+
+    <span class="k">return</span> <span class="n">x</span>
+<span class="k">end</span>
+
+<span class="n">y</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@btime</span> <span class="n">myshuffle</span><span class="p">(</span><span class="o">$</span><span class="n">y</span><span class="p">)</span>
+  <span class="mf">46.262</span> <span class="n">ns</span> <span class="p">(</span><span class="mi">0</span> <span class="n">allocations</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">)</span>
+</code></pre></div>
+<p>which is substantially worse than <code>MVector</code> version. And issue is not with <code>Setfield</code>, I've tried to write setindex manually, but performance is the same.</p>
+
+
+
+<a name="243583174"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243583174" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Eric Hanson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243583174">(Jun 22 2021 at 21:48)</a>:</h4>
+<p>Maybe <a href="https://jutho.github.io/TupleTools.jl/latest/#TupleTools.permute">https://jutho.github.io/TupleTools.jl/latest/#TupleTools.permute</a> and <a href="https://docs.julialang.org/en/v1/stdlib/Random/#Random.randperm">https://docs.julialang.org/en/v1/stdlib/Random/#Random.randperm</a>! with a workspace permutation? Not ideal :/</p>
+
+
+
+<a name="243690322"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243690322" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243690322">(Jun 23 2021 at 18:05)</a>:</h4>
+<p>Ah, thank you for <a href="https://github.com/search?q=TupleTools.jl&amp;type=Repositories">TupleTools.jl</a>, it's definitely useful package.</p>
+<p>Unfortunately, <code>randperm</code> produces <code>Vector</code>, so it allocates...</p>
+
+
+
+<a name="243690433"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243690433" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243690433">(Jun 23 2021 at 18:06)</a>:</h4>
+<p>Could you wrap it in a SVector?</p>
+
+
+
+<a name="243690483"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243690483" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243690483">(Jun 23 2021 at 18:06)</a>:</h4>
+<p>How?</p>
+
+
+
+<a name="243690489"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243690489" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243690489">(Jun 23 2021 at 18:06)</a>:</h4>
+<p>Who?</p>
+
+
+
+<a name="243690510"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243690510" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243690510">(Jun 23 2021 at 18:06)</a>:</h4>
+<p>I mean, who should be wrapped in <code>SVector</code>?</p>
+
+
+
+<a name="243690521"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243690521" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243690521">(Jun 23 2021 at 18:07)</a>:</h4>
+<p>Sorry, I should have read the OP more carefully, one sec</p>
+
+
+
+<a name="243691783"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243691783" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243691783">(Jun 23 2021 at 18:16)</a>:</h4>
+<p>I  hoped that because this doesn’t allocate:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">let</span> <span class="n">x</span> <span class="o">=</span> <span class="kt">Ref</span><span class="p">(</span><span class="n">MVector</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">))</span>
+    <span class="nd">@btime</span> <span class="n">shuffle!</span><span class="p">(</span><span class="o">$</span><span class="n">x</span><span class="p">[])</span>
+<span class="k">end</span>
+ <span class="mf">30.424</span> <span class="n">ns</span> <span class="p">(</span><span class="mi">0</span> <span class="n">allocations</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">)</span>
+<span class="mi">4</span><span class="o">-</span><span class="n">element</span> <span class="kt">MArray</span><span class="p">{</span><span class="kt">Tuple</span><span class="p">{</span><span class="mi">4</span><span class="p">},</span><span class="kt">Int64</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">4</span><span class="p">}</span> <span class="n">with</span> <span class="n">indices</span> <span class="n">SOneTo</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">:</span>
+ <span class="mi">2</span>
+ <span class="mi">1</span>
+ <span class="mi">4</span>
+ <span class="mi">3</span>
+</code></pre></div>
+<p>That you could do</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">function</span> <span class="n">Random</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">v</span><span class="o">::</span><span class="kt">SArray</span><span class="p">)</span>
+    <span class="n">mv</span> <span class="o">=</span> <span class="n">MArray</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="n">shuffle!</span><span class="p">(</span><span class="n">mv</span><span class="p">)</span>
+    <span class="n">SArray</span><span class="p">(</span><span class="n">mv</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>But it didn’t end up stack allocating, I guess <code>shuffle!</code> is too complicated to in-line or something:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">let</span> <span class="n">x</span> <span class="o">=</span> <span class="kt">Ref</span><span class="p">(</span><span class="n">SVector</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">))</span>
+    <span class="nd">@btime</span> <span class="n">shuffle</span><span class="p">(</span><span class="o">$</span><span class="n">x</span><span class="p">[])</span>
+<span class="k">end</span>
+<span class="mf">38.550</span> <span class="n">ns</span> <span class="p">(</span><span class="mi">1</span> <span class="n">allocation</span><span class="o">:</span> <span class="mi">48</span> <span class="n">bytes</span><span class="p">)</span>
+<span class="mi">4</span><span class="o">-</span><span class="n">element</span> <span class="kt">SArray</span><span class="p">{</span><span class="kt">Tuple</span><span class="p">{</span><span class="mi">4</span><span class="p">},</span><span class="kt">Int64</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">4</span><span class="p">}</span> <span class="n">with</span> <span class="n">indices</span> <span class="n">SOneTo</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">:</span>
+ <span class="mi">3</span>
+ <span class="mi">1</span>
+ <span class="mi">4</span>
+ <span class="mi">2</span>
+</code></pre></div>
+
+
+
+<a name="243691901"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243691901" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243691901">(Jun 23 2021 at 18:16)</a>:</h4>
+<p>I yet again wish we had call-site inlining.</p>
+
+
+
+<a name="243693157"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243693157" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243693157">(Jun 23 2021 at 18:26)</a>:</h4>
+<p>Ah, yes, that's what I see as well.</p>
+<p>I have opposite feelings :-) <code>MVector</code> is faster than hand-written, but it allocates, so it can potentially give pressure to GC.</p>
+
+
+
+<a name="243693588"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243693588" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243693588">(Jun 23 2021 at 18:30)</a>:</h4>
+<p>What do you have opposite feelings about?</p>
+
+
+
+<a name="243695862"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243695862" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243695862">(Jun 23 2021 at 18:47)</a>:</h4>
+<p>Which one to use :-)<br>
+Allocating but fast version with MVector<br>
+Or handwritten nonallocating but slow version over tuples.</p>
+
+
+
+<a name="243696976"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243696976" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243696976">(Jun 23 2021 at 18:56)</a>:</h4>
+<p>I don’t know how you disagree with me then because I didn’t advocate either of those <span aria-label="stuck out tongue" class="emoji emoji-1f61b" role="img" title="stuck out tongue">:stuck_out_tongue:</span> </p>
+<p>I was trying to get the best of both worlds by stack allocating an MVector, then in place shuffling it, the casting back to SVector.</p>
+
+
+
+<a name="243697007"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243697007" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243697007">(Jun 23 2021 at 18:56)</a>:</h4>
+<p>But it didn’t work because <code>shuffle!</code> doesn’t inline</p>
+
+
+
+<a name="243699276"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243699276" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243699276">(Jun 23 2021 at 19:16)</a>:</h4>
+<p>Note that <code>shuffle!(::MVector)</code> does not allocate</p>
+
+
+
+<a name="243699296"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243699296" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243699296">(Jun 23 2021 at 19:16)</a>:</h4>
+<p>Ah! Sorry! I was not disagreeing with you, it's just a wrong translation.</p>
+<p>It should have been something like "I have contradictorary (conflicting?) feelings, which approach to choose, because they both have good and bad sides"</p>
+
+
+
+<a name="243699381"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243699381" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243699381">(Jun 23 2021 at 19:17)</a>:</h4>
+<p><code>Opposing</code> and <code>conflicting</code> are synonyms for me :-)</p>
+
+
+
+<a name="243699484"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243699484" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243699484">(Jun 23 2021 at 19:18)</a>:</h4>
+<p>Oh, and it should be <code>opposing</code> not <code>opposite</code>.<br>
+Damn, I am sorry, that was really stupid.</p>
+
+
+
+<a name="243699510"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243699510" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243699510">(Jun 23 2021 at 19:18)</a>:</h4>
+<p>no worries!</p>
+
+
+
+<a name="243700470"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243700470" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243700470">(Jun 23 2021 at 19:26)</a>:</h4>
+<p>Okay, this is a little janky, but I managed to get <a href="https://github.com/search?q=StrideArrays.jl&amp;type=Repositories">StrideArrays.jl</a> working for this so that it's non-allocating <strong>and</strong> fast:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">using</span> <span class="n">StrideArrays</span><span class="p">,</span> <span class="n">StaticArrays</span><span class="p">,</span> <span class="n">Random</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="k">function</span> <span class="n">myshuffle</span><span class="p">(</span><span class="n">v</span><span class="o">::</span><span class="kt">StaticArray</span><span class="p">)</span>
+           <span class="n">strv</span> <span class="o">=</span> <span class="n">StrideArray</span><span class="p">(</span><span class="nb">undef</span><span class="p">,</span> <span class="n">eltype</span><span class="p">(</span><span class="n">v</span><span class="p">),</span> <span class="n">StrideArrays</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">...</span><span class="p">)</span>
+           <span class="n">pv</span>   <span class="o">=</span> <span class="n">PtrArray</span><span class="p">(</span><span class="n">strv</span><span class="p">)</span>
+           <span class="n">GC</span><span class="o">.</span><span class="nd">@preserve</span> <span class="n">strv</span> <span class="k">begin</span>
+               <span class="n">pv</span> <span class="o">.=</span> <span class="n">v</span>
+               <span class="n">shuffle!</span><span class="p">(</span><span class="n">pv</span><span class="p">)</span>
+               <span class="n">typeof</span><span class="p">(</span><span class="n">v</span><span class="p">)(</span><span class="n">strv</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+           <span class="k">end</span>
+       <span class="k">end</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="k">let</span> <span class="n">v</span> <span class="o">=</span> <span class="kt">Ref</span><span class="p">(</span><span class="n">SVector</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">))</span>
+           <span class="nd">@btime</span> <span class="n">myshuffle</span><span class="p">(</span><span class="o">$</span><span class="n">v</span><span class="p">[])</span>
+       <span class="k">end</span>
+  <span class="mf">33.899</span> <span class="n">ns</span> <span class="p">(</span><span class="mi">0</span> <span class="n">allocations</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">)</span>
+<span class="mi">4</span><span class="o">-</span><span class="n">element</span> <span class="kt">SVector</span><span class="p">{</span><span class="mi">4</span><span class="p">,</span> <span class="kt">Int64</span><span class="p">}</span> <span class="n">with</span> <span class="n">indices</span> <span class="n">SOneTo</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">:</span>
+ <span class="mi">4</span>
+ <span class="mi">1</span>
+ <span class="mi">2</span>
+ <span class="mi">3</span>
+</code></pre></div>
+
+
+
+<a name="243700550"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243700550" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243700550">(Jun 23 2021 at 19:27)</a>:</h4>
+<p>That said, we should maybe just open an issue in <a href="https://github.com/search?q=StaticArrays.jl&amp;type=Repositories">StaticArrays.jl</a> requesting an implementation of <code>shuffle</code> for static arrays.</p>
+
+
+
+<a name="243700869"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243700869" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243700869">(Jun 23 2021 at 19:30)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269150">Mason Protter</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle/near/243699276">said</a>:</p>
+<blockquote>
+<p>Note that <code>shuffle!(::MVector)</code> does not allocate</p>
+</blockquote>
+<p>Ah! I wanted to answer you that I need to create new <code>MVector</code> in a loop, but it occurs to me, that <code>shuffle!</code> of <code>shuffle!</code> is <code>shuffle!</code>! I mean, I can shuffle shuffled vector and use it again.</p>
+<p>I.e. my original task was something like</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">for</span> <span class="n">x</span> <span class="k">in</span> <span class="n">v</span>
+   <span class="n">a0</span> <span class="o">=</span> <span class="n">shuffle</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+  <span class="n">apply</span><span class="p">(</span><span class="n">a0</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>And I can do it </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">a0</span> <span class="o">=</span> <span class="n">MVector</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">x</span> <span class="k">in</span> <span class="n">v</span>
+  <span class="n">a0</span> <span class="o">=</span> <span class="n">shuffle!</span><span class="p">(</span><span class="n">a0</span><span class="p">)</span>
+  <span class="n">apply</span><span class="p">(</span><span class="n">a0</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>So yes, it solves my task.<br>
+The only question that is left, why <code>MVector</code> shuffles faster than <code>Tuple</code> (I've looked at the definition of <code>Random.shuffle!</code> it's basically the same as my handwritten version).</p>
+
+
+
+<a name="243701428"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243701428" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243701428">(Jun 23 2021 at 19:35)</a>:</h4>
+<p>The difference is that in your handwritten version,</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code> <span class="nd">@set!</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+</code></pre></div>
+<p>is something like</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="kt">Tuple</span><span class="p">(</span><span class="n">k</span> <span class="o">==</span> <span class="n">i</span> <span class="o">?</span> <span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">:</span> <span class="n">x</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="k">in</span> <span class="n">eachindex</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+</code></pre></div>
+<p>so it's creating entire tuples instead of moving around individual values.</p>
+
+
+
+<a name="243701559"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243701559" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243701559">(Jun 23 2021 at 19:36)</a>:</h4>
+<p>Often LLVM / julia are smart enough to not create values on the stack that aren't actually used, but I suspect they aren't able to prove which values aren't being used in each iteration, so space is being wasted on the stack.</p>
+
+
+
+<a name="243701945"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243701945" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243701945">(Jun 23 2021 at 19:39)</a>:</h4>
+<p>So if we can use mutable stack allocated arrays we can speed up this calculation, right?<br>
+Ah, I guess this is where <a href="https://github.com/search?q=StrideArrays.jl&amp;type=Repositories">StrideArrays.jl</a> comes in, right?</p>
+
+
+
+<a name="243701954"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243701954" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243701954">(Jun 23 2021 at 19:39)</a>:</h4>
+<p>Should take a look at them.</p>
+
+
+
+<a name="243706635"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243706635" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243706635">(Jun 23 2021 at 20:17)</a>:</h4>
+<p>Yeah, that’s correct, I’m using a <code>StrideArrays.PtrArray</code> to get a stack allocated mutable array. You can often do this with just a plain MArray, but it’s harder to force julia to do it.</p>
+
+
+
+<a name="243709773"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243709773" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243709773">(Jun 23 2021 at 20:41)</a>:</h4>
+<p>This is awesome.</p>
+
+
+
+<a name="243725652"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243725652" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243725652">(Jun 23 2021 at 23:27)</a>:</h4>
+<p><span class="user-mention" data-user-id="269150">@Mason Protter</span> <code>@gc_preserve</code> from StrideArrays automates it</p>
+
+
+
+<a name="243725726"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243725726" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243725726">(Jun 23 2021 at 23:28)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">using</span> <span class="n">StrideArrays</span><span class="p">,</span> <span class="n">StaticArrays</span><span class="p">,</span> <span class="n">Random</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="k">function</span> <span class="n">shuffle_v1</span><span class="p">(</span><span class="n">v</span><span class="o">::</span><span class="kt">SArray</span><span class="p">)</span>
+          <span class="n">mv</span> <span class="o">=</span> <span class="n">MArray</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+          <span class="n">shuffle!</span><span class="p">(</span><span class="n">mv</span><span class="p">)</span>
+          <span class="n">SArray</span><span class="p">(</span><span class="n">mv</span><span class="p">)</span>
+       <span class="k">end</span>
+<span class="n">shuffle_v1</span> <span class="p">(</span><span class="n">generic</span> <span class="k">function</span> <span class="n">with</span> <span class="mi">1</span> <span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="k">function</span> <span class="n">shuffle_v2</span><span class="p">(</span><span class="n">v</span><span class="o">::</span><span class="kt">SArray</span><span class="p">)</span>
+          <span class="n">mv</span> <span class="o">=</span> <span class="n">MArray</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+          <span class="nd">@gc_preserve</span> <span class="n">shuffle!</span><span class="p">(</span><span class="n">mv</span><span class="p">)</span>
+          <span class="n">SArray</span><span class="p">(</span><span class="n">mv</span><span class="p">)</span>
+       <span class="k">end</span>
+<span class="n">shuffle_v2</span> <span class="p">(</span><span class="n">generic</span> <span class="k">function</span> <span class="n">with</span> <span class="mi">1</span> <span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">x</span> <span class="o">=</span> <span class="nd">@SVector</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">]);</span> <span class="n">x</span><span class="o">'</span>
+<span class="mi">1</span><span class="o">×</span><span class="mi">4</span> <span class="n">adjoint</span><span class="p">(</span><span class="o">::</span><span class="kt">SVector</span><span class="p">{</span><span class="mi">4</span><span class="p">,</span> <span class="kt">Int64</span><span class="p">})</span> <span class="n">with</span> <span class="n">eltype</span> <span class="kt">Int64</span> <span class="n">with</span> <span class="n">indices</span> <span class="n">SOneTo</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">×</span><span class="n">SOneTo</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">:</span>
+ <span class="mi">1</span>  <span class="mi">2</span>  <span class="mi">3</span>  <span class="mi">4</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@btime</span> <span class="n">shuffle_v1</span><span class="p">(</span><span class="o">$</span><span class="n">x</span><span class="p">)</span><span class="o">'</span>
+  <span class="mf">26.022</span> <span class="n">ns</span> <span class="p">(</span><span class="mi">1</span> <span class="n">allocation</span><span class="o">:</span> <span class="mi">48</span> <span class="n">bytes</span><span class="p">)</span>
+<span class="mi">1</span><span class="o">×</span><span class="mi">4</span> <span class="n">adjoint</span><span class="p">(</span><span class="o">::</span><span class="kt">SVector</span><span class="p">{</span><span class="mi">4</span><span class="p">,</span> <span class="kt">Int64</span><span class="p">})</span> <span class="n">with</span> <span class="n">eltype</span> <span class="kt">Int64</span> <span class="n">with</span> <span class="n">indices</span> <span class="n">SOneTo</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">×</span><span class="n">SOneTo</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">:</span>
+ <span class="mi">4</span>  <span class="mi">3</span>  <span class="mi">2</span>  <span class="mi">1</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@btime</span> <span class="n">shuffle_v2</span><span class="p">(</span><span class="o">$</span><span class="n">x</span><span class="p">)</span><span class="o">'</span>
+  <span class="mf">20.040</span> <span class="n">ns</span> <span class="p">(</span><span class="mi">0</span> <span class="n">allocations</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">)</span>
+<span class="mi">1</span><span class="o">×</span><span class="mi">4</span> <span class="n">adjoint</span><span class="p">(</span><span class="o">::</span><span class="kt">SVector</span><span class="p">{</span><span class="mi">4</span><span class="p">,</span> <span class="kt">Int64</span><span class="p">})</span> <span class="n">with</span> <span class="n">eltype</span> <span class="kt">Int64</span> <span class="n">with</span> <span class="n">indices</span> <span class="n">SOneTo</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">×</span><span class="n">SOneTo</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">:</span>
+ <span class="mi">3</span>  <span class="mi">4</span>  <span class="mi">1</span>  <span class="mi">2</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@btime</span> <span class="n">myshuffle</span><span class="p">(</span><span class="o">$</span><span class="n">x</span><span class="p">)</span><span class="o">'</span> <span class="c"># your version</span>
+  <span class="mf">19.653</span> <span class="n">ns</span> <span class="p">(</span><span class="mi">0</span> <span class="n">allocations</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">)</span>
+<span class="mi">1</span><span class="o">×</span><span class="mi">4</span> <span class="n">adjoint</span><span class="p">(</span><span class="o">::</span><span class="kt">SVector</span><span class="p">{</span><span class="mi">4</span><span class="p">,</span> <span class="kt">Int64</span><span class="p">})</span> <span class="n">with</span> <span class="n">eltype</span> <span class="kt">Int64</span> <span class="n">with</span> <span class="n">indices</span> <span class="n">SOneTo</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">×</span><span class="n">SOneTo</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">:</span>
+ <span class="mi">4</span>  <span class="mi">3</span>  <span class="mi">2</span>  <span class="mi">1</span>
+</code></pre></div>
+
+
+
+<a name="243726380"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243726380" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243726380">(Jun 23 2021 at 23:35)</a>:</h4>
+<p>Nice!</p>
+
+
+
+<a name="243784183"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nonallocating%20shuffle/near/243784183" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle.html#243784183">(Jun 24 2021 at 13:20)</a>:</h4>
+<p>Wow, it is really short and fast.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

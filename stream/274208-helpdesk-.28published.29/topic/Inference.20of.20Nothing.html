@@ -1,0 +1,144 @@
+<html>
+<head><meta charset="utf-8"><title>Inference of Nothing · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inference.20of.20Nothing.html">Inference of Nothing</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="328505159"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inference%20of%20Nothing/near/328505159" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inference.20of.20Nothing.html#328505159">(Feb 17 2023 at 16:00)</a>:</h4>
+<p>Are there some special low level hardcoded heuristics related to <code>nothing</code> which makes it more suitable as a sentinel value than other types?  I'm trying to avoid it since it is easy to return it by accident and I would rather throw an error in that case. </p>
+<p>Example</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="n">map</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">x</span>
+<span class="w">       </span><span class="n">isodd</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">x</span>
+<span class="w">       </span><span class="nb">nothing</span>
+<span class="w">       </span><span class="k">end</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">typeof</span>
+<span class="go">Vector{Union{Nothing, Int64}} (alias for Array{Union{Nothing, Int64}, 1})</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">mysentinel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"aa"</span>
+<span class="go">"aa"</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">map</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">x</span>
+<span class="w">       </span><span class="n">isodd</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">x</span>
+<span class="w">       </span><span class="n">mysentinel</span>
+<span class="w">       </span><span class="k">end</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">typeof</span>
+<span class="go">Vector{Any} (alias for Array{Any, 1})</span>
+</code></pre></div>
+<p>Is it possible to make e.g. <code>MySentinelType</code> get the same treatment as nothing in the above?</p>
+<p>Its probably not a big deal in the grand scheme of things if not. It just threw me off a bit.</p>
+
+
+
+<a name="328505628"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inference%20of%20Nothing/near/328505628" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inference.20of.20Nothing.html#328505628">(Feb 17 2023 at 16:02)</a>:</h4>
+<p>I guess one option is to use missing instead which is a little bit more difficult to return by accident:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="n">map</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">x</span>
+<span class="w">       </span><span class="n">isodd</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">x</span>
+<span class="w">       </span><span class="nb">missing</span>
+<span class="w">       </span><span class="k">end</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">typeof</span>
+<span class="go">Vector{Union{Missing, Int64}} (alias for Array{Union{Missing, Int64}, 1})</span>
+</code></pre></div>
+
+
+
+<a name="328520011"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inference%20of%20Nothing/near/328520011" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inference.20of.20Nothing.html#328520011">(Feb 17 2023 at 17:04)</a>:</h4>
+<p><code>Nothing</code> is insofar special cased that it's the default sentinel value signifying the end of iteration</p>
+
+
+
+<a name="328520144"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inference%20of%20Nothing/near/328520144" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inference.20of.20Nothing.html#328520144">(Feb 17 2023 at 17:05)</a>:</h4>
+<p>so the compiler is hesitant to promote Unions containing it to <code>Any</code>, which would make iteration (like for loops) extremely bad</p>
+
+
+
+<a name="328547993"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inference%20of%20Nothing/near/328547993" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Cédric Belmant <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inference.20of.20Nothing.html#328547993">(Feb 17 2023 at 19:30)</a>:</h4>
+<p>Since <code>Missing</code> also results in a tight union, could it be that the special-casing applies to singleton types and not only <code>Nothing</code>?</p>
+
+
+
+<a name="328548699"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inference%20of%20Nothing/near/328548699" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inference.20of.20Nothing.html#328548699">(Feb 17 2023 at 19:34)</a>:</h4>
+<p>No; even with singleton types the returned type is <code>Vector{Any}</code></p>
+
+
+
+<a name="328567459"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inference%20of%20Nothing/near/328567459" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inference.20of.20Nothing.html#328567459">(Feb 17 2023 at 21:35)</a>:</h4>
+<p>So I recon it is some hardcoded special handling then? Anyways, missing is probably a safer choice in this case so I'll go with that.</p>
+
+
+
+<a name="328568333"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inference%20of%20Nothing/near/328568333" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inference.20of.20Nothing.html#328568333">(Feb 17 2023 at 21:41)</a>:</h4>
+<p>in 95% of cases, you do not want to generate new missings</p>
+
+
+
+<a name="328568344"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inference%20of%20Nothing/near/328568344" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inference.20of.20Nothing.html#328568344">(Feb 17 2023 at 21:41)</a>:</h4>
+<p>in your example, why not use <code>filter</code> instead of <code>map</code> in the first place?</p>
+
+
+
+<a name="328569917"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inference%20of%20Nothing/near/328569917" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inference.20of.20Nothing.html#328569917">(Feb 17 2023 at 21:52)</a>:</h4>
+<p>Example was just the simplest way to show what I meant. But yeah, I try to avoid sentinel values whenever I can and maybe I also can in this case.</p>
+<p>Real use case is I have an immutable tree structure which may be modified with an <code>fmap</code> like function but then I realized I also want to prune away stuff. What is the <code>fmap</code> equivalent of <code>filter</code>? <code>ffilter</code>?</p>
+<p>It's not a very  important project so I'd rather not redesign the whole thing just for type stability in the pruning case, but it wouldn't hurt to gain a bit of knowledge if it is served :).</p>
+
+
+
+<a name="328570006"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inference%20of%20Nothing/near/328570006" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inference.20of.20Nothing.html#328570006">(Feb 17 2023 at 21:53)</a>:</h4>
+<p>depends on how you want to prune</p>
+
+
+
+<a name="328570025"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inference%20of%20Nothing/near/328570025" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inference.20of.20Nothing.html#328570025">(Feb 17 2023 at 21:53)</a>:</h4>
+<p>but yes, that's just a <code>filter</code></p>
+
+
+
+<a name="328570128"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inference%20of%20Nothing/near/328570128" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inference.20of.20Nothing.html#328570128">(Feb 17 2023 at 21:54)</a>:</h4>
+<p>usually, pruning in a tree results in the child trees no longer being considered for expansion</p>
+
+
+
+<a name="328570194"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inference%20of%20Nothing/near/328570194" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inference.20of.20Nothing.html#328570194">(Feb 17 2023 at 21:55)</a>:</h4>
+<p>so the <code>filter</code> is just an additional check to be performed during expansion</p>
+
+
+
+<a name="328570972"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inference%20of%20Nothing/near/328570972" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inference.20of.20Nothing.html#328570972">(Feb 17 2023 at 22:00)</a>:</h4>
+<p>The tree is just a deeply nested structure and the <code>fmap</code> applies a function recursively to every node. With pruning I just meant that when <code>fmap</code>:ing the user (me in this case) sometimes just want the node gone instead of modifying it.</p>
+<p>There are nodes in the tree which can have an arbitrary amount of children so currently the missings just propagate upwards until they hit such a node which filters them out (and maybe return missing themselves if they are empty).</p>
+<p>It's probably mostly a matter of hacking away at the problem before thinking through the use cases before making the above choices, but the current situation is workable for me.</p>
+
+
+
+<a name="328571238"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inference%20of%20Nothing/near/328571238" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inference.20of.20Nothing.html#328571238">(Feb 17 2023 at 22:02)</a>:</h4>
+<p>that sounds like a bit of a weird map, doing filtering and mapping at the same time?</p>
+
+
+
+<a name="328571857"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inference%20of%20Nothing/near/328571857" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inference.20of.20Nothing.html#328571857">(Feb 17 2023 at 22:06)</a>:</h4>
+<p>Yeah, it is. It just happened to be quite convenient, kind of like how select from dataframes both modifies and removes columns.</p>
+<p>I guess I could just create another function with a very similar structure as the <code>fmap</code> but which expects <code>true</code> or <code>false</code> from the provded function and uses that to decide whether to keep the child node or no.  Not sure if it is just that simple since the propagation of the missings help a little bit (e.g. some nodes can only have a certain set of children so removal of one of their children must be propagated upwards).</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

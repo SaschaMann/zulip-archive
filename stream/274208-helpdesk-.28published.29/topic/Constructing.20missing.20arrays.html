@@ -1,0 +1,309 @@
+<html>
+<head><meta charset="utf-8"><title>Constructing missing arrays · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html">Constructing missing arrays</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="292892518"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292892518" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> James Wrigley <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292892518">(Aug 11 2022 at 09:11)</a>:</h4>
+<p>Right now, going from <code>Array{T}</code> to <code>Array{Union{Missing, T}}</code> requires copying the original array: <a href="https://github.com/JuliaLang/julia/issues/26681">https://github.com/JuliaLang/julia/issues/26681</a><br>
+But according to this blog post a <code>Array{Union{Missing, T}}</code> is represented internally as two arrays, one for the data and one for the <code>Missing</code> array: <a href="https://julialang.org/blog/2018/06/missing/#an_efficient_representation">https://julialang.org/blog/2018/06/missing/#an_efficient_representation</a></p>
+<p>So my question is, why is it necessary to copy the original array when using <code>convert()</code>? If an <code>Array{Union{Missing, T}}</code> is represented internally as two arrays anyway, would it be enough to create a <code>Array{Union{Missing, T}}</code> that references the original one but only initializes its internal <code>Array{UInt8}</code>?</p>
+
+
+
+<a name="292893637"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292893637" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292893637">(Aug 11 2022 at 09:21)</a>:</h4>
+<p>we could do that, but what do you then do about other references still pointing to the old array?</p>
+
+
+
+<a name="292894191"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292894191" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> James Wrigley <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292894191">(Aug 11 2022 at 09:25)</a>:</h4>
+<p>What about them? <span aria-label="thinking" class="emoji emoji-1f914" role="img" title="thinking">:thinking:</span></p>
+
+
+
+<a name="292894338"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292894338" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> James Wrigley <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292894338">(Aug 11 2022 at 09:26)</a>:</h4>
+<p>There are plenty of cases where array variables share the underlying data (e.g. <code>reshape()</code>).</p>
+
+
+
+<a name="292894838"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292894838" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292894838">(Aug 11 2022 at 09:30)</a>:</h4>
+<p>yeah, but there the element type is the same</p>
+
+
+
+<a name="292894955"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292894955" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292894955">(Aug 11 2022 at 09:31)</a>:</h4>
+<p>imagine you have <code>old_arr</code> with <code>Int8</code>s, and then you have a non-copying conversion to <code>Union{Missing, Int8}</code>. Now I set some element in the latter to <code>Missing</code> - what should reading from <code>old_arr</code> produce?</p>
+
+
+
+<a name="292894972"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292894972" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292894972">(Aug 11 2022 at 09:31)</a>:</h4>
+<p>the <code>Int8</code> value is now invalid after all</p>
+
+
+
+<a name="292894996"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292894996" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292894996">(Aug 11 2022 at 09:31)</a>:</h4>
+<p>(Int8 is just an example, it gets spicier with mutable structs for example)</p>
+
+
+
+<a name="292895259"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292895259" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> James Wrigley <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292895259">(Aug 11 2022 at 09:33)</a>:</h4>
+<p>Well, not really. As far as <code>old_arr</code> is concerned that element still has valid data, it's only in <code>new_arr</code> that it is <code>missing</code>.</p>
+
+
+
+<a name="292895442"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292895442" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> James Wrigley <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292895442">(Aug 11 2022 at 09:34)</a>:</h4>
+<p>I can see why it could be confusing at first if you don't know how it's implemented under the hood, but to me that seems like quite reasonable semantics.</p>
+
+
+
+<a name="292895712"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292895712" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292895712">(Aug 11 2022 at 09:36)</a>:</h4>
+<p>inconsistent views of the same data does not at all sound reasonable to me :)</p>
+
+
+
+<a name="292895739"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292895739" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292895739">(Aug 11 2022 at 09:36)</a>:</h4>
+<p>sounds very much like a bug waiting to happen</p>
+
+
+
+<a name="292895782"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292895782" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292895782">(Aug 11 2022 at 09:36)</a>:</h4>
+<p>my point is that you can't really call it <code>new_arr</code> if it's sharing the same data</p>
+
+
+
+<a name="292896355"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292896355" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> James Wrigley <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292896355">(Aug 11 2022 at 09:40)</a>:</h4>
+<p>I don't think it's inconsistent, anymore than something like <code>PermutedDimsArray</code> is inconsistent <span aria-label="stuck out tongue" class="emoji emoji-1f61b" role="img" title="stuck out tongue">:stuck_out_tongue:</span></p>
+
+
+
+<a name="292896532"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292896532" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> James Wrigley <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292896532">(Aug 11 2022 at 09:41)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="306754">Sukera</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays/near/292895782">said</a>:</p>
+<blockquote>
+<p>my point is that you can't really call it <code>new_arr</code> if it's sharing the same data</p>
+</blockquote>
+<p>I think you absolutely can, and it's even very useful because it avoids copying a potentially large array.</p>
+
+
+
+<a name="292896722"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292896722" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> James Wrigley <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292896722">(Aug 11 2022 at 09:42)</a>:</h4>
+<p>Numpy's masked arrays are also implemented like this, but they have a <code>copy</code> option. Maybe it'd be best to have something like that, but with <code>copy=True</code> as the default?</p>
+
+
+
+<a name="292898347"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292898347" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292898347">(Aug 11 2022 at 09:55)</a>:</h4>
+<p><code>permutedims</code> is chiefly not the same, since it keeps the underlying the data exactly the same and all its validity guarantees. All it does is defer a copy if you do decide to push to e.g. the original vector.</p>
+
+
+
+<a name="292898442"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292898442" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292898442">(Aug 11 2022 at 09:56)</a>:</h4>
+<p>You can't really avoid copying that without being sure that the data isn't being messed with under your nose</p>
+
+
+
+<a name="292898873"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292898873" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> James Wrigley <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292898873">(Aug 11 2022 at 09:59)</a>:</h4>
+<p>I absolutely agree, but in many cases that's <em>exactly</em> what I want. The whole point of converting to a missing array is so that I can forget about masked out elements.</p>
+
+
+
+<a name="292898944"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292898944" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> James Wrigley <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292898944">(Aug 11 2022 at 09:59)</a>:</h4>
+<p>(i.e. I'm never going to touch <code>old_arr</code> once it's converted)</p>
+
+
+
+<a name="292899061"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292899061" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292899061">(Aug 11 2022 at 10:00)</a>:</h4>
+<p>that's a different usecase from just calling <code>convert</code> though</p>
+
+
+
+<a name="292899103"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292899103" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292899103">(Aug 11 2022 at 10:00)</a>:</h4>
+<p>that'd be perfectly fine in a <code>MissingArray</code> wrapper</p>
+
+
+
+<a name="292899169"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292899169" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> James Wrigley <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292899169">(Aug 11 2022 at 10:01)</a>:</h4>
+<p>Is that a thing? <span aria-label="eyes" class="emoji emoji-1f440" role="img" title="eyes">:eyes:</span></p>
+
+
+
+<a name="292899207"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292899207" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292899207">(Aug 11 2022 at 10:01)</a>:</h4>
+<p>no</p>
+
+
+
+<a name="292899338"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292899338" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> James Wrigley <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292899338">(Aug 11 2022 at 10:02)</a>:</h4>
+<p>Ah you had me excited <span aria-label="sweat smile" class="emoji emoji-1f605" role="img" title="sweat smile">:sweat_smile:</span> But yes, that would also work if it existed.</p>
+
+
+
+<a name="292899348"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292899348" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292899348">(Aug 11 2022 at 10:02)</a>:</h4>
+<p>either way, if that conversion/copy is your bottleneck, I'm a tiny bit concerned about the other bottlenecks that are sure to come up around such code <span aria-label="eyes" class="emoji emoji-1f440" role="img" title="eyes">:eyes:</span></p>
+
+
+
+<a name="292899541"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292899541" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> James Wrigley <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292899541">(Aug 11 2022 at 10:03)</a>:</h4>
+<p>It's not the biggest bottleneck, but it increases running time by about ~40%. The biggest bottleneck is IO.</p>
+
+
+
+<a name="292899797"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292899797" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> James Wrigley <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292899797">(Aug 11 2022 at 10:05)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="306754">Sukera</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays/near/292899103">said</a>:</p>
+<blockquote>
+<p>that'd be perfectly fine in a <code>MissingArray</code> wrapper</p>
+</blockquote>
+<p>I do wonder though, could you in theory get the same performance with such a wrapper as with a <code>Union{Missing, T}</code>? My understanding is that the compiler does a lot of work to optimize that away.</p>
+
+
+
+<a name="292899842"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292899842" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292899842">(Aug 11 2022 at 10:05)</a>:</h4>
+<p>sounds like you want to preallocate a <code>Vector{Union{Missing, T}}</code> in the first place to write into, but ok</p>
+
+
+
+<a name="292899939"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292899939" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292899939">(Aug 11 2022 at 10:06)</a>:</h4>
+<p>the compiler isn't really able to optimize your <code>Array{Union{Missing, T}}</code> away, no</p>
+
+
+
+<a name="292899951"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292899951" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292899951">(Aug 11 2022 at 10:06)</a>:</h4>
+<p>it has to insert checks for every element access</p>
+
+
+
+<a name="292900098"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292900098" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> James Wrigley <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292900098">(Aug 11 2022 at 10:07)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="306754">Sukera</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays/near/292899842">said</a>:</p>
+<blockquote>
+<p>sounds like you want to preallocate a <code>Vector{Union{Missing, T}}</code> in the first place to write into, but ok</p>
+</blockquote>
+<p>Unfortunately that's not possible, the data is being read from a Python library that doesn't accept a preallocated array.</p>
+
+
+
+<a name="292900362"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292900362" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> James Wrigley <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292900362">(Aug 11 2022 at 10:09)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="306754">Sukera</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays/near/292899951">said</a>:</p>
+<blockquote>
+<p>it has to insert checks for every element access</p>
+</blockquote>
+<p>Right, but in the blogpost I linked there's an example of the compiler being able to vectorize a loop anyway using masked SIMD instructions. Is that sort of thing possible with a custom array type too? I don't know how specially the compiler treats unions of isbits types.</p>
+
+
+
+<a name="292903185"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292903185" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292903185">(Aug 11 2022 at 10:31)</a>:</h4>
+<p>masked SIMD are very specialized, if your data is not a very simple datatype SIMD will be hard either way</p>
+
+
+
+<a name="292903243"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292903243" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292903243">(Aug 11 2022 at 10:31)</a>:</h4>
+<p>the compiler can do some tricks to bring the data in that shape, if you don't need all of a struct in the loop, but it's generally much more difficult</p>
+
+
+
+<a name="292904294"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292904294" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> James Wrigley <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292904294">(Aug 11 2022 at 10:40)</a>:</h4>
+<p>Gotcha, thanks.</p>
+
+
+
+<a name="292951874"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292951874" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292951874">(Aug 11 2022 at 15:26)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="306754">Sukera</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays/near/292894838">said</a>:</p>
+<blockquote>
+<p>yeah, but there the element type is the same</p>
+</blockquote>
+<p>What about <code>reinterpret</code>?</p>
+
+
+
+<a name="292957031"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292957031" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292957031">(Aug 11 2022 at 15:52)</a>:</h4>
+<p>those at least share the exact same memory for all their representations, so changing one affects the other directly</p>
+
+
+
+<a name="292957138"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292957138" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292957138">(Aug 11 2022 at 15:53)</a>:</h4>
+<p>you may still not get a valid instance for custom structs with custom invariants, yes</p>
+
+
+
+<a name="292968098"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292968098" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292968098">(Aug 11 2022 at 16:53)</a>:</h4>
+<p>It’s the exact same memory with <code>Union{T, Missing}</code> as well</p>
+
+
+
+<a name="292968166"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292968166" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292968166">(Aug 11 2022 at 16:53)</a>:</h4>
+<p>There’s just an additional bitvector telling you if an element is junk or not</p>
+
+
+
+<a name="292968422"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/292968422" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#292968422">(Aug 11 2022 at 16:55)</a>:</h4>
+<p>I think what James is asking for here is certainly not a good idea for a public API, but isn’t really any more scary than most unsafe pointer operations</p>
+
+
+
+<a name="293018870"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/293018870" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sundar R <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#293018870">(Aug 11 2022 at 22:24)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269150">Mason Protter</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays/near/292968422">said</a>:</p>
+<blockquote>
+<p>I think what James is asking for here is certainly got a good idea for a public API, but isn’t really any more scary than most unsafe pointer operations</p>
+</blockquote>
+<p>The "but" makes me think you meant to type "certainly <em>not</em> a good idea for a public API" there?</p>
+
+
+
+<a name="293022072"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/293022072" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#293022072">(Aug 11 2022 at 22:48)</a>:</h4>
+<p>Oops, yeah I meant 'not'</p>
+
+
+
+<a name="293022095"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Constructing%20missing%20arrays/near/293022095" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Constructing.20missing.20arrays.html#293022095">(Aug 11 2022 at 22:49)</a>:</h4>
+<p>edited</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

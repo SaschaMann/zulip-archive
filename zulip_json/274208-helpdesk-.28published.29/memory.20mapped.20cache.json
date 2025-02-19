@@ -1,0 +1,554 @@
+[
+    {
+        "content": "<p>For my code I often have a large amount of tensors stored in ram, but they typically aren't all required at the same time. Recalculating them whenever I need them would be extremely wasteful, so I was thinking that I could maybe create one big file, and memory map parts of that file as memory for the tensors. When I don't need them, the operating system can then write things out to disk and keep my memory usage relatively low.</p>\n<p>The idea would be to create some kind of memory manager that simply tracks which parts of some backend file are currently being memory mapped, and I can request new memory mapped arrays from it. Bookkeeping to see what is freed up can then be done using finalizers.</p>\n<p>My questions are:</p>\n<ul>\n<li>\n<p>is this a good idea, or can I get better performance by manually read-writing things to disk as needed instead of relying on the OS to do this?</p>\n</li>\n<li>\n<p>does something like this already exist?</p>\n</li>\n</ul>",
+        "id": 293688980,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660645406
+    },
+    {
+        "content": "<p>memory mapping already does that</p>",
+        "id": 293689245,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660645557
+    },
+    {
+        "content": "<p>The smallest amount of memory your OS manages for you is called a Page. When you memory map a file, the kernel more or less goes \"I have a file of size X, so I need <code>ceil(X/SIZE_PAGE)</code> pages to store that. I won't fill them all, but when someone asks for memory in that region, I'll fill them lazily by loading from disk\"</p>",
+        "id": 293689453,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660645647
+    },
+    {
+        "content": "<p>right, but I would need some way of doing this for many different tensors so unless I use a new file per tensors (which potentially can be a ridiculous amount of many small files), I would still have to write some kind of \"memory manager\" which tracks which part of a file can be assigned again, right?</p>",
+        "id": 293689833,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660645818
+    },
+    {
+        "content": "<p>memory mapping appears to do exactly what I want, and I want to do this for many small objects</p>",
+        "id": 293689911,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660645854
+    },
+    {
+        "content": "<p>what do you mean with \"assigned again\"?</p>",
+        "id": 293690300,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660646031
+    },
+    {
+        "content": "<p>memory mapping is a bidirectional operation</p>",
+        "id": 293690314,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660646038
+    },
+    {
+        "content": "<p>the kernel already flushes old pages you haven't accessed in a while to disk</p>",
+        "id": 293690388,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660646053
+    },
+    {
+        "content": "<p>memory mapping is a generic operation for the exact same thing - if you'd want your version to be efficient, you'd have to work on the page level as well, to keep things fast</p>",
+        "id": 293690461,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660646090
+    },
+    {
+        "content": "<p>if the garbage collector frees up an array that was assigned to say bytes 10 - 20 for my file on disk, and my program wants to create a new tensor object that again requires 10 bytes, then I probably want to memory map again bytes 10-20 from the file, instead of growing it.</p>",
+        "id": 293690613,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660646158
+    },
+    {
+        "content": "<p>that's a completely orthogonal thing</p>",
+        "id": 293690686,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660646177
+    },
+    {
+        "content": "<p>if you want to work with memory mapping, you'll have to work with arrays (which are then memory mapped on disk)</p>",
+        "id": 293690784,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660646227
+    },
+    {
+        "content": "<p>you wouldn't necessarily create new tensor objects, you'd mutate the array, either by assigning an existing index or mutating in place</p>",
+        "id": 293690855,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660646266
+    },
+    {
+        "content": "<p>I'm probably not explaining myself very well.</p>\n<p>let's say I have tensors (t1,t2,t3,t4), and I want to store them on disk and only load them in lazily. Now I can either create a seperate file for every object \"t1.bin\", \"t2.bin\", \"t3.bin\", ..., or I can create one big \"db.bin\", and memory map regions of that file to the respective arrays.</p>\n<p>Now lets say I don't really need tensor t1 anymore, ever. The garbage collector cleans it up. I now do a new operation, which creates a new tensor, and this tensor is equally big as tensor \"t1\". I can now once again create a new file \"t5.bin\", or if I work with one big \"db.bin\", I can memory map a new region form \"db.bin\" for my new tensor.</p>\n<p>This essentially means that \"db.bin\" would keep on growing and growing, despite large parts of that file not being needed anymore. I could probably do better, and keep track of what can be re-used, and whenever I require creating a new tensor, I could simply memory map a part of the file that was no long in use.</p>\n<p>The alternative is to work with many small files, but a finalizer is not allowed to do IO, so I cannot automatically delete those files and clean things up.</p>",
+        "id": 293691783,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660646680
+    },
+    {
+        "content": "<p>I understand what you're saying. What I'm saying is that memory mapping things that aren't page size is wasteful, as that's the smallest unit of memory the kernel can load/handle. So you need to have one big memory mapped file which you use as backing storage (nonideal, as you'd have to more or less write your own wrapper allocator around that and can't use existing interfaces to allocate it)</p>",
+        "id": 293692498,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660647029
+    },
+    {
+        "content": "<p>what you're describing is more or less replacing/amending the existing GC, which is really not well supported in julia</p>",
+        "id": 293692603,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660647085
+    },
+    {
+        "content": "<p>So what would you do, to provide some kind of lazy disk storage?</p>\n<p>And also, what about it isn't well supported in julia? The implementation of mmap seems relatively simple, and I appear to be able to use pointer_to_array to use parts of my memory mapped region as arrays?</p>",
+        "id": 293693724,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660647618
+    },
+    {
+        "content": "<p>I would first try to see if you can't save memory in other places first. The GC already reuses memory you can't reach anymore for new allocations - if you have lots of large, long lived allocations you don't actually need anymore (which is what would consume more memory) that to me suggests there are places in your code that can be made more efficient first.</p>",
+        "id": 293694632,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660648069
+    },
+    {
+        "content": "<p>on the other hand, are you certain that recomputing the tensors is too expensive?</p>",
+        "id": 293694703,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660648090
+    },
+    {
+        "content": "<p>what I was referring to with it not being well supported is that you can't e.g. just naively take the existing API, which may allocate regular GC memory instead of your special wrapped memory</p>",
+        "id": 293694800,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660648139
+    },
+    {
+        "content": "<p>so you'll have to modify your tensors and the operations on them to be aware of the Mmapped memory, if you need to allocate intermediaries</p>",
+        "id": 293694868,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660648177
+    },
+    {
+        "content": "<p>yes, though I could probably shave off a bit of my ram usage. It's a standard algorithm in physics called \"DMRG\", and to reach state of the art people are now really storing every individual tensor on disk, and load them in when necessary. It is much cheaper to read it out from disk then it is to recalculate the necessary tensors</p>",
+        "id": 293695296,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660648392
+    },
+    {
+        "content": "<p>I would probably start out with writing a \"send2disk\" function, and copy regular GC allcoated memory over to a memory mapped region. It's an extra copy, but really simple to implement. I can go even further and directly allocate memory mapped arrays in a next step, but I'm not too sure if that'll be even necessary</p>",
+        "id": 293695719,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660648612
+    },
+    {
+        "content": "<p>if your algorithm does all that explicitly anyway, I'd just <code>serialize</code> the tensors at points where you know you don't need them anymore</p>",
+        "id": 293695946,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660648749
+    },
+    {
+        "content": "<p>I was hoping that I could offload that logic (serialize old tensors, keep recently used tensors still in ram) to the OS, precisely by using mmap</p>",
+        "id": 293696117,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660648840
+    },
+    {
+        "content": "<p>you can't, not easily at least</p>",
+        "id": 293696270,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660648932
+    },
+    {
+        "content": "<p>the OS has no concept of your tensors, it only knows blobs of memory</p>",
+        "id": 293696282,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660648943
+    },
+    {
+        "content": "<p>GC knows about your objects, but it doesn't even try to use disk as potential backing storage for them</p>",
+        "id": 293696317,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660648965
+    },
+    {
+        "content": "<p>you could try to increase your SWAP memory and just let GC do its thing</p>",
+        "id": 293696334,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660648981
+    },
+    {
+        "content": "<p>either way, is your concern theoretical or are you running into actual OOM errors?</p>",
+        "id": 293696424,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660649037
+    },
+    {
+        "content": "<p>At the moment I don't do any cache2disk things, and I run into OOM errors</p>",
+        "id": 293696549,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660649103
+    },
+    {
+        "content": "<p>have you profiled/minimized allocations already?</p>",
+        "id": 293696603,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660649134
+    },
+    {
+        "content": "<p>yes, the dominant memory usage are because of things that other people store on disk, and that I should also store on disk and only load in when necessary</p>",
+        "id": 293696709,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660649175
+    },
+    {
+        "content": "<p>how are those other people solving that problem?</p>",
+        "id": 293696743,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660649196
+    },
+    {
+        "content": "<p>are they using a custom allocator approach? This would be equivalent to subverting GC in julia.</p>",
+        "id": 293696798,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660649222
+    },
+    {
+        "content": "<p>No, they manually store and load things from disk, and they hardcode this logic in the algorithm itself.</p>",
+        "id": 293696872,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660649266
+    },
+    {
+        "content": "<p>then I'd follow that approach, as anything you could cook up in julia would look extremely similar, at least without replacing GC entirely</p>",
+        "id": 293696977,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660649306
+    },
+    {
+        "content": "<p>But this is ugly and cumbersome to deal with, so a first step would be to create an array type that only keeps a few elements into ram, and serializes everything else to disk. That way, I don't have to deal with this bookkeeping in the core algorithm logic itself (where it imho doesn't belong)</p>",
+        "id": 293697084,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660649360
+    },
+    {
+        "content": "<p>if you already have those points of serialization, you can definitely Mmap the individual backing arrays though</p>",
+        "id": 293697124,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660649386
+    },
+    {
+        "content": "<p>yeah it doesn't belong there, but custom allocation schemes are not supported in julia</p>",
+        "id": 293697191,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660649406
+    },
+    {
+        "content": "<p>they don't play nice with GC without extreme care</p>",
+        "id": 293697221,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660649418
+    },
+    {
+        "content": "<p>But for example something like this : </p>\n<p><a href=\"https://gist.github.com/maartenvd/a265cbcbb3eb5cb3e9915861ff158569\">https://gist.github.com/maartenvd/a265cbcbb3eb5cb3e9915861ff158569</a></p>\n<p>wouldn't something like this work just fine?</p>",
+        "id": 293740887,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660663863
+    },
+    {
+        "content": "<p>it's not very pretty, and there are probably much nicer strategies then using findfirst</p>",
+        "id": 293741220,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660663966
+    },
+    {
+        "content": "<p>to speed things up, I can be more intellegent about alligning larger tensors to the start of a page</p>",
+        "id": 293741503,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660664055
+    },
+    {
+        "content": "<p>yes it would work, but you'd have to take care not to accidentally get an array that isn't managed by your allocator</p>",
+        "id": 293748946,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660666246
+    },
+    {
+        "content": "<p>for that to work in general, your tensor library would probably need to be aware of that</p>",
+        "id": 293749002,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660666268
+    },
+    {
+        "content": "<p>I'm not sure how growing a tensor vector would work or if that's required, but it would probably break under that scheme</p>",
+        "id": 293749075,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660666300
+    },
+    {
+        "content": "<p>you can probably also run into some other race conditions, if the finalizers run late</p>",
+        "id": 293749181,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660666328
+    },
+    {
+        "content": "<p>they're not guaranteed to run eagerly, after all</p>",
+        "id": 293749224,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660666343
+    },
+    {
+        "content": "<p>yes, the tensor library never \"grows\" the data; which in any case wouldn't be a problem as it will simply result in a tensor that lives entirely in ram - which is the current status anyway.</p>\n<p>I thought briefly about race conditions, but I don't think there's a real problem. The only way the memory manager finalizer can be called is if the arrays that were created through it are also all going to be garbage collected (as their finalizers hold a reference to the memory manager), so that doesn't appear to be a problem (though I don't really know a lot about that).</p>",
+        "id": 293750543,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660666754
+    },
+    {
+        "content": "<p>although now I think about it, push!/append! would indeed kinda be a problem, as some memory in the memory mapped file will not be freed, despite it not being used either.</p>",
+        "id": 293751238,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660666984
+    },
+    {
+        "content": "<p>ah but push!/append! doesn't work. The array from unsafe_wrap is \"shared\", so I will get errors in that case :)</p>",
+        "id": 293753629,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660667337
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">mn2</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">DiskManager</span><span class=\"p\">(</span><span class=\"s\">\"derp3.bin\"</span><span class=\"p\">,</span><span class=\"mi\">1024</span><span class=\"o\">*</span><span class=\"mi\">1024</span><span class=\"p\">);</span><span class=\"w\"></span>\n<span class=\"n\">arr</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">allocate!</span><span class=\"p\">(</span><span class=\"n\">mn2</span><span class=\"p\">,</span><span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">ComplexF64</span><span class=\"p\">,</span><span class=\"mi\">1</span><span class=\"p\">},(</span><span class=\"mi\">10</span><span class=\"p\">,));</span><span class=\"w\"></span>\n<span class=\"n\">append!</span><span class=\"p\">(</span><span class=\"n\">arr</span><span class=\"p\">,[</span><span class=\"mf\">1.0</span><span class=\"p\">])</span><span class=\"w\"></span>\n</code></pre></div>\n<p>errors</p>",
+        "id": 293753795,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660667386
+    },
+    {
+        "content": "<p>In trying to further implement this diskamanger thing,I ran into the sublety of finalizers and thread safety. My diskmanager has a lock, but the finalizer of the arrays I allocated also need to acquire this lock in order to signal that this data can be freed. This in turn could lead to a recursive lock deadlock.</p>\n<p>The documentation recommends</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">A</span><span class=\"w\"> </span><span class=\"n\">related</span><span class=\"w\"> </span><span class=\"n\">third</span><span class=\"w\"> </span><span class=\"n\">strategy</span><span class=\"w\"> </span><span class=\"n\">is</span><span class=\"w\"> </span><span class=\"n\">to</span><span class=\"w\"> </span><span class=\"n\">use</span><span class=\"w\"> </span><span class=\"n\">a</span><span class=\"w\"> </span><span class=\"n\">yield</span><span class=\"o\">-</span><span class=\"n\">free</span><span class=\"w\"> </span><span class=\"n\">queue</span><span class=\"o\">.</span><span class=\"w\"> </span><span class=\"n\">We</span><span class=\"w\"> </span><span class=\"n\">don</span><span class=\"o\">'</span><span class=\"n\">t</span><span class=\"w\"> </span><span class=\"n\">currently</span><span class=\"w\"> </span><span class=\"n\">have</span><span class=\"w\"> </span><span class=\"n\">a</span><span class=\"w\"> </span><span class=\"n\">lock</span><span class=\"o\">-</span><span class=\"n\">free</span><span class=\"w\"> </span><span class=\"n\">queue</span><span class=\"w\"> </span><span class=\"n\">implemented</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">but</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"kt\">InvasiveLinkedListSynchronized</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span><span class=\"w\"> </span><span class=\"n\">is</span><span class=\"w\"> </span><span class=\"n\">suitable</span><span class=\"o\">.</span><span class=\"w\"></span>\n</code></pre></div>\n<p>In what way is this type \"suitable\"? Is it simply a thread safe list, or is it special, in the sense that during execution it never yields to finalizers?</p>",
+        "id": 294042350,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660815864
+    },
+    {
+        "content": "<p>both</p>",
+        "id": 294043876,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660816457
+    },
+    {
+        "content": "<p>\"yielding to a finalizer\" doesn't really make sense, as finalizers are not tasks. they can't be yielded to. What the comment is referring to is that you really don't want to be interrupted by GC when you do such work (as you have no idea when you will be scheduled again), so you need a lock-free, non-yielding queue</p>",
+        "id": 294044043,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660816528
+    },
+    {
+        "content": "<p>GC is allowed to run at yieldpoints, so yielding is a nogo</p>",
+        "id": 294044096,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660816549
+    },
+    {
+        "content": "<p>and invasivelinkedlistsynchronizd is written in such a way that during operations on this type, it won't be interrupted by the GC?</p>",
+        "id": 294044203,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660816599
+    },
+    {
+        "content": "<p>according to that comment, yes, but I don't recall where that comment is from, so I can't say much more</p>",
+        "id": 294044351,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660816680
+    },
+    {
+        "content": "<p><a href=\"https://engaging-web.mit.edu/~alir/cnhlab004/julia-1.5.3/share/doc/julia/html/en/manual/multi-threading.html\">https://engaging-web.mit.edu/~alir/cnhlab004/julia-1.5.3/share/doc/julia/html/en/manual/multi-threading.html</a></p>\n<p>safe use of finalizers, the julia docs</p>",
+        "id": 294044436,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660816699
+    },
+    {
+        "content": "<p>aah, your context was running this as part of a finalizer, yes?</p>",
+        "id": 294044576,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660816784
+    },
+    {
+        "content": "<p>yes</p>",
+        "id": 294044585,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660816791
+    },
+    {
+        "content": "<p>Yes, the problem is that finalizers are not allowed to yield to other tasks, as that can potentially leave an object half-cleaned up</p>",
+        "id": 294044657,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660816808
+    },
+    {
+        "content": "<p>btw, which version of julia are you running? those docs you linked are neither official nor the most recent version</p>",
+        "id": 294044769,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660816851
+    },
+    {
+        "content": "<p>ah I'm on 1.8 rc4, and google simply happened to drop me there instead of the official docs</p>",
+        "id": 294044859,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660816889
+    },
+    {
+        "content": "<p>it's still there for 1.8 <a href=\"https://docs.julialang.org/en/v1/manual/multi-threading/#Safe-use-of-Finalizers\">https://docs.julialang.org/en/v1/manual/multi-threading/#Safe-use-of-Finalizers</a></p>",
+        "id": 294045016,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660816951
+    },
+    {
+        "content": "<p>grr, google</p>",
+        "id": 294045053,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660816972
+    },
+    {
+        "content": "<p>yeah, the point is that old versions may have a different wording</p>",
+        "id": 294045105,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660816990
+    },
+    {
+        "content": "<p>or the newer version made some relevant clarification</p>",
+        "id": 294045145,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660817007
+    },
+    {
+        "content": "<p>let me quickly sketch the situation:</p>\n<p>I have a DiskManager, which essentially has a large byte array and a list of memory regions in use.</p>\n<p>If I allocate an array, I want to attach a finalizer to this array that tells the underlying diskmanager that this memory is no longer in use.</p>\n<p>I want this thread safe, so DiskManager needs to acquire a lock during allocation, and the finalizers of the array also need to acquire the same lock when \"freeing up\" the data. Using lock() in the finalizer would result in deadlocks.</p>\n<p>The documentation recommends another approach as well - the delayed finalizers - but this appears to segfault if I use an anonymous function as finalizer:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">A_finalizer</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"k\">if</span><span class=\"w\"> </span><span class=\"n\">trylock</span><span class=\"p\">(</span><span class=\"n\">dm</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">            </span><span class=\"n\">hit</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">findfirst</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">-&gt;</span><span class=\"n\">x</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">==</span><span class=\"w\"> </span><span class=\"n\">i</span><span class=\"p\">,</span><span class=\"n\">dm</span><span class=\"o\">.</span><span class=\"n\">offsets</span><span class=\"p\">);</span><span class=\"w\"></span>\n<span class=\"w\">            </span><span class=\"n\">deleteat!</span><span class=\"p\">(</span><span class=\"n\">dm</span><span class=\"o\">.</span><span class=\"n\">offsets</span><span class=\"p\">,</span><span class=\"n\">hit</span><span class=\"p\">);</span><span class=\"w\"></span>\n<span class=\"w\">            </span><span class=\"n\">unlock</span><span class=\"p\">(</span><span class=\"n\">dm</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"k\">else</span><span class=\"w\"></span>\n<span class=\"w\">            </span><span class=\"c\"># couldn't get the lock; delay finalizer</span><span class=\"w\"></span>\n<span class=\"w\">            </span><span class=\"n\">finalizer</span><span class=\"p\">(</span><span class=\"n\">A_finalizer</span><span class=\"p\">,</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">            </span><span class=\"nb\">nothing</span><span class=\"w\"></span>\n<span class=\"w\">        </span><span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"k\">end</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 294045713,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660817197
+    },
+    {
+        "content": "<p>but if InvasieLinkedList operations are indeed never interrupted by the garbage collector, then I can simply use that</p>",
+        "id": 294046225,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660817396
+    },
+    {
+        "content": "<p>going through the code of this List type, I don't quite see what makes it special; that it won't be interrupted by the GC</p>",
+        "id": 294046642,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660817547
+    },
+    {
+        "content": "<p>I think they're just referring to it being safe to be interrupted at any time, as the critical region is atomic?</p>",
+        "id": 294046966,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660817689
+    },
+    {
+        "content": "<p>not too familiar with its internals though</p>",
+        "id": 294046979,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660817697
+    },
+    {
+        "content": "<p>remember, you can be interrupted by other finalizers too</p>",
+        "id": 294047020,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660817715
+    },
+    {
+        "content": "<p>I don't know how that type would be used - presumably you'd have to attach it to custom structs as an inline field, as its an <code>InvasiveLinkedList</code></p>",
+        "id": 294047086,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660817757
+    },
+    {
+        "content": "<p>when an array is finalized, I would simply push that information to an InvasiveLinkedListSynchronized in the DiskManager. Then, during allocate!, I can acquire the DiskManager lock, and process all this \"region X is freed up\" information in the InvasiveLinkedListSynchronized</p>",
+        "id": 294047474,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660817913
+    },
+    {
+        "content": "<p>that's not how invasive linked lists work though</p>",
+        "id": 294047525,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660817935
+    },
+    {
+        "content": "<p>the whole point of them is to not interact with GC, i.e. not having to allocate new memory</p>",
+        "id": 294047573,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660817953
+    },
+    {
+        "content": "<p>\"pushing\" to an array potentially needs to switch to the GC, since it may have to move an array around</p>",
+        "id": 294047596,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660817971
+    },
+    {
+        "content": "<p>invasive linked lists work by already being part of the object that's going to be part of the list - all \"pushing\" an element to that list does is let its parent know where its child is (and vice versa, if it's a doubly linked list)</p>",
+        "id": 294047745,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660818021
+    },
+    {
+        "content": "<p>that's why they're safe to use for such applications, all the memory that's required for managing them was already allocated as part of the object itself</p>",
+        "id": 294047863,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660818068
+    },
+    {
+        "content": "<p>ah ok, I had no clue what invasive linked lists actually were</p>",
+        "id": 294048358,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660818265
+    },
+    {
+        "content": "<p>I could simply disable finalizers temporarily a la <a href=\"https://github.com/JuliaGPU/CuArrays.jl/commit/2258a24a6c1927a9acac6ca19ea604dc633e2028\">https://github.com/JuliaGPU/CuArrays.jl/commit/2258a24a6c1927a9acac6ca19ea604dc633e2028</a></p>",
+        "id": 294049081,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660818576
+    },
+    {
+        "content": "<p>I would also have to disable finalizers while runing the finalizer itself, to prevent different finalizers interrupting eachother. Is that even allowed?</p>",
+        "id": 294049320,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660818713
+    },
+    {
+        "content": "<p>I don't know, but it doesn't sound good</p>",
+        "id": 294049551,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660818840
+    },
+    {
+        "content": "<p>I'd check whether they're using that macro in finalizers themselves</p>",
+        "id": 294049791,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660818936
+    },
+    {
+        "content": "<p>all they're doing is making sure that their critical portion is not interrupted by finalizers</p>",
+        "id": 294049878,
+        "sender_full_name": "Sukera",
+        "timestamp": 1660818968
+    },
+    {
+        "content": "<p>aha = <a href=\"https://github.com/JuliaLang/julia/pull/38487\">https://github.com/JuliaLang/julia/pull/38487</a></p>",
+        "id": 294052280,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660820021
+    },
+    {
+        "content": "<p>no finalizers are run if any lock is acquired!</p>",
+        "id": 294052369,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660820056
+    },
+    {
+        "content": "<p>correction - this is only true if I use Reentrantlock</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">Calling</span><span class=\"w\"> </span><span class=\"err\">'</span><span class=\"n\">lock</span><span class=\"o\">'</span><span class=\"w\"> </span><span class=\"n\">will</span><span class=\"w\"> </span><span class=\"n\">also</span><span class=\"w\"> </span><span class=\"n\">inhibit</span><span class=\"w\"> </span><span class=\"n\">running</span><span class=\"w\"> </span><span class=\"n\">of</span><span class=\"w\"> </span><span class=\"n\">finalizers</span><span class=\"w\"> </span><span class=\"n\">on</span><span class=\"w\"> </span><span class=\"n\">that</span><span class=\"w\"> </span><span class=\"n\">thread</span><span class=\"w\"> </span><span class=\"n\">until</span><span class=\"w\"> </span><span class=\"n\">the</span><span class=\"w\"> </span><span class=\"n\">corresponding</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"err\">'</span><span class=\"n\">unlock</span><span class=\"o\">'.</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 294052526,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660820156
+    },
+    {
+        "content": "<p>so it finally works with surprisingly reasonable performance, given how stupid my allocator implementation is. One annoying caveat is that I rely on the julia GC to free up memory; but the GC has no idea how much memory I still have available in my file, and whether I'm close to running out. A very similar issue to what the CUDA people appear to have</p>",
+        "id": 294131652,
+        "sender_full_name": "Maarten",
+        "timestamp": 1660843036
+    }
+]

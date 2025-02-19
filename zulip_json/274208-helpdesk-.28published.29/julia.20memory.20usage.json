@@ -1,0 +1,254 @@
+[
+    {
+        "content": "<p>I have a julia script that somehow requires 60+ gb of memory. However, running</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">varinfo</span><span class=\"p\">(</span><span class=\"n\">imported</span><span class=\"o\">=</span><span class=\"nb\">true</span><span class=\"p\">,</span><span class=\"n\">sortby</span><span class=\"o\">=</span><span class=\"ss\">:size</span><span class=\"p\">,</span><span class=\"n\">all</span><span class=\"o\">=</span><span class=\"nb\">true</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>shows something which adds up to 100mb. If I turn recursive=true on in varinfo, the process allocates an extra 40gb and runs out of memory...</p>\n<p>How can I found out how this memory is wasted? Are there any \"usual suspects\"?</p>",
+        "id": 251063293,
+        "sender_full_name": "Maarten",
+        "timestamp": 1630164661
+    },
+    {
+        "content": "<p>I'd guess  you may have lots of intermediate allocations that are freed, but the garbage collector isn't keeping up. You could try <code>@allocated</code> on different pieces of the code, or annotate the code with <a href=\"https://github.com/search?q=TimerOutputs.jl&amp;type=Repositories\">TimerOutputs.jl</a></p>",
+        "id": 251071019,
+        "sender_full_name": "Chad Scherrer",
+        "timestamp": 1630172645
+    },
+    {
+        "content": "<p>I'm not sure, if I run just half of the script and get back repl access, then after GC.gc(), there shouldn't be any intermediary variables right? yet if I do this, the memory usage remains ridiculously high. Nothing is running, and the variables I see in varinfo are quite modest in size.</p>",
+        "id": 251072022,
+        "sender_full_name": "Maarten",
+        "timestamp": 1630173643
+    },
+    {
+        "content": "<p>it's also bugging me that varinfo goes and takes up 40+ gigabytes before crashing.</p>",
+        "id": 251072129,
+        "sender_full_name": "Maarten",
+        "timestamp": 1630173747
+    },
+    {
+        "content": "<p>Even if no variables are leaked into the REPL? Generated code is not GCd, do you by any chance do a lot of codegen?</p>\n<p>In either case, it would be nice if you could share the script as a MWE of a potential GC bug</p>",
+        "id": 251115156,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1630224012
+    },
+    {
+        "content": "<p>at the moment it's not very minimal. There is a bit of generated code; can I check the size of the compiled code? There are a few variables leaked into the repl, but those I can see with varinfo, and they amount to 100mb. I can try to reduce the script a bit, and then share it.</p>",
+        "id": 251115717,
+        "sender_full_name": "Maarten",
+        "timestamp": 1630224626
+    },
+    {
+        "content": "<p>I modified varinfo to spit out the intermediary results and I see lines like:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">MPSKit</span><span class=\"o\">.</span><span class=\"n\">MPSKit</span><span class=\"o\">.</span><span class=\"n\">LinearAlgebra</span><span class=\"o\">.</span><span class=\"n\">MPSKit</span><span class=\"o\">.</span><span class=\"n\">MPSKit</span><span class=\"o\">.</span><span class=\"n\">LinearAlgebra</span><span class=\"o\">.</span><span class=\"n\">BLAS</span><span class=\"o\">.</span><span class=\"n\">MPSKit</span><span class=\"o\">.</span><span class=\"n\">MPSKit</span><span class=\"o\">.</span><span class=\"n\">LinearAlgebra</span><span class=\"o\">.</span><span class=\"n\">MPSKit</span><span class=\"o\">.</span><span class=\"n\">MPSKit</span><span class=\"o\">.</span><span class=\"n\">LinearAlgebra</span><span class=\"o\">.</span><span class=\"n\">BLAS</span><span class=\"o\">.</span><span class=\"n\">LinearAlgebra</span><span class=\"o\">.*</span>\n</code></pre></div>\n<p>which implies that it revisits modules that it already visited, so it's pretty bugged.</p>",
+        "id": 251118499,
+        "sender_full_name": "Maarten",
+        "timestamp": 1630227695
+    },
+    {
+        "content": "<p>Is the script performing disk IO? If so, is your issue similar to <a href=\"https://github.com/JuliaData/CSV.jl/issues/850\">https://github.com/JuliaData/CSV.jl/issues/850</a><br>\n?</p>",
+        "id": 251121878,
+        "sender_full_name": "Fredrik Bagge Carlson",
+        "timestamp": 1630231523
+    },
+    {
+        "content": "<p>a tiny bit of disk io, so it's not similar</p>",
+        "id": 251216108,
+        "sender_full_name": "Maarten",
+        "timestamp": 1630323446
+    },
+    {
+        "content": "<p>I wrote a dirty-patched version of varinfo <a href=\"/user_uploads/7178/n0paBM2SwS3PCecjHPnhQDEy/derp.txt\">derp.txt</a>  and the total memory usage known about by julia is estimated at 600mb</p>",
+        "id": 251216191,
+        "sender_full_name": "Maarten",
+        "timestamp": 1630323484
+    },
+    {
+        "content": "<blockquote>\n<p><code>MPSKit.MPSKit.LinearAlgebra.MPSKit</code></p>\n</blockquote>\n<p>This does seem troubling — how does the binding <code>LinearAlgebra.MPSKit</code> come to exist?</p>",
+        "id": 251487205,
+        "sender_full_name": "c42f",
+        "timestamp": 1630460314
+    },
+    {
+        "content": "<p>That turned out to be a problem in varinfo itself, which I think I have patched locally. However, I'm not entirely sure how the function was meant to work (why did it filter out Base,Main and Core), so I'm not sure if I should open a pull request</p>",
+        "id": 251503403,
+        "sender_full_name": "Maarten",
+        "timestamp": 1630473768
+    },
+    {
+        "content": "<p>there was also a \"mistake\" in base, summarysize on bitarrays failed as size appears undefined</p>",
+        "id": 251503546,
+        "sender_full_name": "Maarten",
+        "timestamp": 1630473855
+    },
+    {
+        "content": "<p>whut</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">total</span> <span class=\"o\">=</span> <span class=\"mi\">0</span><span class=\"p\">;</span> <span class=\"k\">for</span> <span class=\"p\">(</span><span class=\"n\">k</span><span class=\"p\">,</span><span class=\"n\">v</span><span class=\"p\">)</span> <span class=\"k\">in</span> <span class=\"n\">SUNRepresentations</span><span class=\"o\">.</span><span class=\"n\">CGCCACHE</span><span class=\"p\">[(</span><span class=\"mi\">3</span><span class=\"p\">,</span><span class=\"kt\">Float64</span><span class=\"p\">)]</span>\n       <span class=\"n\">total</span><span class=\"o\">+=</span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">summarysize</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"p\">)</span>\n       <span class=\"k\">end</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">total</span>\n<span class=\"mi\">2184221472</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">summarysize</span><span class=\"p\">(</span><span class=\"n\">SUNRepresentations</span><span class=\"o\">.</span><span class=\"n\">CGCCACHE</span><span class=\"p\">[(</span><span class=\"mi\">3</span><span class=\"p\">,</span><span class=\"kt\">Float64</span><span class=\"p\">)])</span>\n<span class=\"mi\">463032</span>\n</code></pre></div>",
+        "id": 251504936,
+        "sender_full_name": "Maarten",
+        "timestamp": 1630474804
+    },
+    {
+        "content": "<p>I understand summarysize is a lower bound, but this seems a bit too crazy</p>",
+        "id": 251505122,
+        "sender_full_name": "Maarten",
+        "timestamp": 1630474924
+    },
+    {
+        "content": "<p>aha, perhaps this is related <a href=\"https://github.com/JuliaLang/julia/issues/41941\">https://github.com/JuliaLang/julia/issues/41941</a></p>",
+        "id": 251507486,
+        "sender_full_name": "Maarten",
+        "timestamp": 1630476576
+    },
+    {
+        "content": "<p>This does seem related and it was fixed in nightly already - <a href=\"https://github.com/JuliaLang/julia/pull/41492\">https://github.com/JuliaLang/julia/pull/41492</a><br>\nThough I'm not sure that will fix all your varinfo problems here.</p>",
+        "id": 251815049,
+        "sender_full_name": "c42f",
+        "timestamp": 1630636879
+    },
+    {
+        "content": "<p>indeed it was! I changed varinfo a bit, I'm not sure if I should open a pull request as it does things differently as the other varinfo, but in combination with the latest julia it now shows nicely where the memory usage is coming from! :D</p>",
+        "id": 251831987,
+        "sender_full_name": "Maarten",
+        "timestamp": 1630652982
+    },
+    {
+        "content": "<p>the varinfo thing has apparantly also been fixed <a href=\"https://github.com/JuliaLang/julia/pull/42061\">https://github.com/JuliaLang/julia/pull/42061</a></p>",
+        "id": 251852697,
+        "sender_full_name": "Maarten",
+        "timestamp": 1630662521
+    },
+    {
+        "content": "<blockquote>\n<p>why did it filter out Base,Main and Core</p>\n</blockquote>\n<p>I don't know either (author of that fix here), but I did give is a lovely fake name in my patch :)</p>",
+        "id": 252572023,
+        "sender_full_name": "Jameson Nash",
+        "timestamp": 1631164360
+    },
+    {
+        "content": "<p>thanks a lot for the fix, the code is now also much nicer to read :) we also resolved the underlying issue in our own code, and now everything works again with much less memory usage</p>",
+        "id": 252649499,
+        "sender_full_name": "Maarten",
+        "timestamp": 1631202940
+    },
+    {
+        "content": "<p>I'm on julia 1.8.0 and am running into the same issue once again. Julia takes up 34.1G, the output of varinfo is</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">varinfo</span><span class=\"p\">(</span><span class=\"n\">all</span><span class=\"o\">=</span><span class=\"nb\">true</span><span class=\"p\">,</span><span class=\"n\">minsize</span><span class=\"o\">=</span><span class=\"mi\">1024</span><span class=\"p\">,</span><span class=\"n\">imported</span><span class=\"o\">=</span><span class=\"nb\">true</span><span class=\"p\">,</span><span class=\"n\">sortby</span><span class=\"o\">=</span><span class=\"ss\">:size</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">name</span><span class=\"w\">                    </span><span class=\"n\">size</span><span class=\"w\"> </span><span class=\"n\">summary</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">––––––––––––––––</span><span class=\"w\"> </span><span class=\"n\">–––––––––––</span><span class=\"w\"> </span><span class=\"n\">–––––––––––––––––––––––––––––––</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">Base</span><span class=\"w\">                         </span><span class=\"kt\">Module</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">Core</span><span class=\"w\">                         </span><span class=\"kt\">Module</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">Main</span><span class=\"w\">                         </span><span class=\"kt\">Module</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">TensorKit</span><span class=\"w\">        </span><span class=\"mf\">122.409</span><span class=\"w\"> </span><span class=\"n\">MiB</span><span class=\"w\"> </span><span class=\"kt\">Module</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">LinearAlgebra</span><span class=\"w\">      </span><span class=\"mf\">4.727</span><span class=\"w\"> </span><span class=\"n\">MiB</span><span class=\"w\"> </span><span class=\"kt\">Module</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">JLD2</span><span class=\"w\">               </span><span class=\"mf\">3.486</span><span class=\"w\"> </span><span class=\"n\">MiB</span><span class=\"w\"> </span><span class=\"kt\">Module</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">MPSKit</span><span class=\"w\">             </span><span class=\"mf\">2.533</span><span class=\"w\"> </span><span class=\"n\">MiB</span><span class=\"w\"> </span><span class=\"kt\">Module</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">TensorOperations</span><span class=\"w\">   </span><span class=\"mf\">2.154</span><span class=\"w\"> </span><span class=\"n\">MiB</span><span class=\"w\"> </span><span class=\"kt\">Module</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">KrylovKit</span><span class=\"w\">          </span><span class=\"mf\">1.668</span><span class=\"w\"> </span><span class=\"n\">MiB</span><span class=\"w\"> </span><span class=\"kt\">Module</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">Test</span><span class=\"w\">               </span><span class=\"mf\">1.205</span><span class=\"w\"> </span><span class=\"n\">MiB</span><span class=\"w\"> </span><span class=\"kt\">Module</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">Printf</span><span class=\"w\">             </span><span class=\"mf\">1.092</span><span class=\"w\"> </span><span class=\"n\">MiB</span><span class=\"w\"> </span><span class=\"kt\">Module</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">OptimKit</span><span class=\"w\">         </span><span class=\"mf\">973.529</span><span class=\"w\"> </span><span class=\"n\">KiB</span><span class=\"w\"> </span><span class=\"kt\">Module</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">DelimitedFiles</span><span class=\"w\">   </span><span class=\"mf\">957.035</span><span class=\"w\"> </span><span class=\"n\">KiB</span><span class=\"w\"> </span><span class=\"kt\">Module</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">Parameters</span><span class=\"w\">       </span><span class=\"mf\">952.041</span><span class=\"w\"> </span><span class=\"n\">KiB</span><span class=\"w\"> </span><span class=\"kt\">Module</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">FastClosures</span><span class=\"w\">     </span><span class=\"mf\">879.606</span><span class=\"w\"> </span><span class=\"n\">KiB</span><span class=\"w\"> </span><span class=\"kt\">Module</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">InteractiveUtils</span><span class=\"w\"> </span><span class=\"mf\">326.286</span><span class=\"w\"> </span><span class=\"n\">KiB</span><span class=\"w\"> </span><span class=\"kt\">Module</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">err</span><span class=\"w\">                </span><span class=\"mf\">4.919</span><span class=\"w\"> </span><span class=\"n\">KiB</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"o\">-</span><span class=\"n\">element</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">ExceptionStack</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"c\">##meta#58          3.129 KiB IdDict{Any, Any} with 2 entries</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">ans</span><span class=\"w\">                </span><span class=\"mf\">1.469</span><span class=\"w\"> </span><span class=\"n\">KiB</span><span class=\"w\"> </span><span class=\"n\">Markdown</span><span class=\"o\">.</span><span class=\"n\">MD</span><span class=\"w\"></span>\n</code></pre></div>\n<p>How do I even start debugging such a thing? The script takes a while to run before reaching this level of memory usage, so it's not easy to make a minimal working example</p>",
+        "id": 294966647,
+        "sender_full_name": "Maarten",
+        "timestamp": 1661302428
+    },
+    {
+        "content": "<p>have you done any allocation/performance optimization on your code? Are you doing everything in global scope or are you working in functions?</p>",
+        "id": 294993893,
+        "sender_full_name": "Sukera",
+        "timestamp": 1661326591
+    },
+    {
+        "content": "<p>Julia 1.8.0 will use a lot more memory for LinearAlgebra</p>",
+        "id": 294993928,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1661326624
+    },
+    {
+        "content": "<p>(but it should be faster)</p>",
+        "id": 294994958,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1661327142
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"306754\">Sukera</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage/near/294993893\">said</a>:</p>\n<blockquote>\n<p>have you done any allocation/performance optimization on your code? Are you doing everything in global scope or are you working in functions?</p>\n</blockquote>\n<p>I have not - the code heavily relies on krylov eigenvalue solvers which temporarily may allocate a lot (it's pretty much all you see if you run pprof, it's the dominating contribution). However, after the simulation is done this shouldn't matter - GC.gc() should clear it up. The simulation uses functions. </p>\n<p>I was hoping that whatever it will turn out to be would turn up in varinfo(all=true,imported=true,recursive=true)</p>",
+        "id": 294996541,
+        "sender_full_name": "Maarten",
+        "timestamp": 1661327898
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"374994\">Michael Fiano</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage/near/294993928\">said</a>:</p>\n<blockquote>\n<p>Julia 1.8.0 will use a lot more memory for LinearAlgebra</p>\n</blockquote>\n<p>What exactly changed there? Varinfo claims it doesn't really use too much:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">varinfo</span><span class=\"p\">(</span><span class=\"n\">LinearAlgebra</span><span class=\"p\">,</span><span class=\"n\">all</span><span class=\"o\">=</span><span class=\"nb\">true</span><span class=\"p\">,</span><span class=\"n\">minsize</span><span class=\"o\">=</span><span class=\"mi\">1024</span><span class=\"p\">,</span><span class=\"n\">imported</span><span class=\"o\">=</span><span class=\"nb\">true</span><span class=\"p\">,</span><span class=\"n\">sortby</span><span class=\"o\">=</span><span class=\"ss\">:size</span><span class=\"p\">,</span><span class=\"n\">recursive</span><span class=\"o\">=</span><span class=\"nb\">true</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">name</span><span class=\"w\">                             </span><span class=\"n\">size</span><span class=\"w\"> </span><span class=\"n\">summary</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">–––––––––––––––––––––––––</span><span class=\"w\"> </span><span class=\"n\">–––––––––––</span><span class=\"w\"> </span><span class=\"n\">–––––––––––––––––––––––––––––––––</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">Broadcast</span><span class=\"w\">                   </span><span class=\"mf\">6.830</span><span class=\"w\"> </span><span class=\"n\">MiB</span><span class=\"w\"> </span><span class=\"kt\">Module</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">LinearAlgebra</span><span class=\"w\">               </span><span class=\"mf\">4.682</span><span class=\"w\"> </span><span class=\"n\">MiB</span><span class=\"w\"> </span><span class=\"kt\">Module</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">BLAS</span><span class=\"o\">.</span><span class=\"n\">LinearAlgebra</span><span class=\"w\">          </span><span class=\"mf\">4.682</span><span class=\"w\"> </span><span class=\"n\">MiB</span><span class=\"w\"> </span><span class=\"kt\">Module</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">BLAS</span><span class=\"w\">                        </span><span class=\"mf\">1.216</span><span class=\"w\"> </span><span class=\"n\">MiB</span><span class=\"w\"> </span><span class=\"kt\">Module</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">BLAS</span><span class=\"o\">.</span><span class=\"n\">BLAS</span><span class=\"w\">                   </span><span class=\"mf\">1.216</span><span class=\"w\"> </span><span class=\"n\">MiB</span><span class=\"w\"> </span><span class=\"kt\">Module</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">LAPACK</span><span class=\"w\">                    </span><span class=\"mf\">997.065</span><span class=\"w\"> </span><span class=\"n\">KiB</span><span class=\"w\"> </span><span class=\"kt\">Module</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">LAPACK</span><span class=\"o\">.</span><span class=\"n\">LAPACK</span><span class=\"w\">             </span><span class=\"mf\">997.065</span><span class=\"w\"> </span><span class=\"n\">KiB</span><span class=\"w\"> </span><span class=\"kt\">Module</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"c\">##meta#58                 359.730 KiB IdDict{Any, Any} with 174 entries</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">LAPACK</span><span class=\"o\">.</span><span class=\"c\">##meta#58          131.451 KiB IdDict{Any, Any} with 90 entries</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">BLAS</span><span class=\"o\">.</span><span class=\"c\">##meta#58             82.208 KiB IdDict{Any, Any} with 56 entries</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">Libdl</span><span class=\"w\">                       </span><span class=\"mf\">2.386</span><span class=\"w\"> </span><span class=\"n\">KiB</span><span class=\"w\"> </span><span class=\"kt\">Module</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">BlasHessenbergQ</span><span class=\"w\">             </span><span class=\"mf\">1.297</span><span class=\"w\"> </span><span class=\"n\">KiB</span><span class=\"w\"> </span><span class=\"kt\">UnionAll</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">StridedMaybeAdjOrTransMat</span><span class=\"w\">   </span><span class=\"mf\">1.281</span><span class=\"w\"> </span><span class=\"n\">KiB</span><span class=\"w\"> </span><span class=\"kt\">UnionAll</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">AdjOrTransStridedMat</span><span class=\"w\">        </span><span class=\"mf\">1.094</span><span class=\"w\"> </span><span class=\"n\">KiB</span><span class=\"w\"> </span><span class=\"kt\">UnionAll</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 294996642,
+        "sender_full_name": "Maarten",
+        "timestamp": 1661327947
+    },
+    {
+        "content": "<p>it's possible that you're running into the GC not returning the memory to the system after it was allocated</p>",
+        "id": 294996755,
+        "sender_full_name": "Sukera",
+        "timestamp": 1661327996
+    },
+    {
+        "content": "<p>shouldn't matter too much, as it's all virtual memory</p>",
+        "id": 294996831,
+        "sender_full_name": "Sukera",
+        "timestamp": 1661328006
+    },
+    {
+        "content": "<p>gimme a sec, there was an issue about this...</p>",
+        "id": 294996868,
+        "sender_full_name": "Sukera",
+        "timestamp": 1661328016
+    },
+    {
+        "content": "<p>A lot more BLAS threads by default</p>",
+        "id": 294996912,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1661328035
+    },
+    {
+        "content": "<p>Tune it with <code>BLAS.set_num_threads()</code> if you need to</p>",
+        "id": 294996968,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1661328061
+    },
+    {
+        "content": "<p>I set the blas threads to 1, as they conflict with julia multithreading</p>",
+        "id": 294997138,
+        "sender_full_name": "Maarten",
+        "timestamp": 1661328137
+    },
+    {
+        "content": "<p>there we go <a href=\"https://github.com/JuliaLang/julia/issues/30653\">https://github.com/JuliaLang/julia/issues/30653</a></p>",
+        "id": 294997228,
+        "sender_full_name": "Sukera",
+        "timestamp": 1661328190
+    },
+    {
+        "content": "<p>and now that I read that issue, this one as well <a href=\"https://github.com/JuliaLang/julia/issues/42566\">https://github.com/JuliaLang/julia/issues/42566</a></p>",
+        "id": 294997362,
+        "sender_full_name": "Sukera",
+        "timestamp": 1661328245
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"306754\">Sukera</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage/near/294997228\">said</a>:</p>\n<blockquote>\n<p>there we go <a href=\"https://github.com/JuliaLang/julia/issues/30653\">https://github.com/JuliaLang/julia/issues/30653</a></p>\n</blockquote>\n<p>thanks a ton!!!!</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">ccall</span><span class=\"p\">(</span><span class=\"ss\">:malloc_trim</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Cvoid</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"kt\">Cint</span><span class=\"p\">,),</span><span class=\"w\"> </span><span class=\"mi\">0</span><span class=\"p\">)</span><span class=\"w\"></span>\n</code></pre></div>\n<p>clears it right up! So it's nothing inherently wrong in my code, I'm perfectly fine with julia not returning that memory to the os</p>",
+        "id": 294997824,
+        "sender_full_name": "Maarten",
+        "timestamp": 1661328458
+    },
+    {
+        "content": "<p>I don't think that would be Julia</p>",
+        "id": 294997987,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1661328503
+    },
+    {
+        "content": "<p>That would be your libc implementation</p>",
+        "id": 294998003,
+        "sender_full_name": "Michael Fiano",
+        "timestamp": 1661328510
+    },
+    {
+        "content": "<p>indeed</p>",
+        "id": 294998935,
+        "sender_full_name": "Sukera",
+        "timestamp": 1661328872
+    },
+    {
+        "content": "<p>julia has already called <code>free</code> on that memory, <code>malloc</code> just then was like \"nah I don't need it yet, you keep it\" in its internal table</p>",
+        "id": 294999100,
+        "sender_full_name": "Sukera",
+        "timestamp": 1661328946
+    },
+    {
+        "content": "<p>what lots of people don't know is that <code>malloc</code> is not just a simple table mapping pointers to ranges of memory, but a somewhat complex system for managing allocations systemwide.. and it's optimized for returning <em>fast</em>, so if you have another metric to optimize for, it may not be optimal</p>",
+        "id": 294999322,
+        "sender_full_name": "Sukera",
+        "timestamp": 1661329027
+    },
+    {
+        "content": "<p>there's still something weird going on - no other threads are running, yet I see a fluctuating summarysize. Probably nothing to worry about?</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">i</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">10</span><span class=\"p\">;</span><span class=\"w\"> </span><span class=\"nd\">@show</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">summarysize</span><span class=\"p\">(</span><span class=\"n\">envs</span><span class=\"p\">)</span><span class=\"o\">/</span><span class=\"p\">(</span><span class=\"mi\">1024</span><span class=\"o\">*</span><span class=\"mi\">1024</span><span class=\"o\">*</span><span class=\"mi\">1024</span><span class=\"p\">);</span><span class=\"w\"> </span><span class=\"k\">end</span><span class=\"p\">;</span><span class=\"w\"></span>\n<span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">summarysize</span><span class=\"p\">(</span><span class=\"n\">envs</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">/</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">1024</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"mi\">1024</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"mi\">1024</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mf\">0.6670088469982147</span><span class=\"w\"></span>\n<span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">summarysize</span><span class=\"p\">(</span><span class=\"n\">envs</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">/</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">1024</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"mi\">1024</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"mi\">1024</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mf\">3.7884459123015404</span><span class=\"w\"></span>\n<span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">summarysize</span><span class=\"p\">(</span><span class=\"n\">envs</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">/</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">1024</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"mi\">1024</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"mi\">1024</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mf\">2.5368779748678207</span><span class=\"w\"></span>\n<span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">summarysize</span><span class=\"p\">(</span><span class=\"n\">envs</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">/</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">1024</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"mi\">1024</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"mi\">1024</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mf\">0.6451764479279518</span><span class=\"w\"></span>\n<span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">summarysize</span><span class=\"p\">(</span><span class=\"n\">envs</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">/</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">1024</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"mi\">1024</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"mi\">1024</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mf\">2.2040650248527527</span><span class=\"w\"></span>\n<span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">summarysize</span><span class=\"p\">(</span><span class=\"n\">envs</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">/</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">1024</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"mi\">1024</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"mi\">1024</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mf\">2.928450770676136</span><span class=\"w\"></span>\n<span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">summarysize</span><span class=\"p\">(</span><span class=\"n\">envs</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">/</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">1024</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"mi\">1024</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"mi\">1024</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mf\">0.72379120439291</span><span class=\"w\"></span>\n<span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">summarysize</span><span class=\"p\">(</span><span class=\"n\">envs</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">/</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">1024</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"mi\">1024</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"mi\">1024</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mf\">0.8031216561794281</span><span class=\"w\"></span>\n<span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">summarysize</span><span class=\"p\">(</span><span class=\"n\">envs</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">/</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">1024</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"mi\">1024</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"mi\">1024</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mf\">3.0689545273780823</span><span class=\"w\"></span>\n<span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">summarysize</span><span class=\"p\">(</span><span class=\"n\">envs</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">/</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">1024</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"mi\">1024</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"mi\">1024</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mf\">2.5368198826909065</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 295010218,
+        "sender_full_name": "Maarten",
+        "timestamp": 1661333720
+    }
+]

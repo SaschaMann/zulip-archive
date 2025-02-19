@@ -1,0 +1,37 @@
+<html>
+<head><meta charset="utf-8"><title>Strange bug with DataFrames.jl `unique` function · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Strange.20bug.20with.20DataFrames.2Ejl.20.60unique.60.20function.html">Strange bug with DataFrames.jl `unique` function</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="290876547"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Strange%20bug%20with%20DataFrames.jl%20%60unique%60%20function/near/290876547" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Davi Sales Barreira <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Strange.20bug.20with.20DataFrames.2Ejl.20.60unique.60.20function.html#290876547">(Jul 26 2022 at 11:05)</a>:</h4>
+<p>So, I'm facing a very strange bug with <a href="https://github.com/search?q=DataFrames.jl&amp;type=Repositories">DataFrames.jl</a> . I don't know what might be causing it. I have a dataframe with 778 columns and 31 k rows. Once I use <code>unique(df)</code> everything freezes, and the CPU usage goes to the roof. I'm using Julia 1.7.2 and DataFrames v1.3.2.</p>
+
+
+
+<a name="291025857"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Strange%20bug%20with%20DataFrames.jl%20%60unique%60%20function/near/291025857" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Strange.20bug.20with.20DataFrames.2Ejl.20.60unique.60.20function.html#291025857">(Jul 27 2022 at 12:23)</a>:</h4>
+<p>Not sure that's a bug - just a lot of work for <code>unique</code> to perform? What happens if you do <code>combine(groupby(df, names(df)), nrow)</code>?</p>
+
+
+
+<a name="291043225"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Strange%20bug%20with%20DataFrames.jl%20%60unique%60%20function/near/291043225" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Strange.20bug.20with.20DataFrames.2Ejl.20.60unique.60.20function.html#291043225">(Jul 27 2022 at 14:35)</a>:</h4>
+<p><code>unique</code> is not a cheap operation.  Not also you might be hitting a hashing catastrophe, I've been burned by that a couple of times.  What I mean by that is that the default hashing algorithm gets expensive for large or deeply-nested objects.  Do you have any objects in your dataframe that might be very expensive to hash?  (sometimes I've run into that problem with DataFrames themselves, which tend to be quite expensive to hash)</p>
+
+
+
+<a name="291326513"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Strange%20bug%20with%20DataFrames.jl%20%60unique%60%20function/near/291326513" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Strange.20bug.20with.20DataFrames.2Ejl.20.60unique.60.20function.html#291326513">(Jul 29 2022 at 13:27)</a>:</h4>
+<p>I'd imagine this could easily go wrong with plenty of <code>String</code> in the data and the ensuing GC pressure, so maybe <code>InlineString</code>s can help.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

@@ -1,0 +1,86 @@
+[
+    {
+        "content": "<p>I'm porting some C++ code to Julia where there's a lot of this pattern:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">List</span><span class=\"w\"> </span><span class=\"n\">out</span><span class=\"p\">(</span><span class=\"n\">num_folds</span><span class=\"p\">);</span>\n<span class=\"k\">for</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">int</span><span class=\"w\"> </span><span class=\"n\">k</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mi\">0</span><span class=\"p\">;</span><span class=\"w\"> </span><span class=\"n\">k</span><span class=\"o\">&lt;</span><span class=\"n\">num_folds</span><span class=\"p\">;</span><span class=\"w\"> </span><span class=\"n\">k</span><span class=\"o\">++</span><span class=\"p\">){</span>\n<span class=\"p\">(</span><span class=\"o\">...</span><span class=\"p\">)</span>\n<span class=\"kt\">List</span><span class=\"w\"> </span><span class=\"kt\">tmp_uv</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">initialize_uv</span><span class=\"p\">(</span><span class=\"o\">...</span><span class=\"p\">);</span>\n<span class=\"kt\">List</span><span class=\"w\"> </span><span class=\"kt\">fold_k</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">List</span><span class=\"o\">::</span><span class=\"kt\">create</span><span class=\"p\">(</span><span class=\"kt\">Named</span><span class=\"p\">(</span><span class=\"s\">\"u\"</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">tmp_uv</span><span class=\"p\">[</span><span class=\"s\">\"u\"</span><span class=\"p\">],</span>\n<span class=\"w\">                               </span><span class=\"kt\">Named</span><span class=\"p\">(</span><span class=\"s\">\"v\"</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">tmp_uv</span><span class=\"p\">[</span><span class=\"s\">\"v\"</span><span class=\"p\">],</span>\n<span class=\"w\">                               </span><span class=\"kt\">Named</span><span class=\"p\">(</span><span class=\"s\">\"lambda_L_max\"</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">tmp_uv</span><span class=\"p\">[</span><span class=\"s\">\"lambda_L_max\"</span><span class=\"p\">],</span>\n<span class=\"w\">                               </span><span class=\"kt\">Named</span><span class=\"p\">(</span><span class=\"s\">\"fold_mask\"</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">fold_mask</span><span class=\"p\">);</span>\n<span class=\"w\">    </span><span class=\"kt\">out</span><span class=\"p\">[</span><span class=\"kt\">k</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">fold_k</span><span class=\"p\">;</span>\n<span class=\"w\">  </span><span class=\"p\">}</span>\n<span class=\"w\">  </span><span class=\"k\">return</span><span class=\"w\"> </span><span class=\"n\">out</span><span class=\"p\">;</span>\n</code></pre></div>\n<p>to me it seemed a <code>NamedTuple</code> would be the most comparable Julia construct to use, so I do:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">out</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">NamedTuple</span><span class=\"p\">{(</span><span class=\"ss\">:u</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"ss\">:v</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"ss\">:λ_L_max</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"ss\">:fold_mask</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"kt\">Float64</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Float64</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Float64</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Matrix</span><span class=\"p\">{</span><span class=\"kt\">Bool</span><span class=\"p\">}}}}(</span><span class=\"nb\">undef</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">num_folds</span><span class=\"p\">)</span>\n\n<span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">k</span><span class=\"w\"> </span><span class=\"o\">∈</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">num_fold</span>\n<span class=\"w\">    </span><span class=\"p\">(;</span><span class=\"w\"> </span><span class=\"n\">u</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">v</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">λ_L_max</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">initialize_uv</span><span class=\"p\">(</span><span class=\"o\">...</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"n\">out</span><span class=\"p\">[</span><span class=\"n\">k</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"p\">(;</span><span class=\"w\"> </span><span class=\"n\">u</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">v</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">λ_L_max</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">fold_mask</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n\n<span class=\"k\">return</span><span class=\"w\"> </span><span class=\"n\">out</span>\n</code></pre></div>\n<p>which looks a lot better, with the exception of the initalisation of <code>out</code>. Is there anythying more convenient to initialise this vector, or a better pattern altogether?</p>",
+        "id": 417411212,
+        "sender_full_name": "Nils",
+        "timestamp": 1706004510
+    },
+    {
+        "content": "<p>You might prefer using <code>Vector{@NamedTuple{u::Float64, v::Float64, ...}}</code> instead.</p>",
+        "id": 417411814,
+        "sender_full_name": "Timothy",
+        "timestamp": 1706004699
+    },
+    {
+        "content": "<p>beat me to it <span aria-label=\"sweat smile\" class=\"emoji emoji-1f605\" role=\"img\" title=\"sweat smile\">:sweat_smile:</span></p>",
+        "id": 417411864,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1706004714
+    },
+    {
+        "content": "<p>If you don't want to declare the eltype of the vector, one thing you <strong>could</strong> do if you like is write</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">MicroCollections</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">BangBang</span>\n<span class=\"n\">out</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">EmptyVector</span><span class=\"p\">()</span>\n<span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">k</span><span class=\"w\"> </span><span class=\"o\">∈</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">num_fold</span>\n<span class=\"w\">    </span><span class=\"p\">(;</span><span class=\"w\"> </span><span class=\"n\">u</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">v</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">λ_L_max</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">initialize_uv</span><span class=\"p\">(</span><span class=\"o\">...</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"n\">out</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">push!!</span><span class=\"p\">(</span><span class=\"n\">out</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">(;</span><span class=\"w\"> </span><span class=\"n\">u</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">v</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">λ_L_max</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">fold_mask</span><span class=\"p\">))</span>\n<span class=\"k\">end</span>\n\n<span class=\"k\">return</span><span class=\"w\"> </span><span class=\"n\">out</span>\n</code></pre></div>",
+        "id": 417412917,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1706005030
+    },
+    {
+        "content": "<p>Thanks, that saves 12 characters in this case! Still not exactly concise but I guess there can't really be a way around specifing the names and types of all elements of a <code>NamedTuple</code> (the clue is almost in the name...)</p>\n<p>What are the pros/cons of this over using a <code>Dict</code>?</p>",
+        "id": 417412993,
+        "sender_full_name": "Nils",
+        "timestamp": 1706005057
+    },
+    {
+        "content": "<p><code>EmptyVector</code> is like a more efficient version of <code>Union{}[]</code></p>",
+        "id": 417413185,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1706005114
+    },
+    {
+        "content": "<p>and <code>push!!(coll, x)</code> is like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">if</span><span class=\"w\"> </span><span class=\"kt\">x</span><span class=\"w\"> </span><span class=\"o\">&lt;:</span><span class=\"w\"> </span><span class=\"n\">eltype</span><span class=\"p\">(</span><span class=\"n\">coll</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"n\">push!</span><span class=\"p\">(</span><span class=\"n\">coll</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"p\">)</span>\n<span class=\"k\">else</span>\n<span class=\"w\">    </span><span class=\"n\">coll</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"c\">#make a new version of coll that has a wider eltype</span>\n<span class=\"w\">    </span><span class=\"n\">push!</span><span class=\"p\">(</span><span class=\"n\">coll</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 417413627,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1706005251
+    },
+    {
+        "content": "<p>so you always need to do <code>coll = push!!(coll, x)</code> instead of just <code>push!!(coll, x)</code></p>",
+        "id": 417413746,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1706005299
+    },
+    {
+        "content": "<p>Okay, actually on second thought, I'm now unsure why I I didn't just suggest you use <code>map</code> actually</p>",
+        "id": 417414831,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1706005651
+    },
+    {
+        "content": "<p>all you need to write is </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">map</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">num_fold</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"> </span><span class=\"n\">k</span>\n<span class=\"w\">    </span><span class=\"p\">(;</span><span class=\"w\"> </span><span class=\"n\">u</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">v</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">λ_L_max</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">initialize_uv</span><span class=\"p\">(</span><span class=\"o\">...</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"p\">(;</span><span class=\"w\"> </span><span class=\"n\">u</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">v</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">λ_L_max</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">fold_mask</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 417414922,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1706005682
+    },
+    {
+        "content": "<p>Do you mean this?</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">map</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">num_fold</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"> </span><span class=\"n\">k</span>\n<span class=\"w\">    </span><span class=\"p\">(;</span><span class=\"w\"> </span><span class=\"n\">u</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">v</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">λ_L_max</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">initialize_uv</span><span class=\"p\">(</span><span class=\"o\">...</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"p\">(;</span><span class=\"w\"> </span><span class=\"n\">u</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">v</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">λ_L_max</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">fold_mask</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 417416095,
+        "sender_full_name": "Timothy",
+        "timestamp": 1706006075
+    },
+    {
+        "content": "<p>On that note, I wonder if this compiles equivalently? (assuming <code>initialise_uv</code> doesn't have any extra info you want to ignore)</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">map</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">num_fold</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"> </span><span class=\"n\">k</span>\n<span class=\"w\">    </span><span class=\"p\">(;</span><span class=\"w\"> </span><span class=\"n\">initialize_uv</span><span class=\"p\">(</span><span class=\"o\">...</span><span class=\"p\">)</span><span class=\"o\">...</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">fold_mask</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 417416284,
+        "sender_full_name": "Timothy",
+        "timestamp": 1706006140
+    },
+    {
+        "content": "<blockquote>\n<p>Do you mean this?</p>\n</blockquote>\n<p>Whoops, yeah I copy-pasted the wrong code section <span aria-label=\"face palm\" class=\"emoji emoji-1f926\" role=\"img\" title=\"face palm\">:face_palm:</span>, I've edited my post</p>",
+        "id": 417421574,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1706007867
+    },
+    {
+        "content": "<blockquote>\n<p>What are the pros/cons of this over using a Dict?</p>\n</blockquote>\n<p>NamedTuple is typically much lighterweight and more performant in such scenarios, so it's the natural choice indeed.<br>\nFor even more efficiency, or if you need whole-column access, use StructArrays instead of regular Vector.</p>\n<p>And anyway, in this scenario <code>map</code> is the most straightforward solution, as suggested above. Manual <code>out[k] = ...</code> or <code>push!!()</code> is for more complicated processing that doesn't fit <code>map</code> semantics.</p>",
+        "id": 417499052,
+        "sender_full_name": "aplavin",
+        "timestamp": 1706032506
+    }
+]

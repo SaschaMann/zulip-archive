@@ -1,0 +1,234 @@
+<html>
+<head><meta charset="utf-8"><title>Woes with `esc` and non-recursive `macroexpand` · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Woes.20with.20.60esc.60.20and.20non-recursive.20.60macroexpand.60.html">Woes with `esc` and non-recursive `macroexpand`</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="237635039"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Woes%20with%20%60esc%60%20and%20non-recursive%20%60macroexpand%60/near/237635039" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rafael Fourquet <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Woes.20with.20.60esc.60.20and.20non-recursive.20.60macroexpand.60.html#237635039">(May 06 2021 at 10:14)</a>:</h4>
+<p>Given a recursive macro <code>@m</code> containing <code>esc</code>, <code>macroexpand(Main, :(@m x), recursive=true)</code> works as expected, but not <code>macroexpand(Main, macroexpand(Main, :(@m x), recursive=false))</code>, which is not cleaned up of <code>:escape</code> expressions.<br>
+The simplest is to give an example:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">macro</span> <span class="n">m</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">rec</span><span class="o">=</span><span class="kc">true</span><span class="p">)</span>
+           <span class="k">if</span> <span class="o">!</span><span class="n">rec</span>
+               <span class="k">quote</span>
+                   <span class="n">Z</span> <span class="o">=</span> <span class="mi">1</span>
+                   <span class="o">$</span><span class="p">(</span><span class="n">esc</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+               <span class="k">end</span>
+           <span class="k">else</span>
+               <span class="k">quote</span>
+                   <span class="nd">@m</span> <span class="k">begin</span>
+                       <span class="n">Z</span> <span class="o">=</span> <span class="mi">2</span>
+                       <span class="o">$</span><span class="p">(</span><span class="n">esc</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+                   <span class="k">end</span> <span class="kc">false</span>
+               <span class="k">end</span>
+           <span class="k">end</span>
+       <span class="k">end</span>
+<span class="nd">@m</span> <span class="p">(</span><span class="k">macro</span> <span class="n">with</span> <span class="mi">2</span> <span class="n">methods</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">ex</span> <span class="o">=</span> <span class="o">:</span><span class="p">(</span><span class="n">Z</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nd">@m</span> <span class="n">Z</span><span class="p">);</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">macroexpand</span><span class="p">(</span><span class="n">Main</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
+<span class="k">quote</span>
+    <span class="n">Z</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="cm">#= REPL[2]:1 =#</span>
+    <span class="k">begin</span>
+        <span class="cm">#= REPL[1]:9 =#</span>
+        <span class="k">begin</span>
+            <span class="cm">#= REPL[1]:4 =#</span>
+            <span class="n">var</span><span class="s">"#1#Z"</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="cm">#= REPL[1]:5 =#</span>
+            <span class="k">begin</span>
+                <span class="cm">#= REPL[1]:10 =#</span>
+                <span class="n">var</span><span class="s">"#1#Z"</span> <span class="o">=</span> <span class="mi">2</span>
+                <span class="cm">#= REPL[1]:11 =#</span>
+                <span class="n">Z</span>
+            <span class="k">end</span>
+        <span class="k">end</span>
+    <span class="k">end</span>
+<span class="k">end</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">macroexpand</span><span class="p">(</span><span class="n">Main</span><span class="p">,</span> <span class="n">ex</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">false</span><span class="p">)</span>
+<span class="k">quote</span>
+    <span class="n">Z</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="cm">#= REPL[2]:1 =#</span>
+    <span class="k">begin</span>
+        <span class="cm">#= REPL[1]:9 =#</span>
+        <span class="cm">#= REPL[1]:9 =#</span> <span class="nd">@m</span> <span class="k">begin</span>
+                <span class="cm">#= REPL[1]:10 =#</span>
+                <span class="n">Z</span> <span class="o">=</span> <span class="mi">2</span>
+                <span class="cm">#= REPL[1]:11 =#</span>
+                <span class="o">$</span><span class="p">(</span><span class="kt">Expr</span><span class="p">(</span><span class="o">:</span><span class="n">escape</span><span class="p">,</span> <span class="o">:</span><span class="n">Z</span><span class="p">))</span>
+            <span class="k">end</span> <span class="kc">false</span>
+    <span class="k">end</span>
+<span class="k">end</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">macroexpand</span><span class="p">(</span><span class="n">Main</span><span class="p">,</span> <span class="n">macroexpand</span><span class="p">(</span><span class="n">Main</span><span class="p">,</span> <span class="n">ex</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">false</span><span class="p">))</span>
+<span class="k">quote</span>
+    <span class="n">Z</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="cm">#= REPL[2]:1 =#</span>
+    <span class="k">begin</span>
+        <span class="cm">#= REPL[1]:9 =#</span>
+        <span class="k">begin</span>
+            <span class="cm">#= REPL[1]:4 =#</span>
+            <span class="n">var</span><span class="s">"#5#Z"</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="cm">#= REPL[1]:5 =#</span>
+            <span class="k">begin</span>
+                <span class="cm">#= REPL[1]:10 =#</span>
+                <span class="n">Z</span> <span class="o">=</span> <span class="mi">2</span>
+                <span class="cm">#= REPL[1]:11 =#</span>
+                <span class="o">$</span><span class="p">(</span><span class="kt">Expr</span><span class="p">(</span><span class="o">:</span><span class="n">escape</span><span class="p">,</span> <span class="o">:</span><span class="n">Z</span><span class="p">))</span>
+            <span class="k">end</span>
+        <span class="k">end</span>
+    <span class="k">end</span>
+<span class="k">end</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">eval</span><span class="p">(</span><span class="n">macroexpand</span><span class="p">(</span><span class="n">Main</span><span class="p">,</span> <span class="n">macroexpand</span><span class="p">(</span><span class="n">Main</span><span class="p">,</span> <span class="n">ex</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">false</span><span class="p">)))</span>
+<span class="n">ERROR</span><span class="o">:</span> <span class="n">syntax</span><span class="o">:</span> <span class="n">invalid</span> <span class="n">syntax</span> <span class="p">(</span><span class="n">escape</span> <span class="p">(</span><span class="n">outerref</span> <span class="n">Z</span><span class="p">))</span>
+<span class="n">Stacktrace</span><span class="o">:</span>
+<span class="p">[</span><span class="o">...</span><span class="p">]</span>
+</code></pre></div>
+<p>Note the <code>:escape</code> present in the last expansion, but also the fact that there is a non-<code>gensym</code>ed <code>Z = 2</code>, and in particular that I then can't simply unwrap manually the remaining <code>:escape</code> expression.</p>
+<p>I have to use <code>macroexpand</code> with <code>recursive=false</code> because I also need to process some macro invocations more specifically.<br>
+Any idea if the behavior above is expected, and  if there is a war around for my use case?</p>
+
+
+
+<a name="237636245"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Woes%20with%20%60esc%60%20and%20non-recursive%20%60macroexpand%60/near/237636245" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rafael Fourquet <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Woes.20with.20.60esc.60.20and.20non-recursive.20.60macroexpand.60.html#237636245">(May 06 2021 at 10:26)</a>:</h4>
+<p>Actually there is a closed <a href="https://github.com/JuliaLang/julia/issues/39762">issue</a> stating about "sequential partial macro expansion" and "full macro expansion at once"  that </p>
+<blockquote>
+<p>No, they are not currently supposed to produce the same result. (Jameson)</p>
+</blockquote>
+<p>That's unfortunate, but still wondering whether there would be a workaround...</p>
+
+
+
+<a name="237741210"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Woes%20with%20%60esc%60%20and%20non-recursive%20%60macroexpand%60/near/237741210" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Woes.20with.20.60esc.60.20and.20non-recursive.20.60macroexpand.60.html#237741210">(May 06 2021 at 22:36)</a>:</h4>
+<p>Not sure if it works for your use-case, but a possible workaround is a manual hygiene</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">macro</span> <span class="n">m2</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">rec</span><span class="o">=</span><span class="kc">true</span><span class="p">)</span>
+           <span class="nd">@gensym</span> <span class="n">Z</span>
+           <span class="k">if</span> <span class="o">!</span><span class="n">rec</span>
+               <span class="k">quote</span>
+                   <span class="o">$</span><span class="n">Z</span> <span class="o">=</span> <span class="mi">1</span>
+                   <span class="o">$</span><span class="n">x</span>
+               <span class="k">end</span>
+           <span class="k">else</span>
+               <span class="k">quote</span>
+                   <span class="o">$</span><span class="p">(</span><span class="nd">@__MODULE__</span><span class="p">)</span><span class="o">.</span><span class="nd">@m2</span> <span class="k">begin</span>
+                       <span class="o">$</span><span class="n">Z</span> <span class="o">=</span> <span class="mi">2</span>
+                       <span class="o">$</span><span class="n">x</span>
+                   <span class="k">end</span> <span class="kc">false</span>
+               <span class="k">end</span>
+           <span class="k">end</span> <span class="o">|&gt;</span> <span class="n">esc</span>
+       <span class="k">end</span>
+<span class="nd">@m2</span> <span class="p">(</span><span class="k">macro</span> <span class="n">with</span> <span class="mi">2</span> <span class="n">methods</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">ex2</span> <span class="o">=</span> <span class="o">:</span><span class="p">(</span><span class="n">Z</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nd">@m2</span> <span class="n">Z</span><span class="p">);</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">eval</span><span class="p">(</span><span class="n">macroexpand</span><span class="p">(</span><span class="n">Main</span><span class="p">,</span> <span class="n">macroexpand</span><span class="p">(</span><span class="n">Main</span><span class="p">,</span> <span class="n">ex2</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">false</span><span class="p">)))</span>
+<span class="mi">0</span>
+</code></pre></div>
+<p>Note that <code>$Z</code> is not shared between macro invocations and <code>@m2</code> has a subtle difference to <code>@m</code>:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">macroexpand</span><span class="p">(</span><span class="n">Main</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
+<span class="k">quote</span>
+    <span class="n">Z</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="cm">#= REPL[6]:1 =#</span>
+    <span class="k">begin</span>
+        <span class="cm">#= REPL[5]:9 =#</span>
+        <span class="k">begin</span>
+            <span class="cm">#= REPL[5]:4 =#</span>
+            <span class="n">var</span><span class="s">"#4#Z"</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="cm">#= REPL[5]:5 =#</span>
+            <span class="k">begin</span>
+                <span class="cm">#= REPL[5]:10 =#</span>
+                <span class="n">var</span><span class="s">"#4#Z"</span> <span class="o">=</span> <span class="mi">2</span>
+                <span class="cm">#= REPL[5]:11 =#</span>
+                <span class="n">Z</span>
+            <span class="k">end</span>
+        <span class="k">end</span>
+    <span class="k">end</span>
+<span class="k">end</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">macroexpand</span><span class="p">(</span><span class="n">Main</span><span class="p">,</span> <span class="n">ex2</span><span class="p">)</span>
+<span class="k">quote</span>
+    <span class="n">Z</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="cm">#= REPL[2]:1 =#</span>
+    <span class="k">begin</span>
+        <span class="cm">#= REPL[1]:10 =#</span>
+        <span class="k">begin</span>
+            <span class="cm">#= REPL[1]:5 =#</span>
+            <span class="n">var</span><span class="s">"##Z#269"</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="cm">#= REPL[1]:6 =#</span>
+            <span class="k">begin</span>
+                <span class="cm">#= REPL[1]:11 =#</span>
+                <span class="n">var</span><span class="s">"##Z#268"</span> <span class="o">=</span> <span class="mi">2</span>
+                <span class="cm">#= REPL[1]:12 =#</span>
+                <span class="n">Z</span>
+            <span class="k">end</span>
+        <span class="k">end</span>
+    <span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>Observe that <code>macroexpand(Main, ex)</code> has <code>var"#4#Z" = 1</code> and <code>var"#4#Z" = 2</code> that assign to an identical variable while <code>macroexpand(Main, ex2)</code> has<code>var"##Z#269" = 1</code> and <code>var"##Z#268" = 2</code> that assign to different variables.</p>
+<p>To share <code>gensym</code>'ed variable between macro invocations, I think you'd need something like this:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">macro</span> <span class="n">static_gensym</span><span class="p">(</span><span class="n">x</span><span class="o">::</span><span class="kt">Symbol</span><span class="p">)</span>
+           <span class="n">s</span> <span class="o">=</span> <span class="n">gensym</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+           <span class="n">esc</span><span class="p">(</span><span class="o">:</span><span class="p">(</span><span class="o">$</span><span class="n">x</span> <span class="o">=</span> <span class="o">$</span><span class="p">(</span><span class="kt">QuoteNode</span><span class="p">(</span><span class="n">s</span><span class="p">))))</span>
+       <span class="k">end</span>
+<span class="nd">@static_gensym</span> <span class="p">(</span><span class="k">macro</span> <span class="n">with</span> <span class="mi">3</span> <span class="n">methods</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="k">macro</span> <span class="n">m3</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">rec</span><span class="o">=</span><span class="kc">true</span><span class="p">)</span>
+           <span class="nd">@static_gensym</span> <span class="n">Z</span>
+           <span class="k">if</span> <span class="o">!</span><span class="n">rec</span>
+               <span class="k">quote</span>
+                   <span class="o">$</span><span class="n">Z</span> <span class="o">=</span> <span class="mi">1</span>
+                   <span class="o">$</span><span class="n">x</span>
+               <span class="k">end</span>
+           <span class="k">else</span>
+               <span class="k">quote</span>
+                   <span class="o">$</span><span class="p">(</span><span class="nd">@__MODULE__</span><span class="p">)</span><span class="o">.</span><span class="nd">@m3</span> <span class="k">begin</span>
+                       <span class="o">$</span><span class="n">Z</span> <span class="o">=</span> <span class="mi">2</span>
+                       <span class="o">$</span><span class="n">x</span>
+                   <span class="k">end</span> <span class="kc">false</span>
+               <span class="k">end</span>
+           <span class="k">end</span> <span class="o">|&gt;</span> <span class="n">esc</span>
+       <span class="k">end</span>
+<span class="nd">@m3</span> <span class="p">(</span><span class="k">macro</span> <span class="n">with</span> <span class="mi">2</span> <span class="n">methods</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">macroexpand</span><span class="p">(</span><span class="n">Main</span><span class="p">,</span> <span class="n">ex3</span><span class="p">)</span>
+<span class="k">quote</span>
+    <span class="n">Z</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="cm">#= REPL[12]:1 =#</span>
+    <span class="k">begin</span>
+        <span class="cm">#= REPL[16]:10 =#</span>
+        <span class="k">begin</span>
+            <span class="cm">#= REPL[16]:5 =#</span>
+            <span class="n">var</span><span class="s">"##Z#265"</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="cm">#= REPL[16]:6 =#</span>
+            <span class="k">begin</span>
+                <span class="cm">#= REPL[16]:11 =#</span>
+                <span class="n">var</span><span class="s">"##Z#265"</span> <span class="o">=</span> <span class="mi">2</span>
+                <span class="cm">#= REPL[16]:12 =#</span>
+                <span class="n">Z</span>
+            <span class="k">end</span>
+        <span class="k">end</span>
+    <span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="238134705"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Woes%20with%20%60esc%60%20and%20non-recursive%20%60macroexpand%60/near/238134705" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rafael Fourquet <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Woes.20with.20.60esc.60.20and.20non-recursive.20.60macroexpand.60.html#238134705">(May 10 2021 at 12:51)</a>:</h4>
+<p>Thanks, this is definitely interesting! Although this doesn't really work for my use case, as macro(s) <code>@m</code> is supposed to be written by users, which can't be expected to dive into these subtleties. I think I will just document for now that <code>esc</code> is not supported in their macros.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

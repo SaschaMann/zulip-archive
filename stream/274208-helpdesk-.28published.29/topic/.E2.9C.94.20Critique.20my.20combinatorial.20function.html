@@ -1,0 +1,128 @@
+<html>
+<head><meta charset="utf-8"><title>✔ Critique my combinatorial function · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Critique.20my.20combinatorial.20function.html">✔ Critique my combinatorial function</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="262961856"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Critique%20my%20combinatorial%20function/near/262961856" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Peter Goodall <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Critique.20my.20combinatorial.20function.html#262961856">(Nov 29 2021 at 02:40)</a>:</h4>
+<p>I wrote this function to give me all selections, with replacement, of size t, from a collection a.<br>
+Is there a more compact idiomatic way of writing this? I'd like it to be simple enough to be 'obviously correct'.<br>
+It seems to be working, but it makes me unhappy when I look at it. The collect/flattening is a horrible hack. I think I fell between collections and iterators.<br>
+Correct functions? Composition? Pipes?</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span> <span class="n">Combinatorics</span>
+<span class="k">using</span> <span class="n">Base</span><span class="o">.</span><span class="n">Iterators</span><span class="o">:</span> <span class="n">flatten</span>
+<span class="k">function</span> <span class="n">permutationsWithOrder</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">with_replacement_combinations</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+    <span class="n">c2</span> <span class="o">=</span> <span class="n">map</span><span class="p">(</span><span class="n">permutations</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+    <span class="n">c3</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">-&gt;</span> <span class="n">collect</span><span class="o">.</span><span class="p">(</span><span class="n">x</span><span class="p">))(</span><span class="kt">Set</span><span class="o">.</span><span class="p">(</span><span class="n">c2</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">collect</span><span class="p">(</span><span class="kt">Set</span><span class="p">(</span><span class="n">flatten</span><span class="p">(</span><span class="n">c3</span><span class="p">)))</span>
+<span class="k">end</span>
+</code></pre></div>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">permutationsWithOrder</span><span class="p">([</span><span class="nb">true</span><span class="p">,</span><span class="nb">false</span><span class="p">],</span> <span class="mi">3</span><span class="p">)</span>
+<span class="mi">8</span><span class="o">-</span><span class="n">element</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Bool</span><span class="p">}}</span><span class="o">:</span>
+ <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">permutationsWithOrder</span><span class="p">([</span><span class="nb">true</span><span class="p">,</span><span class="nb">false</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
+<span class="mi">2</span><span class="o">-</span><span class="n">element</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Bool</span><span class="p">}}</span><span class="o">:</span>
+ <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</code></pre></div>
+
+
+
+<a name="262964151"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Critique%20my%20combinatorial%20function/near/262964151" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Peter Goodall <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Critique.20my.20combinatorial.20function.html#262964151">(Nov 29 2021 at 03:42)</a>:</h4>
+<p>take 99</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span> <span class="n">Combinatorics</span>
+<span class="k">using</span> <span class="n">Base</span><span class="o">.</span><span class="n">Iterators</span><span class="o">:</span> <span class="n">flatten</span>
+<span class="k">using</span> <span class="kt">Pipe</span><span class="o">:</span> <span class="nd">@pipe</span>
+
+<span class="k">function</span> <span class="n">permutationsWithOrder</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+    <span class="nd">@pipe</span> <span class="n">with_replacement_combinations</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span> <span class="o">|&gt;</span>
+          <span class="n">map</span><span class="p">(</span><span class="n">permutations</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="o">|&gt;</span>
+          <span class="n">unique</span><span class="p">(</span><span class="n">_</span><span class="p">)</span> <span class="o">|&gt;</span>
+          <span class="n">flatten</span><span class="p">(</span><span class="n">_</span><span class="p">)</span> <span class="o">|&gt;</span>
+          <span class="n">unique</span><span class="p">(</span><span class="n">_</span><span class="p">)</span> <span class="o">|&gt;</span>
+          <span class="n">collect</span><span class="p">(</span><span class="n">_</span><span class="p">)</span> <span class="c"># :-(</span>
+<span class="k">end</span>
+</code></pre></div>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span> <span class="n">permutationsWithOrder</span><span class="p">([</span><span class="nb">true</span><span class="p">,</span><span class="nb">false</span><span class="p">],</span> <span class="mi">3</span><span class="p">)</span>
+<span class="go">8-element Vector{Vector{Bool}}:</span>
+<span class="go"> [1, 1, 1]</span>
+<span class="go"> [1, 1, 0]</span>
+<span class="go"> [1, 0, 1]</span>
+<span class="go"> [0, 1, 1]</span>
+<span class="go"> [1, 0, 0]</span>
+<span class="go"> [0, 1, 0]</span>
+<span class="go"> [0, 0, 1]</span>
+<span class="go"> [0, 0, 0]</span>
+
+<span class="gp">julia&gt;</span> <span class="n">permutationsWithOrder</span><span class="p">([</span><span class="nb">true</span><span class="p">,</span><span class="nb">false</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
+<span class="go">2-element Vector{Vector{Bool}}:</span>
+<span class="go"> [1]</span>
+<span class="go"> [0]</span>
+</code></pre></div>
+
+
+
+<a name="262964465"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Critique%20my%20combinatorial%20function/near/262964465" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Peter Goodall <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Critique.20my.20combinatorial.20function.html#262964465">(Nov 29 2021 at 03:50)</a>:</h4>
+<p><span aria-label="smile" class="emoji emoji-1f642" role="img" title="smile">:smile:</span><br>
+The llvm is huge - so I assume must be moving across module boundaries inefficiently.</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span> <span class="nd">@code_lowered</span> <span class="n">permutationsWithOrder</span><span class="p">([</span><span class="nb">true</span><span class="p">,</span><span class="nb">false</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
+<span class="go">CodeInfo(</span>
+<span class="go">1 ─ %1 = Main.with_replacement_combinations(a, t)</span>
+<span class="go">│   %2 = Main.map(Main.permutations, %1)</span>
+<span class="go">│   %3 = Main.unique(%2)</span>
+<span class="go">│   %4 = Main.flatten(%3)</span>
+<span class="go">│   %5 = Main.unique(%4)</span>
+<span class="go">│   %6 = Main.collect(%5)</span>
+<span class="go">└──      return %6</span>
+</code></pre></div>
+
+
+
+<a name="262972528"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Critique%20my%20combinatorial%20function/near/262972528" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Peter Goodall <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Critique.20my.20combinatorial.20function.html#262972528">(Nov 29 2021 at 06:58)</a>:</h4>
+<p>in <a href="https://discourse.julialang.org/t/how-to-generate-the-permutation-of-a-vector-with-elements-selected-from-a-certain-set/36032/2">How to generate the permutation of a vector with elements selected</a> @<strong>Tamas_Papp</strong>  suggests:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">all_perm</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span> <span class="o">=</span> <span class="n">vec</span><span class="p">(</span><span class="n">map</span><span class="p">(</span><span class="n">collect</span><span class="p">,</span> <span class="n">Iterators</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="n">ntuple</span><span class="p">(</span><span class="n">_</span> <span class="o">-&gt;</span> <span class="n">xs</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span><span class="o">...</span><span class="p">)))</span>
+</code></pre></div>
+<p>I tried putting calls together by increments:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">let</span>
+    <span class="n">xs</span> <span class="o">=</span> <span class="p">[</span><span class="nb">true</span><span class="p">,</span> <span class="nb">false</span><span class="p">]</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="nd">@pipe</span> <span class="n">ntuple</span><span class="p">(</span><span class="n">_</span> <span class="o">-&gt;</span> <span class="n">xs</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">Iterators</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="n">_</span><span class="o">...</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">map</span><span class="p">(</span><span class="n">collect</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">vec</span><span class="p">(</span><span class="n">_</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>My interpretation:</p>
+<ol>
+<li>copies = ntuple() is making n copies of xs</li>
+<li>p = Iterators.product() is creating the products of the copies</li>
+<li>d = map.collect is turning p into an iterable of Arrays</li>
+<li>vec turns d into a column vector</li>
+</ol>
+<p>I'm happy with that. also several orders of magnitude faster</p>
+
+
+
+<a name="262973329"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Critique%20my%20combinatorial%20function/near/262973329" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Critique.20my.20combinatorial.20function.html#262973329">(Nov 29 2021 at 07:15)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="427737">Peter Goodall</span> has marked this topic as resolved.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

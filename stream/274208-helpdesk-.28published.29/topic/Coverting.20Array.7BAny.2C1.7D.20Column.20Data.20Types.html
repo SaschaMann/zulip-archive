@@ -1,0 +1,240 @@
+<html>
+<head><meta charset="utf-8"><title>Coverting Array{Any,1} Column Data Types · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Coverting.20Array.7BAny.2C1.7D.20Column.20Data.20Types.html">Coverting Array{Any,1} Column Data Types</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="228480742"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Coverting%20Array%7BAny%2C1%7D%20Column%20Data%20Types/near/228480742" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Florian Große <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Coverting.20Array.7BAny.2C1.7D.20Column.20Data.20Types.html#228480742">(Mar 02 2021 at 20:34)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">Relate</span><span class="p">[</span><span class="o">!</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">map</span><span class="p">(</span><span class="n">convert</span><span class="p">(</span><span class="kt">Int64</span><span class="p">,</span> <span class="n">Relate</span><span class="p">[</span><span class="o">!</span><span class="p">,</span> <span class="mi">1</span><span class="p">]))</span>
+</code></pre></div>
+<p>Especially <code>convert(Int64, Relate[!, 1])</code> is exactly what the error says, that tries to convert the whole column into a number.<br>
+Did you want to change the eltype to <code>Int</code>? </p>
+<p>Also, what are all the <code>map</code>s supposed to do? What is the structure of Relate? Maybe we can work from this forwards.</p>
+
+
+
+<a name="228485579"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Coverting%20Array%7BAny%2C1%7D%20Column%20Data%20Types/near/228485579" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Florian Große <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Coverting.20Array.7BAny.2C1.7D.20Column.20Data.20Types.html#228485579">(Mar 02 2021 at 21:06)</a>:</h4>
+<p>Suppose you have:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">df</span> <span class="o">=</span> <span class="n">DataFrame</span><span class="p">((</span><span class="n">as</span> <span class="o">=</span> <span class="kt">Any</span><span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mf">10.</span><span class="o">..</span><span class="p">],</span> <span class="n">bs</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span> <span class="n">names</span> <span class="o">=</span> <span class="kt">Any</span><span class="p">[</span><span class="s">"Col_</span><span class="si">$</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="s">"</span> <span class="k">for</span> <span class="n">i</span> <span class="kp">in</span> <span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">]))</span>
+<span class="mi">10</span><span class="n">×3</span> <span class="n">DataFrame</span>
+ <span class="n">Row</span> <span class="n">│</span> <span class="n">as</span>   <span class="n">bs</span>         <span class="n">names</span>
+     <span class="n">│</span> <span class="kt">Any</span>  <span class="kt">Float64</span>    <span class="kt">Any</span>
+<span class="n">─────┼────────────────────────</span>
+   <span class="mi">1</span> <span class="n">│</span> <span class="mi">1</span>    <span class="mf">0.452431</span>   <span class="n">Col_1</span>
+   <span class="mi">2</span> <span class="n">│</span> <span class="mi">2</span>    <span class="mf">0.965297</span>   <span class="n">Col_2</span>
+   <span class="mi">3</span> <span class="n">│</span> <span class="mi">3</span>    <span class="mf">0.0673582</span>  <span class="n">Col_3</span>
+   <span class="mi">4</span> <span class="n">│</span> <span class="mi">4</span>    <span class="mf">0.319082</span>   <span class="n">Col_4</span>
+   <span class="mi">5</span> <span class="n">│</span> <span class="mi">5</span>    <span class="mf">0.53456</span>    <span class="n">Col_5</span>
+   <span class="mi">6</span> <span class="n">│</span> <span class="mi">6</span>    <span class="mf">0.175433</span>   <span class="n">Col_6</span>
+   <span class="mi">7</span> <span class="n">│</span> <span class="mi">7</span>    <span class="mf">0.131868</span>   <span class="n">Col_7</span>
+   <span class="mi">8</span> <span class="n">│</span> <span class="mi">8</span>    <span class="mf">0.996933</span>   <span class="n">Col_8</span>
+   <span class="mi">9</span> <span class="n">│</span> <span class="mi">9</span>    <span class="mf">0.275728</span>   <span class="n">Col_9</span>
+  <span class="mi">10</span> <span class="n">│</span> <span class="mi">10</span>   <span class="mf">0.326396</span>   <span class="n">Col_10</span>
+</code></pre></div>
+<p>What about:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">df</span><span class="o">.</span><span class="n">as</span> <span class="o">=</span> <span class="n">convert</span><span class="o">.</span><span class="p">(</span><span class="kt">Int</span><span class="p">,</span> <span class="n">df</span><span class="o">.</span><span class="n">as</span><span class="p">);</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">df</span><span class="o">.</span><span class="n">names</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">names</span><span class="p">);</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">df</span>
+<span class="mi">10</span><span class="n">×3</span> <span class="n">DataFrame</span>
+ <span class="n">Row</span> <span class="n">│</span> <span class="n">as</span>     <span class="n">bs</span>         <span class="n">names</span>
+     <span class="n">│</span> <span class="kt">Int64</span>  <span class="kt">Float64</span>    <span class="n">String</span>
+<span class="n">─────┼──────────────────────────</span>
+   <span class="mi">1</span> <span class="n">│</span>     <span class="mi">1</span>  <span class="mf">0.452431</span>   <span class="n">Col_1</span>
+   <span class="mi">2</span> <span class="n">│</span>     <span class="mi">2</span>  <span class="mf">0.965297</span>   <span class="n">Col_2</span>
+   <span class="mi">3</span> <span class="n">│</span>     <span class="mi">3</span>  <span class="mf">0.0673582</span>  <span class="n">Col_3</span>
+   <span class="mi">4</span> <span class="n">│</span>     <span class="mi">4</span>  <span class="mf">0.319082</span>   <span class="n">Col_4</span>
+   <span class="mi">5</span> <span class="n">│</span>     <span class="mi">5</span>  <span class="mf">0.53456</span>    <span class="n">Col_5</span>
+   <span class="mi">6</span> <span class="n">│</span>     <span class="mi">6</span>  <span class="mf">0.175433</span>   <span class="n">Col_6</span>
+   <span class="mi">7</span> <span class="n">│</span>     <span class="mi">7</span>  <span class="mf">0.131868</span>   <span class="n">Col_7</span>
+   <span class="mi">8</span> <span class="n">│</span>     <span class="mi">8</span>  <span class="mf">0.996933</span>   <span class="n">Col_8</span>
+   <span class="mi">9</span> <span class="n">│</span>     <span class="mi">9</span>  <span class="mf">0.275728</span>   <span class="n">Col_9</span>
+  <span class="mi">10</span> <span class="n">│</span>    <span class="mi">10</span>  <span class="mf">0.326396</span>   <span class="n">Col_10</span>
+</code></pre></div>
+
+
+
+<a name="228489038"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Coverting%20Array%7BAny%2C1%7D%20Column%20Data%20Types/near/228489038" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Coverting.20Array.7BAny.2C1.7D.20Column.20Data.20Types.html#228489038">(Mar 02 2021 at 21:27)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="383122">Florian Große</span> <a href="#narrow/stream/274208-helpdesk-(published)/topic/Coverting.20Array.7BAny.2C1.7D.20Column.20Data.20Types/near/228485579">said</a>:</p>
+<blockquote>
+<p>Suppose you have:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">df</span> <span class="o">=</span> <span class="n">DataFrame</span><span class="p">((</span><span class="n">as</span> <span class="o">=</span> <span class="kt">Any</span><span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mf">10.</span><span class="o">..</span><span class="p">],</span> <span class="n">bs</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span> <span class="n">names</span> <span class="o">=</span> <span class="kt">Any</span><span class="p">[</span><span class="s">"Col_</span><span class="si">$</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="s">"</span> <span class="k">for</span> <span class="n">i</span> <span class="kp">in</span> <span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">]))</span>
+<span class="mi">10</span><span class="n">×3</span> <span class="n">DataFrame</span>
+ <span class="n">Row</span> <span class="n">│</span> <span class="n">as</span>   <span class="n">bs</span>         <span class="n">names</span>
+     <span class="n">│</span> <span class="kt">Any</span>  <span class="kt">Float64</span>    <span class="kt">Any</span>
+<span class="n">─────┼────────────────────────</span>
+   <span class="mi">1</span> <span class="n">│</span> <span class="mi">1</span>    <span class="mf">0.452431</span>   <span class="n">Col_1</span>
+   <span class="mi">2</span> <span class="n">│</span> <span class="mi">2</span>    <span class="mf">0.965297</span>   <span class="n">Col_2</span>
+   <span class="mi">3</span> <span class="n">│</span> <span class="mi">3</span>    <span class="mf">0.0673582</span>  <span class="n">Col_3</span>
+   <span class="mi">4</span> <span class="n">│</span> <span class="mi">4</span>    <span class="mf">0.319082</span>   <span class="n">Col_4</span>
+   <span class="mi">5</span> <span class="n">│</span> <span class="mi">5</span>    <span class="mf">0.53456</span>    <span class="n">Col_5</span>
+   <span class="mi">6</span> <span class="n">│</span> <span class="mi">6</span>    <span class="mf">0.175433</span>   <span class="n">Col_6</span>
+   <span class="mi">7</span> <span class="n">│</span> <span class="mi">7</span>    <span class="mf">0.131868</span>   <span class="n">Col_7</span>
+   <span class="mi">8</span> <span class="n">│</span> <span class="mi">8</span>    <span class="mf">0.996933</span>   <span class="n">Col_8</span>
+   <span class="mi">9</span> <span class="n">│</span> <span class="mi">9</span>    <span class="mf">0.275728</span>   <span class="n">Col_9</span>
+  <span class="mi">10</span> <span class="n">│</span> <span class="mi">10</span>   <span class="mf">0.326396</span>   <span class="n">Col_10</span>
+</code></pre></div>
+<p>What about:</p>
+<p><div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">df</span><span class="o">.</span><span class="n">as</span> <span class="o">=</span> <span class="n">convert</span><span class="o">.</span><span class="p">(</span><span class="kt">Int</span><span class="p">,</span> <span class="n">df</span><span class="o">.</span><span class="n">as</span><span class="p">);</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">df</span><span class="o">.</span><span class="n">names</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">names</span><span class="p">);</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">df</span>
+<span class="mi">10</span><span class="n">×3</span> <span class="n">DataFrame</span>
+ <span class="n">Row</span> <span class="n">│</span> <span class="n">as</span>     <span class="n">bs</span>         <span class="n">names</span>
+     <span class="n">│</span> <span class="kt">Int64</span>  <span class="kt">Float64</span>    <span class="n">String</span>
+<span class="n">─────┼──────────────────────────</span>
+   <span class="mi">1</span> <span class="n">│</span>     <span class="mi">1</span>  <span class="mf">0.452431</span>   <span class="n">Col_1</span>
+   <span class="mi">2</span> <span class="n">│</span>     <span class="mi">2</span>  <span class="mf">0.965297</span>   <span class="n">Col_2</span>
+   <span class="mi">3</span> <span class="n">│</span>     <span class="mi">3</span>  <span class="mf">0.0673582</span>  <span class="n">Col_3</span>
+   <span class="mi">4</span> <span class="n">│</span>     <span class="mi">4</span>  <span class="mf">0.319082</span>   <span class="n">Col_4</span>
+   <span class="mi">5</span> <span class="n">│</span>     <span class="mi">5</span>  <span class="mf">0.53456</span>    <span class="n">Col_5</span>
+   <span class="mi">6</span> <span class="n">│</span>     <span class="mi">6</span>  <span class="mf">0.175433</span>   <span class="n">Col_6</span>
+   <span class="mi">7</span> <span class="n">│</span>     <span class="mi">7</span>  <span class="mf">0.131868</span>   <span class="n">Col_7</span>
+   <span class="mi">8</span> <span class="n">│</span>     <span class="mi">8</span>  <span class="mf">0.996933</span>   <span class="n">Col_8</span>
+   <span class="mi">9</span> <span class="n">│</span>     <span class="mi">9</span>  <span class="mf">0.275728</span>   <span class="n">Col_9</span>
+  <span class="mi">10</span> <span class="n">│</span>    <span class="mi">10</span>  <span class="mf">0.326396</span>   <span class="n">Col_10</span>
+</code></pre></div><br>
+</p>
+</blockquote>
+<p><span class="user-mention" data-user-id="383122">@Florian Große</span> , was able to implement: </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">begin</span>
+<span class="n">Relate</span><span class="p">[</span><span class="o">!</span><span class="p">,</span> <span class="mi">1</span><span class="o">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">convert</span><span class="o">.</span><span class="p">(</span><span class="kt">Int</span><span class="p">,</span> <span class="n">Relate</span><span class="p">[</span><span class="o">!</span><span class="p">,</span> <span class="mi">1</span><span class="o">:</span><span class="mi">3</span><span class="p">])</span>
+<span class="n">Relate</span><span class="p">[</span><span class="o">!</span><span class="p">,</span> <span class="mi">4</span><span class="o">:</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="n">float</span><span class="o">.</span><span class="p">(</span><span class="n">Relate</span><span class="p">[</span><span class="o">!</span><span class="p">,</span><span class="mi">4</span><span class="o">:</span><span class="mi">6</span><span class="p">])</span>
+<span class="n">Relate</span><span class="p">[</span><span class="o">!</span><span class="p">,</span> <span class="mi">7</span><span class="o">:</span><span class="mi">9</span><span class="p">]</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="p">(</span><span class="n">Relate</span><span class="p">[</span><span class="o">!</span><span class="p">,</span> <span class="mi">7</span><span class="o">:</span><span class="mi">9</span><span class="p">])</span>
+<span class="n">first</span><span class="p">(</span><span class="n">Relate</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>When I hover over the dataframe in the output, <br>
+the float fields do not show the data type. </p>
+<p>Any suggestion?</p>
+
+
+
+<a name="228489740"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Coverting%20Array%7BAny%2C1%7D%20Column%20Data%20Types/near/228489740" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Florian Große <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Coverting.20Array.7BAny.2C1.7D.20Column.20Data.20Types.html#228489740">(Mar 02 2021 at 21:32)</a>:</h4>
+<p>I don't really understand what you mean by "hover over". Is this code in a Pluto notebook?</p>
+
+
+
+<a name="228491301"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Coverting%20Array%7BAny%2C1%7D%20Column%20Data%20Types/near/228491301" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Coverting.20Array.7BAny.2C1.7D.20Column.20Data.20Types.html#228491301">(Mar 02 2021 at 21:43)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="383122">Florian Große</span> <a href="#narrow/stream/274208-helpdesk-(published)/topic/Coverting.20Array.7BAny.2C1.7D.20Column.20Data.20Types/near/228489740">said</a>:</p>
+<blockquote>
+<p>I don't really understand what you mean by "hover over". Is this code in a Pluto notebook?</p>
+</blockquote>
+<p><span class="user-mention" data-user-id="383122">@Florian Große</span> ,  yes it is. v1.5.3</p>
+
+
+
+<a name="228492891"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Coverting%20Array%7BAny%2C1%7D%20Column%20Data%20Types/near/228492891" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Florian Große <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Coverting.20Array.7BAny.2C1.7D.20Column.20Data.20Types.html#228492891">(Mar 02 2021 at 21:53)</a>:</h4>
+<p>what does <code>typeof.(df[!,name] for name in names(df))</code> yield for you after conversion?</p>
+
+
+
+<a name="228494744"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Coverting%20Array%7BAny%2C1%7D%20Column%20Data%20Types/near/228494744" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Coverting.20Array.7BAny.2C1.7D.20Column.20Data.20Types.html#228494744">(Mar 02 2021 at 22:05)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="383122">Florian Große</span> <a href="#narrow/stream/274208-helpdesk-(published)/topic/Coverting.20Array.7BAny.2C1.7D.20Column.20Data.20Types/near/228492891">said</a>:</p>
+<blockquote>
+<p>what does <code>typeof.(df[!,name] for name in names(df))</code> yield for you after conversion?</p>
+</blockquote>
+<p><span class="user-mention" data-user-id="383122">@Florian Große</span> , the following is returned</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="kt">DataType</span>
+<span class="kt">Array</span><span class="p">{</span><span class="kt">Union</span><span class="p">{</span><span class="n">Missing</span><span class="p">,</span> <span class="kt">Float64</span><span class="p">},</span><span class="mi">1</span><span class="p">}</span>
+<span class="kt">Array</span><span class="p">{</span><span class="kt">Union</span><span class="p">{</span><span class="n">Missing</span><span class="p">,</span> <span class="kt">Float64</span><span class="p">},</span><span class="mi">1</span><span class="p">}</span>
+<span class="kt">Array</span><span class="p">{</span><span class="kt">Union</span><span class="p">{</span><span class="n">Missing</span><span class="p">,</span> <span class="kt">Float64</span><span class="p">},</span><span class="mi">1</span><span class="p">}</span>
+<span class="kt">Array</span><span class="p">{</span><span class="kt">Union</span><span class="p">{</span><span class="n">Missing</span><span class="p">,</span> <span class="kt">Float64</span><span class="p">},</span><span class="mi">1</span><span class="p">}</span>
+<span class="kt">Array</span><span class="p">{</span><span class="kt">Union</span><span class="p">{</span><span class="n">Missing</span><span class="p">,</span> <span class="kt">Float64</span><span class="p">},</span><span class="mi">1</span><span class="p">}</span>
+<span class="kt">Array</span><span class="p">{</span><span class="kt">Union</span><span class="p">{</span><span class="n">Missing</span><span class="p">,</span> <span class="kt">Float64</span><span class="p">},</span><span class="mi">1</span><span class="p">}</span>
+<span class="kt">Array</span><span class="p">{</span><span class="kt">Union</span><span class="p">{</span><span class="n">Missing</span><span class="p">,</span> <span class="kt">Float64</span><span class="p">},</span><span class="mi">1</span><span class="p">}</span>
+<span class="kt">Array</span><span class="p">{</span><span class="kt">Union</span><span class="p">{</span><span class="n">Missing</span><span class="p">,</span> <span class="kt">Float64</span><span class="p">},</span><span class="mi">1</span><span class="p">}</span>
+<span class="kt">Array</span><span class="p">{</span><span class="kt">Union</span><span class="p">{</span><span class="n">Missing</span><span class="p">,</span> <span class="kt">Float64</span><span class="p">},</span><span class="mi">1</span><span class="p">}</span>
+</code></pre></div>
+
+
+
+<a name="228495045"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Coverting%20Array%7BAny%2C1%7D%20Column%20Data%20Types/near/228495045" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Florian Große <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Coverting.20Array.7BAny.2C1.7D.20Column.20Data.20Types.html#228495045">(Mar 02 2021 at 22:07)</a>:</h4>
+<p>too bad, can't make it visible myself</p>
+
+
+
+<a name="228495278"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Coverting%20Array%7BAny%2C1%7D%20Column%20Data%20Types/near/228495278" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Florian Große <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Coverting.20Array.7BAny.2C1.7D.20Column.20Data.20Types.html#228495278">(Mar 02 2021 at 22:08)</a>:</h4>
+<p>thanks, so the types appear to be correct. Does it matter whether you see them or not?</p>
+
+
+
+<a name="228495332"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Coverting%20Array%7BAny%2C1%7D%20Column%20Data%20Types/near/228495332" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Florian Große <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Coverting.20Array.7BAny.2C1.7D.20Column.20Data.20Types.html#228495332">(Mar 02 2021 at 22:09)</a>:</h4>
+<p>If it does, it's probably something for the <a class="stream" data-stream-id="243342" href="/#narrow/stream/243342-pluto.2Ejl">#pluto.jl</a> channel</p>
+
+
+
+<a name="228495415"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Coverting%20Array%7BAny%2C1%7D%20Column%20Data%20Types/near/228495415" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Florian Große <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Coverting.20Array.7BAny.2C1.7D.20Column.20Data.20Types.html#228495415">(Mar 02 2021 at 22:09)</a>:</h4>
+<p>(assuming the problem is related to Pluto, I still don't exactly understand what you mean by hover over)</p>
+
+
+
+<a name="228495704"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Coverting%20Array%7BAny%2C1%7D%20Column%20Data%20Types/near/228495704" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Coverting.20Array.7BAny.2C1.7D.20Column.20Data.20Types.html#228495704">(Mar 02 2021 at 22:11)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="383122">Florian Große</span> <a href="#narrow/stream/274208-helpdesk-(published)/topic/Coverting.20Array.7BAny.2C1.7D.20Column.20Data.20Types/near/228495332">said</a>:</p>
+<blockquote>
+<p>If it does, it's probably something for the <a class="stream" data-stream-id="243342" href="/#narrow/stream/243342-pluto.2Ejl">#pluto.jl</a> channel</p>
+</blockquote>
+<p><span class="user-mention" data-user-id="383122">@Florian Große</span>  -- Thank you I will reach out to them about it. </p>
+<p>What I mean is, once you generate an output, in this case<br>
+a dataframe, you can move your mouse over the column <br>
+headings and see the eltype for each field.</p>
+
+
+
+<a name="228495865"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Coverting%20Array%7BAny%2C1%7D%20Column%20Data%20Types/near/228495865" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Florian Große <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Coverting.20Array.7BAny.2C1.7D.20Column.20Data.20Types.html#228495865">(Mar 02 2021 at 22:12)</a>:</h4>
+<p>I see, that's nice, I never tried that</p>
+
+
+
+<a name="228576566"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Coverting%20Array%7BAny%2C1%7D%20Column%20Data%20Types/near/228576566" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Coverting.20Array.7BAny.2C1.7D.20Column.20Data.20Types.html#228576566">(Mar 03 2021 at 11:32)</a>:</h4>
+<p>Have you tried using <code>infer_eltypes=true</code> so that <a href="https://github.com/search?q=XLSX.jl&amp;type=Repositories">XLSX.jl</a> just infers the types for you?</p>
+
+
+
+<a name="228604156"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Coverting%20Array%7BAny%2C1%7D%20Column%20Data%20Types/near/228604156" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Coverting.20Array.7BAny.2C1.7D.20Column.20Data.20Types.html#228604156">(Mar 03 2021 at 14:49)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269318">Nils</span> <a href="#narrow/stream/274208-helpdesk-(published)/topic/Coverting.20Array.7BAny.2C1.7D.20Column.20Data.20Types/near/228576566">said</a>:</p>
+<blockquote>
+<p>Have you tried using <code>infer_eltypes=true</code> so that <a href="https://github.com/search?q=XLSX.jl&amp;type=Repositories">XLSX.jl</a> just infers the types for you?</p>
+</blockquote>
+<p>Excellent -- thank you <span class="user-mention" data-user-id="269318">@Nils</span> , this worked. </p>
+<p>I used</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">DeadAvenger</span> <span class="o">=</span> <span class="n">DataFrame</span><span class="p">(</span><span class="n">xl</span><span class="o">.</span><span class="n">readtable</span><span class="p">(</span><span class="s">"Data.xlsx"</span><span class="p">,</span> <span class="s">"IronMan"</span><span class="p">,</span>
+            <span class="n">infer_eltypes</span><span class="o">=</span><span class="kc">true</span><span class="p">)</span><span class="o">...</span><span class="p">)</span>
+</code></pre></div>
+<p>Might you know of a website that lists the parameters for <br>
+common methods? I posted the question to the general <br>
+board previously. </p>
+<p>Thank you,</p>
+
+
+
+<a name="228623396"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Coverting%20Array%7BAny%2C1%7D%20Column%20Data%20Types/near/228623396" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Coverting.20Array.7BAny.2C1.7D.20Column.20Data.20Types.html#228623396">(Mar 03 2021 at 16:36)</a>:</h4>
+<p>The answer that was given to you in the other thread stands: most packages have documentation, and while that is not always complete, it is pretty good for the packages you're deling with (DataFrames, CSV, XLSX). Here it is for <code>XLSX.readtable</code>: <a href="https://felipenoris.github.io/XLSX.jl/dev/api/#XLSX.readtable">https://felipenoris.github.io/XLSX.jl/dev/api/#XLSX.readtable</a></p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

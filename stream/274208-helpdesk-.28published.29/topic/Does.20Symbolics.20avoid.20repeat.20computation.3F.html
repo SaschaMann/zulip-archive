@@ -1,0 +1,49 @@
+<html>
+<head><meta charset="utf-8"><title>Does Symbolics avoid repeat computation? · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Does.20Symbolics.20avoid.20repeat.20computation.3F.html">Does Symbolics avoid repeat computation?</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="241313249"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Does%20Symbolics%20avoid%20repeat%20computation%3F/near/241313249" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Satvik Souza Beri <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Does.20Symbolics.20avoid.20repeat.20computation.3F.html#241313249">(Jun 02 2021 at 20:12)</a>:</h4>
+<p>Hi, I'm trying to wrap my head around <a href="https://github.com/search?q=Symbolics.jl&amp;type=Repositories">Symbolics.jl</a> and figure out if it's a good fit for my use case.</p>
+<p>Basically I have an application that receives a few data points every hour (say <code>x_t, y_t</code>) and I need to calculate a large number of values derived from those, with some dependencies. For example:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">c</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">a</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="n">b</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">b</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">a</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">a</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">exp</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">d</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">=</span> <span class="n">y</span><span class="o">^</span><span class="mi">2</span>
+</code></pre></div>
+<p>Here, a naive approach might calculate <code>a(x)</code> twice, whereas I'd like to do the computation once. I'd also ideally like to calculate <code>d(y)</code> and <code>c(x)</code> in parallel.  The actual update step is of course much more complex, with a few thousand functions where the dependencies are very difficult to keep track of. </p>
+<p>Is Symbolics a good approach for this? On the one hand, <code>substitute</code> and <code>simplify</code> look really helpful, but I have a hard time telling from the documentation whether Symbolics actually does this reuse &amp; parallelization.</p>
+
+
+
+<a name="243121734"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Does%20Symbolics%20avoid%20repeat%20computation%3F/near/243121734" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Steffen Plunder <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Does.20Symbolics.20avoid.20repeat.20computation.3F.html#243121734">(Jun 18 2021 at 06:40)</a>:</h4>
+<p>I'm not an expert on this. So, you might need a combination of two things: 1) solve the system for a,b,c,d  (treating) exp(x), etc as constants. 2) efficient way to compute the solution for given input.<br>
+Is you system always linear wrt a,b,c,d? How large is the set of equations?</p>
+
+
+
+<a name="268115431"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Does%20Symbolics%20avoid%20repeat%20computation%3F/near/268115431" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Bardo <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Does.20Symbolics.20avoid.20repeat.20computation.3F.html#268115431">(Jan 15 2022 at 09:02)</a>:</h4>
+<p>If you are after code generation, dependencies are exploited in <a href="https://github.com/chakravala/Reduce.jl">https://github.com/chakravala/Reduce.jl</a></p>
+<p>julia&gt; Algebra.optimize(:(z = a^2*b^2+10*a^2*m^6+a^2*m^2+2<em>a</em>b*m^4+2*b^2*m^6+b^2*m^2))<br>
+quote<br>
+    g40 = b * a<br>
+    g44 = m * m<br>
+    g41 = g44 * b * b<br>
+    g42 = g44 * a * a<br>
+    g43 = g44 * g44<br>
+    z = g41 + g42 + g40 * (2g43 + g40) + g43 * (2g41 + 10g42)<br>
+end</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

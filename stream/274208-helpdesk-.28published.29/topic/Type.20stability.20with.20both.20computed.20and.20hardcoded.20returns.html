@@ -1,0 +1,43 @@
+<html>
+<head><meta charset="utf-8"><title>Type stability with both computed and hardcoded returns · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Type.20stability.20with.20both.20computed.20and.20hardcoded.20returns.html">Type stability with both computed and hardcoded returns</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="462441915"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Type%20stability%20with%20both%20computed%20and%20hardcoded%20returns/near/462441915" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel Wennberg <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Type.20stability.20with.20both.20computed.20and.20hardcoded.20returns.html#462441915">(Aug 15 2024 at 00:54)</a>:</h4>
+<p>I often find myself wanting to do the following:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">foo</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">z</span><span class="p">)</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">feasible</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">z</span><span class="p">)</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">complicated_calculation</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">z</span><span class="p">)</span>
+<span class="w">    </span><span class="k">else</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">convert</span><span class="p">(</span><span class="n">inferred_return_type_for_above_branch</span><span class="p">,</span><span class="w"> </span><span class="nb">NaN</span><span class="p">)</span>
+<span class="w">    </span><span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>In practice, I find myself writing manual type promotion calculations like the following, based on knowledge of what goes on inside <code>complicated_calculation</code>:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="w">    </span><span class="n">returnT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">typeof</span><span class="p">(</span><span class="n">oneunit</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">sqrt</span><span class="p">(</span><span class="n">oneunit</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">oneunit</span><span class="p">(</span><span class="n">z</span><span class="p">)))</span>
+</code></pre></div>
+<p>This is incredibly unergonomic. Is there a better solution for ensuring type stability when you need to return hardcoded sentinel values in some branches, and computed values in others?</p>
+
+
+
+<a name="462442106"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Type%20stability%20with%20both%20computed%20and%20hardcoded%20returns/near/462442106" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel Wennberg <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Type.20stability.20with.20both.20computed.20and.20hardcoded.20returns.html#462442106">(Aug 15 2024 at 00:57)</a>:</h4>
+<p>There's <code>Core.Compiler.return_type</code> of course, but I try to refrain from using that</p>
+
+
+
+<a name="462442426"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Type%20stability%20with%20both%20computed%20and%20hardcoded%20returns/near/462442426" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel Wennberg <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Type.20stability.20with.20both.20computed.20and.20hardcoded.20returns.html#462442426">(Aug 15 2024 at 00:59)</a>:</h4>
+<p>I suppose using <code>Base.promote_op</code>, like <a href="https://juliahub.com/ui/Packages/General/DispatchDoctor">DispatchDoctor.jl</a>, is slightly less problematic. Maybe that's the way to go.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

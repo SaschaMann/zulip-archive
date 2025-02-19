@@ -1,0 +1,70 @@
+<html>
+<head><meta charset="utf-8"><title>Converting Vector of Vectors to Vec of SVectors · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Converting.20Vector.20of.20Vectors.20to.20Vec.20of.20SVectors.html">Converting Vector of Vectors to Vec of SVectors</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="393322644"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Converting%20Vector%20of%20Vectors%20to%20Vec%20of%20SVectors/near/393322644" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Davi Sales Barreira <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Converting.20Vector.20of.20Vectors.20to.20Vec.20of.20SVectors.html#393322644">(Sep 26 2023 at 20:24)</a>:</h4>
+<p>Friends, I'm trying to convert vectors such as <code>[[1,2],[1,2]]</code> to a vector of static arrays. If I do <code>SVector([[1,2],[0,0]]...)</code> it works, but not for the case of <code>[[1,2]]</code>. How to circumvent this case? The vectors inside always have size 2.</p>
+
+
+
+<a name="393323090"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Converting%20Vector%20of%20Vectors%20to%20Vec%20of%20SVectors/near/393323090" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel González <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Converting.20Vector.20of.20Vectors.20to.20Vec.20of.20SVectors.html#393323090">(Sep 26 2023 at 20:26)</a>:</h4>
+<p>If you know the eltype beforehand, this seems to work for me:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="kt">Vector</span><span class="p">{</span><span class="kt">SVector</span><span class="p">{</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="kt">Int64</span><span class="p">}}([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">],</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]])</span>
+<span class="go">2-element Vector{SVector{2, Int64}}:</span>
+<span class="go"> [1, 2]</span>
+<span class="go"> [1, 2]</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="kt">Vector</span><span class="p">{</span><span class="kt">SVector</span><span class="p">{</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="kt">Int64</span><span class="p">}}([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]])</span>
+<span class="go">1-element Vector{SVector{2, Int64}}:</span>
+<span class="go"> [1, 2]</span>
+</code></pre></div>
+
+
+
+<a name="393323708"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Converting%20Vector%20of%20Vectors%20to%20Vec%20of%20SVectors/near/393323708" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel González <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Converting.20Vector.20of.20Vectors.20to.20Vec.20of.20SVectors.html#393323708">(Sep 26 2023 at 20:30)</a>:</h4>
+<p>otherwise I guess you can intercept the eltype with a function</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">svector2ify</span><span class="p">(</span><span class="n">v</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">T</span><span class="p">}})</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="p">{</span><span class="kt">T</span><span class="p">}</span>
+<span class="w">           </span><span class="kt">Vector</span><span class="p">{</span><span class="kt">SVector</span><span class="p">{</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="kt">T</span><span class="p">}}(</span><span class="n">v</span><span class="p">)</span>
+<span class="w">       </span><span class="k">end</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">svector2ify</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">],</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]])</span>
+<span class="go">2-element Vector{SVector{2, Int64}}:</span>
+<span class="go"> [1, 2]</span>
+<span class="go"> [1, 2]</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">svector2ify</span><span class="p">([[</span><span class="sc">'a'</span><span class="p">,</span><span class="w"> </span><span class="sc">'b'</span><span class="p">]])</span>
+<span class="go">1-element Vector{SVector{2, Char}}:</span>
+<span class="go"> ['a', 'b']</span>
+</code></pre></div>
+
+
+
+<a name="393324025"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Converting%20Vector%20of%20Vectors%20to%20Vec%20of%20SVectors/near/393324025" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Davi Sales Barreira <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Converting.20Vector.20of.20Vectors.20to.20Vec.20of.20SVectors.html#393324025">(Sep 26 2023 at 20:32)</a>:</h4>
+<p>Thanks!</p>
+
+
+
+<a name="393351211"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Converting%20Vector%20of%20Vectors%20to%20Vec%20of%20SVectors/near/393351211" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Leandro Martínez <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Converting.20Vector.20of.20Vectors.20to.20Vec.20of.20SVectors.html#393351211">(Sep 27 2023 at 00:07)</a>:</h4>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="kt">SVector</span><span class="p">{</span><span class="mi">2</span><span class="p">}</span><span class="o">.</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">],[</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">]])</span>
+<span class="go">2-element Vector{SVector{2, Int64}}:</span>
+<span class="go"> [1, 2]</span>
+<span class="go"> [3, 4]</span>
+</code></pre></div>
+<p>All the option create new vectors, you cannot "convert", because the layouts are different.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

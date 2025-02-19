@@ -1,0 +1,115 @@
+<html>
+<head><meta charset="utf-8"><title>Struct with factory · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Struct.20with.20factory.html">Struct with factory</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="255952814"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Struct%20with%20factory/near/255952814" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Struct.20with.20factory.html#255952814">(Oct 03 2021 at 13:48)</a>:</h4>
+<p>Is there some canonical pattern for parametric structs which need to dynamically create new instances of some subcomponent? </p>
+<p>Here is a simple groupby-ish example with some alternatives  (in order of generalizability) I can think of:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="kt">CollectorA</span><span class="p">{</span><span class="kt">T</span><span class="p">}</span>
+   <span class="n">data</span><span class="o">::</span><span class="kt">Dict</span><span class="p">{</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">T</span><span class="p">}</span>
+<span class="k">end</span>
+
+<span class="k">function</span> <span class="n">addsample_a!</span><span class="p">(</span><span class="n">c</span><span class="o">::</span><span class="kt">CollectorA</span><span class="p">{</span><span class="kt">T</span><span class="p">},</span> <span class="n">sample</span><span class="p">)</span> <span class="k">where</span> <span class="kt">T</span>
+   <span class="n">container</span> <span class="o">=</span> <span class="n">get!</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">id</span><span class="p">(</span><span class="n">sample</span><span class="p">))</span> <span class="k">do</span>
+       <span class="n">T</span><span class="p">()</span>
+   <span class="k">end</span>
+   <span class="n">append!</span><span class="p">(</span><span class="n">container</span><span class="p">,</span> <span class="n">sample</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="k">function</span> <span class="n">addsample_b!</span><span class="p">(</span><span class="n">c</span><span class="o">::</span><span class="kt">CollectorA</span><span class="p">{</span><span class="kt">T</span><span class="p">},</span> <span class="n">sample</span><span class="p">)</span> <span class="k">where</span> <span class="kt">T</span>
+   <span class="n">container</span> <span class="o">=</span> <span class="n">get!</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">id</span><span class="p">(</span><span class="n">sample</span><span class="p">))</span> <span class="k">do</span>
+       <span class="n">make_new</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+   <span class="k">end</span>
+   <span class="n">append!</span><span class="p">(</span><span class="n">container</span><span class="p">,</span> <span class="n">sample</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="k">struct</span> <span class="kt">CollectorB</span><span class="p">{</span><span class="kt">T</span><span class="p">,</span> <span class="kt">F</span><span class="p">}</span>
+   <span class="n">data</span><span class="o">::</span><span class="kt">Dict</span><span class="p">{</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">T</span><span class="p">}</span>
+   <span class="n">factory</span><span class="o">::</span><span class="kt">F</span>
+<span class="k">end</span>
+
+<span class="k">function</span> <span class="n">addsample_c!</span><span class="p">(</span><span class="n">c</span><span class="o">::</span><span class="kt">CollectorB</span><span class="p">{</span><span class="kt">T</span><span class="p">},</span> <span class="n">sample</span><span class="p">)</span> <span class="k">where</span> <span class="kt">T</span>
+   <span class="n">container</span> <span class="o">=</span> <span class="n">get!</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">id</span><span class="p">(</span><span class="n">sample</span><span class="p">))</span> <span class="k">do</span>
+       <span class="n">c</span><span class="o">.</span><span class="n">factory</span><span class="p">()</span>
+   <span class="k">end</span>
+   <span class="n">append!</span><span class="p">(</span><span class="n">container</span><span class="p">,</span> <span class="n">sample</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>Any big reason to pick one over the other? In the real use case <code>T</code> will only make sense if it is one out of a few types.</p>
+
+
+
+<a name="256097669"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Struct%20with%20factory/near/256097669" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jeffrey Sarnoff <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Struct.20with.20factory.html#256097669">(Oct 04 2021 at 17:24)</a>:</h4>
+<p>If your subcomponent is a Dict or an Array or other mutable entity, just identify it as the named field of your struct and update it as you would if it were not part of struct.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="kt">MyDict</span><span class="p">{</span><span class="kt">T</span><span class="p">}</span>
+    <span class="n">data</span><span class="o">::</span><span class="kt">Dict</span><span class="p">{</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">T</span><span class="p">}</span>
+<span class="k">end</span>
+
+<span class="n">MyDict</span><span class="p">(</span><span class="o">::</span><span class="kt">Type</span><span class="p">{</span><span class="kt">T</span><span class="p">})</span> <span class="k">where</span> <span class="p">{</span><span class="kt">T</span><span class="p">}</span> <span class="o">=</span> <span class="n">MyDict</span><span class="p">(</span><span class="kt">Dict</span><span class="p">{</span><span class="kt">Int</span><span class="p">,</span><span class="kt">T</span><span class="p">}())</span>
+
+<span class="n">mydict</span> <span class="o">=</span> <span class="n">MyDict</span><span class="p">(</span><span class="kt">String</span><span class="p">)</span>
+
+<span class="n">mydict</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="s">"one"</span>
+</code></pre></div>
+
+
+
+<a name="256200622"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Struct%20with%20factory/near/256200622" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Struct.20with.20factory.html#256200622">(Oct 05 2021 at 09:04)</a>:</h4>
+<p><span class="user-mention" data-user-id="278539">@Jeffrey Sarnoff</span> Thanks, your example looks a bit like<code>addsample_b!</code> with <code>MyDict</code> having the role of <code>make_new</code> but I'm not sure I understand it correctly. </p>
+<p>In case more context is needed, the <code>T</code>s in my original example could e.g. be something which stores each individual sample or some onlinestats if the user wants to use less memory.</p>
+
+
+
+<a name="256357845"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Struct%20with%20factory/near/256357845" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jeffrey Sarnoff <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Struct.20with.20factory.html#256357845">(Oct 06 2021 at 05:01)</a>:</h4>
+<p>Let's get more abstract for a moment.  You have a structured type that is purposeful; it exists to fulfill the role of <em>gatherer_of_items</em>.  You receive <em>items</em> of some shared kind, for example, the items may be sampled observations, or the items may be statistical summaries taken over many sequentially sampled observations, or something else.  The important characteristic is the sameness of item's Type; while the nature of an item may be very different with different applications for your code, for any specific something to be gathered there is a specific type of item to gather.  </p>
+<p>[Yes, that  specific type could itself be composite or have subsidiary components .. that does not change the design approach. Even where subsidiary functions are used, they are subsidiary to some parent functionality that is already part of the design. ]</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="kt">GathererOfItems</span><span class="p">{</span><span class="kt">T</span><span class="p">}</span>
+    <span class="n">data</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">T</span><span class="p">}</span>
+<span class="k">end</span>
+
+<span class="c"># struct's constructor</span>
+<span class="n">GathererOfItems</span><span class="p">(</span><span class="o">::</span><span class="kt">Type</span><span class="p">{</span><span class="kt">T</span><span class="p">})</span> <span class="k">where</span> <span class="p">{</span><span class="kt">T</span><span class="p">}</span> <span class="o">=</span> <span class="kt">GathererOfItems</span><span class="p">{</span><span class="kt">T</span><span class="p">}(</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">T</span><span class="p">}())</span>
+
+<span class="c"># realize of the struct (concrete instantiation)</span>
+<span class="n">ItemType</span> <span class="o">=</span> <span class="kt">Float64</span>   <span class="c"># could be a NamedTuple of statistics, a webpage, ...</span>
+<span class="n">gatherer</span> <span class="o">=</span> <span class="n">GathererOfItems</span><span class="p">(</span><span class="n">ItemType</span><span class="p">)</span>
+
+<span class="n">isempty</span><span class="p">(</span><span class="n">gatherer</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+<span class="n">datum</span> <span class="o">=</span> <span class="n">ItemType</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="n">push!</span><span class="p">(</span><span class="n">gatherer</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">datum</span><span class="p">)</span>
+<span class="n">datum</span> <span class="o">=</span> <span class="n">ItemType</span><span class="p">(</span><span class="mf">2.0</span><span class="p">)</span>
+<span class="n">push!</span><span class="p">(</span><span class="n">gatherer</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">datum</span><span class="p">)</span>
+
+<span class="n">gatherer</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">]</span>
+</code></pre></div>
+<p>You can add each item just by using whatever means exists to absorb it.<br>
+Here, that is function <code>push!</code></p>
+<p>What if there is some creation process involving the item necessary before absorbing it?<br>
+Well, usually that construction will have occurred "already" (some time before the item is to be gathered).  For example, if your samples are each of two values, a local mean and a stddev from the current subsequence of observations <code>(μ, σ)</code>, and your gatherer expects a NamedTuple <code>(mean = μ, std = σ)</code>, you may be better off with an intermediation function than by making  a function to <code>addsample</code>.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">gatherable</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span> <span class="n">std</span><span class="p">)</span>
+    <span class="p">(;</span> <span class="n">mean</span><span class="p">,</span> <span class="n">std</span><span class="p">)</span>
+<span class="k">end</span>
+<span class="c">#</span>
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">gatherable</span><span class="p">(</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">)</span>
+<span class="p">(</span><span class="n">mean</span> <span class="o">=</span> <span class="mf">10.0</span><span class="o">.</span><span class="p">,</span> <span class="n">std</span> <span class="o">=</span> <span class="mf">0.25</span><span class="p">)</span>
+</code></pre></div>
+<p>and use this</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">local_mean</span><span class="p">,</span> <span class="n">local_std</span> <span class="o">=</span> <span class="n">observation</span><span class="p">()</span>
+<span class="n">push!</span><span class="p">(</span><span class="n">gatherer</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">gatherable</span><span class="p">(</span><span class="n">local_mean</span><span class="p">,</span> <span class="n">local_std</span><span class="p">))</span>
+</code></pre></div>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

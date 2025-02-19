@@ -1,0 +1,32 @@
+[
+    {
+        "content": "<p>I have the typical precision problem with float keys</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"n\">newstate</span><span class=\"o\">.</span><span class=\"n\">phasestree</span><span class=\"p\">[</span><span class=\"kt\">Tensor</span><span class=\"p\">{</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">}([</span><span class=\"mf\">1.8</span> <span class=\"mf\">0.0</span><span class=\"p\">;</span> <span class=\"mf\">0.0</span> <span class=\"mf\">3.5000000000000004</span><span class=\"p\">])]</span>\n<span class=\"gr\">ERROR: KeyError: key [1.8 0.0; 0.0 3.5000000000000004] not found</span>\n<span class=\"gr\">Stacktrace:</span>\n<span class=\"gr\"> [1] getindex(h::Dict{Tensor{2, 2, Float64, 4}, ConvexDamage.PhaseTree{2, Float64, 4}}, key::Tensor{2, 2, Float64, 4})</span>\n<span class=\"gr\">   @ Base ./dict.jl:482</span>\n<span class=\"gr\"> [2] top-level scope</span>\n<span class=\"gr\">   @ REPL[165]:1</span>\n<span class=\"gr\"> [3] top-level scope</span>\n<span class=\"gr\">   @ ~/.julia/packages/CUDA/YpW0k/src/initialization.jl:52</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">newstate</span><span class=\"o\">.</span><span class=\"n\">phasestree</span><span class=\"p\">[</span><span class=\"kt\">Tensor</span><span class=\"p\">{</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">}([</span><span class=\"mf\">1.8</span> <span class=\"mf\">0.0</span><span class=\"p\">;</span> <span class=\"mf\">0.0</span> <span class=\"mf\">3.500000000000000</span><span class=\"p\">])]</span>\n<span class=\"go\">2D Phasetree</span>\n<span class=\"go\">k=1 F¯=[1.8 0.0; 0.0 1.2599999999999993], F⁺=[1.8 0.0; 0.0 3.5]</span>\n<span class=\"go\">        k=2 F¯=[1.8 0.0; 0.0 1.3039999999999994], F⁺=[1.8 0.0; 0.0 3.5]</span>\n</code></pre></div>\n<p>Are there other options than just rounding off the key before storing? Ideally I'd like to get some <code>isapprox</code> key, but I'm not sure if this is possible with the underlying hash mechanism (since I don't know much about it)</p>",
+        "id": 279662958,
+        "sender_full_name": "Max Köhler",
+        "timestamp": 1650538194
+    },
+    {
+        "content": "<p>searching for <code>findfirst(x-&gt;isapprox(x,some_value),collect(keys(mydict)))</code> is also quite expensive in my case. Some workaround while building the dict or accessing it would be best case for me</p>",
+        "id": 279666358,
+        "sender_full_name": "Max Köhler",
+        "timestamp": 1650540400
+    },
+    {
+        "content": "<p>You could add a <code>tol</code> field to <code>Tensor</code> and then hash/compare based on that</p>",
+        "id": 279667539,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1650541111
+    },
+    {
+        "content": "<p>I think I'm wondering how the hash and equality checks happen in the <code>dict</code> implementation. Is it just <code>isequal</code> and <code>hash</code> that is used?</p>",
+        "id": 279681602,
+        "sender_full_name": "Max Köhler",
+        "timestamp": 1650548552
+    },
+    {
+        "content": "<p>You can define a method of <code>Base.hash</code> For your type that has whatever behaviour you like. So probably in this case, you want to round the number to within a certain number of significant digits during the hash.</p>",
+        "id": 279702215,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1650557458
+    }
+]

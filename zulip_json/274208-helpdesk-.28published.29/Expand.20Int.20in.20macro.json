@@ -1,0 +1,50 @@
+[
+    {
+        "content": "<p>How can I do the transformation of :Int to the correct concrete type symbol in a macro?</p>",
+        "id": 227517789,
+        "sender_full_name": "Simon Christ",
+        "timestamp": 1614120220
+    },
+    {
+        "content": "<p>what do you mean by correct concrete type symbol?</p>",
+        "id": 227518253,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614120443
+    },
+    {
+        "content": "<p>Depending on platform get :Int64 or :Int32 instead of :Int</p>",
+        "id": 227519140,
+        "sender_full_name": "Simon Christ",
+        "timestamp": 1614120868
+    },
+    {
+        "content": "<p>there is no correct <em>symbol</em> though. </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">let</span> <span class=\"kt\">Int32</span> <span class=\"o\">=</span> <span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"kt\">Int64</span><span class=\"p\">,</span> <span class=\"kt\">Int64</span> <span class=\"o\">=</span> <span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"kt\">Int32</span><span class=\"p\">,</span> <span class=\"kt\">Int</span> <span class=\"o\">=</span> <span class=\"kt\">Float64</span>\n           <span class=\"n\">typeof</span><span class=\"p\">((</span><span class=\"kt\">Int32</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">),</span> <span class=\"kt\">Int64</span><span class=\"p\">(</span><span class=\"mi\">2</span><span class=\"p\">),</span> <span class=\"kt\">Int</span><span class=\"p\">(</span><span class=\"mi\">3</span><span class=\"p\">)))</span>\n       <span class=\"k\">end</span>\n<span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">,</span> <span class=\"kt\">Int32</span><span class=\"p\">,</span> <span class=\"kt\">Float64</span><span class=\"p\">}</span>\n</code></pre></div>",
+        "id": 227519492,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614121042
+    },
+    {
+        "content": "<p>If you have the type itself, you could just do <code>Symbol(T)</code> to get it's symbol and that'll have the <code>64</code> or <code>32</code> in it.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"kt\">Symbol</span><span class=\"p\">(</span><span class=\"kt\">Int</span><span class=\"p\">)</span>\n<span class=\"o\">:</span><span class=\"kt\">Int64</span>\n</code></pre></div>",
+        "id": 227522222,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614122411
+    },
+    {
+        "content": "<p>That works! Thank you. For future reference:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">macro</span> <span class=\"n\">t</span><span class=\"p\">(</span><span class=\"nb\">e</span><span class=\"p\">)</span>\n         <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"o\">$</span><span class=\"p\">(</span><span class=\"kt\">Symbol</span><span class=\"p\">(</span><span class=\"nb\">e</span><span class=\"p\">))})</span>\n       <span class=\"k\">end</span>\n<span class=\"nd\">@t</span> <span class=\"p\">(</span><span class=\"k\">macro</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@t</span> <span class=\"kt\">Int</span>\n<span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">}</span>\n</code></pre></div>",
+        "id": 227653481,
+        "sender_full_name": "Simon Christ",
+        "timestamp": 1614193381
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"207830\">@Simon Christ</span> I don't think that macro does what you think it does. The <code>Symbol</code> constructor isn't doing anything:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">macro</span> <span class=\"n\">t2</span><span class=\"p\">(</span><span class=\"nb\">e</span><span class=\"p\">)</span>\n         <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"o\">$</span><span class=\"nb\">e</span><span class=\"p\">})</span>\n       <span class=\"k\">end</span>\n<span class=\"nd\">@t</span> <span class=\"p\">(</span><span class=\"k\">macro</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@t</span> <span class=\"kt\">Int</span>\n<span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">}</span>\n</code></pre></div>\n<p>On 64bit computers, <code>Int === Int64</code>, whereas on 32 bit computers, <code>Int === Int32</code>. E.g. on my machine:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"kt\">Int</span>\n<span class=\"kt\">Int64</span>\n</code></pre></div>",
+        "id": 227809271,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614275846
+    },
+    {
+        "content": "<p>Hmm.. seems my confusion was more about how to splat correctly:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">macro</span> <span class=\"n\">t</span><span class=\"p\">(</span><span class=\"nb\">e</span><span class=\"p\">)</span>\n         <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"o\">$</span><span class=\"p\">(</span><span class=\"nb\">e</span><span class=\"o\">.</span><span class=\"n\">args</span><span class=\"o\">...</span><span class=\"p\">)})</span> <span class=\"o\">|&gt;</span> <span class=\"n\">esc</span>\n       <span class=\"k\">end</span>\n<span class=\"nd\">@t</span> <span class=\"p\">(</span><span class=\"k\">macro</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@t</span> <span class=\"p\">[</span><span class=\"kt\">Int</span><span class=\"p\">,</span> <span class=\"kt\">Any</span><span class=\"p\">]</span>\n<span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">,</span><span class=\"kt\">Any</span><span class=\"p\">}</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">macro</span> <span class=\"n\">t</span><span class=\"p\">(</span><span class=\"nb\">e</span><span class=\"p\">)</span>\n         <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"o\">$</span><span class=\"p\">(</span><span class=\"nb\">e</span><span class=\"o\">.</span><span class=\"n\">args</span><span class=\"p\">)</span><span class=\"o\">...</span><span class=\"p\">})</span> <span class=\"o\">|&gt;</span> <span class=\"n\">esc</span>\n       <span class=\"k\">end</span>\n<span class=\"nd\">@t</span> <span class=\"p\">(</span><span class=\"k\">macro</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@t</span> <span class=\"p\">[</span><span class=\"kt\">Int</span><span class=\"p\">,</span> <span class=\"kt\">Any</span><span class=\"p\">]</span>\n<span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"o\">:</span><span class=\"kt\">Int</span><span class=\"p\">,</span><span class=\"o\">:</span><span class=\"kt\">Any</span><span class=\"p\">}</span>\n</code></pre></div>",
+        "id": 227823084,
+        "sender_full_name": "Simon Christ",
+        "timestamp": 1614281294
+    }
+]

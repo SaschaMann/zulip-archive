@@ -1,0 +1,40 @@
+<html>
+<head><meta charset="utf-8"><title>Union promotion on array operations · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Union.20promotion.20on.20array.20operations.html">Union promotion on array operations</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="292397501"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Union%20promotion%20on%20array%20operations/near/292397501" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Théo Galy-Fajou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Union.20promotion.20on.20array.20operations.html#292397501">(Aug 08 2022 at 12:56)</a>:</h4>
+<p>When using <code>collect</code> , <code>map</code> ,<code> vcat</code> etc..., on <code>Array</code>s of mixed type (for example <code>Int</code> and <code>Float64</code>), the automatic <code>eltype</code> promotion is to use <code>promote_type</code> . So <code>vcat(rand(3), rand(1:3, 3))</code> will return a <code>Vector{Float64}</code><br>
+Is there a generic way to get a <code>Union</code> instead, i.e. that <code>vcat</code> returns an array of <code>eltype</code> <code>Union{Int, Float64}</code> ?</p>
+
+
+
+<a name="292655287"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Union%20promotion%20on%20array%20operations/near/292655287" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Union.20promotion.20on.20array.20operations.html#292655287">(Aug 09 2022 at 20:49)</a>:</h4>
+<p>Hm, I guess you could write things like</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">union_vcat</span><span class="p">(</span><span class="n">x</span><span class="o">::</span><span class="kt">AbstractArray</span><span class="p">{</span><span class="kt">T</span><span class="p">},</span><span class="w"> </span><span class="n">y</span><span class="o">::</span><span class="kt">AbstractArray</span><span class="p">{</span><span class="kt">U</span><span class="p">})</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="p">{</span><span class="kt">T</span><span class="p">,</span><span class="w"> </span><span class="kt">U</span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="kt">Union</span><span class="p">{</span><span class="kt">T</span><span class="p">,</span><span class="w"> </span><span class="kt">U</span><span class="p">}[</span><span class="n">x</span><span class="p">;</span><span class="w"> </span><span class="n">y</span><span class="p">]</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+<p>and so on. </p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="n">union_vcat</span><span class="p">(</span><span class="n">rand</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">))</span><span class="w"></span>
+<span class="go">6-element Vector{Union{Float64, Int64}}:</span>
+<span class="go"> 0.5169156455130914</span>
+<span class="go"> 0.19690004688154739</span>
+<span class="go"> 0.14011289835785867</span>
+<span class="go"> 3</span>
+<span class="go"> 3</span>
+<span class="go"> 3</span>
+</code></pre></div>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

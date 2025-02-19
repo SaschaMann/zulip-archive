@@ -1,0 +1,48 @@
+<html>
+<head><meta charset="utf-8"><title>When to use views, when to not use them · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/When.20to.20use.20views.2C.20when.20to.20not.20use.20them.html">When to use views, when to not use them</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="240357914"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/When%20to%20use%20views%2C%20when%20to%20not%20use%20them/near/240357914" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Argel Ramírez Reyes <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/When.20to.20use.20views.2C.20when.20to.20not.20use.20them.html#240357914">(May 26 2021 at 17:08)</a>:</h4>
+<p>I have a long standing question. <br>
+Slicing arrays create copies. So in small examples it is usual that we use views to avoid the cost of making copies. Benchmarking with small arrays usually backs up this perception. However, in my real life code, where I usually work with 512x512x80x200 arrays, I think this might be detrimental, i.e. that the cost of repeatedly doing operations with data that is non-contiguous in memory (for example in the fourth dimension) might actually be costlier than makin a copy once and then operating on a slice that is now contiguous data. </p>
+<p>Is there a rule of thumb to decide when to use views and when to use regular slicing? For example, even unrolling a loop instead of creating slices could benefit from a copy if the data points are too far from each other, right?</p>
+
+
+
+<a name="240360560"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/When%20to%20use%20views%2C%20when%20to%20not%20use%20them/near/240360560" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Wolf Thomsen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/When.20to.20use.20views.2C.20when.20to.20not.20use.20them.html#240360560">(May 26 2021 at 17:27)</a>:</h4>
+<p>Not a performance guru here, but my guess would be it's related to caches. If something is not contiguous but in L1 or L2 cache, it might still be very fast. If you have to load many non contiguous elements from RAM, the overhead probably grows quite fast</p>
+
+
+
+<a name="240370968"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/When%20to%20use%20views%2C%20when%20to%20not%20use%20them/near/240370968" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/When.20to.20use.20views.2C.20when.20to.20not.20use.20them.html#240370968">(May 26 2021 at 18:41)</a>:</h4>
+<p>Ah yeah, good question.. I guess it depends both on<br>
+1) how many times are you going to operate on a slice after extracting it<br>
+2) how far away in memory from each other are the relevant elements you want to make a slice of<br>
+3) how big are your caches</p>
+
+
+
+<a name="240371180"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/When%20to%20use%20views%2C%20when%20to%20not%20use%20them/near/240371180" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/When.20to.20use.20views.2C.20when.20to.20not.20use.20them.html#240371180">(May 26 2021 at 18:42)</a>:</h4>
+<p>There are also still corner cases where views may allocate, but that's the opposite end of the spectrum from what you're thinking about I guess</p>
+
+
+
+<a name="240371675"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/When%20to%20use%20views%2C%20when%20to%20not%20use%20them/near/240371675" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/When.20to.20use.20views.2C.20when.20to.20not.20use.20them.html#240371675">(May 26 2021 at 18:46)</a>:</h4>
+<p>I suppose also if the slice is small enough and cache management is smart enough, then the <code>view</code>'d element should stick around in your cache after the first time you get them, just like if you made a slice.  But if your slice is bigger than cache, then I suppose making the slice might be the only way to ensure subsequent accesses will be as fast as possible.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

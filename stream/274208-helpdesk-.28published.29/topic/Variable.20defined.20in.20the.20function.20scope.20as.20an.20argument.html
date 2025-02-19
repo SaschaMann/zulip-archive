@@ -1,0 +1,269 @@
+<html>
+<head><meta charset="utf-8"><title>Variable defined in the function scope as an argument · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument.html">Variable defined in the function scope as an argument</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="403388214"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Variable%20defined%20in%20the%20function%20scope%20as%20an%20argument/near/403388214" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Moorits Muru <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument.html#403388214">(Nov 21 2023 at 14:08)</a>:</h4>
+<p>I have a situation, where I have an integration and I want to give the integration limit as an argument to a function, but the limit depends on something that is calculated in the same function. Therefore, I would like to use a variable name as a function argument, but that variable is only defined in the function scope.</p>
+<p>It should be doable with metaprogramming, but I can't figure it out.</p>
+<p>I guess it is something analogous to making these function calls work</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">foo</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="w">  </span><span class="n">bar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">  </span><span class="n">baz</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span>
+<span class="w">  </span><span class="n">eval</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="n">foo</span><span class="p">(</span><span class="n">bar</span><span class="p">)</span><span class="w"> </span><span class="c"># 1</span>
+
+<span class="n">foo</span><span class="p">(</span><span class="n">baz</span><span class="p">)</span><span class="w"> </span><span class="c"># 2</span>
+</code></pre></div>
+<p>At the moment this gives <code>UndefVarError</code>.</p>
+
+
+
+<a name="403428267"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Variable%20defined%20in%20the%20function%20scope%20as%20an%20argument/near/403428267" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sergio Vargas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument.html#403428267">(Nov 21 2023 at 17:15)</a>:</h4>
+<p>You could use a dictionary or a named tuple and use symbols as keys. no need to <code>eval</code> here.</p>
+
+
+
+<a name="403533100"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Variable%20defined%20in%20the%20function%20scope%20as%20an%20argument/near/403533100" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Moorits Muru <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument.html#403533100">(Nov 22 2023 at 07:13)</a>:</h4>
+<p>Thanks!</p>
+
+
+
+<a name="403543289"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Variable%20defined%20in%20the%20function%20scope%20as%20an%20argument/near/403543289" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Moorits Muru <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument.html#403543289">(Nov 22 2023 at 08:32)</a>:</h4>
+<p>In some cases, I would also like to do some simple manipulation with the variable and in that case the dictionary does not work. For example, <code>foo(10*bar)</code>.</p>
+
+
+
+<a name="403780995"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Variable%20defined%20in%20the%20function%20scope%20as%20an%20argument/near/403780995" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Leandro Martínez <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument.html#403780995">(Nov 23 2023 at 12:39)</a>:</h4>
+<p>I think you should give a more realistic example of what you're trying to do. It doesn't seem a case for metaprograming at all, but your example <code>foo(x)</code> function does not make sense, as <code>x</code>, is the argument. You example works with:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">foo</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="w">           </span><span class="k">if</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="ss">:bar</span>
+<span class="w">               </span><span class="mi">1</span>
+<span class="w">           </span><span class="k">elseif</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="ss">:baz</span>
+<span class="w">               </span><span class="mi">2</span>
+<span class="w">           </span><span class="k">end</span>
+<span class="w">       </span><span class="k">end</span>
+<span class="n">foo</span><span class="w"> </span><span class="p">(</span><span class="n">generic</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">foo</span><span class="p">(</span><span class="ss">:bar</span><span class="p">)</span>
+<span class="mi">1</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">foo</span><span class="p">(</span><span class="ss">:baz</span><span class="p">)</span>
+<span class="mi">2</span>
+</code></pre></div>
+<p>or </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">foo</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+<span class="w">           </span><span class="n">f</span><span class="p">()</span>
+<span class="w">       </span><span class="k">end</span>
+<span class="n">foo</span><span class="w"> </span><span class="p">(</span><span class="n">generic</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">foo</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="mi">1</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">foo</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
+<span class="mi">2</span>
+</code></pre></div>
+<p>but understanding why this is not what you need requires some more explanation.</p>
+
+
+
+<a name="403786968"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Variable%20defined%20in%20the%20function%20scope%20as%20an%20argument/near/403786968" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Moorits Muru <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument.html#403786968">(Nov 23 2023 at 13:15)</a>:</h4>
+<p>The actual use case is that I am calculating the mass of galaxy groups, which includes taking an integral to some radius from the group's center. There are different definitions of radii that can be used as the radius of the group. I want to be able to give the main function an argument, which determines the upper limit of that integral. The problem is that the different radii are not known beforehand. They are calculated in the main function. For example, I would like to run a function <code>calculate_mass(galaxies; integral_limit=10*R1)</code> or change the limit to <code>integral_limit=5*R2</code>. In the end, <code>R1</code> and <code>R2</code> will have some value, and the upper limit will be used as an argument for the <code>quadgk</code> function.</p>
+<p>Fortunately, at the moment, I am only comparing two different radii and implementing it as a simple boolean. I only need multiplication, so I added another argument to the <code>calculate_mass</code> function that contains the factor as a number. I just hoped there was an elegant way to solve this so that I could have an argument <code>10*R1</code> without <code>R1</code> being defined yet (but it will be determined before it is actually used).</p>
+<p>Does this make any sense?</p>
+
+
+
+<a name="403788467"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Variable%20defined%20in%20the%20function%20scope%20as%20an%20argument/near/403788467" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel González <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument.html#403788467">(Nov 23 2023 at 13:24)</a>:</h4>
+<p>if there are not a lot of additional usage instances, you could just define a <code>Radius{N}</code> struct, define <code>Base.:(*)(::Number, ::Radius)</code>and then have a method that evaluates it once it's known (kind of like a minimal symbolics stack)</p>
+
+
+
+<a name="403788912"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Variable%20defined%20in%20the%20function%20scope%20as%20an%20argument/near/403788912" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel González <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument.html#403788912">(Nov 23 2023 at 13:27)</a>:</h4>
+<p>so something like </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="kt">Radius</span><span class="p">{</span><span class="kt">N</span><span class="p">}</span>
+<span class="w">       </span><span class="n">scale</span><span class="o">::</span><span class="kt">Float64</span>
+<span class="k">end</span>
+
+<span class="n">Base</span><span class="o">.:</span><span class="p">(</span><span class="o">*</span><span class="p">)(</span><span class="n">s</span><span class="o">::</span><span class="kt">Number</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="o">::</span><span class="kt">Radius</span><span class="p">{</span><span class="kt">N</span><span class="p">})</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="p">{</span><span class="kt">N</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Radius</span><span class="p">{</span><span class="kt">N</span><span class="p">}(</span><span class="n">r</span><span class="o">.</span><span class="n">scale</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">s</span><span class="p">)</span>
+<span class="k">const</span><span class="w"> </span><span class="n">R1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Radius</span><span class="p">{</span><span class="mi">1</span><span class="p">}(</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="k">const</span><span class="w"> </span><span class="n">R2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Radius</span><span class="p">{</span><span class="mi">2</span><span class="p">}(</span><span class="mf">1.0</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="403788963"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Variable%20defined%20in%20the%20function%20scope%20as%20an%20argument/near/403788963" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel González <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument.html#403788963">(Nov 23 2023 at 13:27)</a>:</h4>
+<p>Then </p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">R1</span>
+<span class="go">Radius{1}(10.0)</span>
+</code></pre></div>
+
+
+
+<a name="403789267"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Variable%20defined%20in%20the%20function%20scope%20as%20an%20argument/near/403789267" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel González <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument.html#403789267">(Nov 23 2023 at 13:29)</a>:</h4>
+<p>then resolve it once the value is known as <code>resolve(r::Radius{1}, r1, r2) = r1 * r.scale</code> and <code>resolve(r::Radius{2}, r1, r2) = r2 * r.scale</code>(if there are two options, otherwise you could have all of them as a tuple and define all of them with a single method)</p>
+
+
+
+<a name="403790000"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Variable%20defined%20in%20the%20function%20scope%20as%20an%20argument/near/403790000" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel González <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument.html#403790000">(Nov 23 2023 at 13:34)</a>:</h4>
+<p>Though I just read the post where you said you wanted to do some manipulation as <code>foo(10*R1)</code>, which I guess discards my proposal because you'd basically be reinventing a symbolics engine (or maybe it just works if you define another struct with the function and the <code>Radius{N}</code> as fields, for delayed evaluation? In any case hard to assess without the details)</p>
+
+
+
+<a name="403792551"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Variable%20defined%20in%20the%20function%20scope%20as%20an%20argument/near/403792551" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Moorits Muru <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument.html#403792551">(Nov 23 2023 at 13:49)</a>:</h4>
+<p>I am slipping up with trying to simplify things <span aria-label="grinning" class="emoji emoji-1f600" role="img" title="grinning">:grinning:</span> Using just <code>R1</code> and <code>R2</code> wasn't the best example because the radii actually have names (such as <code>R_grav</code> and <code>R_200</code>). I like your solution, but I guess I would just have to put the radii into some ordered list. I think in general, there is no point in trying to figure out more complicated solutions, as my case was quite simple in practice and solvable with just a boolean and an extra argument, and it is unlikely to get any more complicated.</p>
+
+
+
+<a name="403792898"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Variable%20defined%20in%20the%20function%20scope%20as%20an%20argument/near/403792898" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Moorits Muru <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument.html#403792898">(Nov 23 2023 at 13:51)</a>:</h4>
+<p>I guess the question I was looking an answer to was whether I could have an expression <code>10*x</code>, when <code>x</code> is not defined, and evaluate it after <code>x</code> has been defined.</p>
+
+
+
+<a name="403792964"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Variable%20defined%20in%20the%20function%20scope%20as%20an%20argument/near/403792964" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel González <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument.html#403792964">(Nov 23 2023 at 13:52)</a>:</h4>
+<p>yeah, if a flag works then it's probably the best solution instead of adding code (you could still build <code>R_grav = Radius{:grav}(1.0)</code> if you really really wanted to, though)</p>
+
+
+
+<a name="403798046"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Variable%20defined%20in%20the%20function%20scope%20as%20an%20argument/near/403798046" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument.html#403798046">(Nov 23 2023 at 14:19)</a>:</h4>
+<p>Why aren't these just separate arguments to <code>calculate_mass</code>?</p>
+
+
+
+<a name="403798329"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Variable%20defined%20in%20the%20function%20scope%20as%20an%20argument/near/403798329" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument.html#403798329">(Nov 23 2023 at 14:21)</a>:</h4>
+<p>i.e.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">calculate_mass</span><span class="p">(</span><span class="n">galaxies</span><span class="p">;</span><span class="w"> </span><span class="n">integral_limit</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="n">limit_style</span><span class="o">=</span><span class="ss">:R_grav</span><span class="p">)</span>
+</code></pre></div>
+<p>or something?</p>
+
+
+
+<a name="403811740"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Variable%20defined%20in%20the%20function%20scope%20as%20an%20argument/near/403811740" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gunnar Farnebäck <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument.html#403811740">(Nov 23 2023 at 15:36)</a>:</h4>
+<blockquote>
+<p>I guess the question I was looking an answer to was whether I could have an expression 10*x, when x is not defined, and evaluate it after x has been defined.</p>
+</blockquote>
+<p>You sort of can, but it's a terribly bad idea in many ways.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">foo</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="w">         </span><span class="k">global</span><span class="w"> </span><span class="n">bar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">         </span><span class="k">global</span><span class="w"> </span><span class="n">baz</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span>
+<span class="w">         </span><span class="n">eval</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="w">       </span><span class="k">end</span>
+<span class="n">foo</span><span class="w"> </span><span class="p">(</span><span class="n">generic</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">foo</span><span class="p">(</span><span class="o">:</span><span class="p">(</span><span class="mi">10</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">bar</span><span class="p">))</span>
+<span class="mi">10</span>
+</code></pre></div>
+
+
+
+<a name="403818341"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Variable%20defined%20in%20the%20function%20scope%20as%20an%20argument/near/403818341" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument.html#403818341">(Nov 23 2023 at 16:20)</a>:</h4>
+<p><em>please</em> don't do this in real code</p>
+
+
+
+<a name="403827558"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Variable%20defined%20in%20the%20function%20scope%20as%20an%20argument/near/403827558" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sergio Vargas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument.html#403827558">(Nov 23 2023 at 17:25)</a>:</h4>
+<p>why can't the radii calculations be refactored into a separate function? <span aria-label="thinking" class="emoji emoji-1f914" role="img" title="thinking">:thinking:</span></p>
+
+
+
+<a name="403834421"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Variable%20defined%20in%20the%20function%20scope%20as%20an%20argument/near/403834421" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Bagge Carlson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument.html#403834421">(Nov 23 2023 at 18:06)</a>:</h4>
+<p>Is there a reason to not let the user pass in a function that computes the radius, rather than an expression?</p>
+
+
+
+<a name="403835959"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Variable%20defined%20in%20the%20function%20scope%20as%20an%20argument/near/403835959" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Leandro Martínez <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument.html#403835959">(Nov 23 2023 at 18:16)</a>:</h4>
+<p>I guess in the general case you just want to pass a function:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">foo</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+<span class="w">           </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span>
+<span class="w">           </span><span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="w">       </span><span class="k">end</span>
+<span class="n">foo</span><span class="w"> </span><span class="p">(</span><span class="n">generic</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">foo</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="mi">10</span><span class="o">*</span><span class="n">x</span><span class="p">)</span>
+<span class="mi">20</span>
+</code></pre></div>
+
+
+
+<a name="403836095"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Variable%20defined%20in%20the%20function%20scope%20as%20an%20argument/near/403836095" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Leandro Martínez <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument.html#403836095">(Nov 23 2023 at 18:16)</a>:</h4>
+<p>(oh yes, everybody just said that)</p>
+
+
+
+<a name="403912765"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Variable%20defined%20in%20the%20function%20scope%20as%20an%20argument/near/403912765" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Moorits Muru <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument.html#403912765">(Nov 24 2023 at 07:19)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269150">Mason Protter</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument/near/403798329">said</a>:</p>
+<blockquote>
+<p>i.e.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">calculate_mass</span><span class="p">(</span><span class="n">galaxies</span><span class="p">;</span><span class="w"> </span><span class="n">integral_limit</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="n">limit_style</span><span class="o">=</span><span class="ss">:R_grav</span><span class="p">)</span>
+</code></pre></div>
+<p>or something?</p>
+</blockquote>
+<p>This is what I ended up doing.</p>
+
+
+
+<a name="403913025"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Variable%20defined%20in%20the%20function%20scope%20as%20an%20argument/near/403913025" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Moorits Muru <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument.html#403913025">(Nov 24 2023 at 07:21)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="486849">Sergio Vargas</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument/near/403827558">said</a>:</p>
+<blockquote>
+<p>why can't the radii calculations be refactored into a separate function? <span aria-label="thinking" class="emoji emoji-1f914" role="img" title="thinking">:thinking:</span></p>
+</blockquote>
+<p>It is an iterative calculation that cannot be calculated beforehand as the integral has to be taken in every iteration until the results have converged.</p>
+
+
+
+<a name="403913601"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Variable%20defined%20in%20the%20function%20scope%20as%20an%20argument/near/403913601" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Moorits Muru <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument.html#403913601">(Nov 24 2023 at 07:26)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="272599">Fredrik Bagge Carlson</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument/near/403834421">said</a>:</p>
+<blockquote>
+<p>Is there a reason to not let the user pass in a function that computes the radius, rather than an expression?</p>
+</blockquote>
+<p>In general, I agree, but these two radii that I wanted to compare are both needed in the calculations in different steps and are already calculated.</p>
+
+
+
+<a name="403980263"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Variable%20defined%20in%20the%20function%20scope%20as%20an%20argument/near/403980263" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Bagge Carlson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument.html#403980263">(Nov 24 2023 at 14:45)</a>:</h4>
+<p>Multiplying two numbers takes on the order of a nanosecond, are you sure that recalculsting them is an issue? Even if you pass in a function and that function is called twice, julia will likely inline that function and optimize away any simple calculation that is repeated. How expensive is this operation we're talking about?</p>
+
+
+
+<a name="404563193"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Variable%20defined%20in%20the%20function%20scope%20as%20an%20argument/near/404563193" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Moorits Muru <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Variable.20defined.20in.20the.20function.20scope.20as.20an.20argument.html#404563193">(Nov 28 2023 at 07:31)</a>:</h4>
+<p>They aren't expensive computationally, and I could definitely just calculate them twice, once for the general calculations and once for the integral limit. I think I figured that reusing the values would be simpler than doing the radius calculations twice, but that does not seem to be the case.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

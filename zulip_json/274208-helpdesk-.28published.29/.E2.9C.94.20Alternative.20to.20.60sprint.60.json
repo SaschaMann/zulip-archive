@@ -1,0 +1,50 @@
+[
+    {
+        "content": "<p>I need to write to an external program and read its output, as an array of bytes.</p>\n<p>I could do:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">input_data</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"s\">\"foo bar\"</span>\n<span class=\"n\">cout</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">IOBuffer</span><span class=\"p\">()</span>\n<span class=\"n\">open</span><span class=\"p\">(</span><span class=\"sb\">`cat`</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"s\">\"w\"</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">cout</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"> </span><span class=\"n\">cin</span>\n<span class=\"w\">    </span><span class=\"n\">write</span><span class=\"p\">(</span><span class=\"n\">cin</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">input_data</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n<span class=\"n\">output</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">take!</span><span class=\"p\">(</span><span class=\"n\">cout</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>Or I could do:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">output</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">sprint</span><span class=\"p\">()</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"> </span><span class=\"n\">cout</span>\n<span class=\"w\">    </span><span class=\"n\">open</span><span class=\"p\">(</span><span class=\"sb\">`cat`</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"s\">\"w\"</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">cout</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"> </span><span class=\"n\">cin</span>\n<span class=\"w\">        </span><span class=\"n\">write</span><span class=\"p\">(</span><span class=\"n\">cin</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">input_data</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"k\">end</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>Is there a function like <code>sprint</code> that returns the bytes like <code>take!</code> does? Or better yet, is there a function that I can just call like <code>output = f(`cmd`, input_data)</code>?</p>",
+        "id": 430891944,
+        "sender_full_name": "Sergio Vargas",
+        "timestamp": 1712100655
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">read</span><span class=\"p\">(</span><span class=\"sb\">`date -u`</span><span class=\"p\">)</span>\n<span class=\"mi\">32</span><span class=\"o\">-</span><span class=\"n\">element</span><span class=\"w\"> </span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">UInt8</span><span class=\"p\">}</span><span class=\"o\">:</span>\n<span class=\"w\"> </span><span class=\"mh\">0x54</span>\n<span class=\"w\"> </span><span class=\"mh\">0x75</span>\n<span class=\"w\"> </span><span class=\"mh\">0x65</span>\n<span class=\"w\"> </span><span class=\"mh\">0x20</span>\n</code></pre></div>",
+        "id": 430894282,
+        "sender_full_name": "jar",
+        "timestamp": 1712102375
+    },
+    {
+        "content": "<p>That works if the command doesn't read anything, but if I try to write something to its stdin, I don't get anything back:</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">cin</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">IOBuffer</span><span class=\"p\">();</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">write</span><span class=\"p\">(</span><span class=\"n\">cin</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"s\">\"foo bar\"</span><span class=\"p\">)</span>\n<span class=\"go\">7</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">read</span><span class=\"p\">(</span><span class=\"n\">pipeline</span><span class=\"p\">(</span><span class=\"sb\">`cat`</span><span class=\"p\">;</span><span class=\"w\"> </span><span class=\"nb\">stdin</span><span class=\"o\">=</span><span class=\"n\">cin</span><span class=\"p\">))</span>\n<span class=\"go\">UInt8[]</span>\n</code></pre></div>",
+        "id": 430896416,
+        "sender_full_name": "Sergio Vargas",
+        "timestamp": 1712103872
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">read</span><span class=\"p\">(</span><span class=\"n\">pipeline</span><span class=\"p\">(</span><span class=\"kt\">IOBuffer</span><span class=\"p\">(</span><span class=\"s\">\"foo bar\"</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"sb\">`cat`</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"kt\">String</span><span class=\"p\">)</span>\n<span class=\"s\">\"foo bar\"</span>\n</code></pre></div>",
+        "id": 430923470,
+        "sender_full_name": "Gunnar Farnebäck",
+        "timestamp": 1712123260
+    },
+    {
+        "content": "<p>Btw, a <code>seekstart(cin)</code> in your previous example had accomplished the same thing.</p>",
+        "id": 430923781,
+        "sender_full_name": "Gunnar Farnebäck",
+        "timestamp": 1712123472
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"486849\">Sergio Vargas</span> has marked this topic as resolved.</p>",
+        "id": 431118560,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1712157752
+    },
+    {
+        "content": "<p>Thanks <span class=\"user-mention\" data-user-id=\"273176\">@Gunnar Farnebäck</span> . Neither the docs nor the posts I had read on discourse showed that you could simply pass the <code>IOBuffer</code> as an argument. That's much more convenient than the stdio kwargs.</p>",
+        "id": 431119839,
+        "sender_full_name": "Sergio Vargas",
+        "timestamp": 1712158112
+    },
+    {
+        "content": "<p>The <code>pipeline</code> docstring has some hints:</p>\n<blockquote>\n<p><code>pipeline(from, to)</code> is equivalent to <code>pipeline(from, stdout=to)</code> when <code>from</code><br>\n  is a command, and to <code>pipeline(to, stdin=from)</code> when <code>from</code> is another kind of data<br>\n  source.</p>\n</blockquote>",
+        "id": 431143908,
+        "sender_full_name": "Gunnar Farnebäck",
+        "timestamp": 1712165947
+    }
+]

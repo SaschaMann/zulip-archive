@@ -1,0 +1,115 @@
+<html>
+<head><meta charset="utf-8"><title>Function not vectorizing properly for some array types · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Function.20not.20vectorizing.20properly.20for.20some.20array.20types.html">Function not vectorizing properly for some array types</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="299469642"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Function%20not%20vectorizing%20properly%20for%20some%20array%20types/near/299469642" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> James Wrigley <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Function.20not.20vectorizing.20properly.20for.20some.20array.20types.html#299469642">(Sep 18 2022 at 19:35)</a>:</h4>
+<p>I have a function that's intended to take a <code>Array{UInt32}</code> and shuffle the bytes of each element from AAA...BBB...CCC...DDD... to  ABCDABCDABCD...:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">deshuffle</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">out</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">byte_stride</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">length</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="o">÷</span><span class="w"> </span><span class="mi">4</span><span class="w"></span>
+
+<span class="w">    </span><span class="nd">@inbounds</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="n">byte_stride</span><span class="w"></span>
+<span class="w">        </span><span class="n">out_i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">4</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">out</span><span class="p">[</span><span class="n">out_i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"></span>
+<span class="w">        </span><span class="n">out</span><span class="p">[</span><span class="n">out_i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">byte_stride</span><span class="p">]</span><span class="w"></span>
+<span class="w">        </span><span class="n">out</span><span class="p">[</span><span class="n">out_i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="mi">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">byte_stride</span><span class="p">)]</span><span class="w"></span>
+<span class="w">        </span><span class="n">out</span><span class="p">[</span><span class="n">out_i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">3</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="mi">3</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">byte_stride</span><span class="p">)]</span><span class="w"></span>
+<span class="w">    </span><span class="k">end</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+<p>My problem is that if I pass in a reinterpreted/reshaped array as <code>out</code> instead of a plain <code>Array</code>, the performance drops:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="kt">UInt8</span><span class="p">,</span><span class="w"> </span><span class="mi">512</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">128</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">4</span><span class="p">);</span><span class="w"></span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">similar</span><span class="p">(</span><span class="n">data</span><span class="p">);</span><span class="w"></span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">out2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">zeros</span><span class="p">(</span><span class="kt">UInt32</span><span class="p">,</span><span class="w"> </span><span class="mi">512</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="p">);</span><span class="w"></span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="nd">@benchmark</span><span class="w"> </span><span class="n">deshuffle</span><span class="p">(</span><span class="o">$</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="o">$</span><span class="n">out</span><span class="p">)</span><span class="w"></span>
+<span class="go">BenchmarkTools.Trial: 10000 samples with 1 evaluation.</span>
+<span class="go"> Range (min … max):  20.130 μs …  51.287 μs  ┊ GC (min … max): 0.00% … 0.00%</span>
+<span class="go"> Time  (median):     20.459 μs               ┊ GC (median):    0.00%</span>
+<span class="go"> Time  (mean ± σ):   20.552 μs ± 704.751 ns  ┊ GC (mean ± σ):  0.00% ± 0.00%</span>
+
+<span class="go">     ▄█</span>
+<span class="go">  ▂▂▃██▅▂▂▂▂▂▂▂▂▂▁▁▁▁▁▁▁▁▁▁▁▂▁▁▁▂▁▁▁▁▁▁▁▁▁▁▁▂▁▁▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂ ▂</span>
+<span class="go">  20.1 μs         Histogram: frequency by time         24.8 μs &lt;</span>
+
+<span class="go"> Memory estimate: 0 bytes, allocs estimate: 0.</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="nd">@benchmark</span><span class="w"> </span><span class="n">deshuffle</span><span class="p">(</span><span class="o">$</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">reinterpret</span><span class="p">(</span><span class="kt">UInt8</span><span class="p">,</span><span class="w"> </span><span class="n">vec</span><span class="p">(</span><span class="o">$</span><span class="n">out2</span><span class="p">)))</span><span class="w"></span>
+<span class="go">BenchmarkTools.Trial: 10000 samples with 1 evaluation.</span>
+<span class="go"> Range (min … max):  30.474 μs … 59.981 μs  ┊ GC (min … max): 0.00% … 0.00%</span>
+<span class="go"> Time  (median):     30.798 μs              ┊ GC (median):    0.00%</span>
+<span class="go"> Time  (mean ± σ):   31.096 μs ±  1.953 μs  ┊ GC (mean ± σ):  0.00% ± 0.00%</span>
+
+<span class="go">  ▃▇██▆▃▁                                                     ▂</span>
+<span class="go">  ███████▇▃▄▁▃▁▁▃▁▁▃▁▁▁▁▁▁▁▁▁▁▁▁▃▄▁▁▁▁▁▄▁▃▄▅▄▇▆▆▇▇▇▆▇█▇▇▇▇▇▆▆ █</span>
+<span class="go">  30.5 μs      Histogram: log(frequency) by time      37.2 μs &lt;</span>
+
+<span class="go"> Memory estimate: 112 bytes, allocs estimate: 3.</span>
+</code></pre></div>
+<p>It still vectorizes but not quite as effectively, and I don't know how to tell the compiler that these two array types are functionally the same. <code>@code_llvm</code> shows that the vectorization is quite a bit more complicated. One workaround is to unwrap the the reinterpreted array:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="n">out2_flat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reinterpret</span><span class="p">(</span><span class="kt">UInt8</span><span class="p">,</span><span class="w"> </span><span class="n">vec</span><span class="p">(</span><span class="n">out2</span><span class="p">));</span><span class="w"></span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="nd">@benchmark</span><span class="w"> </span><span class="n">deshuffle</span><span class="p">(</span><span class="o">$</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">unsafe_wrap</span><span class="p">(</span><span class="kt">Array</span><span class="p">,</span><span class="w"> </span><span class="n">pointer</span><span class="p">(</span><span class="o">$</span><span class="n">out2_flat</span><span class="p">),</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="o">$</span><span class="n">out2_flat</span><span class="p">)))</span><span class="w"></span>
+<span class="go">BenchmarkTools.Trial: 10000 samples with 1 evaluation.</span>
+<span class="go"> Range (min … max):  20.101 μs …  51.699 μs  ┊ GC (min … max): 0.00% … 0.00%</span>
+<span class="go"> Time  (median):     20.541 μs               ┊ GC (median):    0.00%</span>
+<span class="go"> Time  (mean ± σ):   20.636 μs ± 702.697 ns  ┊ GC (mean ± σ):  0.00% ± 0.00%</span>
+
+<span class="go">     ▂▆█▆▂                                                     ▁</span>
+<span class="go">  ▇█▇█████▇▆▅▄▃▁▁▁▁▁▁▁▃▁▁▃▃▃▃▁▁▄▃▁▃▁▁▁▁▃▃▃▁▁▁▃▄▃▄▅▆▆▆▆▆▅▆▅▆▆▅▅ █</span>
+<span class="go">  20.1 μs       Histogram: log(frequency) by time      24.9 μs &lt;</span>
+
+<span class="go"> Memory estimate: 64 bytes, allocs estimate: 2.</span>
+</code></pre></div>
+<p>But that's quite an ugly hack... anyone have ideas on how to make the performance match that of <code>Array</code>?</p>
+
+
+
+<a name="299469871"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Function%20not%20vectorizing%20properly%20for%20some%20array%20types/near/299469871" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> James Wrigley <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Function.20not.20vectorizing.20properly.20for.20some.20array.20types.html#299469871">(Sep 18 2022 at 19:38)</a>:</h4>
+<p>This is on 1.8.1 BTW:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="n">versioninfo</span><span class="p">()</span><span class="w"></span>
+<span class="go">Julia Version 1.8.1</span>
+<span class="go">Commit afb6c60d69a (2022-09-06 15:09 UTC)</span>
+<span class="go">Platform Info:</span>
+<span class="go">  OS: Linux (x86_64-linux-gnu)</span>
+<span class="go">  CPU: 40 × Intel(R) Xeon(R) CPU E5-2640 v4 @ 2.40GHz</span>
+<span class="go">  WORD_SIZE: 64</span>
+<span class="go">  LIBM: libopenlibm</span>
+<span class="go">  LLVM: libLLVM-13.0.1 (ORCJIT, broadwell)</span>
+<span class="go">  Threads: 1 on 40 virtual cores</span>
+</code></pre></div>
+
+
+
+<a name="299475991"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Function%20not%20vectorizing%20properly%20for%20some%20array%20types/near/299475991" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Function.20not.20vectorizing.20properly.20for.20some.20array.20types.html#299475991">(Sep 18 2022 at 21:10)</a>:</h4>
+<p>This is likely due to the implicit arithmetic done on the view of the reinterpreted array. Every element access has the same type of strided offset computed on the fly for a view.</p>
+
+
+
+<a name="299486571"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Function%20not%20vectorizing%20properly%20for%20some%20array%20types/near/299486571" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> James Wrigley <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Function.20not.20vectorizing.20properly.20for.20some.20array.20types.html#299486571">(Sep 19 2022 at 00:32)</a>:</h4>
+<p>Hmmm, that's unfortunate...</p>
+
+
+
+<a name="299487965"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Function%20not%20vectorizing%20properly%20for%20some%20array%20types/near/299487965" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> James Wrigley <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Function.20not.20vectorizing.20properly.20for.20some.20array.20types.html#299487965">(Sep 19 2022 at 01:01)</a>:</h4>
+<p>Relevant post: <a href="https://discourse.julialang.org/t/reinterpretedarray-performance-even-worse-on-1-8/80102/26">https://discourse.julialang.org/t/reinterpretedarray-performance-even-worse-on-1-8/80102/26</a><br>
+Linked PR: <a href="https://github.com/JuliaLang/julia/pull/44186">https://github.com/JuliaLang/julia/pull/44186</a></p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

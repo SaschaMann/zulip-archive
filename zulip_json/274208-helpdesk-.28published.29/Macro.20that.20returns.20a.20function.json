@@ -1,0 +1,104 @@
+[
+    {
+        "content": "<p>Say I have a package <code>MyPackage</code> that contains a macro <code>@newfunction</code> that returns a function. The macro works perfectly fine, but the functions it returns are defined in the namespace of <code>MyPackage</code>. Is there a way to export the function to the namespace of the caller? The caller might be code running in the REPL or a different package that uses <code>MyPackage</code>.</p>",
+        "id": 282652815,
+        "sender_full_name": "mbaz",
+        "timestamp": 1652799452
+    },
+    {
+        "content": "<p>Of course one could do <code>myfunction = @newfunction args</code>. What I'm wondering is if there is a way to do <code>@newfunction myfunction args</code>, AND have <code>myfunction</code> exported to the namespace of the caller.</p>",
+        "id": 282653283,
+        "sender_full_name": "mbaz",
+        "timestamp": 1652799614
+    },
+    {
+        "content": "<p>You just have to <code>esc</code> the name of the function in the macro body</p>",
+        "id": 282653727,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652799738
+    },
+    {
+        "content": "<p>e.g.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">macro</span><span class=\"w\"> </span><span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"n\">name</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"n\">escname</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">esc</span><span class=\"p\">(</span><span class=\"n\">name</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"o\">:</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">escname</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">+</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"k\">end</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 282653968,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652799831
+    },
+    {
+        "content": "<p>Yeah, this works! Thank you.</p>",
+        "id": 282654512,
+        "sender_full_name": "mbaz",
+        "timestamp": 1652800036
+    },
+    {
+        "content": "<p>I think I understand hygiene a little bit better now.</p>",
+        "id": 282655174,
+        "sender_full_name": "mbaz",
+        "timestamp": 1652800272
+    },
+    {
+        "content": "<p>Yeah it’s a kinda tricky concept at first but it’s not so complicated. Julia handles it a little different from most lisps in that it’s hygienic by fault instead of by opting in.</p>",
+        "id": 282655952,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652800554
+    },
+    {
+        "content": "<p>Though I often end up just <code>esc</code>ing the entire returned expression and then manually opting into the hygiene where I choose because I find that easier to think about</p>",
+        "id": 282656167,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652800610
+    },
+    {
+        "content": "<p>This is the first non-trivial macro I write (in Julia or any language). At least for me, this is one instance where the documentation only starts to make sense <em>after</em> I've tried writing something and failing.</p>\n<p>In this case, I didn't associate my problem with hygiene. After seeing your solution, I re-read that section in the manual and sure enough, it says that escaped expressions are evaluated in the context of the caller. That sentence didn't make sense to me before, it certainly does now <span aria-label=\"grinning\" class=\"emoji emoji-1f600\" role=\"img\" title=\"grinning\">:grinning:</span></p>",
+        "id": 282656796,
+        "sender_full_name": "mbaz",
+        "timestamp": 1652800860
+    },
+    {
+        "content": "<p>so like to adapt the above example, I would often write something more like </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">macro</span><span class=\"w\"> </span><span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"n\">name</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"nd\">@gensym</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"o\">:</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">name</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"o\">$</span><span class=\"n\">one</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">+</span><span class=\"w\"> </span><span class=\"o\">$</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">|&gt;</span><span class=\"w\"> </span><span class=\"n\">esc</span><span class=\"w\"></span>\n<span class=\"k\">end</span><span class=\"w\"></span>\n</code></pre></div>\n<p>here, everything is escaped so all symbols are expanded in the callers namespace, but I manually interpolated <strong>my</strong> <code>one</code> function into the expression to make sure it gets used rather than the caller’s <code>one</code> (in case they made that symbol mean something different) and I manually mangled the symbol <code>x</code></p>",
+        "id": 282656882,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652800900
+    },
+    {
+        "content": "<p>Either style has pitfalls, but I don’t like the look of <code>$(esc(x))</code>all over my code, so I often gravitate towards the second style.</p>",
+        "id": 282657389,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652801072
+    },
+    {
+        "content": "<p>I think it looks very clean, and certainly more readable than having <code>esc</code> all over the place.</p>",
+        "id": 282657755,
+        "sender_full_name": "mbaz",
+        "timestamp": 1652801202
+    },
+    {
+        "content": "<p>I would also consider using the <code>@generated</code> macro here.</p>",
+        "id": 282665914,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1652804169
+    },
+    {
+        "content": "<p>Why?</p>",
+        "id": 282666150,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652804265
+    },
+    {
+        "content": "<p>I may be misunderstanding the question, but isn't <code>@generated</code> essentially a macro that returns a function?</p>",
+        "id": 282667144,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1652804668
+    },
+    {
+        "content": "<p>Sorta. It’s a way to create a custom function where the function body is programmatically generated based on the input types.</p>\n<p>It’s a pretty heavy piece of machinery though and not always necessary</p>",
+        "id": 282668162,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652805048
+    },
+    {
+        "content": "<p>I don't think it's necessary in my case, since the input types are not really important.</p>",
+        "id": 282668405,
+        "sender_full_name": "mbaz",
+        "timestamp": 1652805140
+    }
+]

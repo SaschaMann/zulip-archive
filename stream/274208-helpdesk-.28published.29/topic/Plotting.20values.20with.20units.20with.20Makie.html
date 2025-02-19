@@ -1,0 +1,49 @@
+<html>
+<head><meta charset="utf-8"><title>Plotting values with units with Makie · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Plotting.20values.20with.20units.20with.20Makie.html">Plotting values with units with Makie</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="238432426"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Plotting%20values%20with%20units%20with%20Makie/near/238432426" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> KronosTheLate <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Plotting.20values.20with.20units.20with.20Makie.html#238432426">(May 12 2021 at 07:25)</a>:</h4>
+<p>I am trying to plot a vector with Quanities with Makie. I tried defining the following, where getval is a custum function that returns the val field of its input:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">scatter</span><span class="p">(</span><span class="n">xs</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Quantity</span><span class="p">},</span> <span class="n">ys</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Quantity</span><span class="p">};</span> <span class="n">kwargs</span><span class="o">...</span><span class="p">)</span> <span class="o">=</span> <span class="n">scatter</span><span class="p">(</span><span class="n">xs</span><span class="o">|&gt;</span><span class="n">getval</span><span class="p">,</span> <span class="n">ys</span><span class="o">|&gt;</span><span class="n">getval</span><span class="p">;</span> <span class="n">kwargs</span><span class="o">...</span><span class="p">)</span>
+<span class="n">scatter</span><span class="p">(</span><span class="n">xs</span><span class="o">::</span><span class="kt">Vector</span><span class="p">,</span> <span class="n">ys</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Quantity</span><span class="p">};</span> <span class="n">kwargs</span><span class="o">...</span><span class="p">)</span> <span class="o">=</span> <span class="n">scatter</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">ys</span><span class="o">|&gt;</span><span class="n">getval</span><span class="p">;</span> <span class="n">kwargs</span><span class="o">...</span><span class="p">)</span>
+<span class="n">scatter</span><span class="p">(</span><span class="n">xs</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Quantity</span><span class="p">},</span> <span class="n">ys</span><span class="o">::</span><span class="kt">Vector</span><span class="p">;</span> <span class="n">kwargs</span><span class="o">...</span><span class="p">)</span> <span class="o">=</span> <span class="n">scatter</span><span class="p">(</span><span class="n">xs</span><span class="o">|&gt;</span><span class="n">getval</span><span class="p">,</span> <span class="n">ys</span><span class="p">;</span> <span class="n">kwargs</span><span class="o">...</span><span class="p">)</span>
+</code></pre></div>
+<p>However, based on the line that errored in the stacktrace, I am able to deduct that I should look into<br>
+<a href="https://github.com/JuliaPlots/AbstractPlotting.jl/blob/master/src/recipes.jl">https://github.com/JuliaPlots/AbstractPlotting.jl/blob/master/src/recipes.jl</a><br>
+, where I find:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code>    <span class="c"># All plot types</span>
+    <span class="n">convert_arguments</span><span class="p">(</span><span class="n">P</span><span class="o">::</span><span class="kt">Type</span><span class="p">{</span><span class="o">&lt;:</span><span class="kt">AbstractPlot</span><span class="p">},</span> <span class="n">x</span><span class="o">::</span><span class="kt">MyType</span><span class="p">)</span> <span class="o">=</span> <span class="n">convert_arguments</span><span class="p">(</span><span class="n">P</span><span class="p">,</span> <span class="n">rand</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+    <span class="c"># Only for scatter plots</span>
+    <span class="n">convert_arguments</span><span class="p">(</span><span class="n">P</span><span class="o">::</span><span class="kt">Type</span><span class="p">{</span><span class="o">&lt;:</span><span class="kt">Scatter</span><span class="p">},</span> <span class="n">x</span><span class="o">::</span><span class="kt">MyType</span><span class="p">)</span> <span class="o">=</span> <span class="n">convert_arguments</span><span class="p">(</span><span class="n">P</span><span class="p">,</span> <span class="n">rand</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+</code></pre></div>
+<p>I do not really understand what to make of the examples. I have tried defining<br>
+<code>convert_arguments(P::Type{&lt;:Scatter}, x::Quantity, y::Quantity) = convert_arguments(P, getval(x), getval(y))</code><br>
+and<br>
+<code>convert_arguments(P::Type{&lt;:Scatter}, x::Quantity) = convert_arguments(P, getval(x))</code><br>
+, but without luck.</p>
+<p>Any good ideas on how to plot values of type Quantity with Makie?</p>
+
+
+
+<a name="238451054"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Plotting%20values%20with%20units%20with%20Makie/near/238451054" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Plotting.20values.20with.20units.20with.20Makie.html#238451054">(May 12 2021 at 10:19)</a>:</h4>
+<p>The recipe system is not working basically. I have some open issues there where you can learn more.</p>
+
+
+
+<a name="238468182"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Plotting%20values%20with%20units%20with%20Makie/near/238468182" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Benoit Pasquier <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Plotting.20values.20with.20units.20with.20Makie.html#238468182">(May 12 2021 at 12:55)</a>:</h4>
+<p>I reckon at this stage your best option is to always explicitly strip the unit and add it to the labels... If you want to go the recipe way, maybe <a href="https://github.com/search?q=UnitfulRecipes.jl&amp;type=Repositories">UnitfulRecipes.jl</a> can serve as a guide, although the internals of <a href="https://github.com/search?q=Plots.jl&amp;type=Repositories">Plots.jl</a> are quite different so I'm pretty sure you can't translate everything to Makie...</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

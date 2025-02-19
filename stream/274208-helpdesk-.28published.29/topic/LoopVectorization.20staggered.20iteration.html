@@ -1,0 +1,42 @@
+<html>
+<head><meta charset="utf-8"><title>LoopVectorization staggered iteration · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVectorization.20staggered.20iteration.html">LoopVectorization staggered iteration</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="238846329"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVectorization%20staggered%20iteration/near/238846329" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVectorization.20staggered.20iteration.html#238846329">(May 15 2021 at 00:20)</a>:</h4>
+<p>I'm trying to write a loop that currently looks something like</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="nd">@avx</span> <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="mi">2</span><span class="o">:</span><span class="p">(</span><span class="n">length</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">f</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>What's the right way to write something like this with LoopVectorization? Is there an easy way I can tell if LoopVectorization is able to understand this loop, or if it is bailing out and just <code>@inbounds @simd</code>'ing it?</p>
+
+
+
+<a name="238848587"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVectorization%20staggered%20iteration/near/238848587" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVectorization.20staggered.20iteration.html#238848587">(May 15 2021 at 00:53)</a>:</h4>
+<p>Okay, so one approach is to just reshape <code>a</code> to a <code>2xN</code> matrix and then treat the first index special. Interestingly, I found a performance loss when I made it a <code>StaticInt(2)xN</code> matrix for some reason.</p>
+
+
+
+<a name="239161108"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVectorization%20staggered%20iteration/near/239161108" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Zachary P Christensen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVectorization.20staggered.20iteration.html#239161108">(May 17 2021 at 21:12)</a>:</h4>
+<p>What kind of static array</p>
+
+
+
+<a name="239161768"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVectorization%20staggered%20iteration/near/239161768" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVectorization.20staggered.20iteration.html#239161768">(May 17 2021 at 21:15)</a>:</h4>
+<p>I was using a <code>PtrArray</code>. Chris identified what the problem was in <a class="stream-topic" data-stream-id="137791" href="/#narrow/stream/137791-general/topic/Working.20with.20Complex.20Numbers.20in.20LoopVectorization">#general &gt; Working with Complex Numbers in LoopVectorization</a>. It was just that <a href="https://github.com/search?q=VectorizationBase.jl&amp;type=Repositories">VectorizationBase.jl</a> was making a suboptimal choice for my CPU architecture, so he added a patch that makes it make the right choice</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

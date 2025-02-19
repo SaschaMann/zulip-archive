@@ -1,0 +1,374 @@
+[
+    {
+        "content": "<p>I've tried out <a href=\"https://juliahub.com/ui/Packages/General/Aqua\">Aqua.jl</a> for the first time on a package I sometimes contribute to (<code>FixedEffectModels</code>) and ran into a few questions that hopefully someone can help with:</p>\n<ul>\n<li>Is there more documentation anywhere? Explaining e.g. what the project.toml format test actually tests, or how worried I should be about test failures?</li>\n<li>In the Project.toml test, it seems to me that the package I'm testing is failing because the <code>[deps]</code> aren't in alphabetical order? Is that right? Do they have to be? It would be great (although maybe non-trivial) if Aqua could show the diff for what exactly made the test fail</li>\n<li>For <code>test_all</code> it seems that the process stops once any error is detected, is there way to keep going other than setting each failing test to <code>false</code> one by one?</li>\n<li>On the ambiguity tests, is there an option to exclude dependencies?</li>\n</ul>\n<p>I will post some results of the ambiguity tests in the next message, depending on how things go those can be a different thread.</p>",
+        "id": 401162040,
+        "sender_full_name": "Nils",
+        "timestamp": 1699538635
+    },
+    {
+        "content": "<p>Some ambiguity warnings I don't understand:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">Ambiguity</span><span class=\"w\"> </span><span class=\"c\">#1</span>\n<span class=\"o\">==</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">Integer</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">b</span><span class=\"o\">::</span><span class=\"kt\">SentinelArrays</span><span class=\"o\">.</span><span class=\"n\">ChainedVectorIndex</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">SentinelArrays</span><span class=\"w\"> </span><span class=\"n\">C</span><span class=\"o\">:\\</span><span class=\"n\">Users</span><span class=\"o\">\\</span><span class=\"n\">ngudat</span><span class=\"o\">\\.</span><span class=\"n\">julia</span><span class=\"o\">\\</span><span class=\"n\">packages</span><span class=\"o\">\\</span><span class=\"n\">SentinelArrays</span><span class=\"o\">\\</span><span class=\"mi\">1</span><span class=\"n\">kRo4</span><span class=\"o\">\\</span><span class=\"n\">src</span><span class=\"o\">\\</span><span class=\"n\">chainedvector</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">208</span>\n<span class=\"o\">==</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">BigInt</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">i</span><span class=\"o\">::</span><span class=\"kt\">Integer</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">GMP</span><span class=\"w\"> </span><span class=\"n\">gmp</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">722</span>\n\n<span class=\"n\">Possible</span><span class=\"w\"> </span><span class=\"n\">fix</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">define</span>\n<span class=\"w\">  </span><span class=\"o\">==</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">BigInt</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"o\">::</span><span class=\"kt\">SentinelArrays</span><span class=\"o\">.</span><span class=\"n\">ChainedVectorIndex</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>I assume this is because</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">FixedEffectModels</span><span class=\"o\">.</span><span class=\"n\">DataFrames</span><span class=\"o\">.</span><span class=\"n\">SentinelArrays</span><span class=\"o\">.</span><span class=\"kt\">ChainedVectorIndex</span><span class=\"w\"> </span><span class=\"o\">&lt;:</span><span class=\"w\"> </span><span class=\"kt\">Integer</span>\n<span class=\"nb\">true</span>\n</code></pre></div>\n<p>and </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"kt\">BigInt</span><span class=\"w\"> </span><span class=\"o\">&lt;:</span><span class=\"w\"> </span><span class=\"kt\">Integer</span>\n<span class=\"nb\">true</span>\n</code></pre></div>\n<p>Does this mean that <code>SentinelArrays</code> needs to define <code>==</code> for all subtypes of <code>Integer</code> in Base? And that there would be invalidation if another package that defines a <code>&lt;:Integer</code> type gets loaded?</p>\n<p>Then there is:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">StatsBase</span><span class=\"o\">.</span><span class=\"n\">TestStat</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">StatsBase</span><span class=\"w\"> </span><span class=\"n\">C</span><span class=\"o\">:\\</span><span class=\"n\">Users</span><span class=\"o\">\\</span><span class=\"n\">ngudat</span><span class=\"o\">\\.</span><span class=\"n\">julia</span><span class=\"o\">\\</span><span class=\"n\">packages</span><span class=\"o\">\\</span><span class=\"n\">StatsBase</span><span class=\"o\">\\</span><span class=\"n\">WLz8A</span><span class=\"o\">\\</span><span class=\"n\">src</span><span class=\"o\">\\</span><span class=\"n\">statmodels</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">80</span>\n<span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">})(</span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">AbstractChar</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">where</span><span class=\"w\"> </span><span class=\"kt\">T</span><span class=\"o\">&lt;:</span><span class=\"kt\">Union</span><span class=\"p\">{</span><span class=\"kt\">AbstractChar</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Number</span><span class=\"p\">}</span><span class=\"w\"> </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"w\"> </span><span class=\"n\">char</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">50</span>\n\n<span class=\"n\">Possible</span><span class=\"w\"> </span><span class=\"n\">fix</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">define</span>\n<span class=\"w\">  </span><span class=\"n\">StatsBase</span><span class=\"o\">.</span><span class=\"n\">TestStat</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">AbstractChar</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>So the <code>StatsBase.TestStat</code> method is completely unconstrained, and would presumably always be less specific? I don't understand the ambiguity here at all. There's a similar one </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">StatsBase</span><span class=\"o\">.</span><span class=\"n\">TestStat</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">StatsBase</span><span class=\"w\"> </span><span class=\"n\">C</span><span class=\"o\">:\\</span><span class=\"n\">Users</span><span class=\"o\">\\</span><span class=\"n\">ngudat</span><span class=\"o\">\\.</span><span class=\"n\">julia</span><span class=\"o\">\\</span><span class=\"n\">packages</span><span class=\"o\">\\</span><span class=\"n\">StatsBase</span><span class=\"o\">\\</span><span class=\"n\">WLz8A</span><span class=\"o\">\\</span><span class=\"n\">src</span><span class=\"o\">\\</span><span class=\"n\">statmodels</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">80</span>\n<span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">})(</span><span class=\"n\">z</span><span class=\"o\">::</span><span class=\"kt\">Complex</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">where</span><span class=\"w\"> </span><span class=\"kt\">T</span><span class=\"o\">&lt;:</span><span class=\"kt\">Real</span><span class=\"w\"> </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"w\"> </span><span class=\"n\">complex</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">44</span>\n\n<span class=\"n\">Possible</span><span class=\"w\"> </span><span class=\"n\">fix</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">define</span>\n<span class=\"w\">  </span><span class=\"n\">StatsBase</span><span class=\"o\">.</span><span class=\"n\">TestStat</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Complex</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>I don't really understand most of the reported ambiguity but I think understanding those two will get me there for most of the others, so I'll leave it here.</p>",
+        "id": 401163692,
+        "sender_full_name": "Nils",
+        "timestamp": 1699539121
+    },
+    {
+        "content": "<p>Not familiar with <code>StatsBase</code>, but my gut tells me <code>TestStat &lt;: Real</code>, and hence there's an ambiguity</p>",
+        "id": 401164200,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699539267
+    },
+    {
+        "content": "<p>yup, there it is</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"p\">[</span><span class=\"n\">sukera</span><span class=\"nd\">@tower</span><span class=\"w\"> </span><span class=\"n\">StatsBase</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"p\">]</span><span class=\"o\">$</span><span class=\"w\"> </span><span class=\"n\">rg</span><span class=\"w\"> </span><span class=\"n\">TestStat</span>\n<span class=\"n\">src</span><span class=\"o\">/</span><span class=\"n\">statmodels</span><span class=\"o\">.</span><span class=\"n\">jl</span>\n<span class=\"mi\">79</span><span class=\"o\">:</span><span class=\"k\">struct</span> <span class=\"kt\">TestStat</span><span class=\"w\"> </span><span class=\"o\">&lt;:</span><span class=\"w\"> </span><span class=\"kt\">Real</span>\n</code></pre></div>",
+        "id": 401164440,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699539347
+    },
+    {
+        "content": "<p>the ambiguity comes in when you try to call e.g. <code>TestStat(Complex(4.5))</code>:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">StatsBase</span><span class=\"o\">.</span><span class=\"n\">TestStat</span><span class=\"p\">(</span><span class=\"kt\">Complex</span><span class=\"p\">(</span><span class=\"mf\">4.5</span><span class=\"p\">))</span>\n<span class=\"n\">ERROR</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"kt\">MethodError</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"n\">StatsBase</span><span class=\"o\">.</span><span class=\"n\">TestStat</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">ComplexF64</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"n\">is</span><span class=\"w\"> </span><span class=\"n\">ambiguous</span><span class=\"o\">.</span>\n\n<span class=\"n\">Candidates</span><span class=\"o\">:</span>\n<span class=\"w\">  </span><span class=\"n\">StatsBase</span><span class=\"o\">.</span><span class=\"n\">TestStat</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">StatsBase</span><span class=\"w\"> </span><span class=\"o\">~/.</span><span class=\"n\">julia</span><span class=\"o\">/</span><span class=\"n\">packages</span><span class=\"o\">/</span><span class=\"n\">StatsBase</span><span class=\"o\">/</span><span class=\"n\">WLz8A</span><span class=\"o\">/</span><span class=\"n\">src</span><span class=\"o\">/</span><span class=\"n\">statmodels</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">80</span>\n<span class=\"w\">  </span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">})(</span><span class=\"n\">z</span><span class=\"o\">::</span><span class=\"kt\">Complex</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">where</span><span class=\"w\"> </span><span class=\"kt\">T</span><span class=\"o\">&lt;:</span><span class=\"kt\">Real</span>\n<span class=\"w\">    </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"w\"> </span><span class=\"n\">complex</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">44</span>\n\n<span class=\"n\">Possible</span><span class=\"w\"> </span><span class=\"n\">fix</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">define</span>\n<span class=\"w\">  </span><span class=\"n\">StatsBase</span><span class=\"o\">.</span><span class=\"n\">TestStat</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Complex</span><span class=\"p\">)</span>\n\n<span class=\"n\">Stacktrace</span><span class=\"o\">:</span>\n<span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"n\">top</span><span class=\"o\">-</span><span class=\"n\">level</span><span class=\"w\"> </span><span class=\"n\">scope</span>\n<span class=\"w\">   </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">REPL</span><span class=\"p\">[</span><span class=\"mi\">5</span><span class=\"p\">]</span><span class=\"o\">:</span><span class=\"mi\">1</span>\n</code></pre></div>",
+        "id": 401164963,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699539500
+    },
+    {
+        "content": "<p>whether that makes sense to do in the first place, I don't know <span aria-label=\"shrug\" class=\"emoji emoji-1f937\" role=\"img\" title=\"shrug\">:shrug:</span></p>",
+        "id": 401165013,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699539517
+    },
+    {
+        "content": "<p>oh the ambiguity comes from a default constructor <span aria-label=\"thinking\" class=\"emoji emoji-1f914\" role=\"img\" title=\"thinking\">:thinking:</span></p>",
+        "id": 401165305,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699539601
+    },
+    {
+        "content": "<p>Ah people have reported this already: <a href=\"https://github.com/JuliaStats/StatsBase.jl/issues/861\">https://github.com/JuliaStats/StatsBase.jl/issues/861</a> and there's a PR to fix it: <a href=\"https://github.com/JuliaStats/StatsBase.jl/pull/866\">https://github.com/JuliaStats/StatsBase.jl/pull/866</a> but no consensus on how or even whether to do this. People seem to be uncertain about whether these ambiguities should be resolved at all if there are no reported problems with them - what's the situation here? </p>\n<p>It feels to me that if there's no real need to address these than that test in Aqua becomes pretty meaningless for any non-trivial package as it will report dozens of ambiguities from dependencies.</p>",
+        "id": 401166620,
+        "sender_full_name": "Nils",
+        "timestamp": 1699539985
+    },
+    {
+        "content": "<p>IMO <code>TestStat</code> just shouldn't <code>&lt;: Real</code> <span aria-label=\"shrug\" class=\"emoji emoji-1f937\" role=\"img\" title=\"shrug\">:shrug:</span></p>",
+        "id": 401166891,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699540076
+    },
+    {
+        "content": "<p>Yes that's an option that the maintainers seem to consider, but more widely how worried should one be about ambiguities? I was under the impression that they introduce latency issues and therefore it would be an ecosystem win if everyone tidied them up in their own packages?</p>",
+        "id": 401167477,
+        "sender_full_name": "Nils",
+        "timestamp": 1699540247
+    },
+    {
+        "content": "<p><a href=\"https://discourse.julialang.org/t/aqua-jl-finds-many-ambiguities-in-core-base/103963?u=sukera\">https://discourse.julialang.org/t/aqua-jl-finds-many-ambiguities-in-core-base/103963?u=sukera</a></p>",
+        "id": 401167742,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699540322
+    },
+    {
+        "content": "<p>an ambiguity that isn't ever a call candidate is not bad IMO</p>",
+        "id": 401167833,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699540344
+    },
+    {
+        "content": "<p>that said, I think having <code>TestStat &lt;: Real</code> still doesn't make sense, there is no <code>+</code> or <code>*</code> defined either</p>",
+        "id": 401168128,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699540439
+    },
+    {
+        "content": "<p>and <code>Real</code> certainly doesn't mean \"partially ordered\"</p>",
+        "id": 401168245,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699540458
+    },
+    {
+        "content": "<p>Are you agreeing with Tim Holy there that I should be calling <code>Test.detect_ambiguities</code> and ignore the Aqua ambiguity tests?</p>",
+        "id": 401168456,
+        "sender_full_name": "Nils",
+        "timestamp": 1699540506
+    },
+    {
+        "content": "<p>yeah</p>",
+        "id": 401168477,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699540513
+    },
+    {
+        "content": "<p>That's a bit unfortunate then that one of the core Julia packages meant to improve code quality and standards across the ecosystem starts off on a meaningless test that should be ignored :D</p>",
+        "id": 401168617,
+        "sender_full_name": "Nils",
+        "timestamp": 1699540550
+    },
+    {
+        "content": "<p>Next one (maybe I should have one thread per test?) is this:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">Aqua</span><span class=\"o\">.</span><span class=\"n\">test_all</span><span class=\"p\">(</span><span class=\"n\">FixedEffectModels</span><span class=\"p\">;</span><span class=\"w\"> </span><span class=\"n\">ambiguities</span><span class=\"o\">=</span><span class=\"nb\">false</span><span class=\"p\">)</span>\n<span class=\"n\">Test</span><span class=\"w\"> </span><span class=\"n\">Summary</span><span class=\"o\">:</span><span class=\"w\">    </span><span class=\"o\">|</span><span class=\"n\">Time</span>\n<span class=\"kt\">Method</span><span class=\"w\"> </span><span class=\"n\">ambiguity</span><span class=\"w\"> </span><span class=\"o\">|</span><span class=\"w\"> </span><span class=\"n\">None</span><span class=\"w\">  </span><span class=\"mf\">0.0</span><span class=\"n\">s</span>\n<span class=\"n\">Unbound</span><span class=\"w\"> </span><span class=\"n\">type</span><span class=\"w\"> </span><span class=\"n\">parameters</span><span class=\"w\"> </span><span class=\"n\">detected</span><span class=\"o\">:</span>\n<span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"n\">FixedEffectModels</span><span class=\"o\">.</span><span class=\"n\">Combination</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"o\">::</span><span class=\"kt\">AbstractVecOrMat</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span><span class=\"o\">...</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">where</span><span class=\"w\"> </span><span class=\"kt\">T</span><span class=\"w\"> </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">FixedEffectModels</span><span class=\"w\"> </span><span class=\"n\">C</span><span class=\"o\">:\\</span><span class=\"n\">Users</span><span class=\"o\">\\</span><span class=\"n\">ngudat</span><span class=\"o\">\\.</span><span class=\"n\">julia</span><span class=\"o\">\\</span><span class=\"n\">packages</span><span class=\"o\">\\</span><span class=\"n\">FixedEffectModels</span><span class=\"o\">\\</span><span class=\"mi\">1</span><span class=\"n\">EZ6p</span><span class=\"o\">\\</span><span class=\"n\">src</span><span class=\"o\">\\</span><span class=\"n\">utils</span><span class=\"o\">\\</span><span class=\"n\">basecol</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">12</span>\n</code></pre></div>\n<p>What's the problem with unbound type parameters? How bad is it? What should be done about it?</p>",
+        "id": 401168890,
+        "sender_full_name": "Nils",
+        "timestamp": 1699540617
+    },
+    {
+        "content": "<p>(I have read the Aqua docs and the <code>h(x)</code> example in this section but I don't feel confident enough in my understanding to change the package based on this)</p>",
+        "id": 401169000,
+        "sender_full_name": "Nils",
+        "timestamp": 1699540650
+    },
+    {
+        "content": "<p>that parameter is unbound if you call <code>FixedEffectModels.Combination()</code></p>",
+        "id": 401169276,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699540724
+    },
+    {
+        "content": "<p>i.e., in the zero-arg method</p>",
+        "id": 401169289,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699540728
+    },
+    {
+        "content": "<p>in this case, it indicates that you assume the vararg means \"at least one of this type\", but in reality it means \"0 or more of this type\"</p>",
+        "id": 401169429,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699540771
+    },
+    {
+        "content": "<p>Ok I'm not sure I see how a parameters that doesn't exist can be unbounded, but I'll accept it. Is this a real problem or can it be ignored? If it is a real problem, is the fix to define the zero-arg method implicitly?</p>",
+        "id": 401169588,
+        "sender_full_name": "Nils",
+        "timestamp": 1699540808
+    },
+    {
+        "content": "<p>and if there are no arguments passed, the <code>T</code> isn't bound to anything, since there are no arguments it could be bound from</p>",
+        "id": 401169648,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699540827
+    },
+    {
+        "content": "<p>how to fix it depends on the rest of your code - does it make sense to call this with 0 arguments?</p>",
+        "id": 401169718,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699540849
+    },
+    {
+        "content": "<p>to illustrate the issue:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span><span class=\"o\">...</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">where</span><span class=\"w\"> </span><span class=\"kt\">T</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">T</span>\n<span class=\"n\">f</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">generic</span><span class=\"w\"> </span><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">with</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"w\"> </span><span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">f</span><span class=\"p\">()</span>\n<span class=\"n\">ERROR</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"kt\">UndefVarError</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"sb\">`T`</span><span class=\"w\"> </span><span class=\"n\">not</span><span class=\"w\"> </span><span class=\"n\">defined</span>\n<span class=\"n\">Stacktrace</span><span class=\"o\">:</span>\n<span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"n\">f</span><span class=\"p\">()</span>\n<span class=\"w\">   </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">Main</span><span class=\"w\"> </span><span class=\"o\">./</span><span class=\"n\">REPL</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span><span class=\"o\">:</span><span class=\"mi\">1</span>\n<span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">2</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"n\">top</span><span class=\"o\">-</span><span class=\"n\">level</span><span class=\"w\"> </span><span class=\"n\">scope</span>\n<span class=\"w\">   </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">REPL</span><span class=\"p\">[</span><span class=\"mi\">2</span><span class=\"p\">]</span><span class=\"o\">:</span><span class=\"mi\">1</span>\n</code></pre></div>",
+        "id": 401169805,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699540884
+    },
+    {
+        "content": "<p>I can't see how - this is a package for regression modelling where <code>Combination</code> is the combination of two or more variables in the data set. Arguably even a one-argument version doesn't make sense.</p>",
+        "id": 401169955,
+        "sender_full_name": "Nils",
+        "timestamp": 1699540924
+    },
+    {
+        "content": "<p>then I'd write this as <code>f(a, b, c...)</code> and combine the 2+ arguments accordingly in the method</p>",
+        "id": 401170090,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699540958
+    },
+    {
+        "content": "<p>But presumably changing to <code>Combination(x::AbstractVecOrMat{T}, y::AbstractVecOrMat{S}...) where T where S</code> would have the same problem?</p>",
+        "id": 401170105,
+        "sender_full_name": "Nils",
+        "timestamp": 1699540964
+    },
+    {
+        "content": "<p>no, there <code>T</code> is always bound, because the <code>T</code> comes from the first argument</p>",
+        "id": 401170186,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699540986
+    },
+    {
+        "content": "<p>an \"unbound type variable\" means that there is no type that could possibly be assigned, not even <code>Any</code>, because there is no place the type can come from - and it needs to come from somewhere</p>",
+        "id": 401170292,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699541020
+    },
+    {
+        "content": "<p>But wouldn't the <code>S</code> be unbound there if it's called with one arg?</p>",
+        "id": 401170447,
+        "sender_full_name": "Nils",
+        "timestamp": 1699541052
+    },
+    {
+        "content": "<p>presumably you'd use the same type parameter for both of these, no?</p>",
+        "id": 401170573,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699541089
+    },
+    {
+        "content": "<p>that would match your existing method</p>",
+        "id": 401170604,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699541100
+    },
+    {
+        "content": "<p>No, a combination could be a vector of strings and a vector of floats</p>",
+        "id": 401170662,
+        "sender_full_name": "Nils",
+        "timestamp": 1699541118
+    },
+    {
+        "content": "<p>in the example with <code>S</code>, yes that would be unbound too in the 1-arg case</p>",
+        "id": 401170671,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699541119
+    },
+    {
+        "content": "<p>But you're right that must be a different method currently</p>",
+        "id": 401170700,
+        "sender_full_name": "Nils",
+        "timestamp": 1699541128
+    },
+    {
+        "content": "<p>this is a bit similar to how <code>all(&lt;any predicate you want&gt;, []) == true</code>, because there is no counterexample that you can produce from <code>[]</code></p>",
+        "id": 401170877,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699541170
+    },
+    {
+        "content": "<p>Regarding <code>Project.toml</code>, that test was removed recently: <a href=\"https://github.com/JuliaTesting/Aqua.jl/issues/208\">https://github.com/JuliaTesting/Aqua.jl/issues/208</a> <a href=\"https://github.com/JuliaTesting/Aqua.jl/pull/209\">https://github.com/JuliaTesting/Aqua.jl/pull/209</a></p>",
+        "id": 401171018,
+        "sender_full_name": "mbaz",
+        "timestamp": 1699541220
+    },
+    {
+        "content": "<p>I don't really understand the unbound args error when looking at the package code. The relevant code is <a href=\"https://github.com/FixedEffects/FixedEffectModels.jl/commits/master/src/utils/basecol.jl\">here</a>:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"kt\">Combination</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span><span class=\"w\"> </span><span class=\"o\">&lt;:</span><span class=\"w\"> </span><span class=\"kt\">AbstractMatrix</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span>\n<span class=\"w\">    </span><span class=\"n\">A</span><span class=\"o\">::</span><span class=\"kt\">Tuple</span>\n<span class=\"w\">    </span><span class=\"n\">cumlength</span><span class=\"o\">::</span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Int</span><span class=\"p\">}</span>\n<span class=\"k\">end</span>\n\n<span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">Combination</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"o\">::</span><span class=\"kt\">Union</span><span class=\"p\">{</span><span class=\"kt\">AbstractVector</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">},</span><span class=\"w\"> </span><span class=\"kt\">AbstractMatrix</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}}</span><span class=\"o\">...</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">where</span><span class=\"w\"> </span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span>\n<span class=\"w\">    </span><span class=\"kt\">Combination</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}(</span><span class=\"n\">A</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">cumsum</span><span class=\"p\">([</span><span class=\"n\">size</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">A</span><span class=\"p\">]))</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>So that already is the two arg version (indeed with the same type parameter as suggested), where does the error come from?</p>",
+        "id": 401176114,
+        "sender_full_name": "Nils",
+        "timestamp": 1699542701
+    },
+    {
+        "content": "<p>that is a 0+ arg version</p>",
+        "id": 401178705,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699543431
+    },
+    {
+        "content": "<p><code>A</code> is typed <code>Union</code></p>",
+        "id": 401178726,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699543438
+    },
+    {
+        "content": "<p>Ah I misread, sorry!</p>",
+        "id": 401179000,
+        "sender_full_name": "Nils",
+        "timestamp": 1699543505
+    },
+    {
+        "content": "<p>Would a workaround be to just define a 0-arg version explicitly or is that just ambiguous?</p>",
+        "id": 401179453,
+        "sender_full_name": "Nils",
+        "timestamp": 1699543631
+    },
+    {
+        "content": "<p>that would override this method</p>",
+        "id": 401180042,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699543768
+    },
+    {
+        "content": "<p>or rather, the 0-arg method defined there</p>",
+        "id": 401180129,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699543794
+    },
+    {
+        "content": "<p>it should work, but again, it depends on your type whether that makes sense</p>",
+        "id": 401180242,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699543814
+    },
+    {
+        "content": "<p>Yes I mean just doing </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">Combination</span><span class=\"p\">()</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">error</span><span class=\"p\">(</span><span class=\"s\">\"`Combination` needs to have at least one argument\"</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>or something like that</p>",
+        "id": 401180378,
+        "sender_full_name": "Nils",
+        "timestamp": 1699543855
+    },
+    {
+        "content": "<p>What is the issue with these unbound type parameters in practice? Is this something I should be worried about or another Aqua test that can be ignored?</p>",
+        "id": 401180458,
+        "sender_full_name": "Nils",
+        "timestamp": 1699543885
+    },
+    {
+        "content": "<p>it can't be ignored, since you use <code>T</code> in the method</p>",
+        "id": 401180647,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699543936
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">Combination</span><span class=\"p\">()</span><span class=\"w\"> </span><span class=\"k\">where</span><span class=\"w\"> </span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span>\n<span class=\"w\">    </span><span class=\"kt\">Combination</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}(</span><span class=\"n\">A</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">cumsum</span><span class=\"p\">([</span><span class=\"n\">size</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">A</span><span class=\"p\">]))</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>This is what the compiler sees for the 0-arg method</p>",
+        "id": 401180744,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699543970
+    },
+    {
+        "content": "<p>what should <code>T</code> be in this case?</p>",
+        "id": 401180764,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699543979
+    },
+    {
+        "content": "<p>mind you, there is no <code>A</code> to get that <code>T</code> from</p>",
+        "id": 401180816,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699543995
+    },
+    {
+        "content": "<p>so sooner or later, this code _will_ error</p>",
+        "id": 401180880,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699544017
+    },
+    {
+        "content": "<p>(probably sooner)</p>",
+        "id": 401180905,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699544025
+    },
+    {
+        "content": "<p>the issue is, the compiler can't know when this happens - so it must lug that <code>T</code> around, inserting <code>UndefVarError</code>s everywhere that <code>T</code> is used</p>",
+        "id": 401181021,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699544053
+    },
+    {
+        "content": "<p>that's a lot of work that could be prevented from happening by always making sure the <code>T</code> is bound to something</p>",
+        "id": 401181115,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699544075
+    },
+    {
+        "content": "<p>And this compiler work happens even though <code>Combination()</code> will never be called anywhere, ever?</p>",
+        "id": 401182009,
+        "sender_full_name": "Nils",
+        "timestamp": 1699544328
+    },
+    {
+        "content": "<p>So I've confirmed that both:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">Combination</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"o\">::</span><span class=\"kt\">Union</span><span class=\"p\">{</span><span class=\"kt\">AbstractVector</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">},</span><span class=\"w\"> </span><span class=\"kt\">AbstractMatrix</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}},</span>\n<span class=\"w\">    </span><span class=\"n\">B</span><span class=\"o\">::</span><span class=\"kt\">Union</span><span class=\"p\">{</span><span class=\"kt\">AbstractVector</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">},</span><span class=\"w\"> </span><span class=\"kt\">AbstractMatrix</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}}</span><span class=\"o\">...</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">where</span><span class=\"w\"> </span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span>\n<span class=\"w\">    </span><span class=\"kt\">Combination</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}((</span><span class=\"n\">A</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">B</span><span class=\"o\">...</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">cumsum</span><span class=\"p\">([</span><span class=\"n\">size</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"p\">);</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">size</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">B</span><span class=\"p\">]]))</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>and leaving the defintion untouched but doing:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">Combination</span><span class=\"p\">()</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">error</span><span class=\"p\">(</span><span class=\"s\">\"`Combination` requires at least one argument\"</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>make the Aqua test pass. Is there one thing that's preferable from a compiler/latency perspective (assuming that I'm ambivalent between them from a \"what makes sense for this use case\" perspective)?</p>",
+        "id": 401183045,
+        "sender_full_name": "Nils",
+        "timestamp": 1699544655
+    },
+    {
+        "content": "<p>no, both are fine</p>",
+        "id": 401183264,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699544736
+    },
+    {
+        "content": "<p>one results in your custom error message, the other results in a <code>MethodError</code></p>",
+        "id": 401183290,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699544747
+    },
+    {
+        "content": "<p>from a UX perspective, the custom error message is preferable</p>",
+        "id": 401183319,
+        "sender_full_name": "Sukera",
+        "timestamp": 1699544760
+    }
+]

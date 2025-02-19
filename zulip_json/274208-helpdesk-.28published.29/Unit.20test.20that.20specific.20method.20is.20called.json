@@ -1,0 +1,44 @@
+[
+    {
+        "content": "<p>Is there any convenient way to unit test whether a specific method is called?<br>\nThe context is <a href=\"https://github.com/search?q=ThreadedSparseArrays.jl&amp;type=Repositories\">ThreadedSparseArrays.jl</a>, that adds threading for sparse*dense multiplications.<br>\nI would like to make a unit test to check that a multiplication: <code>A*B</code> ends up calling the correct <code>mul!</code> method down the line.</p>",
+        "id": 241519902,
+        "sender_full_name": "Rasmus Henningsson",
+        "timestamp": 1622804707
+    },
+    {
+        "content": "<p>Code coverage?</p>",
+        "id": 241534508,
+        "sender_full_name": "Mosè Giordano",
+        "timestamp": 1622813296
+    },
+    {
+        "content": "<p>With code coverage you see whether a line of your package was hit at all during the tests, but you don't see the code path</p>",
+        "id": 241534657,
+        "sender_full_name": "Mosè Giordano",
+        "timestamp": 1622813380
+    },
+    {
+        "content": "<p>That's a good point! Don't make it harder than it is. <span aria-label=\"grinning face with smiling eyes\" class=\"emoji emoji-1f601\" role=\"img\" title=\"grinning face with smiling eyes\">:grinning_face_with_smiling_eyes:</span><span aria-label=\"grinning face with smiling eyes\" class=\"emoji emoji-1f601\" role=\"img\" title=\"grinning face with smiling eyes\">:grinning_face_with_smiling_eyes:</span></p>",
+        "id": 241540002,
+        "sender_full_name": "Rasmus Henningsson",
+        "timestamp": 1622815645
+    },
+    {
+        "content": "<p>Actually, I couldn't help but making it a bit harder. <span aria-label=\"wink\" class=\"emoji emoji-1f609\" role=\"img\" title=\"wink\">:wink:</span> Because not everyone really pays attention to read coverage changes, it might be covered by some test code but not in every situation I want it to, and it's nice to get a clear error message.</p>\n<p>So I exploit that the function I want to check will throw an <code>Exception</code> for incorrect matrix sizes and check which function and file the exception is thrown from.<br>\nWith this:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">match_exception</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"o\">::</span><span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span><span class=\"o\">=</span><span class=\"kt\">DimensionMismatch</span><span class=\"p\">,</span> <span class=\"n\">func</span><span class=\"o\">=</span><span class=\"ss\">:mul!</span><span class=\"p\">,</span> <span class=\"n\">path</span><span class=\"o\">=</span><span class=\"s\">\"ThreadedSparseArrays.jl\"</span><span class=\"p\">)</span> <span class=\"k\">where</span> <span class=\"kt\">T</span>\n    <span class=\"k\">try</span>\n        <span class=\"n\">f</span><span class=\"p\">()</span>\n    <span class=\"k\">catch</span> <span class=\"n\">ex</span>\n        <span class=\"n\">st</span> <span class=\"o\">=</span> <span class=\"n\">stacktrace</span><span class=\"p\">(</span><span class=\"n\">catch_backtrace</span><span class=\"p\">())[</span><span class=\"mi\">1</span><span class=\"p\">]</span>\n        <span class=\"n\">p</span> <span class=\"o\">=</span> <span class=\"n\">splitpath</span><span class=\"p\">(</span><span class=\"n\">path</span><span class=\"p\">)</span>\n        <span class=\"n\">p2</span> <span class=\"o\">=</span> <span class=\"n\">splitpath</span><span class=\"p\">(</span><span class=\"n\">string</span><span class=\"p\">(</span><span class=\"n\">st</span><span class=\"o\">.</span><span class=\"n\">file</span><span class=\"p\">))</span>\n        <span class=\"k\">return</span> <span class=\"n\">ex</span> <span class=\"k\">isa</span> <span class=\"n\">T</span> <span class=\"o\">&amp;&amp;</span> <span class=\"n\">st</span><span class=\"o\">.</span><span class=\"n\">func</span> <span class=\"o\">==</span> <span class=\"n\">func</span> <span class=\"o\">&amp;&amp;</span> <span class=\"n\">p</span><span class=\"o\">==</span><span class=\"n\">p2</span><span class=\"p\">[</span><span class=\"n\">max</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"k\">end</span><span class=\"o\">-</span><span class=\"n\">length</span><span class=\"p\">(</span><span class=\"n\">p</span><span class=\"p\">)</span><span class=\"o\">+</span><span class=\"mi\">1</span><span class=\"p\">)</span><span class=\"o\">:</span><span class=\"k\">end</span><span class=\"p\">]</span>\n    <span class=\"k\">end</span>\n    <span class=\"nb\">false</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>I can test it like this:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">A</span> <span class=\"o\">=</span> <span class=\"n\">ThreadedSparseMatrixCSC</span><span class=\"p\">(</span><span class=\"n\">spzeros</span><span class=\"p\">(</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"mi\">3</span><span class=\"p\">))</span>\n<span class=\"n\">B</span> <span class=\"o\">=</span> <span class=\"n\">zeros</span><span class=\"p\">(</span><span class=\"mi\">4</span><span class=\"p\">,</span><span class=\"mi\">1</span><span class=\"p\">)</span>\n<span class=\"nd\">@test</span> <span class=\"n\">match_exception</span><span class=\"p\">(()</span><span class=\"o\">-&gt;</span><span class=\"n\">A</span><span class=\"o\">*</span><span class=\"n\">B</span><span class=\"p\">)</span>\n<span class=\"nd\">@test</span> <span class=\"n\">match_exception</span><span class=\"p\">(()</span><span class=\"o\">-&gt;</span><span class=\"n\">A</span><span class=\"o\">'</span><span class=\"n\">B</span><span class=\"p\">)</span>\n<span class=\"o\">...</span>\n</code></pre></div>",
+        "id": 241570676,
+        "sender_full_name": "Rasmus Henningsson",
+        "timestamp": 1622828880
+    },
+    {
+        "content": "<p>I'm no expert and I mostly read these threads to learn, but one thing I've read lately is that <code>try/catch</code> is expensive.</p>\n<p>Edit. I probably read it there: <a href=\"https://discourse.julialang.org/t/is-there-a-better-way-to-do-error-handling-on-julia-than-try-catch/21716/6\">https://discourse.julialang.org/t/is-there-a-better-way-to-do-error-handling-on-julia-than-try-catch/21716/6</a></p>",
+        "id": 241595859,
+        "sender_full_name": "Patrick Toche",
+        "timestamp": 1622842501
+    },
+    {
+        "content": "<p>I think you are right that it can be expensive, and I wouldn't use <code>throw</code>in performance critical code like an inner loop. But this is just for a couple of unit tests so it should be fine. And the code that might throw the exception needs to be there because we want the exact same behavior as the corresponding methods in <code>SparseArrays</code>.</p>",
+        "id": 241701401,
+        "sender_full_name": "Rasmus Henningsson",
+        "timestamp": 1623000328
+    }
+]

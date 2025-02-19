@@ -1,0 +1,218 @@
+[
+    {
+        "content": "<p>I'd like to be able to have an environment where only symbols I specify are defined.</p>\n<p>This is for an educational purpose where I want to define <br>\nE.g. an environment with only a <code>nand(a, b)</code> function and then the user is expected to define a bunch of combinatorial logic from that.</p>",
+        "id": 228078519,
+        "sender_full_name": "Colin Caine",
+        "timestamp": 1614454811
+    },
+    {
+        "content": "<p>Have you looked into <code>baremodule</code>?</p>",
+        "id": 228078662,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614455047
+    },
+    {
+        "content": "<p>Yeah, but it still imports too much.</p>",
+        "id": 228078674,
+        "sender_full_name": "Colin Caine",
+        "timestamp": 1614455088
+    },
+    {
+        "content": "<p>How is the user meant to interact with Julia?</p>",
+        "id": 228078699,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614455118
+    },
+    {
+        "content": "<p>It sounds like maybe you just should make a little DSL</p>",
+        "id": 228078704,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614455134
+    },
+    {
+        "content": "<p>The idea was to just get Julia semantics but with a clean slate that doesn't contain any of Core or Base.</p>\n<p>Behind the scenes, they're still there, but the user can only interact with the names I give them or that they define themselves.</p>",
+        "id": 228078782,
+        "sender_full_name": "Colin Caine",
+        "timestamp": 1614455240
+    },
+    {
+        "content": "<p>Maybe I can just build some machinery that tracks what symbols are in use and an eval that errors if you use any \"undefined\" symbol.</p>",
+        "id": 228078836,
+        "sender_full_name": "Colin Caine",
+        "timestamp": 1614455295
+    },
+    {
+        "content": "<p>Again, how is the user meant to interact? repl? Some input box on a website?</p>",
+        "id": 228078837,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614455295
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"274427\">Colin Caine</span> <a href=\"#narrow/stream/274208-helpdesk-(published)/topic/Sandbox.20Julia.3F/near/228078836\">said</a>:</p>\n<blockquote>\n<p>Maybe I can just build some machinery that tracks what symbols are in use and an eval that errors if you use any \"undefined\" symbol.</p>\n</blockquote>\n<p>yeah, that's what I meant by a \"little dsl\"</p>",
+        "id": 228078844,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614455328
+    },
+    {
+        "content": "<p>As for input, files and a REPL.</p>",
+        "id": 228078939,
+        "sender_full_name": "Colin Caine",
+        "timestamp": 1614455451
+    },
+    {
+        "content": "<p>What names are in a baremodule that you don't want? I think you might be able to get away with just using a baremodule and then having a blacklist for the remaining names, e.g. <code>Core</code> and <code>eval</code></p>",
+        "id": 228079427,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614456038
+    },
+    {
+        "content": "<p>I think I'd just want to expose <code>nand(a, b)</code>, <code>true</code> and <code>false</code>. And all of the string and number literals would be absent.</p>\n<p>Small languages are used a lot in some programming courses (e.g. Beginner's Student Language defined in racket), though I'm not sure one as basic as I'm suggesting would actually be helpful :)</p>",
+        "id": 228080756,
+        "sender_full_name": "Colin Caine",
+        "timestamp": 1614457396
+    },
+    {
+        "content": "<p>Anyway, this doesn't seem super hard, maybe I'll just build something and see if it's easy and useful.</p>",
+        "id": 228080897,
+        "sender_full_name": "Colin Caine",
+        "timestamp": 1614457558
+    },
+    {
+        "content": "<p>Okay, here's a demo with <a href=\"https://github.com/search?q=ReplMaker.jl&amp;type=Repositories\">ReplMaker.jl</a> that I think works:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span> <span class=\"n\">ReplMaker</span><span class=\"p\">,</span> <span class=\"n\">MLStyle</span>\n\n<span class=\"k\">baremodule</span> <span class=\"n\">Sandbox</span> <span class=\"k\">end</span>\n<span class=\"nd\">@eval</span> <span class=\"n\">Sandbox</span> <span class=\"n\">nand</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span> <span class=\"n\">y</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"o\">$</span><span class=\"p\">(</span><span class=\"o\">!</span><span class=\"p\">)(</span><span class=\"o\">$</span><span class=\"p\">(</span><span class=\"o\">&amp;</span><span class=\"p\">)(</span><span class=\"n\">x</span><span class=\"p\">,</span> <span class=\"n\">y</span><span class=\"p\">))</span>\n\n<span class=\"k\">function</span> <span class=\"n\">sandbox_parser</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"o\">::</span><span class=\"n\">String</span><span class=\"p\">)</span>\n    <span class=\"n\">ex</span> <span class=\"o\">=</span> <span class=\"n\">Meta</span><span class=\"o\">.</span><span class=\"n\">parse</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"p\">)</span>\n    <span class=\"n\">filterer</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"nd\">@match</span> <span class=\"n\">ex</span> <span class=\"k\">begin</span>\n        <span class=\"o\">:</span><span class=\"n\">Core</span> <span class=\"o\">=&gt;</span> <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"s\">\"that's not allowed\"</span><span class=\"p\">)</span>\n        <span class=\"o\">:</span><span class=\"n\">eval</span> <span class=\"o\">=&gt;</span> <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"s\">\"that's not allowed\"</span><span class=\"p\">)</span>\n        <span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">Bool</span> <span class=\"o\">=&gt;</span> <span class=\"n\">x</span>\n        <span class=\"o\">::</span><span class=\"kt\">Number</span> <span class=\"o\">=&gt;</span> <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"s\">\"that's not allowed\"</span><span class=\"p\">)</span>\n        <span class=\"o\">::</span><span class=\"n\">String</span> <span class=\"o\">=&gt;</span> <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"s\">\"that's not allowed\"</span><span class=\"p\">)</span>\n        <span class=\"o\">::</span><span class=\"kt\">AbstractArray</span> <span class=\"o\">=&gt;</span> <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"s\">\"that's not allowed\"</span><span class=\"p\">)</span>\n        <span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">Expr</span> <span class=\"o\">=&gt;</span> <span class=\"kt\">Expr</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">.</span><span class=\"n\">head</span><span class=\"p\">,</span> <span class=\"n\">filterer</span><span class=\"o\">.</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">.</span><span class=\"n\">args</span><span class=\"p\">)</span><span class=\"o\">...</span><span class=\"p\">)</span>\n        <span class=\"n\">x</span> <span class=\"o\">=&gt;</span> <span class=\"n\">x</span>\n    <span class=\"k\">end</span>\n    <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"nd\">@eval</span> <span class=\"n\">Sandbox</span> <span class=\"o\">$</span><span class=\"p\">(</span><span class=\"n\">filterer</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"p\">)))</span>\n<span class=\"k\">end</span>\n\n\n<span class=\"k\">function</span> <span class=\"n\">valid_julia</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"p\">)</span>\n    <span class=\"n\">input</span> <span class=\"o\">=</span> <span class=\"n\">String</span><span class=\"p\">(</span><span class=\"n\">take!</span><span class=\"p\">(</span><span class=\"n\">copy</span><span class=\"p\">(</span><span class=\"n\">ReplMaker</span><span class=\"o\">.</span><span class=\"n\">LineEdit</span><span class=\"o\">.</span><span class=\"n\">buffer</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"p\">))))</span>\n    <span class=\"n\">ex</span> <span class=\"o\">=</span> <span class=\"n\">Meta</span><span class=\"o\">.</span><span class=\"n\">parse</span><span class=\"p\">(</span><span class=\"n\">input</span><span class=\"p\">)</span>\n    <span class=\"k\">if</span> <span class=\"n\">ex</span> <span class=\"kp\">isa</span> <span class=\"kt\">Expr</span> <span class=\"o\">&amp;&amp;</span> <span class=\"n\">ex</span><span class=\"o\">.</span><span class=\"n\">head</span> <span class=\"o\">==</span> <span class=\"o\">:</span><span class=\"n\">incomplete</span>\n        <span class=\"kc\">false</span>\n    <span class=\"k\">else</span>\n        <span class=\"kc\">true</span>\n    <span class=\"k\">end</span>\n<span class=\"k\">end</span>\n\n<span class=\"n\">sandbox_mode</span> <span class=\"o\">=</span> <span class=\"n\">initrepl</span><span class=\"p\">(</span><span class=\"n\">sandbox_parser</span><span class=\"p\">;</span>\n                        <span class=\"n\">prompt_text</span><span class=\"o\">=</span><span class=\"s\">\"Sandbox&gt; \"</span><span class=\"p\">,</span>\n                        <span class=\"n\">prompt_color</span> <span class=\"o\">=</span> <span class=\"o\">:</span><span class=\"n\">yellow</span><span class=\"p\">,</span>\n                        <span class=\"n\">startup_text</span> <span class=\"o\">=</span> <span class=\"kc\">false</span><span class=\"p\">,</span>\n                        <span class=\"n\">mode_name</span> <span class=\"o\">=</span> <span class=\"o\">:</span><span class=\"n\">sandbox</span><span class=\"p\">,</span>\n                        <span class=\"n\">valid_input_checker</span> <span class=\"o\">=</span> <span class=\"n\">valid_julia</span><span class=\"p\">)</span>\n\n<span class=\"n\">enter_mode!</span><span class=\"p\">(</span><span class=\"n\">sandbox_mode</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 228082036,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614458662
+    },
+    {
+        "content": "<p>if you run that, you'll find yourself in the <code>sandbox&gt; </code> prompt and then you can run various stuff:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">Sandbox</span><span class=\"o\">&gt;</span> <span class=\"n\">t</span> <span class=\"o\">=</span> <span class=\"kc\">true</span><span class=\"p\">;</span> <span class=\"n\">f</span> <span class=\"o\">=</span> <span class=\"kc\">false</span><span class=\"p\">;</span>\n\n<span class=\"n\">Sandbox</span><span class=\"o\">&gt;</span> <span class=\"n\">nand</span><span class=\"p\">(</span><span class=\"n\">t</span><span class=\"p\">,</span><span class=\"n\">t</span><span class=\"p\">)</span>\n<span class=\"kc\">false</span>\n\n<span class=\"n\">Sandbox</span><span class=\"o\">&gt;</span> <span class=\"n\">nand</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span><span class=\"n\">f</span><span class=\"p\">)</span>\n<span class=\"kc\">true</span>\n\n<span class=\"n\">Sandbox</span><span class=\"o\">&gt;</span> <span class=\"n\">not</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">nand</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span> <span class=\"kc\">true</span><span class=\"p\">)</span>\n<span class=\"n\">not</span> <span class=\"p\">(</span><span class=\"n\">generic</span> <span class=\"k\">function</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">Sandbox</span><span class=\"o\">&gt;</span> <span class=\"n\">and</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span> <span class=\"n\">y</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">not</span><span class=\"p\">(</span><span class=\"n\">nand</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span> <span class=\"n\">y</span><span class=\"p\">))</span>\n<span class=\"n\">and</span> <span class=\"p\">(</span><span class=\"n\">generic</span> <span class=\"k\">function</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">Sandbox</span><span class=\"o\">&gt;</span> <span class=\"n\">and</span><span class=\"p\">(</span><span class=\"n\">t</span><span class=\"p\">,</span> <span class=\"n\">t</span><span class=\"p\">)</span>\n<span class=\"kc\">true</span>\n\n<span class=\"n\">Sandbox</span><span class=\"o\">&gt;</span> <span class=\"mi\">1</span>\n<span class=\"n\">that</span><span class=\"o\">'</span><span class=\"n\">s</span> <span class=\"n\">not</span> <span class=\"n\">allowed</span>\n</code></pre></div>",
+        "id": 228082174,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614458867
+    },
+    {
+        "content": "<p>That's very neat. I was thinking I would have to do some name mangling as well as pattern matching</p>",
+        "id": 228082370,
+        "sender_full_name": "Colin Caine",
+        "timestamp": 1614459093
+    },
+    {
+        "content": "<p>One potential issue is that they can always just hit the backspace button to exit the prompt and then do whatever they want</p>",
+        "id": 228082482,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614459201
+    },
+    {
+        "content": "<p>but I think you could delve into <code>sandbox_mode.keymap_dict</code> and potentially remove that ability? I'm not sure.</p>",
+        "id": 228082539,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614459253
+    },
+    {
+        "content": "<p>Maybe safer would be to just make your own barebones repl that they can't escape from?</p>",
+        "id": 228082573,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614459338
+    },
+    {
+        "content": "<p><a href=\"https://github.com/hanslub42/rlwrap\">https://github.com/hanslub42/rlwrap</a> will make it somewhat easy to make your own repl that supports things like history and such</p>",
+        "id": 228082624,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614459389
+    },
+    {
+        "content": "<p>Yeah, there's a few other things, like you can still import whatever modules you like, and there's some more tricky security things if I wanted to make a more secure sandbox.</p>\n<p>But this is a very nice start, thank you :)</p>",
+        "id": 228082716,
+        "sender_full_name": "Colin Caine",
+        "timestamp": 1614459497
+    },
+    {
+        "content": "<p>Mhm. You'd want to blacklist <code>using</code> and <code>import</code> for sure.</p>",
+        "id": 228082742,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614459553
+    },
+    {
+        "content": "<p>I wonder if there's a way to remove all the names from <code>Core</code>, but still allow them to be defined, just not used.</p>",
+        "id": 228082828,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614459625
+    },
+    {
+        "content": "<p>I opened a discourse thread asking if anyone knows a way. <a href=\"https://discourse.julialang.org/t/even-more-bare-baremodule/56156\">https://discourse.julialang.org/t/even-more-bare-baremodule/56156</a></p>",
+        "id": 228083482,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614460339
+    },
+    {
+        "content": "<p>An alternative to a real module would be to repurpose some of the code from <a href=\"https://github.com/search?q=StaticModules.jl&amp;type=Repositories\">StaticModules.jl</a> to make your own custom 'module' that does exactly what you want</p>",
+        "id": 228083521,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614460408
+    },
+    {
+        "content": "<p>I guess you'd also need to exclude <code>Main</code>, as otherwise, I can call, e.g., <code>Main.Base.eval</code>.</p>",
+        "id": 228086578,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1614464184
+    },
+    {
+        "content": "<p>As a related note, I'm somewhat surprised that <code>names(Sandbox; all = true, imported = true)</code> does not output anything.</p>",
+        "id": 228086588,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1614464203
+    },
+    {
+        "content": "<p>Oh, it also looks like you can <code>ccall</code> inside a <code>baremodule</code> (since it's a syntax).</p>",
+        "id": 228086789,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1614464515
+    },
+    {
+        "content": "<p><code>names(Sandbox)</code> does give output for me on Julia 1.5</p>",
+        "id": 228086833,
+        "sender_full_name": "Colin Caine",
+        "timestamp": 1614464528
+    },
+    {
+        "content": "<p>Ah, I wasn't accurate. I meant to say an array with more than one element; e.g., I was hoping to see <code>Array</code> etc.</p>",
+        "id": 228086972,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1614464723
+    },
+    {
+        "content": "<p>At least a couple of months ago there were some quite big differences between the output of Meta.parse on 1.5 and 1.6 (with 1.6 giving lowered IR for some things). I wonder if that was ever cleared up.</p>",
+        "id": 228087037,
+        "sender_full_name": "Colin Caine",
+        "timestamp": 1614464790
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"297129\">@Takafumi Arakaki (tkf)</span> ah, gotcha.</p>",
+        "id": 228087050,
+        "sender_full_name": "Colin Caine",
+        "timestamp": 1614464816
+    },
+    {
+        "content": "<p>Expanded on <span class=\"user-mention\" data-user-id=\"269150\">@Mason Protter</span>'s example :)</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span> <span class=\"n\">ReplMaker</span><span class=\"p\">,</span> <span class=\"n\">MLStyle</span>\n\n<span class=\"k\">baremodule</span> <span class=\"n\">Sandbox</span> <span class=\"k\">end</span>\n<span class=\"nd\">@eval</span> <span class=\"n\">Sandbox</span> <span class=\"n\">nand</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span> <span class=\"n\">y</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"o\">$</span><span class=\"p\">(</span><span class=\"o\">!</span><span class=\"p\">)(</span><span class=\"o\">$</span><span class=\"p\">(</span><span class=\"o\">&amp;</span><span class=\"p\">)(</span><span class=\"n\">x</span><span class=\"p\">,</span> <span class=\"n\">y</span><span class=\"p\">))</span>\n\n<span class=\"k\">function</span> <span class=\"n\">eval_in_sandbox</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"p\">)</span>\n    <span class=\"n\">forbidden_names</span> <span class=\"o\">=</span> <span class=\"n\">setdiff</span><span class=\"p\">(</span><span class=\"n\">names</span><span class=\"p\">(</span><span class=\"n\">Core</span><span class=\"p\">;</span> <span class=\"n\">all</span><span class=\"o\">=</span><span class=\"kc\">true</span><span class=\"p\">,</span> <span class=\"n\">imported</span><span class=\"o\">=</span><span class=\"kc\">true</span><span class=\"p\">),</span> <span class=\"n\">names</span><span class=\"p\">(</span><span class=\"n\">Sandbox</span><span class=\"p\">;</span> <span class=\"n\">all</span><span class=\"o\">=</span><span class=\"kc\">true</span><span class=\"p\">,</span> <span class=\"n\">imported</span><span class=\"o\">=</span><span class=\"kc\">true</span><span class=\"p\">))</span>\n    <span class=\"n\">filterer</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"nd\">@match</span> <span class=\"n\">ex</span> <span class=\"k\">begin</span>\n        <span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">Bool</span> <span class=\"o\">=&gt;</span> <span class=\"n\">x</span>\n\n        <span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">LineNumberNode</span> <span class=\"o\">=&gt;</span> <span class=\"n\">x</span>\n\n        <span class=\"c\"># Ban everything.</span>\n        <span class=\"c\"># Copy anything you want to allow to above this point.</span>\n\n        <span class=\"c\"># it's a bit complicated to work out when a symbol is being used as a</span>\n        <span class=\"c\"># reference and what scope it is in. I think the JuliaVariables people</span>\n        <span class=\"c\"># have maybe done something with that?</span>\n        <span class=\"n\">s</span><span class=\"o\">::</span><span class=\"kt\">Symbol</span> <span class=\"o\">=&gt;</span> <span class=\"n\">s</span> <span class=\"kp\">in</span> <span class=\"n\">forbidden_names</span> <span class=\"o\">?</span> <span class=\"n\">throw</span><span class=\"p\">(</span><span class=\"s\">\"Sorry! You can't use that name in the sandbox\"</span><span class=\"p\">)</span> <span class=\"o\">:</span> <span class=\"n\">s</span>\n\n        <span class=\"c\"># Not allowed to import stuff</span>\n        <span class=\"kt\">Expr</span><span class=\"p\">(</span><span class=\"o\">:</span><span class=\"k\">using</span><span class=\"p\">,</span> <span class=\"n\">_</span><span class=\"o\">...</span><span class=\"p\">)</span> <span class=\"o\">||</span>\n        <span class=\"kt\">Expr</span><span class=\"p\">(</span><span class=\"o\">:</span><span class=\"k\">import</span><span class=\"p\">,</span> <span class=\"n\">_</span><span class=\"o\">...</span><span class=\"p\">)</span> <span class=\"o\">=&gt;</span> <span class=\"n\">error</span><span class=\"p\">(</span><span class=\"s\">\"Imports are not permitted in the sandbox\"</span><span class=\"p\">)</span>\n\n        <span class=\"c\"># Julia literals, these are mostly or entirely harmless (I think)</span>\n        <span class=\"c\"># but you might want to omit them or rewrite them to something else or whatever.</span>\n        <span class=\"o\">::</span><span class=\"kt\">Bool</span> <span class=\"o\">||</span>\n        <span class=\"o\">::</span><span class=\"kt\">Number</span> <span class=\"o\">||</span>\n        <span class=\"o\">::</span><span class=\"n\">String</span> <span class=\"o\">||</span>\n        <span class=\"kt\">Expr</span><span class=\"p\">(</span><span class=\"o\">:</span><span class=\"n\">string</span><span class=\"p\">,</span> <span class=\"n\">_</span><span class=\"o\">...</span><span class=\"p\">)</span> <span class=\"o\">||</span> <span class=\"c\"># string interpolation</span>\n        <span class=\"o\">::</span><span class=\"kt\">QuoteNode</span> <span class=\"o\">||</span>\n        <span class=\"kt\">Expr</span><span class=\"p\">(</span><span class=\"o\">:</span><span class=\"k\">quote</span><span class=\"p\">,</span> <span class=\"n\">_</span><span class=\"o\">...</span><span class=\"p\">)</span> <span class=\"o\">||</span>\n        <span class=\"kt\">Expr</span><span class=\"p\">(</span><span class=\"o\">:</span><span class=\"n\">ref</span><span class=\"p\">,</span> <span class=\"n\">_</span><span class=\"o\">...</span><span class=\"p\">)</span> <span class=\"o\">||</span> <span class=\"c\"># a[i], but also Int[]</span>\n        <span class=\"kt\">Expr</span><span class=\"p\">(</span><span class=\"o\">:</span><span class=\"n\">typed_vcat</span><span class=\"p\">,</span> <span class=\"n\">_</span><span class=\"o\">...</span><span class=\"p\">)</span> <span class=\"o\">||</span>\n        <span class=\"kt\">Expr</span><span class=\"p\">(</span><span class=\"o\">:</span><span class=\"n\">typed_hcat</span><span class=\"p\">,</span> <span class=\"n\">_</span><span class=\"o\">...</span><span class=\"p\">)</span> <span class=\"o\">||</span>\n        <span class=\"kt\">Expr</span><span class=\"p\">(</span><span class=\"o\">:</span><span class=\"n\">vect</span><span class=\"p\">,</span> <span class=\"n\">_</span><span class=\"o\">...</span><span class=\"p\">)</span> <span class=\"o\">||</span>\n        <span class=\"kt\">Expr</span><span class=\"p\">(</span><span class=\"o\">:</span><span class=\"n\">vcat</span><span class=\"p\">,</span> <span class=\"n\">_</span><span class=\"o\">...</span><span class=\"p\">)</span> <span class=\"o\">||</span>\n        <span class=\"kt\">Expr</span><span class=\"p\">(</span><span class=\"o\">:</span><span class=\"n\">hcat</span><span class=\"p\">,</span> <span class=\"n\">_</span><span class=\"o\">...</span><span class=\"p\">)</span> <span class=\"o\">||</span>\n        <span class=\"kt\">Expr</span><span class=\"p\">(</span><span class=\"o\">:</span><span class=\"n\">tuple</span><span class=\"p\">,</span> <span class=\"n\">_</span><span class=\"o\">...</span><span class=\"p\">)</span> <span class=\"o\">||</span> <span class=\"c\"># also covers named tuples</span>\n        <span class=\"kt\">Expr</span><span class=\"p\">(</span><span class=\"o\">:</span><span class=\"n\">comprehension</span><span class=\"p\">,</span> <span class=\"n\">_</span><span class=\"o\">...</span><span class=\"p\">)</span> <span class=\"o\">||</span>\n        <span class=\"kt\">Expr</span><span class=\"p\">(</span><span class=\"o\">:</span><span class=\"n\">typed_comprehension</span><span class=\"p\">,</span> <span class=\"n\">_</span><span class=\"o\">...</span><span class=\"p\">)</span> <span class=\"o\">||</span>\n        <span class=\"kt\">Expr</span><span class=\"p\">(</span><span class=\"o\">:</span><span class=\"n\">generator</span><span class=\"p\">,</span> <span class=\"n\">_</span><span class=\"o\">...</span><span class=\"p\">)</span> <span class=\"o\">=&gt;</span> <span class=\"n\">error</span><span class=\"p\">(</span><span class=\"s\">\"This literal is not permitted in the sandbox\"</span><span class=\"p\">)</span>\n\n        <span class=\"c\"># TODO</span>\n        <span class=\"c\"># ccall (!!)</span>\n\n        <span class=\"c\"># Recurse</span>\n        <span class=\"c\"># Expr(head, args...) =&gt; Expr(head, filterer.(x.args)...)</span>\n        <span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">Expr</span> <span class=\"o\">=&gt;</span> <span class=\"kt\">Expr</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">.</span><span class=\"n\">head</span><span class=\"p\">,</span> <span class=\"n\">filterer</span><span class=\"o\">.</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">.</span><span class=\"n\">args</span><span class=\"p\">)</span><span class=\"o\">...</span><span class=\"p\">)</span>\n\n        <span class=\"c\"># Fallback for other things</span>\n        <span class=\"n\">x</span> <span class=\"o\">=&gt;</span> <span class=\"n\">error</span><span class=\"p\">(</span><span class=\"s\">\"Unknown thing: </span><span class=\"si\">$x</span><span class=\"s\">\"</span><span class=\"p\">)</span>\n    <span class=\"k\">end</span>\n    <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"nd\">@eval</span> <span class=\"n\">Sandbox</span> <span class=\"o\">$</span><span class=\"p\">(</span><span class=\"n\">filterer</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"p\">)))</span>\n<span class=\"k\">end</span>\n\n\n<span class=\"k\">function</span> <span class=\"n\">sandbox_parser</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"o\">::</span><span class=\"n\">String</span><span class=\"p\">)</span>\n    <span class=\"n\">ex</span> <span class=\"o\">=</span> <span class=\"n\">Meta</span><span class=\"o\">.</span><span class=\"n\">parse</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"p\">)</span>\n    <span class=\"n\">eval_in_sandbox</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n\n\n<span class=\"k\">function</span> <span class=\"n\">valid_julia</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"p\">)</span>\n    <span class=\"n\">input</span> <span class=\"o\">=</span> <span class=\"n\">String</span><span class=\"p\">(</span><span class=\"n\">take!</span><span class=\"p\">(</span><span class=\"n\">copy</span><span class=\"p\">(</span><span class=\"n\">ReplMaker</span><span class=\"o\">.</span><span class=\"n\">LineEdit</span><span class=\"o\">.</span><span class=\"n\">buffer</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"p\">))))</span>\n    <span class=\"n\">ex</span> <span class=\"o\">=</span> <span class=\"n\">Meta</span><span class=\"o\">.</span><span class=\"n\">parse</span><span class=\"p\">(</span><span class=\"n\">input</span><span class=\"p\">)</span>\n    <span class=\"o\">!</span><span class=\"p\">(</span><span class=\"n\">ex</span> <span class=\"kp\">isa</span> <span class=\"kt\">Expr</span> <span class=\"o\">&amp;&amp;</span> <span class=\"n\">ex</span><span class=\"o\">.</span><span class=\"n\">head</span> <span class=\"o\">==</span> <span class=\"o\">:</span><span class=\"n\">incomplete</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n\n\n<span class=\"n\">sandbox_mode</span> <span class=\"o\">=</span> <span class=\"n\">initrepl</span><span class=\"p\">(</span><span class=\"n\">sandbox_parser</span><span class=\"p\">;</span>\n                        <span class=\"n\">prompt_text</span><span class=\"o\">=</span><span class=\"s\">\"Sandbox&gt; \"</span><span class=\"p\">,</span>\n                        <span class=\"n\">prompt_color</span> <span class=\"o\">=</span> <span class=\"o\">:</span><span class=\"n\">yellow</span><span class=\"p\">,</span>\n                        <span class=\"n\">startup_text</span> <span class=\"o\">=</span> <span class=\"kc\">false</span><span class=\"p\">,</span>\n                        <span class=\"n\">mode_name</span> <span class=\"o\">=</span> <span class=\"o\">:</span><span class=\"n\">sandbox</span><span class=\"p\">,</span>\n                        <span class=\"n\">valid_input_checker</span> <span class=\"o\">=</span> <span class=\"n\">valid_julia</span><span class=\"p\">)</span>\n\n<span class=\"n\">enter_mode!</span><span class=\"p\">(</span><span class=\"n\">sandbox_mode</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 228089098,
+        "sender_full_name": "Colin Caine",
+        "timestamp": 1614467133
+    },
+    {
+        "content": "<p>I guess what I should actually do is just transparently rewrite symbols that match anything in Core. That would be quite simple.</p>",
+        "id": 228089202,
+        "sender_full_name": "Colin Caine",
+        "timestamp": 1614467261
+    },
+    {
+        "content": "<p>For posterity: I posted a better version <a href=\"https://discourse.julialang.org/t/even-more-bare-baremodule/56156/2\">on discourse</a>.</p>",
+        "id": 228093906,
+        "sender_full_name": "Colin Caine",
+        "timestamp": 1614473053
+    },
+    {
+        "content": "<p>I made a little package for fun <a href=\"https://github.com/cmcaine/Sandboxes.jl\">https://github.com/cmcaine/Sandboxes.jl</a></p>",
+        "id": 228145388,
+        "sender_full_name": "Colin Caine",
+        "timestamp": 1614534595
+    }
+]

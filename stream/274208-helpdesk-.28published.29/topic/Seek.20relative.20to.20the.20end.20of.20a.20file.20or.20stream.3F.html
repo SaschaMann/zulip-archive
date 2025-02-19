@@ -1,0 +1,92 @@
+<html>
+<head><meta charset="utf-8"><title>Seek relative to the end of a file or stream? · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Seek.20relative.20to.20the.20end.20of.20a.20file.20or.20stream.3F.html">Seek relative to the end of a file or stream?</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="398797890"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Seek%20relative%20to%20the%20end%20of%20a%20file%20or%20stream%3F/near/398797890" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mark Kittisopikul <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Seek.20relative.20to.20the.20end.20of.20a.20file.20or.20stream.3F.html#398797890">(Oct 27 2023 at 01:44)</a>:</h4>
+<p>Is there any direct way to seek relative to the end of a file or stream with a single call? For example, C and Python allow you set a positive negative offset relative to SEEK_END via <code>fseek</code> or <code>lseek</code>. Cross posted from Slack.</p>
+
+
+
+<a name="398851615"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Seek%20relative%20to%20the%20end%20of%20a%20file%20or%20stream%3F/near/398851615" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sebastian Pfitzner <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Seek.20relative.20to.20the.20end.20of.20a.20file.20or.20stream.3F.html#398851615">(Oct 27 2023 at 08:35)</a>:</h4>
+<p>I think the best you can do is <code>seek(io, length(io)-x)</code>. Adding a two-arg <code>seekend</code> seems reasonable to me though</p>
+
+
+
+<a name="398907269"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Seek%20relative%20to%20the%20end%20of%20a%20file%20or%20stream%3F/near/398907269" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nathan Zimmerberg <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Seek.20relative.20to.20the.20end.20of.20a.20file.20or.20stream.3F.html#398907269">(Oct 27 2023 at 14:14)</a>:</h4>
+<p>What is the advantage of a two-arg seekend instead of a read or write directly to an offset? For example libUV doesn't support seeking files <a href="https://github.com/libuv/libuv/issues/2378">https://github.com/libuv/libuv/issues/2378</a> but does allow an additional argument <code>offset</code> to read and write.</p>
+
+
+
+<a name="398910944"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Seek%20relative%20to%20the%20end%20of%20a%20file%20or%20stream%3F/near/398910944" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nathan Zimmerberg <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Seek.20relative.20to.20the.20end.20of.20a.20file.20or.20stream.3F.html#398910944">(Oct 27 2023 at 14:36)</a>:</h4>
+<p>Also from what I can tell, <code>length</code> is not documented to work on files or streams. You could do:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">fsize</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="w">    </span><span class="n">seekend</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="w">    </span><span class="n">position</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>To get the file size before doing the seek.</p>
+
+
+
+<a name="398919377"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Seek%20relative%20to%20the%20end%20of%20a%20file%20or%20stream%3F/near/398919377" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Seek.20relative.20to.20the.20end.20of.20a.20file.20or.20stream.3F.html#398919377">(Oct 27 2023 at 15:22)</a>:</h4>
+<p><a href="https://juliahub.com/ui/Packages/General/StaticTools">StaticTools.jl</a> <code>fseek</code> has <code>SEEK_END</code> <img alt=":julia-troll:" class="emoji" src="https://zulip-avatars.s3.amazonaws.com/7178/emoji/images/15062.png" title="julia-troll"></p>
+
+
+
+<a name="398919664"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Seek%20relative%20to%20the%20end%20of%20a%20file%20or%20stream%3F/near/398919664" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Seek.20relative.20to.20the.20end.20of.20a.20file.20or.20stream.3F.html#398919664">(Oct 27 2023 at 15:23)</a>:</h4>
+<p>but yeah, not the most <em>kosher</em> package</p>
+
+
+
+<a name="398940392"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Seek%20relative%20to%20the%20end%20of%20a%20file%20or%20stream%3F/near/398940392" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mark Kittisopikul <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Seek.20relative.20to.20the.20end.20of.20a.20file.20or.20stream.3F.html#398940392">(Oct 27 2023 at 17:25)</a>:</h4>
+<p>Currently we have the following</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">seekend</span><span class="p">(</span><span class="n">f</span><span class="o">::</span><span class="kt">File</span><span class="p">)</span>
+<span class="w">    </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">ccall</span><span class="p">(</span><span class="ss">:jl_lseek</span><span class="p">,</span><span class="w"> </span><span class="kt">Int64</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">OS_HANDLE</span><span class="p">,</span><span class="w"> </span><span class="kt">Int64</span><span class="p">,</span><span class="w"> </span><span class="kt">Int32</span><span class="p">),</span><span class="w"> </span><span class="n">f</span><span class="o">.</span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">SEEK_END</span><span class="p">)</span>
+<span class="w">    </span><span class="n">ret</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="p">(</span><span class="nd">@static</span><span class="w"> </span><span class="n">Sys</span><span class="o">.</span><span class="n">iswindows</span><span class="p">()</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">windowserror</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">systemerror</span><span class="p">)(</span><span class="s">"seekend"</span><span class="p">)</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">f</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>Could we do this instead?</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">seekend</span><span class="p">(</span><span class="n">f</span><span class="o">::</span><span class="kt">File</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="o">::</span><span class="kt">Integer</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="w">    </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">ccall</span><span class="p">(</span><span class="ss">:jl_lseek</span><span class="p">,</span><span class="w"> </span><span class="kt">Int64</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">OS_HANDLE</span><span class="p">,</span><span class="w"> </span><span class="kt">Int64</span><span class="p">,</span><span class="w"> </span><span class="kt">Int32</span><span class="p">),</span><span class="w"> </span><span class="n">f</span><span class="o">.</span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">SEEK_END</span><span class="p">)</span>
+<span class="w">    </span><span class="n">ret</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="p">(</span><span class="nd">@static</span><span class="w"> </span><span class="n">Sys</span><span class="o">.</span><span class="n">iswindows</span><span class="p">()</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">windowserror</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">systemerror</span><span class="p">)(</span><span class="s">"seekend"</span><span class="p">)</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">f</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="398943289"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Seek%20relative%20to%20the%20end%20of%20a%20file%20or%20stream%3F/near/398943289" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Seek.20relative.20to.20the.20end.20of.20a.20file.20or.20stream.3F.html#398943289">(Oct 27 2023 at 17:45)</a>:</h4>
+<p>looks like that <em>ought</em> to work AFAICT, except maybe should explicitly convert <code>n</code> to <code>Int32</code> first if I'm looking at that right?</p>
+
+
+
+<a name="398961484"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Seek%20relative%20to%20the%20end%20of%20a%20file%20or%20stream%3F/near/398961484" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mark Kittisopikul <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Seek.20relative.20to.20the.20end.20of.20a.20file.20or.20stream.3F.html#398961484">(Oct 27 2023 at 20:05)</a>:</h4>
+<p><code>n</code> should be converted to <code>Int64</code>, but I think <code>ccall</code> will do that for us.</p>
+
+
+
+<a name="399007128"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Seek%20relative%20to%20the%20end%20of%20a%20file%20or%20stream%3F/near/399007128" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mark Kittisopikul <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Seek.20relative.20to.20the.20end.20of.20a.20file.20or.20stream.3F.html#399007128">(Oct 28 2023 at 04:03)</a>:</h4>
+<p><a href="https://github.com/JuliaLang/julia/pull/51908">https://github.com/JuliaLang/julia/pull/51908</a></p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

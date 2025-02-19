@@ -1,0 +1,187 @@
+<html>
+<head><meta charset="utf-8"><title>✔ Is &quot;double free or corruption&quot; my fault? · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Is.20.22double.20free.20or.20corruption.22.20my.20fault.3F.html">✔ Is &quot;double free or corruption&quot; my fault?</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="285882713"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Is%20%22double%20free%20or%20corruption%22%20my%20fault%3F/near/285882713" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Is.20.22double.20free.20or.20corruption.22.20my.20fault.3F.html#285882713">(Jun 13 2022 at 05:14)</a>:</h4>
+<p>If I see:</p>
+<blockquote>
+<p>double free or corruption (out)<br>
+double free or corruption (!prev)</p>
+<p>signal (6): Aborted<br>
+in expression starting at REPL[2]:1<br>
+[1]    104817 IOT instruction (core dumped)  julia --project=@. --threads=32</p>
+</blockquote>
+<p>is this a me-problem or a julialang-problem?</p>
+
+
+
+<a name="285882810"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Is%20%22double%20free%20or%20corruption%22%20my%20fault%3F/near/285882810" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Is.20.22double.20free.20or.20corruption.22.20my.20fault.3F.html#285882810">(Jun 13 2022 at 05:16)</a>:</h4>
+<p>For context, this seems to be the code triggering it:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">rows</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fill</span><span class="p">(</span><span class="n">DataFrameRow</span><span class="p">[],</span><span class="w"> </span><span class="n">threads</span><span class="p">())</span><span class="w"></span>
+<span class="nd">@threads</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">axes</span><span class="p">(</span><span class="n">gnomad1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
+<span class="w">   </span><span class="c"># stuff</span><span class="w"></span>
+<span class="w">  </span><span class="n">push!</span><span class="p">(</span><span class="n">rows</span><span class="p">[</span><span class="n">threadid</span><span class="p">()],</span><span class="w"> </span><span class="n">rowd</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="o">:</span><span class="p">])</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="285883113"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Is%20%22double%20free%20or%20corruption%22%20my%20fault%3F/near/285883113" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Is.20.22double.20free.20or.20corruption.22.20my.20fault.3F.html#285883113">(Jun 13 2022 at 05:23)</a>:</h4>
+<p>Tried running again and I see</p>
+<blockquote>
+<p>corrupted size vs. prev_size while consolidating</p>
+<p>signal (6): Aborted<br>
+in expression starting at REPL[2]:1<br>
+__pthread_kill_implementation at /lib64/libc.so.6 (unknown line)<br>
+raise at /lib64/libc.so.6 (unknown line)<br>
+abort at /lib64/libc.so.6 (unknown line)<br>
+__libc_message at /lib64/libc.so.6 (unknown line)<br>
+malloc_printerr at /lib64/libc.so.6 (unknown line)<br>
+_int_free at /lib64/libc.so.6 (unknown line)<br>
+free at /lib64/libc.so.6 (unknown line)<br>
+jl_realloc_aligned at /buildworker/worker/package_linux64/build/src/gc.c:249 [inlined]<br>
+gc_managed_realloc_ at /buildworker/worker/package_linux64/build/src/gc.c:3540 [inlined]<br>
+jl_gc_managed_realloc at /buildworker/worker/package_linux64/build/src/gc.c:3557<br>
+array_resize_buffer at /buildworker/worker/package_linux64/build/src/array.c:681<br>
+jl_array_grow_at_end at /buildworker/worker/package_linux64/build/src/array.c:904 [inlined]<br>
+jl_array_grow_end at /buildworker/worker/package_linux64/build/src/array.c:968<br>
+_growend! at ./array.jl:948 [inlined]<br>
+push! at ./array.jl:995<br>
+...</p>
+</blockquote>
+
+
+
+<a name="285885298"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Is%20%22double%20free%20or%20corruption%22%20my%20fault%3F/near/285885298" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Is.20.22double.20free.20or.20corruption.22.20my.20fault.3F.html#285885298">(Jun 13 2022 at 06:06)</a>:</h4>
+<p><code>threadid()</code> is not a stable way to query this</p>
+
+
+
+<a name="285885329"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Is%20%22double%20free%20or%20corruption%22%20my%20fault%3F/near/285885329" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Is.20.22double.20free.20or.20corruption.22.20my.20fault.3F.html#285885329">(Jun 13 2022 at 06:07)</a>:</h4>
+<p>also, your <code>rows</code> holds the exact same array multiple times</p>
+
+
+
+<a name="285885410"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Is%20%22double%20free%20or%20corruption%22%20my%20fault%3F/near/285885410" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Is.20.22double.20free.20or.20corruption.22.20my.20fault.3F.html#285885410">(Jun 13 2022 at 06:08)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">mutable</span><span class="w"> </span><span class="k">struct</span> <span class="kt">Example</span><span class="w"></span>
+<span class="w">         </span><span class="n">x</span><span class="w"></span>
+<span class="w">       </span><span class="k">end</span><span class="w"></span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">rows</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fill</span><span class="p">(</span><span class="n">Example</span><span class="p">(</span><span class="n">rand</span><span class="p">(</span><span class="kt">UInt</span><span class="p">)),</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"></span>
+<span class="mi">3</span><span class="o">-</span><span class="n">element</span><span class="w"> </span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Example</span><span class="p">}</span><span class="o">:</span><span class="w"></span>
+<span class="w"> </span><span class="n">Example</span><span class="p">(</span><span class="mh">0x32bdaaec78c24bc5</span><span class="p">)</span><span class="w"></span>
+<span class="w"> </span><span class="n">Example</span><span class="p">(</span><span class="mh">0x32bdaaec78c24bc5</span><span class="p">)</span><span class="w"></span>
+<span class="w"> </span><span class="n">Example</span><span class="p">(</span><span class="mh">0x32bdaaec78c24bc5</span><span class="p">)</span><span class="w"></span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">rows</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="n">rows</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="w"></span>
+<span class="nb">true</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="285885421"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Is%20%22double%20free%20or%20corruption%22%20my%20fault%3F/near/285885421" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Is.20.22double.20free.20or.20corruption.22.20my.20fault.3F.html#285885421">(Jun 13 2022 at 06:09)</a>:</h4>
+<p>either fill in a loop explicitly or use a comprehension, otherwise you're possibly trying to grow the exact same array from multiple threads</p>
+
+
+
+<a name="285888363"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Is%20%22double%20free%20or%20corruption%22%20my%20fault%3F/near/285888363" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Is.20.22double.20free.20or.20corruption.22.20my.20fault.3F.html#285888363">(Jun 13 2022 at 07:00)</a>:</h4>
+<p>Ah, thanks for that hint. I'll try <code>[DataFrameRow[] for _ in 1:nthreads()]</code>. Do you know if this could also cause an <code>UndefRefError</code>? I ask because it will take me ~1.5h to see if the fix worked.</p>
+
+
+
+<a name="285895652"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Is%20%22double%20free%20or%20corruption%22%20my%20fault%3F/near/285895652" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Is.20.22double.20free.20or.20corruption.22.20my.20fault.3F.html#285895652">(Jun 13 2022 at 08:26)</a>:</h4>
+<p>don't think so? I'd have to take a look at the stacktrace</p>
+
+
+
+<a name="285895704"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Is%20%22double%20free%20or%20corruption%22%20my%20fault%3F/near/285895704" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Is.20.22double.20free.20or.20corruption.22.20my.20fault.3F.html#285895704">(Jun 13 2022 at 08:27)</a>:</h4>
+<p>Well, I'll find out in a few minutes <span aria-label="sweat smile" class="emoji emoji-1f605" role="img" title="sweat smile">:sweat_smile:</span></p>
+
+
+
+<a name="285895709"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Is%20%22double%20free%20or%20corruption%22%20my%20fault%3F/near/285895709" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Is.20.22double.20free.20or.20corruption.22.20my.20fault.3F.html#285895709">(Jun 13 2022 at 08:27)</a>:</h4>
+<p>1.5h seems like a very long time, do you not have a small-ish check program to run for testing purposes?</p>
+
+
+
+<a name="285895720"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Is%20%22double%20free%20or%20corruption%22%20my%20fault%3F/near/285895720" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Is.20.22double.20free.20or.20corruption.22.20my.20fault.3F.html#285895720">(Jun 13 2022 at 08:27)</a>:</h4>
+<p>ah, yeah <span aria-label="joy" class="emoji emoji-1f602" role="img" title="joy">:joy:</span></p>
+
+
+
+<a name="285895739"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Is%20%22double%20free%20or%20corruption%22%20my%20fault%3F/near/285895739" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Is.20.22double.20free.20or.20corruption.22.20my.20fault.3F.html#285895739">(Jun 13 2022 at 08:27)</a>:</h4>
+<p>or is that already your small-ish check?</p>
+
+
+
+<a name="285895860"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Is%20%22double%20free%20or%20corruption%22%20my%20fault%3F/near/285895860" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Is.20.22double.20free.20or.20corruption.22.20my.20fault.3F.html#285895860">(Jun 13 2022 at 08:28)</a>:</h4>
+<p>I've stumbled across a bunch of issues that don't happen with small data sets, I'm guessing they're friendlier on race conditions etc.</p>
+
+
+
+<a name="285896305"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Is%20%22double%20free%20or%20corruption%22%20my%20fault%3F/near/285896305" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Is.20.22double.20free.20or.20corruption.22.20my.20fault.3F.html#285896305">(Jun 13 2022 at 08:32)</a>:</h4>
+<p>Wooo! I think it worked</p>
+
+
+
+<a name="285896482"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Is%20%22double%20free%20or%20corruption%22%20my%20fault%3F/near/285896482" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Is.20.22double.20free.20or.20corruption.22.20my.20fault.3F.html#285896482">(Jun 13 2022 at 08:34)</a>:</h4>
+<p>haha yeah, I can see that</p>
+
+
+
+<a name="285896518"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Is%20%22double%20free%20or%20corruption%22%20my%20fault%3F/near/285896518" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Is.20.22double.20free.20or.20corruption.22.20my.20fault.3F.html#285896518">(Jun 13 2022 at 08:34)</a>:</h4>
+<p>resiliency against data races is hard (unless you go for Rust, then it's a little easier)</p>
+
+
+
+<a name="285896530"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Is%20%22double%20free%20or%20corruption%22%20my%20fault%3F/near/285896530" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Is.20.22double.20free.20or.20corruption.22.20my.20fault.3F.html#285896530">(Jun 13 2022 at 08:34)</a>:</h4>
+<p>The moments of anticipation when the ETA counted down to 0s and it was processing were killing me <span aria-label="laughing" class="emoji emoji-1f606" role="img" title="laughing">:laughing:</span> worse than a horror movie</p>
+
+
+
+<a name="285896611"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Is%20%22double%20free%20or%20corruption%22%20my%20fault%3F/near/285896611" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Is.20.22double.20free.20or.20corruption.22.20my.20fault.3F.html#285896611">(Jun 13 2022 at 08:35)</a>:</h4>
+<p><a href="/user_uploads/7178/oWQK0InS57IBQhah6VxrJHqh/image.png">image.png</a></p>
+<div class="message_inline_image"><a href="/user_uploads/7178/oWQK0InS57IBQhah6VxrJHqh/image.png" title="image.png"><img src="/user_uploads/7178/oWQK0InS57IBQhah6VxrJHqh/image.png"></a></div>
+
+
+
+<a name="285902478"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Is%20%22double%20free%20or%20corruption%22%20my%20fault%3F/near/285902478" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Is.20.22double.20free.20or.20corruption.22.20my.20fault.3F.html#285902478">(Jun 13 2022 at 09:28)</a>:</h4>
+<p>nice</p>
+
+
+
+<a name="285928175"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Is%20%22double%20free%20or%20corruption%22%20my%20fault%3F/near/285928175" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Is.20.22double.20free.20or.20corruption.22.20my.20fault.3F.html#285928175">(Jun 13 2022 at 13:38)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="400021">Timothy</span> has marked this topic as resolved.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

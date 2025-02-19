@@ -1,0 +1,116 @@
+[
+    {
+        "content": "<p>Is there a string macro to create a Rational?</p>",
+        "id": 234336495,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1618324521
+    },
+    {
+        "content": "<p>Why do you need a string macro?</p>",
+        "id": 234353635,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1618329632
+    },
+    {
+        "content": "<p>I don't think so. Does <code>2//3</code> not work in your case? Or do you propose something that makes a rational from a common literal like 2.568?</p>",
+        "id": 234353832,
+        "sender_full_name": "Florian Große",
+        "timestamp": 1618329689
+    },
+    {
+        "content": "<p>I was thinking of something like <code>rational\"0.1\"</code> where I would get <code>1//10</code></p>",
+        "id": 234354946,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1618330083
+    },
+    {
+        "content": "<p>Basically, it's like <code>rationalize(0.1)</code></p>",
+        "id": 234355118,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1618330128
+    },
+    {
+        "content": "<p>So what is wrong with <code>rationalize(0.1)</code>?</p>",
+        "id": 234355529,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1618330281
+    },
+    {
+        "content": "<p>It has to jump through a lot of hoops to go from floating point to Rational. I think there is a direct interpretation of a finite decimal may be possible. For example, I would like these two statements to be equal:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">rationalize</span><span class=\"p\">(</span><span class=\"mf\">0.29999999999999998</span><span class=\"p\">)</span>\n<span class=\"mi\">3</span><span class=\"o\">//</span><span class=\"mi\">10</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"mi\">29999999999999998</span> <span class=\"o\">//</span> <span class=\"mi\">100000000000000000</span>\n<span class=\"mi\">14999999999999999</span><span class=\"o\">//</span><span class=\"mi\">50000000000000000</span>\n</code></pre></div>",
+        "id": 234357025,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1618330819
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">rational_from_string</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"p\">)</span>\n    <span class=\"n\">x</span><span class=\"p\">,</span> <span class=\"n\">y</span> <span class=\"o\">=</span> <span class=\"n\">split</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"p\">,</span> <span class=\"sc\">'.'</span><span class=\"p\">)</span>\n    <span class=\"n\">a</span> <span class=\"o\">=</span> <span class=\"n\">parse</span><span class=\"p\">(</span><span class=\"kt\">Int</span><span class=\"p\">,</span> <span class=\"n\">x</span><span class=\"p\">)</span>\n    <span class=\"n\">b</span> <span class=\"o\">=</span> <span class=\"n\">parse</span><span class=\"p\">(</span><span class=\"kt\">Int</span><span class=\"p\">,</span> <span class=\"n\">y</span><span class=\"p\">)</span>\n    <span class=\"k\">return</span> <span class=\"n\">a</span> <span class=\"o\">+</span> <span class=\"n\">b</span> <span class=\"o\">//</span> <span class=\"mi\">10</span><span class=\"o\">^</span><span class=\"n\">length</span><span class=\"p\">(</span><span class=\"n\">y</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 234357870,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1618331124
+    },
+    {
+        "content": "<p>Exactly, so</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">macro</span> <span class=\"n\">rational_str</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"p\">)</span>\n           <span class=\"n\">rational_from_string</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"p\">)</span>\n       <span class=\"k\">end</span>\n<span class=\"nd\">@rational_str</span> <span class=\"p\">(</span><span class=\"k\">macro</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">rational</span><span class=\"s\">\"0.29999999999999998\"</span>\n<span class=\"mi\">14999999999999999</span><span class=\"o\">//</span><span class=\"mi\">50000000000000000</span>\n</code></pre></div>",
+        "id": 234358101,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1618331193
+    },
+    {
+        "content": "<p>Should that be in Base?</p>",
+        "id": 234358207,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1618331231
+    },
+    {
+        "content": "<p>No.</p>",
+        "id": 234358504,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1618331332
+    },
+    {
+        "content": "<p>That's basically my question. I guess the answer is that it is not in Base because it is trivial to implement?</p>",
+        "id": 234363255,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1618333116
+    },
+    {
+        "content": "<p>It's more that it's not in base because base doesn't need it</p>",
+        "id": 234369262,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1618335294
+    },
+    {
+        "content": "<p>For the most part, I think Base tries to only include things it needs to building itself up and tries to leave stuff like this for packages or whatever. This isn't exactly an ideology that's uniformly shared among the whole developer community though.</p>",
+        "id": 234369506,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1618335379
+    },
+    {
+        "content": "<p>I suppose the analogy I see here is to the <code>@big_str</code> macro as in</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">big</span><span class=\"s\">\"0.29999999999999998\"</span>\n<span class=\"mf\">0.299999999999999979999999999999999999999999999999999999999999999999999999999999</span>\n</code></pre></div>",
+        "id": 234388481,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1618343105
+    },
+    {
+        "content": "<p>I'll look into a small <code>RationalDecimals.jl</code> package. For the moment, I just put this into a gist if you don't mind, <span class=\"user-mention\" data-user-id=\"272644\">@Fredrik Ekre</span> :<br>\n<a href=\"https://gist.github.com/mkitti/37bbe8e4f32d72111c25feeb840fbc2b\">https://gist.github.com/mkitti/37bbe8e4f32d72111c25feeb840fbc2b</a></p>",
+        "id": 234388871,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1618343213
+    },
+    {
+        "content": "<p><code>@big_str</code> is actually used in the parser for big int literals</p>",
+        "id": 234392472,
+        "sender_full_name": "Simeon Schaub",
+        "timestamp": 1618344519
+    },
+    {
+        "content": "<p>The devs have wanted to remove the <code>Big_____</code> numbers from Base for a while now. The barrier to doing that has been exactly the parser integrations that Simeon mentions</p>",
+        "id": 234394613,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1618345501
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"mi\">100000000000000</span> <span class=\"o\">|&gt;</span> <span class=\"n\">typeof</span>\n<span class=\"kt\">Int64</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"mi\">1000000000000000000000000000</span> <span class=\"o\">|&gt;</span> <span class=\"n\">typeof</span>\n<span class=\"kt\">Int128</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"mi\">1000000000000000000000000000000000000000000000000000</span> <span class=\"o\">|&gt;</span> <span class=\"n\">typeof</span>\n<span class=\"kt\">BigInt</span>\n</code></pre></div>",
+        "id": 234394682,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1618345534
+    }
+]

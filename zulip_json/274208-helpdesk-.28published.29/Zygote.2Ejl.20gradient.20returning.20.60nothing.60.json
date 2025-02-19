@@ -1,0 +1,842 @@
+[
+    {
+        "content": "<p>Is this a bug?</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">Zygote</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">y</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">y</span>\n<span class=\"n\">f</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">generic</span><span class=\"w\"> </span><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">with</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"w\"> </span><span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">gradient</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">0</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">0</span><span class=\"p\">)</span>\n<span class=\"p\">(</span><span class=\"nb\">nothing</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mf\">1.0</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>Shouldn't the result be <code>(0.0, 1.0)</code> instead?</p>",
+        "id": 481301686,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731067868
+    },
+    {
+        "content": "<p>Reported here: <a href=\"https://github.com/FluxML/Zygote.jl/issues/1538\">https://github.com/FluxML/Zygote.jl/issues/1538</a></p>",
+        "id": 481302616,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731068253
+    },
+    {
+        "content": "<p>Zygote uses <code>nothing</code> as a \"hard\" zero</p>",
+        "id": 481305173,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1731069160
+    },
+    {
+        "content": "<p>i.e. a differential that's known at compile time to be zero is represented as <code>nothing</code>.</p>",
+        "id": 481305260,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1731069186
+    },
+    {
+        "content": "<p>That is somewhat unexpected mathematically speaking. Makes it difficult to write generic code. Is there a good practice to handle nothing in this context ?</p>",
+        "id": 481305676,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731069312
+    },
+    {
+        "content": "<p>I guess you could do something like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">denothing</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">x</span>\n<span class=\"n\">denothing</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Nothing</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"nb\">false</span>\n\n<span class=\"n\">my_gradient</span><span class=\"p\">(</span><span class=\"n\">args</span><span class=\"o\">...</span><span class=\"p\">;</span><span class=\"w\"> </span><span class=\"n\">kwargs</span><span class=\"o\">...</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">denothing</span><span class=\"o\">.</span><span class=\"p\">(</span><span class=\"n\">gradient</span><span class=\"p\">(</span><span class=\"n\">args</span><span class=\"o\">...</span><span class=\"p\">;</span><span class=\"w\"> </span><span class=\"n\">kwargs</span><span class=\"o\">...</span><span class=\"p\">))</span>\n</code></pre></div>",
+        "id": 481309125,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1731070468
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">sum</span><span class=\"p\">(</span><span class=\"n\">my_gradient</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">0</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">0</span><span class=\"p\">))</span>\n<span class=\"go\">1.0</span>\n</code></pre></div>",
+        "id": 481309359,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1731070562
+    },
+    {
+        "content": "<p>I wonder why this is not done automatically for end-users</p>",
+        "id": 481310326,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731070914
+    },
+    {
+        "content": "<p>Shouldn't it be fixed in <a href=\"https://juliahub.com/ui/Packages/General/Zygote\">Zygote.jl</a>?</p>",
+        "id": 481310392,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731070927
+    },
+    {
+        "content": "<p>One reason for a special flag is that Zygote can avoid some work in the backward pass, as the gradient of any operations done before <code>f</code> is certain to be zero. Whereas with a runtime <code>0.0</code> it can't tell &amp; must do the work.</p>",
+        "id": 481336533,
+        "sender_full_name": "Michael Abbott",
+        "timestamp": 1731079538
+    },
+    {
+        "content": "<p>The other is that for larger things like <code>x::Array</code>, allocating <code>zero(x)</code> is expensive.</p>",
+        "id": 481336653,
+        "sender_full_name": "Michael Abbott",
+        "timestamp": 1731079568
+    },
+    {
+        "content": "<p>FWIW, the Enzyme's design is:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">Enzyme</span><span class=\"o\">.</span><span class=\"n\">gradient</span><span class=\"p\">(</span><span class=\"n\">Reverse</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span><span class=\"n\">y</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">-&gt;</span><span class=\"w\"> </span><span class=\"n\">sum</span><span class=\"p\">(</span><span class=\"n\">abs2</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">.*</span><span class=\"w\"> </span><span class=\"n\">y</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mf\">2.</span><span class=\"p\">],</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">3</span><span class=\"w\"> </span><span class=\"mi\">4</span><span class=\"w\"> </span><span class=\"mf\">5.</span><span class=\"p\">])</span>\n<span class=\"p\">([</span><span class=\"mf\">100.0</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mf\">200.0</span><span class=\"p\">],</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mf\">30.0</span><span class=\"w\"> </span><span class=\"mf\">40.0</span><span class=\"w\"> </span><span class=\"mf\">50.0</span><span class=\"p\">])</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">Enzyme</span><span class=\"o\">.</span><span class=\"n\">gradient</span><span class=\"p\">(</span><span class=\"n\">Reverse</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span><span class=\"n\">y</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">-&gt;</span><span class=\"w\"> </span><span class=\"n\">sum</span><span class=\"p\">(</span><span class=\"n\">abs2</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">.*</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mf\">2.</span><span class=\"p\">],</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">3</span><span class=\"w\"> </span><span class=\"mi\">4</span><span class=\"w\"> </span><span class=\"mf\">5.</span><span class=\"p\">])</span>\n<span class=\"p\">([</span><span class=\"mf\">4.0</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mf\">32.0</span><span class=\"p\">],</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mf\">0.0</span><span class=\"w\"> </span><span class=\"mf\">0.0</span><span class=\"w\"> </span><span class=\"mf\">0.0</span><span class=\"p\">])</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">Enzyme</span><span class=\"o\">.</span><span class=\"n\">gradient</span><span class=\"p\">(</span><span class=\"n\">Reverse</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span><span class=\"n\">y</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">-&gt;</span><span class=\"w\"> </span><span class=\"n\">sum</span><span class=\"p\">(</span><span class=\"n\">abs2</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">.*</span><span class=\"w\"> </span><span class=\"n\">y</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mf\">2.</span><span class=\"p\">],</span><span class=\"w\"> </span><span class=\"n\">Const</span><span class=\"p\">([</span><span class=\"mi\">3</span><span class=\"w\"> </span><span class=\"mi\">4</span><span class=\"w\"> </span><span class=\"mf\">5.</span><span class=\"p\">]))</span>\n<span class=\"p\">([</span><span class=\"mf\">100.0</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mf\">200.0</span><span class=\"p\">],</span><span class=\"w\"> </span><span class=\"nb\">nothing</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 481337143,
+        "sender_full_name": "Michael Abbott",
+        "timestamp": 1731079727
+    },
+    {
+        "content": "<p>It could have had a design like <code>ChainRulesCore.ZeroTangent()</code>, since that at least supports math ops</p>",
+        "id": 481337248,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1731079754
+    },
+    {
+        "content": "<p>but yeah, it's mostly just historical reasons and a ton of work to overhaul it</p>",
+        "id": 481337337,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1731079789
+    },
+    {
+        "content": "<blockquote>\n<p>FWIW, the Enzyme's design is:</p>\n</blockquote>\n<p>Enzyme's <code>gradient</code> is pretty unlike Zygote's gradient.</p>",
+        "id": 481339242,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1731080435
+    },
+    {
+        "content": "<p>I'd say the equivalent in Enzyme is instead</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"k\">let</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">Ref</span><span class=\"p\">(</span><span class=\"mf\">0.0</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">y</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">Ref</span><span class=\"p\">(</span><span class=\"mf\">0.0</span><span class=\"p\">)</span>\n<span class=\"w\">           </span><span class=\"n\">dx</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">dy</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">make_zero</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">make_zero</span><span class=\"p\">(</span><span class=\"n\">y</span><span class=\"p\">)</span>\n<span class=\"w\">           </span><span class=\"n\">autodiff</span><span class=\"p\">(</span><span class=\"n\">Reverse</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">Duplicated</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">dx</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">Duplicated</span><span class=\"p\">(</span><span class=\"n\">y</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">dy</span><span class=\"p\">))</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">y</span>\n<span class=\"w\">               </span><span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">[],</span><span class=\"w\"> </span><span class=\"n\">y</span><span class=\"p\">[])</span>\n<span class=\"w\">           </span><span class=\"k\">end</span>\n<span class=\"w\">           </span><span class=\"n\">dx</span><span class=\"p\">[],</span><span class=\"w\"> </span><span class=\"n\">dy</span><span class=\"p\">[]</span>\n<span class=\"w\">       </span><span class=\"k\">end</span>\n<span class=\"go\">(0.0, 1.0)</span>\n</code></pre></div>",
+        "id": 481339329,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1731080464
+    },
+    {
+        "content": "<p>I'm considering moving to <a href=\"https://juliahub.com/ui/Packages/General/Enzyme\">Enzyme.jl</a> because of this design of <a href=\"https://juliahub.com/ui/Packages/General/Zygote\">Zygote.jl</a>. It is pretty counter intuitive to have a mathematical gradient with those entries</p>",
+        "id": 481340269,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731080753
+    },
+    {
+        "content": "<p>Does <a href=\"https://juliahub.com/ui/Packages/General/Enzyme\">Enzyme.jl</a> support all platforms that Julia supports?</p>",
+        "id": 481340435,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731080800
+    },
+    {
+        "content": "<p>I understand it is a wrapper package</p>",
+        "id": 481340458,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731080813
+    },
+    {
+        "content": "<p>And another question: is <a href=\"https://juliahub.com/ui/Packages/General/Zygote\">Zygote.jl</a> the recommended package for autodiff in native Julia or there is something new?</p>",
+        "id": 481340591,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731080878
+    },
+    {
+        "content": "<p><a href=\"https://discourse.julialang.org/t/state-of-ad-in-2024/112601\">https://discourse.julialang.org/t/state-of-ad-in-2024/112601</a></p>",
+        "id": 481345233,
+        "sender_full_name": "Nils",
+        "timestamp": 1731082420
+    },
+    {
+        "content": "<p>Can you say what problem <code>nothing</code> causes, more narrowly than just being surprising?</p>",
+        "id": 481346186,
+        "sender_full_name": "Michael Abbott",
+        "timestamp": 1731082773
+    },
+    {
+        "content": "<p>I think he wants to be able to do math with the result of <code>gradient</code>.</p>",
+        "id": 481346527,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1731082884
+    },
+    {
+        "content": "<p>For instance, I agree that the fact that <code>x + dx</code> won't always work is a bit sad. (I think + needs to be replaced with <code>Zygote.accum</code> which knows about <code>nothing</code>.) <a href=\"https://juliahub.com/ui/Packages/General/ChainRules\">ChainRules.jl</a> took making this work as an axiom, and the result was massive complexity of <code>Tangent</code> which has all kinds of sharp edges. (Not to mention several kinds of zeros which nobody knows how to use correctly, and resulting type-instabilities.) So there are trade-offs, and <code>nothing</code> (plus NamedTuple for any struct) has the advantage of being very simple.</p>",
+        "id": 481346716,
+        "sender_full_name": "Michael Abbott",
+        "timestamp": 1731082959
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"272550\">Michael Abbott</span> <a href=\"#narrow/channel/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60/near/481346186\">said</a>:</p>\n<blockquote>\n<p>Can you say what problem <code>nothing</code> causes, more narrowly than just being surprising?</p>\n</blockquote>\n<p>We are simply doing Newton-Rhapson iteration with automatic gradients. The problem with this <code>nothing</code> design is that it relies on all third-party packages handling it. Even if we workaround the situation in our own package, this solution doesn't compose well.</p>",
+        "id": 481350619,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731084324
+    },
+    {
+        "content": "<p>Wouldn't Enzyme be a much better fit for stuff like Newton Rhapson because it supports mutation?</p>",
+        "id": 481350902,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1731084430
+    },
+    {
+        "content": "<p>We are doing Newton-Rhapson with 2 scalar values. There are no allocations.</p>",
+        "id": 481350960,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731084462
+    },
+    {
+        "content": "<p>Ah. In that case, maybe just use ForwardDiff?</p>",
+        "id": 481351200,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1731084543
+    },
+    {
+        "content": "<p>Will take a look. I am assuming that <a href=\"https://juliahub.com/ui/Packages/General/ForwardDiff\">ForwardDiff.jl</a> provides autodiff like <a href=\"https://juliahub.com/ui/Packages/General/Zygote\">Zygote.jl</a> but without the  <code>nothing</code>.</p>",
+        "id": 481351772,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731084744
+    },
+    {
+        "content": "<p>You really only want to reach for reverse mode AD like Zygote if you need the derivatives of functions from <code>N</code> dimensions to <code>M</code> dimensions where <code>N &gt;&gt; M</code></p>",
+        "id": 481352648,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1731085079
+    },
+    {
+        "content": "<p>And in terms of maturity, <a href=\"https://juliahub.com/ui/Packages/General/ForwardDiff\">ForwardDiff.jl</a> is mature, actively maintained, etc?</p>",
+        "id": 481352984,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731085196
+    },
+    {
+        "content": "<p>The classic use-case for reverse-mode is deep learning where <code>N</code> might be in the many thousands and <code>M = 1</code></p>",
+        "id": 481353057,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1731085203
+    },
+    {
+        "content": "<p>ForwardDiff is very mature.</p>",
+        "id": 481353151,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1731085234
+    },
+    {
+        "content": "<p>I'd say it's actively maintained, but I wouldn't say it's actively <em>developed</em> (on account of said maturity)</p>",
+        "id": 481353244,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1731085272
+    },
+    {
+        "content": "<p>I already like that it has a much smaller list of dependencies compared to <a href=\"https://juliahub.com/ui/Packages/General/Zygote\">Zygote.jl</a></p>",
+        "id": 481353343,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731085311
+    },
+    {
+        "content": "<p>forward mode AD is just fundamentally much much much simpler than reverse mode</p>",
+        "id": 481353434,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1731085332
+    },
+    {
+        "content": "<p>If you feel like trying out something bleeding edge instead, <a href=\"https://juliahub.com/ui/Packages/General/Diffractor\">Diffractor.jl</a> actually has a pretty well working forwards mode nowadays (probably don't actually do this)</p>",
+        "id": 481353570,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1731085386
+    },
+    {
+        "content": "<p>As a general rule, you should avoid reverse mode like the plague unless you are absolutely sure you need it.</p>",
+        "id": 481354198,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1731085617
+    },
+    {
+        "content": "<p>Thank you. That is very helpful.</p>",
+        "id": 481355174,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731085994
+    },
+    {
+        "content": "<p>Also, since it hasn't been mentioned yet, I highly recommend using <a href=\"https://juliahub.com/ui/Packages/General/DifferentiationInterface\">DifferentiationInterface.jl</a> which makes it trivial to swap out AD back-ends and has no performance penalty in simple cases.</p>",
+        "id": 481356120,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1731086374
+    },
+    {
+        "content": "<p>It'd be nice if DI turned the <code>nothing</code>s into some sort of zero <code>&lt;:Number</code>.</p>",
+        "id": 481356719,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1731086631
+    },
+    {
+        "content": "<p>I think in this case we will go ahead with the <a href=\"https://juliahub.com/ui/Packages/General/ForwardDiff\">ForwardDiff.jl</a> package directly. There are no plans to swap the backend given that it is ideal for the application at hand.</p>",
+        "id": 481356838,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731086674
+    },
+    {
+        "content": "<p>For some reason <a href=\"https://juliahub.com/ui/Packages/General/ForwardDiff\">ForwardDiff.jl</a> is generating slower code compared to <a href=\"https://juliahub.com/ui/Packages/General/Zygote\">Zygote.jl</a>.</p>\n<p>Can you try to reproduce this benchmark on the <code>main</code> branch (Zygote) and on the <code>forwarddiff</code> branch?</p>\n<p><a href=\"https://github.com/JuliaEarth/CoordRefSystems.jl/tree/main/benchmark\">https://github.com/JuliaEarth/CoordRefSystems.jl/tree/main/benchmark</a></p>\n<p>Do you also see a massive slow down in the last line of the output.csv? The last column has the speedup metric.</p>",
+        "id": 481364302,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731089704
+    },
+    {
+        "content": "<p>For me the <a href=\"https://juliahub.com/ui/Packages/General/Zygote\">Zygote.jl</a> result is 0.28 and the <a href=\"https://juliahub.com/ui/Packages/General/ForwardDiff\">ForwardDiff.jl</a> result is 0.06 (larger is better).</p>",
+        "id": 481364397,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731089759
+    },
+    {
+        "content": "<blockquote>\n<p>We are simply doing Newton-Rhapson iteration with automatic gradients.</p>\n</blockquote>\n<p>If it's scalar, then you don't want to be diffing through it anyways. BracketingNonlinearSolve or SimpleNonlinearSolve with Zygote/ForwardDiff overloads would just skip the implicit part.</p>\n<p>But I would almost guarantee for scalar that ForwardDiff will be faster here.</p>",
+        "id": 481364786,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731089932
+    },
+    {
+        "content": "<p>With forward mode you want to essentially always do this trick: <a href=\"https://github.com/SciML/NonlinearSolve.jl/blob/master/lib/NonlinearSolveBase/ext/NonlinearSolveBaseForwardDiffExt.jl\">https://github.com/SciML/NonlinearSolve.jl/blob/master/lib/NonlinearSolveBase/ext/NonlinearSolveBaseForwardDiffExt.jl</a></p>",
+        "id": 481365197,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731090129
+    },
+    {
+        "content": "<p>Thank you <span class=\"user-mention\" data-user-id=\"278119\">@Christopher Rackauckas</span> . Can you please elaborate on that?</p>\n<p>The PR that replaces <a href=\"https://juliahub.com/ui/Packages/General/Zygote\">Zygote.jl</a> by <a href=\"https://juliahub.com/ui/Packages/General/ForwardDiff\">ForwardDiff.jl</a> has a small diff that you can read here: <a href=\"https://github.com/JuliaEarth/CoordRefSystems.jl/pull/199/files\">https://github.com/JuliaEarth/CoordRefSystems.jl/pull/199/files</a></p>",
+        "id": 481366734,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731090791
+    },
+    {
+        "content": "<p>What do we need to do differently to get the expected superior performance of forward diff?</p>",
+        "id": 481366776,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731090819
+    },
+    {
+        "content": "<p>How are you solving the nonlinear system?</p>",
+        "id": 481366905,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731090862
+    },
+    {
+        "content": "<p>The diff has the formulas. Basically given two functions <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>x</mi><mo>=</mo><msub><mi>f</mi><mi>x</mi></msub><mo stretchy=\"false\">(</mo><mi>λ</mi><mo separator=\"true\">,</mo><mi>ϕ</mi><mo stretchy=\"false\">)</mo></mrow><annotation encoding=\"application/x-tex\">x = f_x(\\lambda, \\phi)</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:-0.1076em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">x</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">λ</span><span class=\"mpunct\">,</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\">ϕ</span><span class=\"mclose\">)</span></span></span></span> and <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>y</mi><mo>=</mo><msub><mi>f</mi><mi>y</mi></msub><mo stretchy=\"false\">(</mo><mi>λ</mi><mo separator=\"true\">,</mo><mi>ϕ</mi><mo stretchy=\"false\">)</mo></mrow><annotation encoding=\"application/x-tex\">y = f_y(\\lambda, \\phi)</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.625em;vertical-align:-0.1944em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1.0361em;vertical-align:-0.2861em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:-0.1076em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\" style=\"margin-right:0.03588em;\">y</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.2861em;\"><span></span></span></span></span></span></span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">λ</span><span class=\"mpunct\">,</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\">ϕ</span><span class=\"mclose\">)</span></span></span></span> and values <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>x</mi><mo>⋆</mo></mrow><annotation encoding=\"application/x-tex\">x\\star</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4653em;\"></span><span class=\"mord mathnormal\">x</span><span class=\"mord\">⋆</span></span></span></span> and <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>y</mi><mo>⋆</mo></mrow><annotation encoding=\"application/x-tex\">y\\star</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.6597em;vertical-align:-0.1944em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span><span class=\"mord\">⋆</span></span></span></span>, we perform newton iteration to find <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>λ</mi><mo>⋆</mo></mrow><annotation encoding=\"application/x-tex\">\\lambda\\star</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.6944em;\"></span><span class=\"mord mathnormal\">λ</span><span class=\"mord\">⋆</span></span></span></span> and <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>ϕ</mi><mo>⋆</mo></mrow><annotation encoding=\"application/x-tex\">\\phi\\star</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8889em;vertical-align:-0.1944em;\"></span><span class=\"mord mathnormal\">ϕ</span><span class=\"mord\">⋆</span></span></span></span>.</p>",
+        "id": 481367183,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731090996
+    },
+    {
+        "content": "<p>These two formulas as decoupled in the diff above as you can see.</p>",
+        "id": 481367229,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731091021
+    },
+    {
+        "content": "<p>Yeah so if it's using SimpleNonlinearSolve it should automatically apply the implicit rule</p>",
+        "id": 481367257,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731091036
+    },
+    {
+        "content": "<p>If you did it by hand then you'll need to copy that code / do a similar implicit function push through on the duals</p>",
+        "id": 481367281,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731091052
+    },
+    {
+        "content": "<p>For scalar it's almost equivalent to not differentiating the first n steps of the newton method, re-applying the duals, and then applying it on the n+1th step</p>",
+        "id": 481367382,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731091087
+    },
+    {
+        "content": "<p>I am not sure I am following. As an end-user of <a href=\"https://juliahub.com/ui/Packages/General/ForwardDiff\">ForwardDiff.jl</a> it is not clear what I am doing wrong.</p>",
+        "id": 481367495,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731091136
+    },
+    {
+        "content": "<p>Optimally handling implicit equations is not something automatic differentiation as a tool can do on its own. It requires that the solver library that you're using for the implicit system overloads the AD to avoid differentiation through the method</p>",
+        "id": 481367574,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731091180
+    },
+    {
+        "content": "<p>So <a href=\"https://juliahub.com/ui/Packages/General/Zygote\">Zygote.jl</a> is doing something more that guarantees better performance?</p>",
+        "id": 481367772,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731091256
+    },
+    {
+        "content": "<p>The derivative of Newton-Rhapson w.r.t. <code>u0</code> is 0, since the solution is independent of the initial condition (or undefined if it moves to a different solution). So you need to not differentiate the solve and then only differentiate effectively the last step. If the implicit solve is the expensive part of the code, then  doing this trick turns O(n) expensive calls differentiating each step into exactly 1. That's hard to beat.</p>",
+        "id": 481367838,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731091285
+    },
+    {
+        "content": "<p>It's not really up to the AD libraries. It's up to the solver libraries, i.e. whomever writes the Newton method (NonlinearSolve) to supply rules for ForwardDiff/Zygote/etc. to do this</p>",
+        "id": 481367890,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731091310
+    },
+    {
+        "content": "<p>You mean that there is a small package that we could take as dependency that already defines newton-rhapson inversion with AD rules?</p>",
+        "id": 481368058,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731091367
+    },
+    {
+        "content": "<p>Since an AD library cannot really know by looking at code that it should have this convergence property, i.e. that the solution is independent of the previous steps, not in code (since in the code, each step of newton depends on the previous step), but in the solution (since it converges to the same value regardless of where you start)</p>",
+        "id": 481368062,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731091371
+    },
+    {
+        "content": "<p>Yes, <a href=\"https://juliahub.com/ui/Packages/General/SimpleNonlinearSolve\">SimpleNonlinearSolve.jl</a></p>",
+        "id": 481368086,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731091380
+    },
+    {
+        "content": "<p>It's a split out of NonlinearSolve that is focused only on very simple Newton Rhapson + the required AD rules.</p>",
+        "id": 481368140,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731091403
+    },
+    {
+        "content": "<p>It looks like the list of dependencies is very large?</p>",
+        "id": 481368232,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731091440
+    },
+    {
+        "content": "<p>Ideally, we would just retain the performance of <a href=\"https://juliahub.com/ui/Packages/General/Zygote\">Zygote.jl</a>, but with <a href=\"https://juliahub.com/ui/Packages/General/ForwardDiff\">ForwardDiff.jl</a></p>",
+        "id": 481368435,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731091505
+    },
+    {
+        "content": "<p>Well with a scalar nonlinear solve you probably want to be using ITP instead of Newton for stability if you have bounds. In that case, BracketingNonlinearSolve would then be an even smaller dep.</p>",
+        "id": 481368535,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731091553
+    },
+    {
+        "content": "<p>What exactly do you need different in the size? The import time is ~200ms and most of that is the precompilation load of the Newton method itself.</p>",
+        "id": 481368887,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731091688
+    },
+    {
+        "content": "<p>It beggars belief that the code in the diff you pasted is much slower in forwarddiff than in zygote, though of course I don't know what functions you are running through it.  I think there is something else wrong.</p>",
+        "id": 481368896,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1731091692
+    },
+    {
+        "content": "<p>Most likely yes, Zygote shouldn't ever be faster in this kind of case.</p>",
+        "id": 481368948,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731091716
+    },
+    {
+        "content": "<p>But even then, the next thing you'd want to do is do the implicit rule for either ForwardDiff or Zygote <span aria-label=\"shrug\" class=\"emoji emoji-1f937\" role=\"img\" title=\"shrug\">:shrug:</span></p>",
+        "id": 481368980,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731091740
+    },
+    {
+        "content": "<p>Perhaps I didn't run the benchmark properly. Let me try to isolate the issue.</p>",
+        "id": 481369037,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731091774
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">SimpleNonlinearSolve</span>\n<span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">u</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">p</span><span class=\"o\">::</span><span class=\"kt\">Number</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">u</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"n\">u</span><span class=\"w\"> </span><span class=\"o\">-</span><span class=\"w\"> </span><span class=\"n\">p</span>\n<span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">u</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">p</span><span class=\"o\">::</span><span class=\"kt\">Vector</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">u</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"n\">u</span><span class=\"w\"> </span><span class=\"o\">-</span><span class=\"w\"> </span><span class=\"n\">p</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span>\n<span class=\"n\">u0</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mf\">1.0</span>\n<span class=\"n\">p</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mf\">1.0</span>\n<span class=\"k\">const</span><span class=\"w\"> </span><span class=\"n\">cprob</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">NonlinearProblem</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">u0</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">p</span><span class=\"p\">)</span>\n<span class=\"n\">sol</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">solve</span><span class=\"p\">(</span><span class=\"n\">prob_int</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">SimpleNewtonRaphson</span><span class=\"p\">())</span>\n\n<span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">loss</span><span class=\"p\">(</span><span class=\"n\">p</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"n\">solve</span><span class=\"p\">(</span><span class=\"n\">remake</span><span class=\"p\">(</span><span class=\"n\">cprob</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">p</span><span class=\"o\">=</span><span class=\"n\">p</span><span class=\"p\">),</span><span class=\"n\">SimpleNewtonRaphson</span><span class=\"p\">())</span><span class=\"o\">.</span><span class=\"n\">u</span><span class=\"w\"> </span><span class=\"o\">-</span><span class=\"w\"> </span><span class=\"mf\">4.0</span>\n<span class=\"k\">end</span>\n\n<span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">ForwardDiff</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">BenchmarkTools</span>\n<span class=\"nd\">@btime</span><span class=\"w\"> </span><span class=\"n\">ForwardDiff</span><span class=\"o\">.</span><span class=\"n\">derivative</span><span class=\"p\">(</span><span class=\"n\">loss</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">p</span><span class=\"p\">)</span>\n</code></pre></div>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"mf\">16.741</span><span class=\"w\"> </span><span class=\"n\">ns</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"w\"> </span><span class=\"n\">allocation</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"mi\">16</span><span class=\"w\"> </span><span class=\"n\">bytes</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 481369794,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731092123
+    },
+    {
+        "content": "<p>For a scalar problem you should be able to optimize most stuff out of it.</p>",
+        "id": 481369941,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731092179
+    },
+    {
+        "content": "<p>Though a bracketing method is almost certainly going to be more robust</p>",
+        "id": 481370222,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731092302
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">BracketingNonlinearSolve</span>\n<span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">u</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">p</span><span class=\"o\">::</span><span class=\"kt\">Number</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">u</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"n\">u</span><span class=\"w\"> </span><span class=\"o\">-</span><span class=\"w\"> </span><span class=\"n\">p</span>\n<span class=\"n\">u0</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mf\">1.0</span>\n<span class=\"n\">p</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mf\">1.0</span>\n<span class=\"n\">uspan</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mf\">1.0</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mf\">2.0</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"c\"># brackets</span>\n<span class=\"k\">const</span><span class=\"w\"> </span><span class=\"n\">cprob_int</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">IntervalNonlinearProblem</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">uspan</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">p</span><span class=\"p\">)</span>\n<span class=\"n\">sol</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">solve</span><span class=\"p\">(</span><span class=\"n\">prob_int</span><span class=\"p\">)</span>\n\n<span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">loss</span><span class=\"p\">(</span><span class=\"n\">p</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"n\">solve</span><span class=\"p\">(</span><span class=\"n\">remake</span><span class=\"p\">(</span><span class=\"n\">cprob_int</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">p</span><span class=\"o\">=</span><span class=\"n\">p</span><span class=\"p\">))</span><span class=\"o\">.</span><span class=\"n\">u</span><span class=\"w\"> </span><span class=\"o\">-</span><span class=\"w\"> </span><span class=\"mf\">4.0</span>\n<span class=\"k\">end</span>\n\n<span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">ForwardDiff</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">BenchmarkTools</span>\n<span class=\"nd\">@btime</span><span class=\"w\"> </span><span class=\"n\">ForwardDiff</span><span class=\"o\">.</span><span class=\"n\">derivative</span><span class=\"p\">(</span><span class=\"n\">loss</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">p</span><span class=\"p\">);</span>\n</code></pre></div>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"mf\">18.495</span><span class=\"w\"> </span><span class=\"n\">ns</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"w\"> </span><span class=\"n\">allocation</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"mi\">16</span><span class=\"w\"> </span><span class=\"n\">bytes</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 481370245,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731092312
+    },
+    {
+        "content": "<p>You can probably specialize on a lot of other properties too though. What kind of system is it? Is it polynomial? Rational polynomial?</p>",
+        "id": 481370450,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731092397
+    },
+    {
+        "content": "<p>I am creating a MWE with the exact code that is slower. Will share here in a few minutes...</p>",
+        "id": 481370627,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731092446
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">CoordRefSystems</span>\n<span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">BenchmarkTools</span>\n\n<span class=\"n\">latlon</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">LatLon</span><span class=\"p\">(</span><span class=\"mi\">45</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">90</span><span class=\"p\">)</span>\n<span class=\"n\">winkel</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">convert</span><span class=\"p\">(</span><span class=\"n\">WinkelTripel</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">latlon</span><span class=\"p\">)</span>\n\n<span class=\"nd\">@btime</span><span class=\"w\"> </span><span class=\"n\">convert</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">LatLon</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"o\">$</span><span class=\"n\">winkel</span><span class=\"p\">)</span>\n</code></pre></div>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"mf\">1.491</span><span class=\"w\"> </span><span class=\"n\">μs</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">10</span><span class=\"w\"> </span><span class=\"n\">allocations</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"mi\">192</span><span class=\"w\"> </span><span class=\"n\">bytes</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"c\"># main</span>\n</code></pre></div>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"mf\">6.356</span><span class=\"w\"> </span><span class=\"n\">μs</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"mi\">144</span><span class=\"w\"> </span><span class=\"n\">allocations</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"mf\">2.88</span><span class=\"w\"> </span><span class=\"n\">KiB</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"c\"># PR</span>\n</code></pre></div>",
+        "id": 481372435,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731093151
+    },
+    {
+        "content": "<p>You can see that the <a href=\"https://juliahub.com/ui/Packages/General/ForwardDiff\">ForwardDiff.jl</a> in the PR is 6x slower. The underlying functions <code>fx</code> and <code>fx</code> are here:</p>\n<p><a href=\"https://github.com/JuliaEarth/CoordRefSystems.jl/blob/d9193f6d692816fae9982dfcfb284e26613add6a/src/crs/projected/winkeltripel.jl#L77-L79\">https://github.com/JuliaEarth/CoordRefSystems.jl/blob/d9193f6d692816fae9982dfcfb284e26613add6a/src/crs/projected/winkeltripel.jl#L77-L79</a></p>",
+        "id": 481372526,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731093198
+    },
+    {
+        "content": "<p>Trigonometric functions.</p>",
+        "id": 481372556,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731093218
+    },
+    {
+        "content": "<p>what is sincα?</p>",
+        "id": 481372610,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731093241
+    },
+    {
+        "content": "<p>oh I see</p>",
+        "id": 481372681,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731093263
+    },
+    {
+        "content": "<p>defined right above</p>",
+        "id": 481372719,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731093282
+    },
+    {
+        "content": "<p>Wait you're talking about AD in the nonlinear solve not of the nonlinear solve?</p>",
+        "id": 481373445,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731093651
+    },
+    {
+        "content": "<p>Yes, the AD is in the functions <code>fx</code> and <code>fy</code> inside the nonlinear solve.</p>",
+        "id": 481373510,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731093684
+    },
+    {
+        "content": "<p>I was assuming that this should be instantaneous given the \"simplicity\" of these trigonometric functions.</p>",
+        "id": 481373605,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731093724
+    },
+    {
+        "content": "<p>so where is your forwarddiff code?</p>",
+        "id": 481373636,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731093753
+    },
+    {
+        "content": "<p>These are functions <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>f</mi><mspace></mspace><mspace width=\"0.1111em\"/><mo lspace=\"0em\" rspace=\"0.17em\"></mo><mtext> ⁣</mtext><mo lspace=\"0em\" rspace=\"0em\">:</mo><mspace width=\"0.3333em\"/><msup><mi>R</mi><mn>2</mn></msup><mo>→</mo><mi>R</mi></mrow><annotation encoding=\"application/x-tex\">f\\colon R^2 \\to R</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1.0085em;vertical-align:-0.1944em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mspace nobreak\"></span><span class=\"mspace\" style=\"margin-right:0.1111em;\"></span><span class=\"mpunct\"></span><span class=\"mspace\" style=\"margin-right:-0.1667em;\"></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord\"><span class=\"mrel\">:</span></span><span class=\"mspace\" style=\"margin-right:0.3333em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.00773em;\">R</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8141em;\"><span style=\"top:-3.063em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">2</span></span></span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">→</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.6833em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.00773em;\">R</span></span></span></span></p>",
+        "id": 481373649,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731093758
+    },
+    {
+        "content": "<p>My guess is you did something odd to handle the multiple returns.</p>",
+        "id": 481373657,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731093762
+    },
+    {
+        "content": "<p>I think this kind of scalar, branch-free straight line code is the best-case performance scenario for Zygote. So it's not crazy that it'd be faster than ForwardDiff.</p>",
+        "id": 481373714,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1731093794
+    },
+    {
+        "content": "<p>In this PR I shared a few messages ago: <a href=\"https://github.com/JuliaEarth/CoordRefSystems.jl/pull/199\">https://github.com/JuliaEarth/CoordRefSystems.jl/pull/199</a></p>",
+        "id": 481373727,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731093797
+    },
+    {
+        "content": "<p>The PR literally replaces Zygote by ForwardDiff, nothing else.</p>",
+        "id": 481373779,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731093836
+    },
+    {
+        "content": "<p>yeah this kind of case is not so bad for Zygote, though either should do fine</p>",
+        "id": 481373907,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731093893
+    },
+    {
+        "content": "<p>you shouldn't be getting so many allocs with forwarddiff though</p>",
+        "id": 481373963,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731093918
+    },
+    {
+        "content": "<p>but for this kind of case, AD inside the ODE for a scalar output, Zygote should just optimize out all allocs which is usually what would kill it</p>",
+        "id": 481374042,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731093956
+    },
+    {
+        "content": "<p>So Zygote should be fine, and should almost even match Enzyme here without some Reactant tricks.</p>",
+        "id": 481374144,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731093983
+    },
+    {
+        "content": "<p>The only other thing to try really is just avoiding the AD with something like an ITP and seeing how that does.</p>",
+        "id": 481374192,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731094004
+    },
+    {
+        "content": "<p>So the moral of the story is <a href=\"https://juliahub.com/ui/Packages/General/Zygote\">Zygote.jl</a> is still recommended even in this scalar case with N=2 and M=1</p>",
+        "id": 481374209,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731094014
+    },
+    {
+        "content": "<p>in this case, yes, because it can compile away a bunch of stuff so its normal issues don't come up here.</p>",
+        "id": 481374267,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731094038
+    },
+    {
+        "content": "<p>there are cases for which that is not true</p>",
+        "id": 481374287,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731094054
+    },
+    {
+        "content": "<p>it's somewhat code dependent</p>",
+        "id": 481374293,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731094057
+    },
+    {
+        "content": "<p>Zygote sucks at optimizing code with arrays and falls off a cliff any time there's a branch, but yes this is one of the few niches it's perf-competitive in.</p>",
+        "id": 481374328,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1731094067
+    },
+    {
+        "content": "<p>Hence the demos Mike and others used to do where they showed it constant-folding all the way to the correct gradient</p>",
+        "id": 481374480,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1731094140
+    },
+    {
+        "content": "<p>These heuristics to pick an AD backend are super hard. Every time we dive into it, we unlearn something that was told.</p>",
+        "id": 481374568,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731094186
+    },
+    {
+        "content": "<p>It still bothers me the original issue of this thread where <a href=\"https://juliahub.com/ui/Packages/General/Zygote\">Zygote.jl</a> returns <code>nothing</code>. That is really annoying.</p>",
+        "id": 481374569,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731094186
+    },
+    {
+        "content": "<p>I think it's better to have a hard zero? It's annoying with AD just treats structural zeros as <code>0.0</code> because then it's harder to debug.</p>",
+        "id": 481374707,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731094238
+    },
+    {
+        "content": "<p>For your case you could just <code>x === nothing ? 0.0 : x</code></p>",
+        "id": 481374742,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731094258
+    },
+    {
+        "content": "<p>A lot of inputs Zygote accepts are not conducive to having natural Zeros. Structs with arbitrary type constraints, for example</p>",
+        "id": 481374799,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1731094287
+    },
+    {
+        "content": "<p>though almost certainly if you get that nothing in your code, it's likely a bug and you should throw an error saying \"you likely have a bug in your <code>f</code>\"</p>",
+        "id": 481374802,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731094288
+    },
+    {
+        "content": "<p>One challenge ChainRules and later Mooncake ran into is that some types can't even be reliably represented by <em>structural</em> zeroes! Self-referential structs being a big culprit</p>",
+        "id": 481374914,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1731094328
+    },
+    {
+        "content": "<p>It is not a bug in <code>f</code>. It is common to have formulas that only depend on a subset of the arguments in this context.</p>",
+        "id": 481374955,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731094344
+    },
+    {
+        "content": "<p>yeah but that's a general case</p>",
+        "id": 481374966,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731094351
+    },
+    {
+        "content": "<p>That is not grounded in this specific case</p>",
+        "id": 481374981,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731094360
+    },
+    {
+        "content": "<p>in this specific case, if you get <code>nothing</code>, that means <code>f</code> is not a function of the parameter</p>",
+        "id": 481375012,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731094374
+    },
+    {
+        "content": "<p>that means you can just remove it from the rootfind</p>",
+        "id": 481375019,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731094379
+    },
+    {
+        "content": "<p>that tell you that you can optimize it more!</p>",
+        "id": 481375045,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731094388
+    },
+    {
+        "content": "<p>I think in an alternate world where ChainRules matured a little earlier, Zygote could've used <code>ZeroTangent</code> and <code>NoTangent</code> instead of <code>nothing</code></p>",
+        "id": 481375110,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1731094418
+    },
+    {
+        "content": "<p>That is a good point. Maybe refactoring the algorithm with a branch that handles <code>nothing</code> is not that bad. In any case, I wish we had <a href=\"https://juliahub.com/ui/Packages/General/Enzyme\">Enzyme.jl</a> behavior here, it always returns 0.0 for zero gradient.</p>",
+        "id": 481375227,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731094465
+    },
+    {
+        "content": "<p>Regardless though, this code should want the <code>nothing</code> or whatever structural zero because then it should just branch down to doing a scalar rootfind and double its speed</p>",
+        "id": 481375234,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731094469
+    },
+    {
+        "content": "<p>This code should also be compatible with Enzyme?</p>",
+        "id": 481375268,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731094493
+    },
+    {
+        "content": "<p>It is. It is just that we are trying to keep it native Julia as much as possible, at least for now. Maybe we will consider <a href=\"https://juliahub.com/ui/Packages/General/Enzyme\">Enzyme.jl</a> as the only exception.</p>",
+        "id": 481375346,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731094536
+    },
+    {
+        "content": "<p>Exploiting the structural zero with Zygote would still beat Enzyme here though</p>",
+        "id": 481375492,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731094589
+    },
+    {
+        "content": "<p>The full stack is native Julia, which facilitates deployment in exotic platforms.</p>",
+        "id": 481375511,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731094603
+    },
+    {
+        "content": "<p><a href=\"/user_uploads/7178/sH-8NZxNaEs1YL46L5nIfyMM/Screenshot-2024-11-08-at-6.36.36PM.png\">Screenshot 2024-11-08 at 6.36.36 PM.png</a></p>\n<div class=\"message_inline_image\"><a href=\"/user_uploads/7178/sH-8NZxNaEs1YL46L5nIfyMM/Screenshot-2024-11-08-at-6.36.36PM.png\" title=\"Screenshot 2024-11-08 at 6.36.36 PM.png\"><img data-original-dimensions=\"3016x1714\" src=\"/user_uploads/thumbnail/7178/sH-8NZxNaEs1YL46L5nIfyMM/Screenshot-2024-11-08-at-6.36.36PM.png/840x560.webp\"></a></div>",
+        "id": 481375564,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731094622
+    },
+    {
+        "content": "<p>Chopping out the fy gradient could be like half of the compute, so I'd just exploit the nothing and call it a day.</p>",
+        "id": 481375606,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731094641
+    },
+    {
+        "content": "<blockquote>\n<p>The full stack is native Julia, which facilitates deployment in exotic platforms.</p>\n</blockquote>\n<p>Like what?</p>",
+        "id": 481375639,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731094659
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"278119\">Christopher Rackauckas</span> <a href=\"#narrow/channel/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60/near/481375606\">said</a>:</p>\n<blockquote>\n<p>Chopping out the fy gradient could be like half of the compute, so I'd just exploit the nothing and call it a day.</p>\n</blockquote>\n<p>Yes, it sounds reasonable.</p>",
+        "id": 481375722,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731094683
+    },
+    {
+        "content": "<p>The other thing you could potentially do is use fastmath approximations to the trig functions in the gradient context.</p>",
+        "id": 481375837,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731094713
+    },
+    {
+        "content": "<p>Or run this as a mixed precision and just do the gradient in 32-bit</p>",
+        "id": 481375879,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731094733
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"278119\">Christopher Rackauckas</span> <a href=\"#narrow/channel/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60/near/481375639\">said</a>:</p>\n<blockquote>\n<blockquote>\n<p>The full stack is native Julia, which facilitates deployment in exotic platforms.</p>\n</blockquote>\n<p>Like what?</p>\n</blockquote>\n<p>We are investigating some heterogeneous cluster setups. I understand that external binary dependencies may support a subset of the platforms that Julia supports.</p>",
+        "id": 481375917,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731094748
+    },
+    {
+        "content": "<p>So we avoid external binary deps as much as possible. What is the situation with <a href=\"https://juliahub.com/ui/Packages/General/Enzyme\">Enzyme.jl</a>? Does it support all platforms that Julia does because it is LLVM-based?</p>",
+        "id": 481376074,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731094807
+    },
+    {
+        "content": "<p>like how exotic though, ARMv7/8? Or like, embedded type chips?</p>",
+        "id": 481376088,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731094816
+    },
+    {
+        "content": "<p>Julia doesn't even support all LLVM supported platforms because of runtime things</p>",
+        "id": 481376138,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731094845
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"278119\">Christopher Rackauckas</span> <a href=\"#narrow/channel/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60/near/481376088\">said</a>:</p>\n<blockquote>\n<p>like how exotic though, ARMv7/8? Or like, embedded type chips?</p>\n</blockquote>\n<p>Nothing specific at the moment. We are just trying to save ourselves from build issues that we can't address easily.</p>",
+        "id": 481376229,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731094896
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"278119\">Christopher Rackauckas</span> <a href=\"#narrow/channel/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60/near/481376138\">said</a>:</p>\n<blockquote>\n<p>Julia doesn't even support all LLVM supported platforms because of runtime things</p>\n</blockquote>\n<p>So adding <a href=\"https://juliahub.com/ui/Packages/General/Enzyme\">Enzyme.jl</a> as a dependency shouldn't reduce the list of supported platforms, right?</p>",
+        "id": 481376276,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731094921
+    },
+    {
+        "content": "<p>Premature optimization can be the root of all evil.</p>",
+        "id": 481376340,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731094933
+    },
+    {
+        "content": "<p>I mean, it might be easier to get Julia to kick something out for like a TI C600 without Enzyme, but the chances that will ever be in a cluster is zero.</p>",
+        "id": 481376398,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731094967
+    },
+    {
+        "content": "<p>In this case, I see it as precaution. If we can stick to a native Julia app, why not? <span aria-label=\"smile\" class=\"emoji emoji-1f642\" role=\"img\" title=\"smile\">:smile:</span></p>",
+        "id": 481376481,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731095001
+    },
+    {
+        "content": "<p>If <a href=\"https://juliahub.com/ui/Packages/General/Enzyme\">Enzyme.jl</a> is indeed the best thing to adopt, and the benefits outweigh the downsides, we will go for it.</p>",
+        "id": 481376611,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731095045
+    },
+    {
+        "content": "<p>I mean, I see eVTOLs and satellites deploying to ARMv8 these days. I would be surprised if your case is actually all that exotic unless it's for a microsat</p>",
+        "id": 481376750,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1731095109
+    }
+]

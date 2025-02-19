@@ -1,0 +1,172 @@
+<html>
+<head><meta charset="utf-8"><title>absolute simplest way to add a simple CSS to my HTML · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/absolute.20simplest.20way.20to.20add.20a.20simple.20CSS.20to.20my.20HTML.html">absolute simplest way to add a simple CSS to my HTML</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="224246103"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/absolute%20simplest%20way%20to%20add%20a%20simple%20CSS%20to%20my%20HTML/near/224246103" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/absolute.20simplest.20way.20to.20add.20a.20simple.20CSS.20to.20my.20HTML.html#224246103">(Jan 27 2021 at 20:57)</a>:</h4>
+<p>I have a super simple server that I built with <a href="https://github.com/search?q=Mux.jl&amp;type=Repositories">Mux.jl</a>, most of the functionality is in responding to a few very simple HTTP calls.  In addition, I have a few endpoints which return some helpful information, and are viewable in browsers.  I can respond in markdown using the <code>Markdown</code> stdlib simply by doing <code>html(Markdown.parse(str))</code>.  For the most part I'm thrilled with how nicely this works out, but there is one problem: unfortunately the default formatting in most browsers is completely garbage, even for simple text (bizarrely, it does not even seem to be able to handle simple UTF-8).  So, I'm wondering, can I pick a super simple CSS and somehow shove it into the HTML response?  I'm a little worried that I can't simply do this with the stdlib stuff, because it doesn't give me a convenient way of sticking in the CSS reference.  Perhaps I can just write a function that always adds a simple line to the markdown?  What should that look like?</p>
+
+
+
+<a name="224255707"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/absolute%20simplest%20way%20to%20add%20a%20simple%20CSS%20to%20my%20HTML/near/224255707" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/absolute.20simplest.20way.20to.20add.20a.20simple.20CSS.20to.20my.20HTML.html#224255707">(Jan 27 2021 at 22:11)</a>:</h4>
+<p>Are you serving the raw content from the <code>html</code> function? That does not include header etc so perhaps you can just embed that in another template.</p>
+
+
+
+<a name="224255804"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/absolute%20simplest%20way%20to%20add%20a%20simple%20CSS%20to%20my%20HTML/near/224255804" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/absolute.20simplest.20way.20to.20add.20a.20simple.20CSS.20to.20my.20HTML.html#224255804">(Jan 27 2021 at 22:12)</a>:</h4>
+<p>Or maybe <a href="https://github.com/search?q=Mux.jl&amp;type=Repositories">Mux.jl</a> adds stuff like that, I have never used it.</p>
+
+
+
+<a name="224257871"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/absolute%20simplest%20way%20to%20add%20a%20simple%20CSS%20to%20my%20HTML/near/224257871" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/absolute.20simplest.20way.20to.20add.20a.20simple.20CSS.20to.20my.20HTML.html#224257871">(Jan 27 2021 at 22:28)</a>:</h4>
+<p>Looks like it doesn't, so you can do it like this:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">using</span> <span class="n">Markdown</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">body</span> <span class="o">=</span> <span class="n">Markdown</span><span class="o">.</span><span class="n">html</span><span class="p">(</span><span class="n">Markdown</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="s">"""</span>
+<span class="s">       # Hello</span>
+
+<span class="s">       Some text</span>
+<span class="s">       """</span><span class="p">));</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">fullpage</span> <span class="o">=</span> <span class="s">"""</span>
+<span class="s">       &lt;!doctype html&gt;</span>
+<span class="s">       &lt;html&gt;</span>
+<span class="s">       &lt;head&gt;</span>
+<span class="s">       &lt;meta charset="UTF-8"&gt;</span>
+<span class="s">       &lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;</span>
+<span class="s">       &lt;style&gt;</span>
+<span class="s">       h1 {</span>
+<span class="s">         text-align: center;</span>
+<span class="s">       }</span>
+<span class="s">       &lt;/style&gt;</span>
+<span class="s">       &lt;head&gt;</span>
+<span class="s">       &lt;body&gt;</span>
+<span class="s">       </span><span class="si">$</span><span class="p">(</span><span class="n">body</span><span class="p">)</span><span class="s"></span>
+<span class="s">       &lt;/body&gt;</span>
+<span class="s">       &lt;/html&gt;</span>
+<span class="s">       """</span><span class="p">;</span>
+</code></pre></div>
+<p>and respond with that string. You can of course serve the css as a separate file and tell Mux about that endpoint somehow.</p>
+
+
+
+<a name="224259063"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/absolute%20simplest%20way%20to%20add%20a%20simple%20CSS%20to%20my%20HTML/near/224259063" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/absolute.20simplest.20way.20to.20add.20a.20simple.20CSS.20to.20my.20HTML.html#224259063">(Jan 27 2021 at 22:39)</a>:</h4>
+<p>Yes, what you are showing here is exactly what I'm doing now, what I want to know is exactly <em>how</em> I should serve the css (it can't really be a separate file because it needs to be in the same response)</p>
+
+
+
+<a name="224259261"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/absolute%20simplest%20way%20to%20add%20a%20simple%20CSS%20to%20my%20HTML/near/224259261" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/absolute.20simplest.20way.20to.20add.20a.20simple.20CSS.20to.20my.20HTML.html#224259261">(Jan 27 2021 at 22:41)</a>:</h4>
+<p>What do you mean then? My example above includes some css for the page.</p>
+
+
+
+<a name="224259351"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/absolute%20simplest%20way%20to%20add%20a%20simple%20CSS%20to%20my%20HTML/near/224259351" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/absolute.20simplest.20way.20to.20add.20a.20simple.20CSS.20to.20my.20HTML.html#224259351">(Jan 27 2021 at 22:42)</a>:</h4>
+<p>oh, sorry, I misunderstood what you did.  Ah, yeah, so I can just look up a decent css and write a function like that</p>
+
+
+
+<a name="224259435"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/absolute%20simplest%20way%20to%20add%20a%20simple%20CSS%20to%20my%20HTML/near/224259435" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/absolute.20simplest.20way.20to.20add.20a.20simple.20CSS.20to.20my.20HTML.html#224259435">(Jan 27 2021 at 22:43)</a>:</h4>
+<p>I wonder if it's a problem for the browser that I don't include <code>&lt;html&gt;</code> or <code>&lt;body&gt;</code>.  It doesn't complain about it, but it also looks like shit (though it is changing font sizes for headings and including bullet points, stuff like that)</p>
+
+
+
+<a name="224259954"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/absolute%20simplest%20way%20to%20add%20a%20simple%20CSS%20to%20my%20HTML/near/224259954" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/absolute.20simplest.20way.20to.20add.20a.20simple.20CSS.20to.20my.20HTML.html#224259954">(Jan 27 2021 at 22:48)</a>:</h4>
+<p>I don't think they are necessary, and apparently Google style guide recommends against it (when possible): <a href="https://google.github.io/styleguide/htmlcssguide.html#Optional_Tags">https://google.github.io/styleguide/htmlcssguide.html#Optional_Tags</a> (from <a href="https://stackoverflow.com/questions/5641997/is-it-necessary-to-write-head-body-and-html-tags">https://stackoverflow.com/questions/5641997/is-it-necessary-to-write-head-body-and-html-tags</a>).</p>
+
+
+
+<a name="224260416"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/absolute%20simplest%20way%20to%20add%20a%20simple%20CSS%20to%20my%20HTML/near/224260416" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/absolute.20simplest.20way.20to.20add.20a.20simple.20CSS.20to.20my.20HTML.html#224260416">(Jan 27 2021 at 22:53)</a>:</h4>
+<p>cool, should be easy then.  So I guess a "floating" <code>&lt;style&gt;</code> should work, right?</p>
+
+
+
+<a name="224260444"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/absolute%20simplest%20way%20to%20add%20a%20simple%20CSS%20to%20my%20HTML/near/224260444" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/absolute.20simplest.20way.20to.20add.20a.20simple.20CSS.20to.20my.20HTML.html#224260444">(Jan 27 2021 at 22:53)</a>:</h4>
+<p>Yea probably.</p>
+
+
+
+<a name="224260476"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/absolute%20simplest%20way%20to%20add%20a%20simple%20CSS%20to%20my%20HTML/near/224260476" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/absolute.20simplest.20way.20to.20add.20a.20simple.20CSS.20to.20my.20HTML.html#224260476">(Jan 27 2021 at 22:53)</a>:</h4>
+<p>oh, maybe I need <code>&lt;meta charset="UTF-8"&gt;</code>, maybe that's why it was rendering it wrongly.  Bizarre that's not the default, but at least it gives me something to try.</p>
+
+
+
+<a name="224260480"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/absolute%20simplest%20way%20to%20add%20a%20simple%20CSS%20to%20my%20HTML/near/224260480" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/absolute.20simplest.20way.20to.20add.20a.20simple.20CSS.20to.20my.20HTML.html#224260480">(Jan 27 2021 at 22:53)</a>:</h4>
+<p>thanks!</p>
+
+
+
+<a name="224260659"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/absolute%20simplest%20way%20to%20add%20a%20simple%20CSS%20to%20my%20HTML/near/224260659" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/absolute.20simplest.20way.20to.20add.20a.20simple.20CSS.20to.20my.20HTML.html#224260659">(Jan 27 2021 at 22:55)</a>:</h4>
+<p>btw, if you (or anyone else) know of particularly convenient ways of doing this with light Julia dependencies, that would be great.  I'd like to not re-invent the wheel, but I'd also like simple lightweight dependencies that admit simple HTML strings.  I was very pleased with how simple parsing the markdown into HTML turned out to be.</p>
+
+
+
+<a name="224261144"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/absolute%20simplest%20way%20to%20add%20a%20simple%20CSS%20to%20my%20HTML/near/224261144" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/absolute.20simplest.20way.20to.20add.20a.20simple.20CSS.20to.20my.20HTML.html#224261144">(Jan 27 2021 at 23:00)</a>:</h4>
+<p>Maybe worth having a look at <a href="https://github.com/MichaelHatherly/CommonMark.jl">https://github.com/MichaelHatherly/CommonMark.jl</a> which, I believe, is superiour to the Markdown stdlib.</p>
+
+
+
+<a name="224261257"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/absolute%20simplest%20way%20to%20add%20a%20simple%20CSS%20to%20my%20HTML/near/224261257" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/absolute.20simplest.20way.20to.20add.20a.20simple.20CSS.20to.20my.20HTML.html#224261257">(Jan 27 2021 at 23:00)</a>:</h4>
+<p>In particular it handles inline HTML in the markdown, which you probably will find useful. The Markdown stdlib can't handle that.</p>
+
+
+
+<a name="224261304"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/absolute%20simplest%20way%20to%20add%20a%20simple%20CSS%20to%20my%20HTML/near/224261304" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/absolute.20simplest.20way.20to.20add.20a.20simple.20CSS.20to.20my.20HTML.html#224261304">(Jan 27 2021 at 23:01)</a>:</h4>
+<p>Ah, that looks like exactly what I had in mind, thanks!</p>
+
+
+
+<a name="224340569"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/absolute%20simplest%20way%20to%20add%20a%20simple%20CSS%20to%20my%20HTML/near/224340569" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/absolute.20simplest.20way.20to.20add.20a.20simple.20CSS.20to.20my.20HTML.html#224340569">(Jan 28 2021 at 15:20)</a>:</h4>
+<p>Does anyone have any examples of using <a href="https://github.com/search?q=CommonMark.jl&amp;type=Repositories">CommonMark.jl</a>?  I can't seem to get it to include anything in its output beyond the direct rendering of the original markdown string (i.e. can't get it to do any css or additional formatting)</p>
+
+
+
+<a name="224346325"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/absolute%20simplest%20way%20to%20add%20a%20simple%20CSS%20to%20my%20HTML/near/224346325" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sebastian Pfitzner <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/absolute.20simplest.20way.20to.20add.20a.20simple.20CSS.20to.20my.20HTML.html#224346325">(Jan 28 2021 at 15:56)</a>:</h4>
+<p>That seems out of scope</p>
+
+
+
+<a name="224346367"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/absolute%20simplest%20way%20to%20add%20a%20simple%20CSS%20to%20my%20HTML/near/224346367" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sebastian Pfitzner <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/absolute.20simplest.20way.20to.20add.20a.20simple.20CSS.20to.20my.20HTML.html#224346367">(Jan 28 2021 at 15:56)</a>:</h4>
+<p>You should probably include the generated HTML in a template that handles styling</p>
+
+
+
+<a name="224346437"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/absolute%20simplest%20way%20to%20add%20a%20simple%20CSS%20to%20my%20HTML/near/224346437" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sebastian Pfitzner <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/absolute.20simplest.20way.20to.20add.20a.20simple.20CSS.20to.20my.20HTML.html#224346437">(Jan 28 2021 at 15:57)</a>:</h4>
+<p>also give <a href="https://github.com/search?q=GithubMarkdown.jl&amp;type=Repositories">GithubMarkdown.jl</a> a go, although I <em>think</em> <a href="https://github.com/search?q=CommonMark.jl&amp;type=Repositories">CommonMark.jl</a> should be strictly more powerful</p>
+
+
+
+<a name="224346767"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/absolute%20simplest%20way%20to%20add%20a%20simple%20CSS%20to%20my%20HTML/near/224346767" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/absolute.20simplest.20way.20to.20add.20a.20simple.20CSS.20to.20my.20HTML.html#224346767">(Jan 28 2021 at 15:59)</a>:</h4>
+<p>I figured it out.  It turned out not to be super useful for me though.  I decided instead to just write a very simple HTML page template and interpolate what I get from the Markdown stdlib using <a href="https://github.com/search?q=Mustache.jl&amp;type=Repositories">Mustache.jl</a>.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

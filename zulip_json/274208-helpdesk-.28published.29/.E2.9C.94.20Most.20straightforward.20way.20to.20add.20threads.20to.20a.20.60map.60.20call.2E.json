@@ -1,0 +1,122 @@
+[
+    {
+        "content": "<p>Suppose I have a function <code>f(x)</code> that takes constant time, and a <code>map</code> as follows:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">task</span><span class=\"p\">(</span><span class=\"n\">xs</span><span class=\"p\">)</span>\n<span class=\"w\">  </span><span class=\"n\">map</span><span class=\"p\">(</span><span class=\"n\">xs</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"> </span><span class=\"n\">x</span>\n<span class=\"w\">    </span><span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n<span class=\"w\">  </span><span class=\"k\">end</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>What is the most straightforward way to perform the computation with multiple threads in Julia v1.9?</p>",
+        "id": 410058923,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1703618607
+    },
+    {
+        "content": "<p>Use <code>ThreadsX.map</code></p>",
+        "id": 410059448,
+        "sender_full_name": "jar",
+        "timestamp": 1703618963
+    },
+    {
+        "content": "<p>(without a package)</p>",
+        "id": 410059464,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1703618977
+    },
+    {
+        "content": "<p>I can use <code>Transducers.tcollect</code>, but was wondering if I could avoid the dependency.</p>",
+        "id": 410059491,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1703619001
+    },
+    {
+        "content": "<p>I'm sure you can do it with <code>@sync @spawn</code> or whatever, I just don't see the point</p>",
+        "id": 410059589,
+        "sender_full_name": "jar",
+        "timestamp": 1703619054
+    },
+    {
+        "content": "<p>The only reason is to avoid an extra dependency, but I may end up adding <a href=\"https://juliahub.com/ui/Packages/General/Transducers\">Transducers.jl</a> to the dep list at the end of the day.</p>",
+        "id": 410059631,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1703619090
+    },
+    {
+        "content": "<p>do you know the output type of <code>f(::typeof(x))</code>?</p>",
+        "id": 410060005,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1703619394
+    },
+    {
+        "content": "<p>Yes, I have this a priori. In this context, <code>x</code> is a point in <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msup><mi>R</mi><mn>3</mn></msup></mrow><annotation encoding=\"application/x-tex\">R^3</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8141em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.00773em;\">R</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8141em;\"><span style=\"top:-3.063em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">3</span></span></span></span></span></span></span></span></span></span></span>, represented by <code>Point</code> struct, and the result is a <code>Float64</code></p>",
+        "id": 410060495,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1703619764
+    },
+    {
+        "content": "<p>Probably the easiest thing would just be do to</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">Threads</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"n\">nthreads</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"nd\">@spawn</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"nd\">@sync</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">tmap</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"o\">::</span><span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">R</span><span class=\"p\">},</span><span class=\"w\"> </span><span class=\"n\">xs</span><span class=\"o\">::</span><span class=\"kt\">Array</span><span class=\"p\">;</span><span class=\"w\"> </span><span class=\"n\">tasks_per_thread</span><span class=\"o\">::</span><span class=\"kt\">Int</span><span class=\"o\">=</span><span class=\"mi\">2</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">where</span><span class=\"w\"> </span><span class=\"p\">{</span><span class=\"kt\">R</span><span class=\"p\">}</span>\n<span class=\"w\">           </span><span class=\"n\">out</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">R</span><span class=\"p\">}(</span><span class=\"nb\">undef</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">size</span><span class=\"p\">(</span><span class=\"n\">xs</span><span class=\"p\">)</span><span class=\"o\">...</span><span class=\"p\">)</span>\n<span class=\"w\">           </span><span class=\"n\">chunk_size</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">max</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">length</span><span class=\"p\">(</span><span class=\"n\">xs</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">÷</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">tasks_per_thread</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"n\">nthreads</span><span class=\"p\">()))</span>\n<span class=\"w\">           </span><span class=\"nd\">@sync</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">chunk</span><span class=\"w\"> </span><span class=\"o\">∈</span><span class=\"w\"> </span><span class=\"n\">Iterators</span><span class=\"o\">.</span><span class=\"n\">partition</span><span class=\"p\">(</span><span class=\"n\">enumerate</span><span class=\"p\">(</span><span class=\"n\">xs</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">chunk_size</span><span class=\"p\">)</span>\n<span class=\"w\">               </span><span class=\"nd\">@spawn</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">i</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">∈</span><span class=\"w\"> </span><span class=\"n\">chunk</span>\n<span class=\"w\">                   </span><span class=\"n\">out</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n<span class=\"w\">               </span><span class=\"k\">end</span>\n<span class=\"w\">           </span><span class=\"k\">end</span>\n<span class=\"w\">           </span><span class=\"n\">out</span>\n<span class=\"w\">       </span><span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 410061161,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1703620304
+    },
+    {
+        "content": "<p>Thank you <span class=\"user-mention\" data-user-id=\"269150\">@Mason Protter</span> , I will mark as solved.</p>",
+        "id": 410061263,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1703620369
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"273172\">Júlio Hoffimann</span> has marked this topic as resolved.</p>",
+        "id": 410061265,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1703620373
+    },
+    {
+        "content": "<p>but please test it in case I fucked up</p>",
+        "id": 410061286,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1703620389
+    },
+    {
+        "content": "<p><code>partition</code> assumes indexability, no?</p>",
+        "id": 410068306,
+        "sender_full_name": "Sukera",
+        "timestamp": 1703625762
+    },
+    {
+        "content": "<p>Yes?</p>",
+        "id": 410068332,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1703625785
+    },
+    {
+        "content": "<p>just a caveat that this means the solution doesn't work if <code>xs</code> _isn't_  indexable</p>",
+        "id": 410068361,
+        "sender_full_name": "Sukera",
+        "timestamp": 1703625822
+    },
+    {
+        "content": "<p>But arrays <em>are</em> indexable..</p>",
+        "id": 410068426,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1703625844
+    },
+    {
+        "content": "<p>right, noone mentioned that the input is arrays though</p>",
+        "id": 410068470,
+        "sender_full_name": "Sukera",
+        "timestamp": 1703625885
+    },
+    {
+        "content": "<p>the clean general solution would be the same as for <a href=\"https://github.com/JuliaLang/julia/pull/52096\">https://github.com/JuliaLang/julia/pull/52096</a> - I hope it gets merged soon</p>",
+        "id": 410068486,
+        "sender_full_name": "Sukera",
+        "timestamp": 1703625901
+    },
+    {
+        "content": "<p>The function is constrained to only take arrays</p>",
+        "id": 410068495,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1703625905
+    },
+    {
+        "content": "<p>your <code>tmap</code> is constrained, the original <code>task</code> function isn't</p>",
+        "id": 410068527,
+        "sender_full_name": "Sukera",
+        "timestamp": 1703625932
+    }
+]

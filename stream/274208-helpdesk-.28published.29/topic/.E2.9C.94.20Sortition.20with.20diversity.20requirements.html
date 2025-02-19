@@ -1,0 +1,68 @@
+<html>
+<head><meta charset="utf-8"><title>✔ Sortition with diversity requirements · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Sortition.20with.20diversity.20requirements.html">✔ Sortition with diversity requirements</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="246549496"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Sortition%20with%20diversity%20requirements/near/246549496" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Colin Caine <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Sortition.20with.20diversity.20requirements.html#246549496">(Jul 20 2021 at 06:31)</a>:</h4>
+<p>I'd like to take a sample of size N from a population that meets certain diversity requirements (e.g. at least X women, at least Y religious). I can't use stratified sampling naively because the groups overlap and the size of the overlap is unknown. Also X + Y + ... &gt; N, so some sampled people must be in multiple groups or the requirements cannot be met.</p>
+<p>This sample is for appointments to a political council by sortition, so as much as possible the algorithm should be understandable and at least arguably fair.</p>
+<p>Any ideas?</p>
+<p>Existing (problematic) ideas:</p>
+<p>1) Make a kind of artificial stratified sample set by identifying all of the non-overlapping groups (e.g. gay religious women, straight religious men, etc) and their current size, then calculating what weights they should have to meet my population-level requirements (probably iteratively adjusting them)</p>
+<p>2) Randomly select candidates until diversity requirements are met then, while the sample size is too large, randomly remove candidates that are not in a protected group. This is not guaranteed to terminate because we might not keep enough people who are in overlapping groups, but we can just try a few times.</p>
+
+
+
+<a name="246665914"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Sortition%20with%20diversity%20requirements/near/246665914" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Siva Swaminathan <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Sortition.20with.20diversity.20requirements.html#246665914">(Jul 21 2021 at 00:15)</a>:</h4>
+<p>You might be able to come up with a genetic algorithm / Monte Carlo sampler that’s a better version of option 2. Eg: “Score” the current state on all the desiderata and assign current set members probability of being replaced by someone outside the set. You could also weight the members outside the set suitably to increase probability of desirable scores being met. Hopefully such an iterative (Gibbs Sampling?) process converges in a reasonable time.</p>
+
+
+
+<a name="246762408"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Sortition%20with%20diversity%20requirements/near/246762408" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Colin Caine <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Sortition.20with.20diversity.20requirements.html#246762408">(Jul 21 2021 at 18:49)</a>:</h4>
+<p>In the end I implemented two approaches. One of them just samples N people, checks if sample meets the requirements, and if not, throws them out. And the other was (2) from above.</p>
+<p>2) was much faster, typically only taking one or two attempts on my dataset.</p>
+<p>The pick N, throw out and try again approach worked as well, but needed quite a few more attempts. Assuming it can find an answer on the complete dataset, I will use this one because it's easier to prove that it is fair (each of the valid sets has an equal chance of being found).</p>
+
+
+
+<a name="246763821"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Sortition%20with%20diversity%20requirements/near/246763821" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Colin Caine <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Sortition.20with.20diversity.20requirements.html#246763821">(Jul 21 2021 at 19:01)</a>:</h4>
+<p>I think you'd get the same probability distribution if you do a less naive search:</p>
+<ul>
+<li>sample first from the group with minimum size until you have enough people</li>
+<li>then sample any additional people required for the group with next smallest size (you might not need any because of overlaps)</li>
+<li>continue for all groups, error if the sample gets too big, if you run out of groups with specified minimum representation then fill the remainder with a sample from the whole population.</li>
+</ul>
+<p>I think that's probably a simple enough algorithm to perform manually and would hopefully converge fast enough that you wouldn't get too bored doing it.</p>
+
+
+
+<a name="246763998"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Sortition%20with%20diversity%20requirements/near/246763998" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Colin Caine <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Sortition.20with.20diversity.20requirements.html#246763998">(Jul 21 2021 at 19:02)</a>:</h4>
+<p>Thanks to <span class="user-mention" data-user-id="284902">@Bogumił Kamiński</span> for suggesting just sampling N people and then checking if they meet the requirements. I was concerned that this would not work for my set of requirements, but it was obviously worthwhile to check!</p>
+
+
+
+<a name="246764064"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Sortition%20with%20diversity%20requirements/near/246764064" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Sortition.20with.20diversity.20requirements.html#246764064">(Jul 21 2021 at 19:02)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="274427">Colin Caine</span> has marked this topic as resolved.</p>
+
+
+
+<a name="248385614"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Sortition%20with%20diversity%20requirements/near/248385614" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kim Paolo Laberinto <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Sortition.20with.20diversity.20requirements.html#248385614">(Aug 04 2021 at 18:03)</a>:</h4>
+<p>Thanks for coming back and documenting the solution you ended up with and the reasons why! It was interesting to read up on it</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

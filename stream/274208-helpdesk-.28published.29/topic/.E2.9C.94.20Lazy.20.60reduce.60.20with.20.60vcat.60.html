@@ -1,0 +1,216 @@
+<html>
+<head><meta charset="utf-8"><title>✔ Lazy `reduce` with `vcat` · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60.html">✔ Lazy `reduce` with `vcat`</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="482010236"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Lazy%20%60reduce%60%20with%20%60vcat%60/near/482010236" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60.html#482010236">(Nov 12 2024 at 18:22)</a>:</h4>
+<p>Is there a <code>AbstractVector</code> implementation somewhere that takes a vector of vectors and returns a single <code>reduce(vcat, vecs)</code> without copying the data?</p>
+
+
+
+<a name="482011812"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Lazy%20%60reduce%60%20with%20%60vcat%60/near/482011812" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Abbott <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60.html#482011812">(Nov 12 2024 at 18:32)</a>:</h4>
+<p>Are the vectors all the same size?</p>
+
+
+
+<a name="482011930"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Lazy%20%60reduce%60%20with%20%60vcat%60/near/482011930" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Abbott <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60.html#482011930">(Nov 12 2024 at 18:33)</a>:</h4>
+<p>If so, any of these <a href="https://github.com/mcabbott/LazyStack.jl?tab=readme-ov-file#other-stack-like-packages">https://github.com/mcabbott/LazyStack.jl?tab=readme-ov-file#other-stack-like-packages</a> combined with <code>vec</code>. </p>
+<p>If not, then maybe I only know of <a href="https://github.com/ahwillia/CatViews.jl">CatViews.jl</a></p>
+
+
+
+<a name="482017901"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Lazy%20%60reduce%60%20with%20%60vcat%60/near/482017901" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60.html#482017901">(Nov 12 2024 at 19:13)</a>:</h4>
+<p>We are actually trying to reduce the vertices of geometries lazily here:</p>
+<p><a href="https://github.com/JuliaGeometry/Meshes.jl/issues/1127">https://github.com/JuliaGeometry/Meshes.jl/issues/1127</a></p>
+<p>But it seems that this is not possible?</p>
+
+
+
+<a name="482018747"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Lazy%20%60reduce%60%20with%20%60vcat%60/near/482018747" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60.html#482018747">(Nov 12 2024 at 19:18)</a>:</h4>
+<p>It seems like a really hard problem.  As a practical matter I expect that the only solution is to have <code>MultiPolytope</code> store its vertices in this form (i.e. with the vertices already inlined but with a wrapper that gives it the interface of an array of arrays).  I don't know if that's compatible with what you need the representation to do elsewhere, at the very least I'm guessing it's not compatible with how the individual primitives are stored.  Perhaps a better approach would be trying to reduce the number of times this needs to be done?</p>
+
+
+
+<a name="482018991"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Lazy%20%60reduce%60%20with%20%60vcat%60/near/482018991" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60.html#482018991">(Nov 12 2024 at 19:19)</a>:</h4>
+<p>In case it's not already abundantly clear: <code>Array{&lt;:AbstractArray}</code> simply does not store data this way, the elements are actually pointers, so avoiding copying is impossible in the general case.  That pretty much leaves you with a wrapper type that makes an <code>Array</code> behave like an <code>Array{&lt;:AbstractArray}</code>, but that'll inevitably affect your implementation of <code>MultiPolytope</code>.</p>
+
+
+
+<a name="482019102"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Lazy%20%60reduce%60%20with%20%60vcat%60/near/482019102" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60.html#482019102">(Nov 12 2024 at 19:20)</a>:</h4>
+<p>Does it need to be a <code>Vector{Vector}</code> or can it be a Tuple of vectors?</p>
+
+
+
+<a name="482019140"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Lazy%20%60reduce%60%20with%20%60vcat%60/near/482019140" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60.html#482019140">(Nov 12 2024 at 19:20)</a>:</h4>
+<p>i.e. is it really large, and is its size stable?</p>
+
+
+
+<a name="482019654"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Lazy%20%60reduce%60%20with%20%60vcat%60/near/482019654" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60.html#482019654">(Nov 12 2024 at 19:23)</a>:</h4>
+<p>The <code>Multi</code> geometry represents regions in the world like countries that are made of polygons in the continent plus polygons in the ocean (islands). It is common to have as many as a couple of 100s of polygons sometimes inside a <code>Multi</code> geom.</p>
+
+
+
+<a name="482019771"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Lazy%20%60reduce%60%20with%20%60vcat%60/near/482019771" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60.html#482019771">(Nov 12 2024 at 19:24)</a>:</h4>
+<p>Perhaps what you want is more like a lazy iterator over vertices?  I think that would be pretty efficient even if you did it very naively.  Collecting them efficiently, by contrast, is hard.</p>
+
+
+
+<a name="482019864"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Lazy%20%60reduce%60%20with%20%60vcat%60/near/482019864" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60.html#482019864">(Nov 12 2024 at 19:25)</a>:</h4>
+<p>We thought of lazy iterators, but it is not user-friendly. Perhaps we will need to introduce a new function to return interators.</p>
+
+
+
+<a name="482019921"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Lazy%20%60reduce%60%20with%20%60vcat%60/near/482019921" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60.html#482019921">(Nov 12 2024 at 19:25)</a>:</h4>
+<p>So <code>vertices</code> remains as is, and a new <code>vertexiterator</code> returns an iterator</p>
+
+
+
+<a name="482020275"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Lazy%20%60reduce%60%20with%20%60vcat%60/near/482020275" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60.html#482020275">(Nov 12 2024 at 19:27)</a>:</h4>
+<p>If the primitives in <code>MultiPolytope</code> were all of the same type, you could efficiently calculate the address of each vertex, in which case you could return a wrapper object that behaves exactly like your statement, but I'm guessing this is not the case.  If that's not the case you could potentially index the primitive types and then do something like <code>CatArray</code> from <a href="https://juliahub.com/ui/Packages/General/LazyArrays">LazyArrays.jl</a> but that sounds like way more trouble than a lazy iterator.</p>
+
+
+
+<a name="482020493"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Lazy%20%60reduce%60%20with%20%60vcat%60/near/482020493" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60.html#482020493">(Nov 12 2024 at 19:28)</a>:</h4>
+<p>Might also be worth reminding yourself that it's <em>really easy</em> for users to get your explicit array out of a lazy iterator, i.e. <code>collect(lazyiterator)</code>.</p>
+
+
+
+<a name="482020602"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Lazy%20%60reduce%60%20with%20%60vcat%60/near/482020602" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60.html#482020602">(Nov 12 2024 at 19:29)</a>:</h4>
+<p>All the comments are really helpful. Thank you. I think we will go with two functions in the API: <code>vertices</code> and <code>vertexiterator</code>.</p>
+
+
+
+<a name="482020638"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Lazy%20%60reduce%60%20with%20%60vcat%60/near/482020638" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60.html#482020638">(Nov 12 2024 at 19:29)</a>:</h4>
+<p>That way we introduce a new lazy function in a non-breaking way.</p>
+
+
+
+<a name="482021068"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Lazy%20%60reduce%60%20with%20%60vcat%60/near/482021068" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60.html#482021068">(Nov 12 2024 at 19:32)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="273172">Júlio Hoffimann</span> has marked this topic as resolved.</p>
+
+
+
+<a name="482021282"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Lazy%20%60reduce%60%20with%20%60vcat%60/near/482021282" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60.html#482021282">(Nov 12 2024 at 19:33)</a>:</h4>
+<p>I like this problem because it seems like a paradigmatic example of one of maybe 5 problems that are all that seem to occur over and over again in software engineering: procedure <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>a</mi></mrow><annotation encoding="application/x-tex">a</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">a</span></span></span></span> is good for representation <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>A</mi></mrow><annotation encoding="application/x-tex">A</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal">A</span></span></span></span>, but bad for representation <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>B</mi></mrow><annotation encoding="application/x-tex">B</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.05017em;">B</span></span></span></span>, but procedure <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>b</mi></mrow><annotation encoding="application/x-tex">b</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">b</span></span></span></span> is good for representation <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>B</mi></mrow><annotation encoding="application/x-tex">B</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.05017em;">B</span></span></span></span> but bad for representation <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>A</mi></mrow><annotation encoding="application/x-tex">A</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal">A</span></span></span></span>, and converting between <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>A</mi></mrow><annotation encoding="application/x-tex">A</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal">A</span></span></span></span> and <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>B</mi></mrow><annotation encoding="application/x-tex">B</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.05017em;">B</span></span></span></span> is expensive, then how can I compute both <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>a</mi></mrow><annotation encoding="application/x-tex">a</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">a</span></span></span></span> and <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>b</mi></mrow><annotation encoding="application/x-tex">b</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">b</span></span></span></span>?  I think it was weinberg or someone like that who said that the peculiar feature of reality is plurality of description.</p>
+
+
+
+<a name="482023868"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Lazy%20%60reduce%60%20with%20%60vcat%60/near/482023868" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60.html#482023868">(Nov 12 2024 at 19:38)</a>:</h4>
+<p>After this object is built, would you want to be able to make insertions into the individual sub-vectors later on, or would its structure be "frozen" after it's created?</p>
+
+
+
+<a name="482024267"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Lazy%20%60reduce%60%20with%20%60vcat%60/near/482024267" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60.html#482024267">(Nov 12 2024 at 19:40)</a>:</h4>
+<p>that is, do you ever need to <code>push!</code> / <code>append!</code>?</p>
+
+
+
+<a name="482024425"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Lazy%20%60reduce%60%20with%20%60vcat%60/near/482024425" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60.html#482024425">(Nov 12 2024 at 19:41)</a>:</h4>
+<p>These geometries are often "frozen" after creation. We can modify the underlying vectors of vertices, but that is not what happens in most algorithms. We tend to implement algorithms that avoid mutation (thinking of parallel jobs).</p>
+
+
+
+<a name="482026853"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Lazy%20%60reduce%60%20with%20%60vcat%60/near/482026853" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60.html#482026853">(Nov 12 2024 at 19:46)</a>:</h4>
+<p>If that's the case, you might be able to do something like</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="kt">FlattenedVector</span><span class="p">{</span><span class="kt">T</span><span class="p">}</span><span class="w"> </span><span class="o">&lt;:</span><span class="w"> </span><span class="kt">AbstractVector</span><span class="p">{</span><span class="kt">T</span><span class="p">}</span>
+<span class="w">    </span><span class="n">vov</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">T</span><span class="p">}}</span>
+<span class="w">    </span><span class="n">inds</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Tuple</span><span class="p">{</span><span class="kt">Int</span><span class="p">,</span><span class="w"> </span><span class="kt">Int</span><span class="p">}}</span>
+<span class="w">    </span><span class="n">len</span><span class="o">::</span><span class="kt">Int</span>
+<span class="w">    </span><span class="k">function</span><span class="w"> </span><span class="n">FlattenedVector</span><span class="p">(</span><span class="n">vov</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">T</span><span class="p">}})</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="p">{</span><span class="kt">T</span><span class="p">}</span>
+<span class="w">        </span><span class="n">len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sum</span><span class="p">(</span><span class="n">length</span><span class="p">,</span><span class="w"> </span><span class="n">vov</span><span class="p">)</span>
+<span class="w">        </span><span class="n">inds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Tuple</span><span class="p">{</span><span class="kt">Int</span><span class="p">,</span><span class="w"> </span><span class="kt">Int</span><span class="p">}}(</span><span class="nb">undef</span><span class="p">,</span><span class="w"> </span><span class="n">len</span><span class="p">)</span>
+<span class="w">        </span><span class="n">ind</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">eachindex</span><span class="p">(</span><span class="n">vov</span><span class="p">)</span>
+<span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">∈</span><span class="w"> </span><span class="n">eachindex</span><span class="p">(</span><span class="n">vov</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+<span class="w">                </span><span class="n">inds</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">)</span>
+<span class="w">                </span><span class="n">ind</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">            </span><span class="k">end</span>
+<span class="w">        </span><span class="k">end</span>
+<span class="w">        </span><span class="kt">new</span><span class="p">{</span><span class="kt">T</span><span class="p">}(</span><span class="n">vov</span><span class="p">,</span><span class="w"> </span><span class="n">inds</span><span class="p">,</span><span class="w"> </span><span class="n">len</span><span class="p">)</span>
+<span class="w">    </span><span class="k">end</span>
+<span class="k">end</span>
+<span class="n">Base</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">v</span><span class="o">::</span><span class="kt">FlattenedVector</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">len</span><span class="p">,)</span>
+<span class="k">function</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">getindex</span><span class="p">(</span><span class="n">v</span><span class="o">::</span><span class="kt">FlattenedVector</span><span class="p">,</span><span class="w"> </span><span class="n">ind</span><span class="o">::</span><span class="kt">Integer</span><span class="p">)</span>
+<span class="w">    </span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v</span><span class="o">.</span><span class="n">inds</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span>
+<span class="w">    </span><span class="n">v</span><span class="o">.</span><span class="n">vov</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span>
+<span class="k">end</span>
+<span class="k">function</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">setindex!</span><span class="p">(</span><span class="n">v</span><span class="o">::</span><span class="kt">FlattenedVector</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">ind</span><span class="o">::</span><span class="kt">Integer</span><span class="p">)</span>
+<span class="w">    </span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v</span><span class="o">.</span><span class="n">inds</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span>
+<span class="w">    </span><span class="n">v</span><span class="o">.</span><span class="n">vov</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span>
+<span class="w">    </span><span class="n">v</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="482027186"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Lazy%20%60reduce%60%20with%20%60vcat%60/near/482027186" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60.html#482027186">(Nov 12 2024 at 19:48)</a>:</h4>
+<p>I don't know if this sort of construction is really worth it for you use-case but I think it's at least a possibility.</p>
+
+
+
+<a name="482027525"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Lazy%20%60reduce%60%20with%20%60vcat%60/near/482027525" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60.html#482027525">(Nov 12 2024 at 19:50)</a>:</h4>
+<p>The main challenge we face here is that we don't  want to materialize the <code>vov</code> field as a vector of vector. We want to just consume the underlying geometries, querying their vectors. So the input of the function is a vector of geometries, and the output is a vector of concatenated vertices.</p>
+
+
+
+<a name="482127501"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Lazy%20%60reduce%60%20with%20%60vcat%60/near/482127501" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60.html#482127501">(Nov 13 2024 at 09:34)</a>:</h4>
+<p>Just a hipshot suggestion for the initial question without having digested the conversation after: <a href="https://github.com/SciML/RecursiveArrayTools.jl">https://github.com/SciML/RecursiveArrayTools.jl</a></p>
+
+
+
+<a name="482192010"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Lazy%20%60reduce%60%20with%20%60vcat%60/near/482192010" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> John Lapeyre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60.html#482192010">(Nov 13 2024 at 15:00)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="300483">DrChainsaw</span> <a href="#narrow/channel/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60/near/482127501">said</a>:</p>
+<blockquote>
+<p>without having digested the conversation</p>
+</blockquote>
+<p>That's covered in the link given above by <span class="user-mention" data-user-id="272550">@Michael Abbott</span></p>
+
+
+
+<a name="482192788"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Lazy%20%60reduce%60%20with%20%60vcat%60/near/482192788" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> John Lapeyre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60.html#482192788">(Nov 13 2024 at 15:03)</a>:</h4>
+<p>FWIW  <a href="https://juliahub.com/ui/Packages/General/CatViews">CatViews.jl</a> is slow, as noted in the README of <a href="https://juliahub.com/ui/Packages/General/LazyStack">LazyStack.jl</a>. The type instability of the registered version 1.0 was fixed five years ago in 1.0.1. But it appears that 1.0.1 was never registered.</p>
+
+
+
+<a name="482585091"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Lazy%20%60reduce%60%20with%20%60vcat%60/near/482585091" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Bagge Carlson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60.html#482585091">(Nov 15 2024 at 10:55)</a>:</h4>
+<p>Is the inner vector type of static size, e.g., similar to a static array? If so, <code>reshape(reinterpret(Float64, vector_of_vectors), length(first(vector_of_vectors)), :)</code> gives you a matrix without copying</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

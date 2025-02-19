@@ -1,0 +1,62 @@
+[
+    {
+        "content": "<p>So I know that I can get the lowered code for a method with <code>code_lowered(f, Tuple{...})</code>, but that requires an <em>instance</em> of the function. What if I only have the type? Usually, you can proceed by just doing <code>F.instance</code>, but that won't work for a closure.</p>",
+        "id": 229034498,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614982910
+    },
+    {
+        "content": "<p>To be clear, how could this generated function body get the proper <code>code_lowered</code> for this closure?</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">cl</span> <span class=\"o\">=</span> <span class=\"k\">let</span> <span class=\"n\">x</span> <span class=\"o\">=</span> <span class=\"mi\">1</span>\n           <span class=\"n\">y</span> <span class=\"o\">-&gt;</span> <span class=\"n\">x</span> <span class=\"o\">+</span> <span class=\"n\">y</span>\n       <span class=\"k\">end</span>\n<span class=\"c\">#4 (generic function with 1 method)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@generated</span> <span class=\"k\">function</span> <span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"n\">x</span><span class=\"p\">)</span>\n           <span class=\"c\"># need the code_lowered for `f(::typeof(x))` here</span>\n       <span class=\"k\">end</span>\n<span class=\"n\">foo</span> <span class=\"p\">(</span><span class=\"n\">generic</span> <span class=\"k\">function</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>given that I can't do</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">cl</span><span class=\"p\">)</span><span class=\"o\">.</span><span class=\"n\">instance</span>\n<span class=\"n\">ERROR</span><span class=\"o\">:</span> <span class=\"kt\">UndefRefError</span><span class=\"o\">:</span> <span class=\"n\">access</span> <span class=\"n\">to</span> <span class=\"n\">undefined</span> <span class=\"n\">reference</span>\n</code></pre></div>",
+        "id": 229034908,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614983124
+    },
+    {
+        "content": "<p>It looks like you can do <code>Base.uncompressed_ir(Base.which(Tuple{typeof(identity),Int}))</code> after 1.6.</p>",
+        "id": 229035376,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1614983367
+    },
+    {
+        "content": "<p>There's gotta be a way that works with all julia versions though, right? Since cassette.jl and <a href=\"https://github.com/search?q=IRTools.jl&amp;type=Repositories\">IRTools.jl</a> worth through generated functions and worked on 1.0</p>",
+        "id": 229037753,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614984661
+    },
+    {
+        "content": "<p>Yeah, I was just too lazy to cook it up. I know you can use <code>Base.uncompressed_ast</code> for backward compatibility. Not sure what's the backward-compatible way to emulate <code>which(::Type)</code>, though.</p>",
+        "id": 229038210,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1614984935
+    },
+    {
+        "content": "<p>since <code>which</code> is a public API, it'd make sense to put it in <a href=\"https://github.com/search?q=Compat.jl&amp;type=Repositories\">Compat.jl</a></p>",
+        "id": 229038365,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1614985030
+    },
+    {
+        "content": "<p>Ah I see</p>",
+        "id": 229039530,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614985622
+    },
+    {
+        "content": "<p>It looks like you can just copy &amp; paste the last few lines of <code>which</code>:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">function</span> <span class=\"n\">getmethod</span><span class=\"p\">(</span><span class=\"n\">tt</span><span class=\"p\">)</span>\n           <span class=\"n\">m</span> <span class=\"o\">=</span> <span class=\"k\">ccall</span><span class=\"p\">(</span><span class=\"o\">:</span><span class=\"n\">jl_gf_invoke_lookup</span><span class=\"p\">,</span> <span class=\"kt\">Any</span><span class=\"p\">,</span> <span class=\"p\">(</span><span class=\"kt\">Any</span><span class=\"p\">,</span> <span class=\"kt\">UInt</span><span class=\"p\">),</span> <span class=\"n\">tt</span><span class=\"p\">,</span> <span class=\"n\">typemax</span><span class=\"p\">(</span><span class=\"kt\">UInt</span><span class=\"p\">))</span>\n           <span class=\"k\">if</span> <span class=\"n\">m</span> <span class=\"o\">===</span> <span class=\"nb\">nothing</span>\n               <span class=\"n\">error</span><span class=\"p\">(</span><span class=\"s\">\"no unique matching method found for the specified argument types\"</span><span class=\"p\">)</span>\n           <span class=\"k\">end</span>\n           <span class=\"k\">return</span> <span class=\"n\">m</span><span class=\"o\">.</span><span class=\"n\">func</span><span class=\"o\">::</span><span class=\"kt\">Method</span>\n       <span class=\"k\">end</span>\n<span class=\"n\">getmethod</span> <span class=\"p\">(</span><span class=\"n\">generic</span> <span class=\"k\">function</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">getmethod</span><span class=\"p\">(</span><span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">identity</span><span class=\"p\">),</span><span class=\"kt\">Int</span><span class=\"p\">})</span>\n<span class=\"n\">identity</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span> <span class=\"kp\">in</span> <span class=\"n\">Base</span> <span class=\"n\">at</span> <span class=\"n\">operators</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">511</span>\n</code></pre></div>",
+        "id": 229040664,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1614986165
+    },
+    {
+        "content": "<p>(works in 1.0 and 1.5)</p>",
+        "id": 229040705,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1614986187
+    },
+    {
+        "content": "<p>beautiful, thank you!</p>",
+        "id": 229040752,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614986226
+    }
+]

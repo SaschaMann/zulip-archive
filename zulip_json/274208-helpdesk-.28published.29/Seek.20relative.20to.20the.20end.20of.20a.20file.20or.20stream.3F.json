@@ -1,0 +1,62 @@
+[
+    {
+        "content": "<p>Is there any direct way to seek relative to the end of a file or stream with a single call? For example, C and Python allow you set a positive negative offset relative to SEEK_END via <code>fseek</code> or <code>lseek</code>. Cross posted from Slack.</p>",
+        "id": 398797890,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1698371060
+    },
+    {
+        "content": "<p>I think the best you can do is <code>seek(io, length(io)-x)</code>. Adding a two-arg <code>seekend</code> seems reasonable to me though</p>",
+        "id": 398851615,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1698395719
+    },
+    {
+        "content": "<p>What is the advantage of a two-arg seekend instead of a read or write directly to an offset? For example libUV doesn't support seeking files <a href=\"https://github.com/libuv/libuv/issues/2378\">https://github.com/libuv/libuv/issues/2378</a> but does allow an additional argument <code>offset</code> to read and write.</p>",
+        "id": 398907269,
+        "sender_full_name": "Nathan Zimmerberg",
+        "timestamp": 1698416075
+    },
+    {
+        "content": "<p>Also from what I can tell, <code>length</code> is not documented to work on files or streams. You could do:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">fsize</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"n\">seekend</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"n\">position</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>To get the file size before doing the seek.</p>",
+        "id": 398910944,
+        "sender_full_name": "Nathan Zimmerberg",
+        "timestamp": 1698417373
+    },
+    {
+        "content": "<p><a href=\"https://juliahub.com/ui/Packages/General/StaticTools\">StaticTools.jl</a> <code>fseek</code> has <code>SEEK_END</code> <img alt=\":julia-troll:\" class=\"emoji\" src=\"https://zulip-avatars.s3.amazonaws.com/7178/emoji/images/15062.png\" title=\"julia-troll\"></p>",
+        "id": 398919377,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1698420130
+    },
+    {
+        "content": "<p>but yeah, not the most <em>kosher</em> package</p>",
+        "id": 398919664,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1698420225
+    },
+    {
+        "content": "<p>Currently we have the following</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">seekend</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"o\">::</span><span class=\"kt\">File</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"n\">ret</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"k\">ccall</span><span class=\"p\">(</span><span class=\"ss\">:jl_lseek</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Int64</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">OS_HANDLE</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Int64</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Int32</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">f</span><span class=\"o\">.</span><span class=\"n\">handle</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">0</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">SEEK_END</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"n\">ret</span><span class=\"w\"> </span><span class=\"o\">==</span><span class=\"w\"> </span><span class=\"o\">-</span><span class=\"mi\">1</span><span class=\"w\"> </span><span class=\"o\">&amp;&amp;</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"nd\">@static</span><span class=\"w\"> </span><span class=\"n\">Sys</span><span class=\"o\">.</span><span class=\"n\">iswindows</span><span class=\"p\">()</span><span class=\"w\"> </span><span class=\"o\">?</span><span class=\"w\"> </span><span class=\"n\">windowserror</span><span class=\"w\"> </span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"n\">systemerror</span><span class=\"p\">)(</span><span class=\"s\">\"seekend\"</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"k\">return</span><span class=\"w\"> </span><span class=\"n\">f</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>Could we do this instead?</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">seekend</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"o\">::</span><span class=\"kt\">File</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">n</span><span class=\"o\">::</span><span class=\"kt\">Integer</span><span class=\"o\">=</span><span class=\"mi\">0</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"n\">ret</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"k\">ccall</span><span class=\"p\">(</span><span class=\"ss\">:jl_lseek</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Int64</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">OS_HANDLE</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Int64</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Int32</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">f</span><span class=\"o\">.</span><span class=\"n\">handle</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">n</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">SEEK_END</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"n\">ret</span><span class=\"w\"> </span><span class=\"o\">==</span><span class=\"w\"> </span><span class=\"o\">-</span><span class=\"mi\">1</span><span class=\"w\"> </span><span class=\"o\">&amp;&amp;</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"nd\">@static</span><span class=\"w\"> </span><span class=\"n\">Sys</span><span class=\"o\">.</span><span class=\"n\">iswindows</span><span class=\"p\">()</span><span class=\"w\"> </span><span class=\"o\">?</span><span class=\"w\"> </span><span class=\"n\">windowserror</span><span class=\"w\"> </span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"n\">systemerror</span><span class=\"p\">)(</span><span class=\"s\">\"seekend\"</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"k\">return</span><span class=\"w\"> </span><span class=\"n\">f</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 398940392,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1698427516
+    },
+    {
+        "content": "<p>looks like that <em>ought</em> to work AFAICT, except maybe should explicitly convert <code>n</code> to <code>Int32</code> first if I'm looking at that right?</p>",
+        "id": 398943289,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1698428725
+    },
+    {
+        "content": "<p><code>n</code> should be converted to <code>Int64</code>, but I think <code>ccall</code> will do that for us.</p>",
+        "id": 398961484,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1698437122
+    },
+    {
+        "content": "<p><a href=\"https://github.com/JuliaLang/julia/pull/51908\">https://github.com/JuliaLang/julia/pull/51908</a></p>",
+        "id": 399007128,
+        "sender_full_name": "Mark Kittisopikul",
+        "timestamp": 1698465785
+    }
+]

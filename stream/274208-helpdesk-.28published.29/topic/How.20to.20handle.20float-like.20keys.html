@@ -1,0 +1,59 @@
+<html>
+<head><meta charset="utf-8"><title>How to handle float-like keys · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20handle.20float-like.20keys.html">How to handle float-like keys</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="279662958"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20handle%20float-like%20keys/near/279662958" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Max Köhler <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20handle.20float-like.20keys.html#279662958">(Apr 21 2022 at 10:49)</a>:</h4>
+<p>I have the typical precision problem with float keys</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span> <span class="n">newstate</span><span class="o">.</span><span class="n">phasestree</span><span class="p">[</span><span class="kt">Tensor</span><span class="p">{</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">}([</span><span class="mf">1.8</span> <span class="mf">0.0</span><span class="p">;</span> <span class="mf">0.0</span> <span class="mf">3.5000000000000004</span><span class="p">])]</span>
+<span class="gr">ERROR: KeyError: key [1.8 0.0; 0.0 3.5000000000000004] not found</span>
+<span class="gr">Stacktrace:</span>
+<span class="gr"> [1] getindex(h::Dict{Tensor{2, 2, Float64, 4}, ConvexDamage.PhaseTree{2, Float64, 4}}, key::Tensor{2, 2, Float64, 4})</span>
+<span class="gr">   @ Base ./dict.jl:482</span>
+<span class="gr"> [2] top-level scope</span>
+<span class="gr">   @ REPL[165]:1</span>
+<span class="gr"> [3] top-level scope</span>
+<span class="gr">   @ ~/.julia/packages/CUDA/YpW0k/src/initialization.jl:52</span>
+
+<span class="gp">julia&gt;</span> <span class="n">newstate</span><span class="o">.</span><span class="n">phasestree</span><span class="p">[</span><span class="kt">Tensor</span><span class="p">{</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">}([</span><span class="mf">1.8</span> <span class="mf">0.0</span><span class="p">;</span> <span class="mf">0.0</span> <span class="mf">3.500000000000000</span><span class="p">])]</span>
+<span class="go">2D Phasetree</span>
+<span class="go">k=1 F¯=[1.8 0.0; 0.0 1.2599999999999993], F⁺=[1.8 0.0; 0.0 3.5]</span>
+<span class="go">        k=2 F¯=[1.8 0.0; 0.0 1.3039999999999994], F⁺=[1.8 0.0; 0.0 3.5]</span>
+</code></pre></div>
+<p>Are there other options than just rounding off the key before storing? Ideally I'd like to get some <code>isapprox</code> key, but I'm not sure if this is possible with the underlying hash mechanism (since I don't know much about it)</p>
+
+
+
+<a name="279666358"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20handle%20float-like%20keys/near/279666358" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Max Köhler <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20handle.20float-like.20keys.html#279666358">(Apr 21 2022 at 11:26)</a>:</h4>
+<p>searching for <code>findfirst(x-&gt;isapprox(x,some_value),collect(keys(mydict)))</code> is also quite expensive in my case. Some workaround while building the dict or accessing it would be best case for me</p>
+
+
+
+<a name="279667539"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20handle%20float-like%20keys/near/279667539" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sebastian Pfitzner <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20handle.20float-like.20keys.html#279667539">(Apr 21 2022 at 11:38)</a>:</h4>
+<p>You could add a <code>tol</code> field to <code>Tensor</code> and then hash/compare based on that</p>
+
+
+
+<a name="279681602"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20handle%20float-like%20keys/near/279681602" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Max Köhler <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20handle.20float-like.20keys.html#279681602">(Apr 21 2022 at 13:42)</a>:</h4>
+<p>I think I'm wondering how the hash and equality checks happen in the <code>dict</code> implementation. Is it just <code>isequal</code> and <code>hash</code> that is used?</p>
+
+
+
+<a name="279702215"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20handle%20float-like%20keys/near/279702215" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20handle.20float-like.20keys.html#279702215">(Apr 21 2022 at 16:10)</a>:</h4>
+<p>You can define a method of <code>Base.hash</code> For your type that has whatever behaviour you like. So probably in this case, you want to round the number to within a certain number of significant digits during the hash.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

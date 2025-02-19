@@ -1,0 +1,169 @@
+<html>
+<head><meta charset="utf-8"><title>✔ Basic DiffEqParamEstim example does not work after update · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Basic.20DiffEqParamEstim.20example.20does.20not.20work.20after.20update.html">✔ Basic DiffEqParamEstim example does not work after update</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="307684514"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Basic%20DiffEqParamEstim%20example%20does%20not%20work%20after%20update/near/307684514" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Danilo D. <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Basic.20DiffEqParamEstim.20example.20does.20not.20work.20after.20update.html#307684514">(Nov 03 2022 at 09:20)</a>:</h4>
+<p>Hello!<br>
+Last monday, I updated all my packages.<br>
+Since then, my parameters estimation script does not seem to work fine anymore:<br>
+It gives <strong>Inf</strong> as Loss  value whatever the algo (Optim, BlackBoxOptim, CMAES) or the data format (Matrix, Array , transposed or not).<br>
+After Investigating my script and dataset, I decided to run the basic example of DiffEqParamEstim:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">DifferentialEquations</span><span class="p">,</span><span class="w"> </span><span class="n">DiffEqParamEstim</span><span class="w"></span>
+
+<span class="k">function</span><span class="w"> </span><span class="n">f</span><span class="p">(</span><span class="n">du</span><span class="p">,</span><span class="n">u</span><span class="p">,</span><span class="n">p</span><span class="p">,</span><span class="n">t</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="n">du</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="w"></span>
+<span class="w">  </span><span class="n">du</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">3</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+
+<span class="n">u0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mf">1.0</span><span class="p">;</span><span class="mf">1.0</span><span class="p">]</span><span class="w"></span>
+<span class="n">tspan</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span><span class="mf">10.0</span><span class="p">)</span><span class="w"></span>
+<span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mf">1.5</span><span class="p">]</span><span class="w"></span>
+<span class="n">prob</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ODEProblem</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="n">u0</span><span class="p">,</span><span class="n">tspan</span><span class="p">,</span><span class="n">p</span><span class="p">)</span><span class="w"></span>
+<span class="n">sol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">solve</span><span class="p">(</span><span class="n">prob</span><span class="p">,</span><span class="n">Tsit5</span><span class="p">())</span><span class="w"></span>
+<span class="n">t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">collect</span><span class="p">(</span><span class="n">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">stop</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span><span class="n">length</span><span class="o">=</span><span class="mi">200</span><span class="p">))</span><span class="w"></span>
+<span class="k">using</span><span class="w"> </span><span class="n">RecursiveArrayTools</span><span class="w"> </span><span class="c"># for VectorOfArray</span><span class="w"></span>
+<span class="n">randomized</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VectorOfArray</span><span class="p">([(</span><span class="n">sol</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mf">.01</span><span class="n">randn</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="n">length</span><span class="p">(</span><span class="n">t</span><span class="p">)])</span><span class="w"></span>
+<span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">convert</span><span class="p">(</span><span class="kt">Array</span><span class="p">,</span><span class="n">randomized</span><span class="p">)</span><span class="w"></span>
+<span class="n">cost_function</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">build_loss_objective</span><span class="p">(</span><span class="n">prob</span><span class="p">,</span><span class="n">Tsit5</span><span class="p">(),</span><span class="n">L2Loss</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">data</span><span class="p">),</span><span class="w"></span>
+<span class="w">                                     </span><span class="n">maxiters</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="nb">false</span><span class="p">)</span><span class="w"></span>
+<span class="k">using</span><span class="w"> </span><span class="n">Optim</span><span class="w"></span>
+<span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">optimize</span><span class="p">(</span><span class="n">cost_function</span><span class="p">,</span><span class="w"> </span><span class="mf">0.0</span><span class="p">,</span><span class="w"> </span><span class="mf">10.0</span><span class="p">)</span><span class="w"></span>
+</code></pre></div>
+<p>output of <code>result = optimize(cost_function, 0.0, 10.0)</code>:<br>
+Results of Optimization Algorithm</p>
+<ul>
+<li>Algorithm: Brent's Method</li>
+<li>Search Interval: [0.000000, 10.000000]</li>
+<li>Minimizer: 3.819660e+00</li>
+<li>Minimum: Inf</li>
+<li>Iterations: 38</li>
+<li>Convergence: max(|x - x_upper|, |x - x_lower|) &lt;= 2<em>(1.5e-08</em>|x|+2.2e-16): true</li>
+<li>Objective Function Calls: 39</li>
+</ul>
+<p><strong>Did anyone have the same isssue and had identified the problem?</strong></p>
+<p>Julia version: 1.8.2<br>
+Packages versions:<br>
+[a134a8b2] BlackBoxOptim v0.6.2<br>
+[8d3b24bd] CMAEvolutionStrategy v0.2.5<br>
+[336ed68f] CSV v0.10.7<br>
+[479239e8] Catalyst v12.3.1<br>
+[861a8166] Combinatorics v1.0.2<br>
+[a93c6f00] DataFrames v1.4.2<br>
+[bcd4f6db] DelayDiffEq v5.38.3<br>
+[1130ab10] DiffEqParamEstim v1.27.0<br>
+[0c46a032] DifferentialEquations v7.6.0<br>
+[31c24e10] Distributions v0.25.76<br>
+[89b67f3b] ExcelFiles v1.0.0<br>
+[38e38edf] GLM v1.8.1<br>
+[28b8d3ca] GR v0.69.5<br>
+[09f84164] HypothesisTests v0.10.11<br>
+[7073ff75] IJulia v1.23.3<br>
+[615f187c] IfElse v0.1.1<br>
+[a98d9a8b] Interpolations v0.14.6<br>
+[c8e1da08] IterTools v1.4.0<br>
+[ccbc3e58] JumpProcesses v9.2.2<br>
+[b964fa9f] LaTeXStrings v1.3.0<br>
+[23fbe1c1] Latexify v0.15.17<br>
+[93acb638] LikelihoodProfiler v0.5.0<br>
+[7ed4a6bd] LinearSolve v1.27.1<br>
+[442fdcdd] Measures v0.3.1<br>
+[961ee093] ModelingToolkit v8.30.0<br>
+[429524aa] Optim v1.7.3<br>
+[1dea7af3] OrdinaryDiffEq v6.30.1<br>
+[58dd65bb] Plotly v0.4.1<br>
+[a03496cd] PlotlyBase v0.8.19<br>
+[f0f68f2c] PlotlyJS v0.18.10<br>
+[f2990250] PlotlyKaleido v1.0.0<br>
+[91a5bcdd] Plots v1.35.7<br>
+[d330b81b] PyPlot v2.11.0<br>
+[1fd47b50] QuadGK v2.6.0<br>
+[731186ca] RecursiveArrayTools v2.32.1<br>
+[0bca4576] SciMLBase v1.67.0<br>
+[2913bbd2] StatsBase v0.33.21<br>
+[78aadeae] SymbolicNumericIntegration v0.8.6<br>
+[d1185830] SymbolicUtils v0.19.11<br>
+[0c5d862f] Symbolics v4.13.0<br>
+[770da0de] UpdateJulia v0.4.0<br>
+[37e2e46d] LinearAlgebra<br>
+[9e88b42a] Serialization</p>
+
+
+
+<a name="308310448"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Basic%20DiffEqParamEstim%20example%20does%20not%20work%20after%20update/near/308310448" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Basic.20DiffEqParamEstim.20example.20does.20not.20work.20after.20update.html#308310448">(Nov 07 2022 at 00:24)</a>:</h4>
+<p>cc <span class="user-mention" data-user-id="278119">@Christopher Rackauckas</span></p>
+
+
+
+<a name="308310582"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Basic%20DiffEqParamEstim%20example%20does%20not%20work%20after%20update/near/308310582" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Basic.20DiffEqParamEstim.20example.20does.20not.20work.20after.20update.html#308310582">(Nov 07 2022 at 00:27)</a>:</h4>
+<p>Yes, if you update it should be fixed by <a href="https://github.com/SciML/DiffEqParamEstim.jl/pull/184">https://github.com/SciML/DiffEqParamEstim.jl/pull/184</a></p>
+
+
+
+<a name="308310627"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Basic%20DiffEqParamEstim%20example%20does%20not%20work%20after%20update/near/308310627" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Basic.20DiffEqParamEstim.20example.20does.20not.20work.20after.20update.html#308310627">(Nov 07 2022 at 00:28)</a>:</h4>
+<p>This month we've been ripping off some final bandaids, removing last piracies of old and changing symbols to enums. There's a few spots that got hit by bad practices, and we're doing a bit of clean up. We should be in a really good spot in the coming month.</p>
+
+
+
+<a name="308310727"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Basic%20DiffEqParamEstim%20example%20does%20not%20work%20after%20update/near/308310727" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Basic.20DiffEqParamEstim.20example.20does.20not.20work.20after.20update.html#308310727">(Nov 07 2022 at 00:30)</a>:</h4>
+<p>Can confirm:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">begin</span><span class="w"></span>
+<span class="w">       </span><span class="k">using</span><span class="w"> </span><span class="n">DifferentialEquations</span><span class="p">,</span><span class="w"> </span><span class="n">DiffEqParamEstim</span><span class="w"></span>
+
+<span class="w">       </span><span class="k">function</span><span class="w"> </span><span class="n">f</span><span class="p">(</span><span class="n">du</span><span class="p">,</span><span class="n">u</span><span class="p">,</span><span class="n">p</span><span class="p">,</span><span class="n">t</span><span class="p">)</span><span class="w"></span>
+<span class="w">         </span><span class="n">du</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="w"></span>
+<span class="w">         </span><span class="n">du</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">3</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="w"></span>
+<span class="w">       </span><span class="k">end</span><span class="w"></span>
+
+<span class="w">       </span><span class="n">u0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mf">1.0</span><span class="p">;</span><span class="mf">1.0</span><span class="p">]</span><span class="w"></span>
+<span class="w">       </span><span class="n">tspan</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span><span class="mf">10.0</span><span class="p">)</span><span class="w"></span>
+<span class="w">       </span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mf">1.5</span><span class="p">]</span><span class="w"></span>
+<span class="w">       </span><span class="n">prob</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ODEProblem</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="n">u0</span><span class="p">,</span><span class="n">tspan</span><span class="p">,</span><span class="n">p</span><span class="p">)</span><span class="w"></span>
+<span class="w">       </span><span class="n">sol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">solve</span><span class="p">(</span><span class="n">prob</span><span class="p">,</span><span class="n">Tsit5</span><span class="p">())</span><span class="w"></span>
+<span class="w">       </span><span class="n">t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">collect</span><span class="p">(</span><span class="n">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">stop</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span><span class="n">length</span><span class="o">=</span><span class="mi">200</span><span class="p">))</span><span class="w"></span>
+<span class="w">       </span><span class="k">using</span><span class="w"> </span><span class="n">RecursiveArrayTools</span><span class="w"> </span><span class="c"># for VectorOfArray</span><span class="w"></span>
+<span class="w">       </span><span class="n">randomized</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VectorOfArray</span><span class="p">([(</span><span class="n">sol</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mf">.01</span><span class="n">randn</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="n">length</span><span class="p">(</span><span class="n">t</span><span class="p">)])</span><span class="w"></span>
+<span class="w">       </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">convert</span><span class="p">(</span><span class="kt">Array</span><span class="p">,</span><span class="n">randomized</span><span class="p">)</span><span class="w"></span>
+<span class="w">       </span><span class="n">cost_function</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">build_loss_objective</span><span class="p">(</span><span class="n">prob</span><span class="p">,</span><span class="n">Tsit5</span><span class="p">(),</span><span class="n">L2Loss</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">data</span><span class="p">),</span><span class="w"></span>
+<span class="w">                                            </span><span class="n">maxiters</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="nb">false</span><span class="p">)</span><span class="w"></span>
+<span class="w">       </span><span class="k">using</span><span class="w"> </span><span class="n">Optim</span><span class="w"></span>
+<span class="w">       </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">optimize</span><span class="p">(</span><span class="n">cost_function</span><span class="p">,</span><span class="w"> </span><span class="mf">0.0</span><span class="p">,</span><span class="w"> </span><span class="mf">10.0</span><span class="p">)</span><span class="w"></span>
+<span class="w">       </span><span class="k">end</span><span class="w"></span>
+<span class="n">Results</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">Optimization</span><span class="w"> </span><span class="n">Algorithm</span><span class="w"></span>
+<span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">Algorithm</span><span class="o">:</span><span class="w"> </span><span class="n">Brent</span><span class="o">'</span><span class="n">s</span><span class="w"> </span><span class="kt">Method</span><span class="w"></span>
+<span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">Search</span><span class="w"> </span><span class="n">Interval</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.000000</span><span class="p">,</span><span class="w"> </span><span class="mf">10.000000</span><span class="p">]</span><span class="w"></span>
+<span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">Minimizer</span><span class="o">:</span><span class="w"> </span><span class="mf">1.499964e+00</span><span class="w"></span>
+<span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">Minimum</span><span class="o">:</span><span class="w"> </span><span class="mf">3.803244e-02</span><span class="w"></span>
+<span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">Iterations</span><span class="o">:</span><span class="w"> </span><span class="mi">27</span><span class="w"></span>
+<span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">Convergence</span><span class="o">:</span><span class="w"> </span><span class="n">max</span><span class="p">(</span><span class="o">|</span><span class="n">x</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">x_upper</span><span class="o">|</span><span class="p">,</span><span class="w"> </span><span class="o">|</span><span class="n">x</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">x_lower</span><span class="o">|</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="mf">1.5e-08</span><span class="o">*|</span><span class="n">x</span><span class="o">|+</span><span class="mf">2.2e-16</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="nb">true</span><span class="w"></span>
+<span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">Objective</span><span class="w"> </span><span class="kt">Function</span><span class="w"> </span><span class="n">Calls</span><span class="o">:</span><span class="w"> </span><span class="mi">28</span><span class="w"></span>
+
+<span class="p">(</span><span class="n">jl_IV4Jkh</span><span class="p">)</span><span class="w"> </span><span class="n">pkg</span><span class="o">&gt;</span><span class="w"> </span><span class="n">st</span><span class="w"></span>
+<span class="n">Status</span><span class="w"> </span><span class="sb">`/tmp/jl_IV4Jkh/Project.toml`</span><span class="w"></span>
+<span class="w">  </span><span class="p">[</span><span class="mi">1130</span><span class="n">ab10</span><span class="p">]</span><span class="w"> </span><span class="n">DiffEqParamEstim</span><span class="w"> </span><span class="n">v1</span><span class="mf">.28.0</span><span class="w"></span>
+<span class="w">  </span><span class="p">[</span><span class="mi">0</span><span class="n">c46a032</span><span class="p">]</span><span class="w"> </span><span class="n">DifferentialEquations</span><span class="w"> </span><span class="n">v7</span><span class="mf">.6.0</span><span class="w"></span>
+<span class="w">  </span><span class="p">[</span><span class="mi">429524</span><span class="n">aa</span><span class="p">]</span><span class="w"> </span><span class="n">Optim</span><span class="w"> </span><span class="n">v1</span><span class="mf">.7.3</span><span class="w"></span>
+<span class="w">  </span><span class="p">[</span><span class="mi">731186</span><span class="n">ca</span><span class="p">]</span><span class="w"> </span><span class="n">RecursiveArrayTools</span><span class="w"> </span><span class="n">v2</span><span class="mf">.32.1</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="308535192"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Basic%20DiffEqParamEstim%20example%20does%20not%20work%20after%20update/near/308535192" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Basic.20DiffEqParamEstim.20example.20does.20not.20work.20after.20update.html#308535192">(Nov 08 2022 at 08:08)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="464914">Danilo D.</span> has marked this topic as resolved.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

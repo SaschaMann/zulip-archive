@@ -1,0 +1,121 @@
+<html>
+<head><meta charset="utf-8"><title>Iterating Replacements Over Rows · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Iterating.20Replacements.20Over.20Rows.html">Iterating Replacements Over Rows</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="226595547"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Iterating%20Replacements%20Over%20Rows/near/226595547" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Iterating.20Replacements.20Over.20Rows.html#226595547">(Feb 16 2021 at 23:45)</a>:</h4>
+<p>Hello: </p>
+<p>I am attempting to edit the row values using a for loop with the <br>
+following block (using DataFrames) in <a href="https://github.com/search?q=Pluto.jl&amp;type=Repositories">Pluto.jl</a> as: </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">begin</span>
+    <span class="n">dateformat</span> <span class="o">=</span> <span class="n">DateFormat</span><span class="p">(</span><span class="s">"y-m"</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="kp">in</span> <span class="n">eachrow</span><span class="p">(</span><span class="n">DF</span><span class="p">)</span>
+        <span class="n">i</span><span class="p">[</span><span class="o">:</span><span class="n">Name</span><span class="p">]</span> <span class="o">=</span> <span class="n">replace</span><span class="p">(</span><span class="n">i</span><span class="p">[</span><span class="o">:</span><span class="n">Name</span><span class="p">],</span> <span class="s">"M"</span><span class="o">=&gt;</span><span class="s">"-"</span><span class="p">)</span>
+        <span class="n">i</span><span class="p">[</span><span class="o">:</span><span class="n">Name</span><span class="p">]</span> <span class="o">=</span> <span class="n">map</span><span class="p">(</span><span class="n">i</span><span class="o">-&gt;</span> <span class="kt">Date</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">dateformat</span><span class="p">),</span> <span class="n">i</span><span class="p">[</span><span class="o">:</span><span class="n">Name</span><span class="p">])</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>The goal is to replace the M values with '-' in the first column<br>
+AND <br>
+to format the first column so that it is in the "y-m" date format. </p>
+<p>Any suggestions out there?</p>
+
+
+
+<a name="226597638"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Iterating%20Replacements%20Over%20Rows/near/226597638" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Iterating.20Replacements.20Over.20Rows.html#226597638">(Feb 17 2021 at 00:13)</a>:</h4>
+<p>Suggest you do</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">df</span><span class="p">[</span><span class="o">!</span><span class="p">,</span> <span class="o">:</span><span class="n">Name</span><span class="p">]</span> <span class="o">=</span> <span class="n">map</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">Name</span><span class="p">)</span> <span class="k">do</span> <span class="n">n</span>
+    <span class="kt">Date</span><span class="p">(</span><span class="n">replace</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="s">"M"</span><span class="o">=&gt;</span><span class="s">"-"</span><span class="p">),</span> <span class="n">dateformat</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>This is pretty close to what you wrote, the main difference is that it is a purely column-wise operations and does not iterate over rows.  Since DataFrames doesn't hold information on the types of it's columns, it's much more efficient if you can avoid iterating over rows.  To start out, a good rule of thumb is, if what you are doing only involves one column, you should use that column as you would any other <code>AbstractVector</code>.</p>
+
+
+
+<a name="226634209"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Iterating%20Replacements%20Over%20Rows/near/226634209" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Iterating.20Replacements.20Over.20Rows.html#226634209">(Feb 17 2021 at 09:49)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269446">Expanding Man</span> <a href="#narrow/stream/274208-helpdesk-(published)/topic/Iterating.20Replacements.20Over.20Rows/near/226597638">said</a>:</p>
+<blockquote>
+<p>Suggest you do</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">df</span><span class="p">[</span><span class="o">!</span><span class="p">,</span> <span class="o">:</span><span class="n">Name</span><span class="p">]</span> <span class="o">=</span> <span class="n">map</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">Name</span><span class="p">)</span> <span class="k">do</span> <span class="n">n</span>
+    <span class="kt">Date</span><span class="p">(</span><span class="n">replace</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="s">"M"</span><span class="o">=&gt;</span><span class="s">"-"</span><span class="p">),</span> <span class="n">dateformat</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>This is pretty close to what you wrote, the main difference is that it is a purely column-wise operations and does not iterate over rows.  Since DataFrames doesn't hold information on the types of it's columns, it's much more efficient if you can avoid iterating over rows.  To start out, a good rule of thumb is, if what you are doing only involves one column, you should use that column as you would any other <code>AbstractVector</code>.</p>
+</blockquote>
+<p>Thank You -- this worked! To paraphrase -- Iterate down a column <br>
+rather than across because data can differ horizontally and could <br>
+be less efficient to analyze. The complete code would be: </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">begin</span>
+    <span class="n">dateformat</span> <span class="o">=</span> <span class="n">DateFormat</span><span class="p">(</span><span class="s">"y-m"</span><span class="p">)</span>
+    <span class="n">SpendDF</span><span class="p">[</span><span class="o">!</span><span class="p">,</span> <span class="o">:</span><span class="n">State</span><span class="p">]</span> <span class="o">=</span> <span class="n">map</span><span class="p">(</span><span class="n">SpendDF</span><span class="o">.</span><span class="n">State</span><span class="p">)</span> <span class="k">do</span> <span class="n">n</span>
+        <span class="kt">Date</span><span class="p">(</span><span class="n">replace</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="s">"M"</span><span class="o">=&gt;</span><span class="s">"-"</span><span class="p">),</span> <span class="n">dateformat</span><span class="p">)</span>
+    <span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="228199330"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Iterating%20Replacements%20Over%20Rows/near/228199330" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Iterating.20Replacements.20Over.20Rows.html#228199330">(Mar 01 2021 at 09:10)</a>:</h4>
+<p>Hello Coders: </p>
+<p>I am  attempting to replace values in my dataframe using: </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">begin</span>
+<span class="k">for</span> <span class="n">col</span> <span class="kp">in</span> <span class="n">eachcol</span><span class="p">(</span><span class="n">ED3</span><span class="p">)</span>
+    <span class="n">replace</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="s">"---"</span> <span class="o">=&gt;</span> <span class="nb">NaN</span><span class="p">)</span>
+<span class="k">end</span>
+    <span class="n">first</span><span class="p">(</span><span class="n">ED3</span><span class="p">,</span><span class="mi">5</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>The code executes, but I am not seeing any changes <br>
+among the records. The idea is to convert all the cells<br>
+containing "---" to "NaN". </p>
+<p>I have attempted, but was unsuccessful using : </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">ED3</span><span class="p">[</span><span class="n">ED3</span> <span class="o">.=&gt;</span> <span class="s">"---"</span><span class="p">]</span> <span class="o">.=</span> <span class="nb">NaN</span>
+</code></pre></div>
+<p>Any suggestions?</p>
+
+
+
+<a name="228201570"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Iterating%20Replacements%20Over%20Rows/near/228201570" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Iterating.20Replacements.20Over.20Rows.html#228201570">(Mar 01 2021 at 09:33)</a>:</h4>
+<p>Try <code>DataFrames.transform</code>. In general, anything which is a common thing to do has a builtin function with (imo) very nice syntax.</p>
+
+
+
+<a name="228201714"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Iterating%20Replacements%20Over%20Rows/near/228201714" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Iterating.20Replacements.20Over.20Rows.html#228201714">(Mar 01 2021 at 09:35)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="300483">DrChainsaw</span> <a href="#narrow/stream/274208-helpdesk-(published)/topic/Iterating.20Replacements.20Over.20Rows/near/228201570">said</a>:</p>
+<blockquote>
+<p>Try <code>DataFrames.transform</code>. In general, anything which is a common thing to do has a builtin function with (imo) very nice syntax.</p>
+</blockquote>
+<p>Hi Dr., </p>
+<p>Would you say: <br>
+df.transform(DF, "---" =&gt; "NaN"], to implement the change for the whole of DF?</p>
+
+
+
+<a name="228202102"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Iterating%20Replacements%20Over%20Rows/near/228202102" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Iterating.20Replacements.20Over.20Rows.html#228202102">(Mar 01 2021 at 09:38)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="300483">DrChainsaw</span> <a href="#narrow/stream/274208-helpdesk-(published)/topic/Iterating.20Replacements.20Over.20Rows/near/228201570">said</a>:</p>
+<blockquote>
+<p>Try <code>DataFrames.transform</code>. In general, anything which is a common thing to do has a builtin function with (imo) very nice syntax.</p>
+</blockquote>
+<p>From the code: </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">df</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">ED3</span><span class="p">[</span><span class="o">!</span><span class="p">,</span><span class="mi">4</span><span class="o">:</span><span class="mi">11</span><span class="p">],</span> <span class="s">"---"</span> <span class="o">.=&gt;</span> <span class="nb">NaN</span><span class="p">)</span>
+</code></pre></div>
+<p>The error message I get reads:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="kt">ArgumentError</span><span class="o">:</span> <span class="n">Unrecognized</span> <span class="n">column</span> <span class="n">selector</span><span class="o">:</span> <span class="s">"---"</span> <span class="o">=&gt;</span> <span class="nb">NaN</span>
+</code></pre></div>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

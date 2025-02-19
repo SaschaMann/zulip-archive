@@ -1,0 +1,101 @@
+<html>
+<head><meta charset="utf-8"><title>✔ Make Pkg prefer to update one package over another · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Make.20Pkg.20prefer.20to.20update.20one.20package.20over.20another.html">✔ Make Pkg prefer to update one package over another</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="418045529"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Make%20Pkg%20prefer%20to%20update%20one%20package%20over%20another/near/418045529" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Make.20Pkg.20prefer.20to.20update.20one.20package.20over.20another.html#418045529">(Jan 25 2024 at 10:05)</a>:</h4>
+<p>Is there any "trick" to make the Pkg resolver to prefer one package over another without forcing the user to explicitly install a version.</p>
+<p>The background is this: I have a package A which depends on <code>LightXML</code> which in turn depends on <code>XML2_jll</code>. A while back I saw that XML2_jll made a non breaking release 2.12 which included more rigorous validation. The problem is that the xmls my package needs to read are no longer considered valid by 2.12. </p>
+<p>As a fix I made a new release of package A which locks the version of XML2_jll to 2.11. However, now it seems that Pkg prefers to install the old version of package A (probably due to the version number delta of XML2_jll being higher) when installing package B (which depends on package A).</p>
+<p>Is there some way to fix this (apart from adding a dependency to XML2_jll in package B as well I guess)?</p>
+
+
+
+<a name="418045859"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Make%20Pkg%20prefer%20to%20update%20one%20package%20over%20another/near/418045859" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Make.20Pkg.20prefer.20to.20update.20one.20package.20over.20another.html#418045859">(Jan 25 2024 at 10:07)</a>:</h4>
+<p>you can make a PR to General to upperbound past versions of your package too</p>
+
+
+
+<a name="418046058"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Make%20Pkg%20prefer%20to%20update%20one%20package%20over%20another/near/418046058" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Make.20Pkg.20prefer.20to.20update.20one.20package.20over.20another.html#418046058">(Jan 25 2024 at 10:08)</a>:</h4>
+<p>not a good solution though, a "proper" one would also mean investigating why the more rigorous validation means that your XMLs are no longer conforming</p>
+
+
+
+<a name="418046853"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Make%20Pkg%20prefer%20to%20update%20one%20package%20over%20another/near/418046853" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Make.20Pkg.20prefer.20to.20update.20one.20package.20over.20another.html#418046853">(Jan 25 2024 at 10:12)</a>:</h4>
+<blockquote>
+<p>you can make a PR to General to upperbound past versions of your package too</p>
+</blockquote>
+<p>Hmm, yeah this could probably be doable. Package A is in a local registry but I suppose that just makes the process easier for me. What is the mechanism for this exactly? Make new branches from past releases and overwrite the git sha in Versions.toml, or is there a less heavy handed way?</p>
+<blockquote>
+<p>not a good solution though, a "proper" one would also mean investigating why the more rigorous validation means that your XMLs are no longer conforming</p>
+</blockquote>
+<p>Of course, but in this case it is not feasible unfortunately since I don't own or control the xml files.</p>
+
+
+
+<a name="418047244"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Make%20Pkg%20prefer%20to%20update%20one%20package%20over%20another/near/418047244" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Make.20Pkg.20prefer.20to.20update.20one.20package.20over.20another.html#418047244">(Jan 25 2024 at 10:14)</a>:</h4>
+<p>no, just make a PR and change the Compat.toml for your package</p>
+
+
+
+<a name="418047361"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Make%20Pkg%20prefer%20to%20update%20one%20package%20over%20another/near/418047361" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Make.20Pkg.20prefer.20to.20update.20one.20package.20over.20another.html#418047361">(Jan 25 2024 at 10:15)</a>:</h4>
+<p>the Compat.toml has sections of version ranges of your package, which then contain the accepted version ranges of dependencies for those versions of your package</p>
+
+
+
+<a name="418047942"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Make%20Pkg%20prefer%20to%20update%20one%20package%20over%20another/near/418047942" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Make.20Pkg.20prefer.20to.20update.20one.20package.20over.20another.html#418047942">(Jan 25 2024 at 10:19)</a>:</h4>
+<p>Yeah, that seems to be much easier. I suppose this implies that the Project.toml of dependencies is ignored when resolving package versions then?</p>
+
+
+
+<a name="418048401"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Make%20Pkg%20prefer%20to%20update%20one%20package%20over%20another/near/418048401" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Make.20Pkg.20prefer.20to.20update.20one.20package.20over.20another.html#418048401">(Jan 25 2024 at 10:21)</a>:</h4>
+<p>good question, but it does seem like that</p>
+
+
+
+<a name="418048516"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Make%20Pkg%20prefer%20to%20update%20one%20package%20over%20another/near/418048516" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Make.20Pkg.20prefer.20to.20update.20one.20package.20over.20another.html#418048516">(Jan 25 2024 at 10:22)</a>:</h4>
+<p>I just know that there were cases in the past were packages got retroactively upperbounded in the registry, without cutting a new release</p>
+
+
+
+<a name="418048620"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Make%20Pkg%20prefer%20to%20update%20one%20package%20over%20another/near/418048620" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Make.20Pkg.20prefer.20to.20update.20one.20package.20over.20another.html#418048620">(Jan 25 2024 at 10:22)</a>:</h4>
+<p>might want to ask in slack in the pkg-registration channel though, my knowledge about the resolving algorithm is very superficial</p>
+
+
+
+<a name="418049671"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Make%20Pkg%20prefer%20to%20update%20one%20package%20over%20another/near/418049671" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Make.20Pkg.20prefer.20to.20update.20one.20package.20over.20another.html#418049671">(Jan 25 2024 at 10:29)</a>:</h4>
+<p>Thanks! Since it is a local registry I can probably afford to be a bit gung ho and see if it causes issues.</p>
+
+
+
+<a name="418049702"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Make%20Pkg%20prefer%20to%20update%20one%20package%20over%20another/near/418049702" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Make.20Pkg.20prefer.20to.20update.20one.20package.20over.20another.html#418049702">(Jan 25 2024 at 10:29)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="300483">DrChainsaw</span> has marked this topic as resolved.</p>
+
+
+
+<a name="418051736"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Make%20Pkg%20prefer%20to%20update%20one%20package%20over%20another/near/418051736" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gunnar Farnebäck <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Make.20Pkg.20prefer.20to.20update.20one.20package.20over.20another.html#418051736">(Jan 25 2024 at 10:41)</a>:</h4>
+<p>The biggest difficulty is usually to find the correct syntax to use in the updated Compat.toml.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

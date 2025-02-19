@@ -1,0 +1,61 @@
+<html>
+<head><meta charset="utf-8"><title>✔ Trouble documenting a macro · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Trouble.20documenting.20a.20macro.html">✔ Trouble documenting a macro</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="274412232"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Trouble%20documenting%20a%20macro/near/274412232" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Trouble.20documenting.20a.20macro.html#274412232">(Mar 07 2022 at 16:01)</a>:</h4>
+<p>I have a string macro I'd like to document after-the-fact.</p>
+<p>Looking at the <code>@doc</code> docs I see the section where it says to try <code>@doc "..." :(mystr"")</code> or <code>@doc "..." :(@Module.macro)</code> however I haven't had any success with either of those forms. Looking at <code>Docs.jl</code> I see</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="c"># For the special `:@mac` / `:(Base.@mac)` syntax for documenting a macro after definition.</span>
+<span class="n">isquotedmacrocall</span><span class="p">(</span><span class="nd">@nospecialize</span> <span class="n">x</span><span class="p">)</span> <span class="o">=</span>
+    <span class="n">isexpr</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="ss">:copyast</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&amp;&amp;</span>
+    <span class="k">isa</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="kt">QuoteNode</span><span class="p">)</span> <span class="o">&amp;&amp;</span>
+    <span class="n">isexpr</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="ss">:macrocall</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+</code></pre></div>
+<p>However <code>isquotedmacrocall</code> seems to return false for both of the forms mentioned in that comment (<code>@mac</code>, <code>:(Base.@mac)</code>), and so I'm at bit of a loss.</p>
+
+
+
+<a name="274414219"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Trouble%20documenting%20a%20macro/near/274414219" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Trouble.20documenting.20a.20macro.html#274414219">(Mar 07 2022 at 16:14)</a>:</h4>
+<p>Does the syntax</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="s">"""</span>
+<span class="s">    name"..."</span>
+
+<span class="s">Something something.</span>
+<span class="s">"""</span>
+<span class="o">:</span><span class="p">(</span><span class="nd">@name_str</span><span class="p">)</span>
+</code></pre></div>
+<p>work? See <a href="https://docs.julialang.org/en/v1/manual/documentation/#Macros">https://docs.julialang.org/en/v1/manual/documentation/#Macros</a>.</p>
+
+
+
+<a name="274416004"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Trouble%20documenting%20a%20macro/near/274416004" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Trouble.20documenting.20a.20macro.html#274416004">(Mar 07 2022 at 16:23)</a>:</h4>
+<p>This is quite odd. That did work, but going through my edit history I've already tried that before. I wonder if this could have been <a href="https://github.com/search?q=Revise.jl&amp;type=Repositories">Revise.jl</a> / state mutation -related weirdness.</p>
+<p>In a fresh Julia session <code>:(@name_str)</code> is fine, but in my original session I tried all of the following without success:</p>
+<ul>
+<li><code>:(org"")</code></li>
+<li><code>:(@org_str)</code></li>
+<li><code>:@org_str</code></li>
+<li><code>:(:@org_str))</code></li>
+<li><code>:($(QuoteNode(:(@org_str))))</code></li>
+</ul>
+
+
+
+<a name="274416441"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Trouble%20documenting%20a%20macro/near/274416441" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Trouble.20documenting.20a.20macro.html#274416441">(Mar 07 2022 at 16:26)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="400021">Timothy</span> has marked this topic as resolved.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

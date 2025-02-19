@@ -1,0 +1,83 @@
+<html>
+<head><meta charset="utf-8"><title>Alias mutable const from another package · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Alias.20mutable.20const.20from.20another.20package.html">Alias mutable const from another package</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="307676477"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Alias%20mutable%20const%20from%20another%20package/near/307676477" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Alias.20mutable.20const.20from.20another.20package.html#307676477">(Nov 03 2022 at 08:24)</a>:</h4>
+<p>Say I have a package <code>A</code> with the following:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">module</span><span class="w"> </span><span class="n">A</span><span class="w"></span>
+<span class="k">const</span><span class="w"> </span><span class="n">foo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Dict</span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="sc">'a'</span><span class="p">)</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+<p>and I want to alias <code>foo</code> in a dependent package <code>B</code></p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">module</span><span class="w"> </span><span class="n">B</span><span class="w"></span>
+<span class="k">using</span><span class="w"> </span><span class="n">A</span><span class="w"></span>
+<span class="k">const</span><span class="w"> </span><span class="n">foo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">A</span><span class="o">.</span><span class="n">foo</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+<p>if <code>A.foo</code> is then updated (e.g. via <code>A.foo[2] = 'b'</code>) I find that <code>B.foo</code> holds the value of <code>A.foo</code> at (pre?)compile time, which is not what I want. Is there a way that <code>B.foo</code> can simply be an alias for <code>A.foo</code> ?</p>
+
+
+
+<a name="307676899"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Alias%20mutable%20const%20from%20another%20package/near/307676899" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Alias.20mutable.20const.20from.20another.20package.html#307676899">(Nov 03 2022 at 08:27)</a>:</h4>
+<p>do you want to reexport <code>A.foo</code> for users of <code>B</code>..?</p>
+
+
+
+<a name="307677086"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Alias%20mutable%20const%20from%20another%20package/near/307677086" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Alias.20mutable.20const.20from.20another.20package.html#307677086">(Nov 03 2022 at 08:29)</a>:</h4>
+<p>wait, how are you observing that change?</p>
+
+
+
+<a name="307677216"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Alias%20mutable%20const%20from%20another%20package/near/307677216" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Alias.20mutable.20const.20from.20another.20package.html#307677216">(Nov 03 2022 at 08:30)</a>:</h4>
+<p>if you have </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">module</span><span class="w"> </span><span class="n">C</span><span class="w"></span>
+<span class="k">using</span><span class="w"> </span><span class="n">A</span><span class="w"></span>
+<span class="k">using</span><span class="w"> </span><span class="n">B</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+<p>then the <code>A.foo</code> in <code>C</code> _should_ be different from the <code>A.foo</code> in <code>B</code>, I think</p>
+
+
+
+<a name="307677450"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Alias%20mutable%20const%20from%20another%20package/near/307677450" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Alias.20mutable.20const.20from.20another.20package.html#307677450">(Nov 03 2022 at 08:31)</a>:</h4>
+<p>regardless, this works:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">module</span><span class="w"> </span><span class="n">A</span><span class="w"></span>
+<span class="w">       </span><span class="k">const</span><span class="w"> </span><span class="n">foo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Dict</span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="sc">'a'</span><span class="p">)</span><span class="w"></span>
+<span class="w">       </span><span class="k">end</span><span class="w"></span>
+<span class="n">Main</span><span class="o">.</span><span class="n">A</span><span class="w"></span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">module</span><span class="w"> </span><span class="n">B</span><span class="w"></span>
+<span class="w">       </span><span class="k">using</span><span class="w"> </span><span class="o">..</span><span class="n">A</span><span class="o">:</span><span class="w"> </span><span class="n">foo</span><span class="w"></span>
+<span class="w">       </span><span class="k">end</span><span class="w"></span>
+<span class="n">Main</span><span class="o">.</span><span class="n">B</span><span class="w"></span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">module</span><span class="w"> </span><span class="n">C</span><span class="w"></span>
+<span class="w">       </span><span class="k">using</span><span class="w"> </span><span class="o">..</span><span class="n">A</span><span class="w"></span>
+<span class="w">       </span><span class="k">using</span><span class="w"> </span><span class="o">..</span><span class="n">B</span><span class="w"></span>
+<span class="w">       </span><span class="n">f</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nd">@show</span><span class="w"> </span><span class="n">A</span><span class="o">.</span><span class="n">foo</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="n">B</span><span class="o">.</span><span class="n">foo</span><span class="w"></span>
+<span class="w">       </span><span class="k">end</span><span class="w"></span>
+<span class="n">Main</span><span class="o">.</span><span class="n">C</span><span class="w"></span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="o">.</span><span class="n">C</span><span class="w"></span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">C</span><span class="o">.</span><span class="n">f</span><span class="p">()</span><span class="w"></span>
+<span class="n">A</span><span class="o">.</span><span class="n">foo</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="n">B</span><span class="o">.</span><span class="n">foo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="w"></span>
+<span class="nb">true</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

@@ -1,0 +1,407 @@
+<html>
+<head><meta charset="utf-8"><title>✔ Add fields to struct without losing performance · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Add.20fields.20to.20struct.20without.20losing.20performance.html">✔ Add fields to struct without losing performance</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="247777359"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Add%20fields%20to%20struct%20without%20losing%20performance/near/247777359" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Add.20fields.20to.20struct.20without.20losing.20performance.html#247777359">(Jul 31 2021 at 01:05)</a>:</h4>
+<p>Is there a simple way to create a struct with fields, e.g.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="kt">Test</span><span class="p">{</span><span class="kt">T</span><span class="p">}</span>
+    <span class="n">dt</span>
+    <span class="n">v</span>
+    <span class="n">z</span>
+<span class="k">end</span>
+
+<span class="k">function</span> <span class="n">Test</span><span class="p">(</span>
+        <span class="n">f</span><span class="o">::</span><span class="kt">Vector</span><span class="p">,</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="kt">Float32</span><span class="p">,</span> <span class="n">length</span><span class="p">(</span><span class="n">f</span><span class="p">)),</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">ones</span><span class="p">(</span><span class="kt">Int64</span><span class="p">,</span> <span class="n">length</span><span class="p">(</span><span class="n">f</span><span class="p">)),</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="kt">Float32</span><span class="p">,</span> <span class="n">length</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="kt">Test</span><span class="p">{</span><span class="kt">eltype</span><span class="p">(</span><span class="kt">dt</span><span class="p">)}(</span><span class="n">dt</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>And then use these fields in a downstream function without allocating arrays? e.g.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">transform</span><span class="p">(</span><span class="n">f</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">T</span><span class="p">},</span> <span class="n">tfm</span><span class="o">::</span><span class="kt">Test</span><span class="p">)</span> <span class="k">where</span> <span class="p">{</span><span class="kt">T</span><span class="p">}</span>
+    <span class="n">dt</span> <span class="o">=</span> <span class="n">tfm</span><span class="o">.</span><span class="n">dt</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">tfm</span><span class="o">.</span><span class="n">v</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">tfm</span><span class="o">.</span><span class="n">z</span>
+        <span class="o">...</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>My original function which didn't utilize any custom types doesn't allocate anything but when trying to use my <code>Test</code> type I can't figure out how to avoid allocations</p>
+
+
+
+<a name="247777460"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Add%20fields%20to%20struct%20without%20losing%20performance/near/247777460" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Add.20fields.20to.20struct.20without.20losing.20performance.html#247777460">(Jul 31 2021 at 01:08)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">tfm</span> <span class="o">=</span> <span class="n">Test</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+<span class="nd">@benchmark</span> <span class="n">transform</span><span class="p">(</span><span class="o">$</span><span class="n">f</span><span class="p">,</span> <span class="o">$</span><span class="n">tfm</span><span class="p">)</span>
+
+<span class="c"># returns</span>
+<span class="n">Memory</span> <span class="n">estimate</span><span class="o">:</span> <span class="mi">224</span> <span class="n">bytes</span><span class="p">,</span> <span class="n">allocs</span> <span class="n">estimate</span><span class="o">:</span> <span class="mf">14.</span>
+</code></pre></div>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="nd">@benchmark</span> <span class="n">transform</span><span class="p">(</span><span class="o">$</span><span class="n">f</span><span class="p">,</span> <span class="o">$</span><span class="n">dt</span><span class="p">,</span> <span class="o">$</span><span class="n">v</span><span class="p">,</span> <span class="o">$</span><span class="n">z</span><span class="p">)</span>
+
+<span class="c"># returns</span>
+<span class="n">Memory</span> <span class="n">estimate</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">,</span> <span class="n">allocs</span> <span class="n">estimate</span><span class="o">:</span> <span class="mf">0.</span>
+</code></pre></div>
+
+
+
+<a name="247786305"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Add%20fields%20to%20struct%20without%20losing%20performance/near/247786305" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Add.20fields.20to.20struct.20without.20losing.20performance.html#247786305">(Jul 31 2021 at 05:04)</a>:</h4>
+<p><a href="https://docs.julialang.org/en/v1/manual/performance-tips/#Avoid-fields-with-abstract-type">https://docs.julialang.org/en/v1/manual/performance-tips/#Avoid-fields-with-abstract-type</a></p>
+
+
+
+<a name="247817868"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Add%20fields%20to%20struct%20without%20losing%20performance/near/247817868" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Add.20fields.20to.20struct.20without.20losing.20performance.html#247817868">(Jul 31 2021 at 18:23)</a>:</h4>
+<p>Thank you! That is useful but I don't think it solved my problem of allocating arrays. Any idea how I might pre-allocate the arrays in the <code>Test</code> function</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="kt">Test</span><span class="p">{</span><span class="kt">T</span> <span class="o">&lt;:</span> <span class="kt">AbstractArray</span><span class="p">}</span> <span class="o">&lt;:</span> <span class="kt">DistanceTransform</span>
+    <span class="n">dt</span><span class="o">::</span><span class="kt">T</span>
+    <span class="n">v</span><span class="o">::</span><span class="kt">T</span>
+    <span class="n">z</span><span class="o">::</span><span class="kt">T</span>
+<span class="k">end</span>
+
+<span class="k">function</span> <span class="n">Test</span><span class="p">(</span>
+        <span class="n">f</span><span class="o">::</span><span class="kt">Vector</span><span class="p">,</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="kt">Float32</span><span class="p">,</span> <span class="n">length</span><span class="p">(</span><span class="n">f</span><span class="p">)),</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">ones</span><span class="p">(</span><span class="kt">Int64</span><span class="p">,</span> <span class="n">length</span><span class="p">(</span><span class="n">f</span><span class="p">)),</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="kt">Float32</span><span class="p">,</span> <span class="n">length</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="kt">Test</span><span class="p">{</span><span class="kt">AbstractArray</span><span class="p">}(</span><span class="n">dt</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>In order to avoid allocations in the <code>transform</code> operation?</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">transform</span><span class="p">(</span><span class="n">f</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">T</span><span class="p">},</span> <span class="n">tfm</span><span class="o">::</span><span class="kt">Test</span><span class="p">)</span> <span class="k">where</span> <span class="p">{</span><span class="kt">T</span><span class="p">}</span>
+    <span class="n">dt</span> <span class="o">=</span> <span class="n">tfm</span><span class="o">.</span><span class="n">dt</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">tfm</span><span class="o">.</span><span class="n">v</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">tfm</span><span class="o">.</span><span class="n">z</span>
+        <span class="o">...</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="247818388"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Add%20fields%20to%20struct%20without%20losing%20performance/near/247818388" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Add.20fields.20to.20struct.20without.20losing.20performance.html#247818388">(Jul 31 2021 at 18:35)</a>:</h4>
+<p>Do you mean that you want to keep reusing the same existing arrays in the Test constructor instead of allocating new arrays for every instance of Test?</p>
+
+
+
+<a name="247818459"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Add%20fields%20to%20struct%20without%20losing%20performance/near/247818459" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Add.20fields.20to.20struct.20without.20losing.20performance.html#247818459">(Jul 31 2021 at 18:36)</a>:</h4>
+<p>I think so..</p>
+
+
+
+<a name="247818479"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Add%20fields%20to%20struct%20without%20losing%20performance/near/247818479" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Add.20fields.20to.20struct.20without.20losing.20performance.html#247818479">(Jul 31 2021 at 18:37)</a>:</h4>
+<p>I don't really understand types yet so I might be confused, but yes I think that is what I want</p>
+
+
+
+<a name="247818544"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Add%20fields%20to%20struct%20without%20losing%20performance/near/247818544" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Add.20fields.20to.20struct.20without.20losing.20performance.html#247818544">(Jul 31 2021 at 18:38)</a>:</h4>
+<p>Hmm, I don't mean to be rude, but I suggest not doing optimizations until you know you have a problem. E.g. if you re-use the same arrays for different Test objects, you could run into some annoying bugs if the arrays are modified and you forget different Test objects share the same arrays</p>
+
+
+
+<a name="247818558"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Add%20fields%20to%20struct%20without%20losing%20performance/near/247818558" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Add.20fields.20to.20struct.20without.20losing.20performance.html#247818558">(Jul 31 2021 at 18:39)</a>:</h4>
+<p>But you said the transform function allocated. The part of the function you posted should not allocate, so if that function has a problem, it must be in the omitted part</p>
+
+
+
+<a name="247818707"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Add%20fields%20to%20struct%20without%20losing%20performance/near/247818707" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Add.20fields.20to.20struct.20without.20losing.20performance.html#247818707">(Jul 31 2021 at 18:43)</a>:</h4>
+<p>That makes sense. I am attempting this in order to learn Julia better. It might also add some convenience in the future, but it might be too much of a headache.</p>
+<p>The basic function that I am attempting to recreate is non-allocating like so:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">f</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+<span class="n">dt</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="kt">Float32</span><span class="p">,</span> <span class="n">length</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>
+<span class="n">v</span> <span class="o">=</span> <span class="n">ones</span><span class="p">(</span><span class="kt">Int64</span><span class="p">,</span> <span class="n">length</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>
+<span class="n">z</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="kt">Float32</span><span class="p">,</span> <span class="n">length</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="k">function</span> <span class="n">squared_euclidean_distance_transform</span><span class="p">(</span><span class="n">f</span><span class="o">::</span><span class="kt">AbstractArray</span><span class="p">{</span><span class="kt">T</span><span class="p">,</span><span class="mi">1</span><span class="p">},</span> <span class="n">dt</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span> <span class="k">where</span> <span class="p">{</span><span class="kt">T</span><span class="p">}</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">length</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">z</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="nb">Inf32</span>
+    <span class="n">z</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="nb">Inf32</span>
+
+    <span class="c"># Lower envelope operation</span>
+    <span class="k">for</span> <span class="n">q</span> <span class="k">in</span> <span class="mi">2</span><span class="o">:</span><span class="n">n</span>
+        <span class="k">while</span> <span class="nb">true</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="p">((</span><span class="n">f</span><span class="p">[</span><span class="n">q</span><span class="p">]</span> <span class="o">+</span> <span class="n">q</span><span class="o">^</span><span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="n">v</span><span class="p">[</span><span class="n">k</span><span class="p">]]</span> <span class="o">+</span> <span class="n">v</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">^</span><span class="mi">2</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">q</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">v</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">s</span> <span class="o">≤</span> <span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                <span class="n">k</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="k">else</span>
+                <span class="n">k</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">v</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">q</span>
+                <span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">s</span>
+                <span class="n">z</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="nb">Inf32</span>
+                <span class="k">break</span>
+            <span class="k">end</span>
+        <span class="k">end</span>
+    <span class="k">end</span>
+
+    <span class="c"># Distance transform operation</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">for</span> <span class="n">q</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="n">n</span>
+        <span class="k">while</span> <span class="n">z</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">q</span>
+            <span class="n">k</span> <span class="o">=</span> <span class="n">k</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">end</span>
+        <span class="n">dt</span><span class="p">[</span><span class="n">q</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">q</span> <span class="o">-</span> <span class="n">v</span><span class="p">[</span><span class="n">k</span><span class="p">])</span><span class="o">^</span><span class="mi">2</span> <span class="o">+</span> <span class="n">f</span><span class="p">[</span><span class="n">v</span><span class="p">[</span><span class="n">k</span><span class="p">]]</span>
+    <span class="k">end</span>
+    <span class="k">return</span> <span class="n">dt</span>
+<span class="k">end</span>
+
+<span class="nd">@benchmark</span> <span class="n">squared_euclidean_distance_transform</span><span class="p">(</span><span class="o">$</span><span class="n">f</span><span class="p">,</span> <span class="o">$</span><span class="n">dt</span><span class="p">,</span> <span class="o">$</span><span class="n">v</span><span class="p">,</span> <span class="o">$</span><span class="n">z</span><span class="p">)</span>
+
+<span class="c"># returns</span>
+<span class="n">Memory</span> <span class="n">estimate</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">,</span> <span class="n">allocs</span> <span class="n">estimate</span><span class="o">:</span> <span class="mf">0.</span>
+</code></pre></div>
+
+
+
+<a name="247819840"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Add%20fields%20to%20struct%20without%20losing%20performance/near/247819840" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Add.20fields.20to.20struct.20without.20losing.20performance.html#247819840">(Jul 31 2021 at 19:08)</a>:</h4>
+<p>Ahhh - the issue before was simply that the parameter of Test was AbstractArray - which means the fields were abstractly typed</p>
+
+
+
+<a name="247819856"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Add%20fields%20to%20struct%20without%20losing%20performance/near/247819856" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Add.20fields.20to.20struct.20without.20losing.20performance.html#247819856">(Jul 31 2021 at 19:09)</a>:</h4>
+<p>For the code to be efficient (and non-allocating), you need to be able to predict the type of each field only from the type of the Test object itself</p>
+
+
+
+<a name="247820094"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Add%20fields%20to%20struct%20without%20losing%20performance/near/247820094" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kyle Daruwalla <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Add.20fields.20to.20struct.20without.20losing.20performance.html#247820094">(Jul 31 2021 at 19:15)</a>:</h4>
+<blockquote>
+<p>Thank you! That is useful but I don't think it solved my problem of allocating arrays</p>
+</blockquote>
+<p>Like Jakob mentioned, you want to do <code>Test{typeof(dt)}(dt, v, z)</code> instead of <code>Test{AbstractArray}(dt, v, z)</code>. Or even better just do <code>Test(dt, v, z)</code>.</p>
+
+
+
+<a name="247820637"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Add%20fields%20to%20struct%20without%20losing%20performance/near/247820637" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Add.20fields.20to.20struct.20without.20losing.20performance.html#247820637">(Jul 31 2021 at 19:29)</a>:</h4>
+<p>Does this work when you need each field to be a different type? I am getting some errors from both <code>Test{typeof(dt)}(dt, v, z)</code> and <code>Test(dt, v, z)</code></p>
+
+
+
+<a name="247821220"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Add%20fields%20to%20struct%20without%20losing%20performance/near/247821220" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Add.20fields.20to.20struct.20without.20losing.20performance.html#247821220">(Jul 31 2021 at 19:46)</a>:</h4>
+<p>Probably that's because you defined all fields as having the same type.<br>
+You should do something like this</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="kt">Test</span><span class="p">{</span><span class="kt">T1</span> <span class="o">&lt;:</span> <span class="kt">AbstractArray</span><span class="p">,</span> <span class="kt">T2</span> <span class="o">&lt;:</span> <span class="kt">AbstractArray</span><span class="p">}</span> <span class="o">&lt;:</span> <span class="kt">DistanceTransform</span>
+    <span class="n">dt</span><span class="o">::</span><span class="kt">T1</span>
+    <span class="n">v</span><span class="o">::</span><span class="kt">T2</span>
+    <span class="n">z</span><span class="o">::</span><span class="kt">T1</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>and use <code>Test(dt, v, z)</code> form to initialize it, since compiler can infer types on its own.</p>
+
+
+
+<a name="247821298"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Add%20fields%20to%20struct%20without%20losing%20performance/near/247821298" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Add.20fields.20to.20struct.20without.20losing.20performance.html#247821298">(Jul 31 2021 at 19:49)</a>:</h4>
+<p>By the way, you can use <code>AbstractVector{T}</code> alias instead of <code>AbstractArray{T, 1}</code>. It's more straightforward.</p>
+
+
+
+<a name="247822851"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Add%20fields%20to%20struct%20without%20losing%20performance/near/247822851" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Add.20fields.20to.20struct.20without.20losing.20performance.html#247822851">(Jul 31 2021 at 20:31)</a>:</h4>
+<p>Thank you! One more thing, if I want to dispatch on the type of <code>f</code> how would I do that in the initialization function? The code below works, if I want to restrict <code>f::Vector{Int64}</code> or <code>img::Matrix{Int64}</code> but I run into errors when I try to allow more flexibility e.g. <code>f::Vector{Number}</code></p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">Test</span><span class="p">(</span>
+        <span class="n">f</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Int64</span><span class="p">},</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="kt">Float32</span><span class="p">,</span> <span class="n">length</span><span class="p">(</span><span class="n">f</span><span class="p">)),</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">ones</span><span class="p">(</span><span class="kt">Int64</span><span class="p">,</span> <span class="n">length</span><span class="p">(</span><span class="n">f</span><span class="p">)),</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="kt">Float32</span><span class="p">,</span> <span class="n">length</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="n">Test</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="k">function</span> <span class="n">Test</span><span class="p">(</span>
+        <span class="n">img</span><span class="o">::</span><span class="kt">Matrix</span><span class="p">{</span><span class="kt">Int64</span><span class="p">},</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="kt">Float32</span><span class="p">,</span> <span class="n">size</span><span class="p">(</span><span class="n">img</span><span class="p">)),</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">ones</span><span class="p">(</span><span class="kt">Int64</span><span class="p">,</span> <span class="n">size</span><span class="p">(</span><span class="n">img</span><span class="p">)),</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="kt">Float32</span><span class="p">,</span> <span class="n">size</span><span class="p">(</span><span class="n">img</span><span class="p">)</span> <span class="o">.+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="n">Test</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="247823116"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Add%20fields%20to%20struct%20without%20losing%20performance/near/247823116" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Add.20fields.20to.20struct.20without.20losing.20performance.html#247823116">(Jul 31 2021 at 20:39)</a>:</h4>
+<p>What kind of errors and how more general definition looks like?</p>
+
+
+
+<a name="247823514"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Add%20fields%20to%20struct%20without%20losing%20performance/near/247823514" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Add.20fields.20to.20struct.20without.20losing.20performance.html#247823514">(Jul 31 2021 at 20:51)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">Test</span><span class="p">(</span>
+        <span class="n">f</span><span class="o">::</span><span class="kt">Vector</span><span class="p">,</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="kt">Float32</span><span class="p">,</span> <span class="n">length</span><span class="p">(</span><span class="n">f</span><span class="p">)),</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">ones</span><span class="p">(</span><span class="kt">Int64</span><span class="p">,</span> <span class="n">length</span><span class="p">(</span><span class="n">f</span><span class="p">)),</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="kt">Float32</span><span class="p">,</span> <span class="n">length</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="n">Test</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="k">function</span> <span class="n">Test</span><span class="p">(</span>
+        <span class="n">f</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Number</span><span class="p">},</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="kt">Float32</span><span class="p">,</span> <span class="n">length</span><span class="p">(</span><span class="n">f</span><span class="p">)),</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">ones</span><span class="p">(</span><span class="kt">Int64</span><span class="p">,</span> <span class="n">length</span><span class="p">(</span><span class="n">f</span><span class="p">)),</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="kt">Float32</span><span class="p">,</span> <span class="n">length</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="n">Test</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="n">f</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+<span class="n">tfm</span> <span class="o">=</span> <span class="n">Test</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+</code></pre></div>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">tfm</span>
+<span class="kt">MethodError</span><span class="o">:</span> <span class="n">no</span> <span class="n">method</span> <span class="n">matching</span> <span class="n">Main</span><span class="o">.</span><span class="n">workspace134</span><span class="o">.</span><span class="n">Test</span><span class="p">(</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Int64</span><span class="p">})</span>
+
+<span class="n">Closest</span> <span class="n">candidates</span> <span class="n">are</span><span class="o">:</span>
+
+<span class="n">Main</span><span class="o">.</span><span class="n">workspace134</span><span class="o">.</span><span class="n">Test</span><span class="p">(</span><span class="o">::</span><span class="kt">T1</span><span class="p">,</span> <span class="o">!</span><span class="n">Matched</span><span class="o">::</span><span class="kt">T2</span><span class="p">,</span> <span class="o">!</span><span class="n">Matched</span><span class="o">::</span><span class="kt">T1</span><span class="p">)</span> <span class="k">where</span> <span class="p">{</span><span class="kt">T1</span><span class="o">&lt;:</span><span class="kt">AbstractArray</span><span class="p">,</span> <span class="kt">T2</span><span class="o">&lt;:</span><span class="kt">AbstractArray</span><span class="p">}</span> <span class="n">at</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">daleblack</span><span class="o">/</span><span class="n">Google</span> <span class="n">Drive</span><span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">julia</span><span class="o">/</span><span class="n">pluto</span> <span class="n">notebooks</span><span class="o">/</span><span class="n">restructure_distance_transforms</span><span class="o">.</span><span class="n">jl</span><span class="cm">#==#</span><span class="mi">95897</span><span class="n">bab</span><span class="o">-</span><span class="mi">7702</span><span class="o">-</span><span class="mf">48e7</span><span class="o">-</span><span class="mf">8e0</span><span class="n">d</span><span class="o">-</span><span class="n">b5c0c83d4d94</span><span class="o">:</span><span class="mi">3</span>
+
+<span class="n">Main</span><span class="o">.</span><span class="n">workspace134</span><span class="o">.</span><span class="n">Test</span><span class="p">(</span><span class="o">!</span><span class="n">Matched</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Number</span><span class="p">})</span> <span class="n">at</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">daleblack</span><span class="o">/</span><span class="n">Google</span> <span class="n">Drive</span><span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">julia</span><span class="o">/</span><span class="n">pluto</span> <span class="n">notebooks</span><span class="o">/</span><span class="n">restructure_distance_transforms</span><span class="o">.</span><span class="n">jl</span><span class="cm">#==#</span><span class="mi">95897</span><span class="n">bab</span><span class="o">-</span><span class="mi">7702</span><span class="o">-</span><span class="mf">48e7</span><span class="o">-</span><span class="mf">8e0</span><span class="n">d</span><span class="o">-</span><span class="n">b5c0c83d4d94</span><span class="o">:</span><span class="mi">8</span>
+
+<span class="n">Main</span><span class="o">.</span><span class="n">workspace134</span><span class="o">.</span><span class="n">Test</span><span class="p">(</span><span class="o">!</span><span class="n">Matched</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Number</span><span class="p">},</span> <span class="o">!</span><span class="n">Matched</span><span class="o">::</span><span class="kt">Any</span><span class="p">)</span> <span class="n">at</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">daleblack</span><span class="o">/</span><span class="n">Google</span> <span class="n">Drive</span><span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">julia</span><span class="o">/</span><span class="n">pluto</span> <span class="n">notebooks</span><span class="o">/</span><span class="n">restructure_distance_transforms</span><span class="o">.</span><span class="n">jl</span><span class="cm">#==#</span><span class="mi">95897</span><span class="n">bab</span><span class="o">-</span><span class="mi">7702</span><span class="o">-</span><span class="mf">48e7</span><span class="o">-</span><span class="mf">8e0</span><span class="n">d</span><span class="o">-</span><span class="n">b5c0c83d4d94</span><span class="o">:</span><span class="mi">8</span>
+
+<span class="o">...</span>
+
+<span class="n">top</span><span class="o">-</span><span class="n">level</span> <span class="n">scope</span><span class="nd">@Local</span><span class="o">:</span> <span class="mi">1</span><span class="p">[</span><span class="n">inlined</span><span class="p">]</span>
+</code></pre></div>
+<p>I'm using Pluto btw in case that matters</p>
+
+
+
+<a name="247824006"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Add%20fields%20to%20struct%20without%20losing%20performance/near/247824006" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Add.20fields.20to.20struct.20without.20losing.20performance.html#247824006">(Jul 31 2021 at 21:04)</a>:</h4>
+<p>You hit a classical beginner mistake in Julia: Vector{Int} is not a subtype of Vector{Number}. That is, if A is a subtype of B, that does NOT mean that T{A} is a subtype of T{B}</p>
+
+
+
+<a name="247824017"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Add%20fields%20to%20struct%20without%20losing%20performance/near/247824017" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Add.20fields.20to.20struct.20without.20losing.20performance.html#247824017">(Jul 31 2021 at 21:05)</a>:</h4>
+<p>For that, you would need to write Vector{&lt;: Number}.</p>
+
+
+
+<a name="247829415"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Add%20fields%20to%20struct%20without%20losing%20performance/near/247829415" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Add.20fields.20to.20struct.20without.20losing.20performance.html#247829415">(Jul 31 2021 at 23:51)</a>:</h4>
+<p>Hmm there is still a problem </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="kt">Test</span><span class="p">{</span><span class="kt">T1</span> <span class="o">&lt;:</span> <span class="kt">AbstractArray</span><span class="p">,</span> <span class="kt">T2</span> <span class="o">&lt;:</span> <span class="kt">AbstractArray</span><span class="p">}</span> <span class="o">&lt;:</span> <span class="kt">DistanceTransform</span>
+    <span class="n">dt</span><span class="o">::</span><span class="kt">T1</span>
+    <span class="n">v</span><span class="o">::</span><span class="kt">T2</span>
+    <span class="n">z</span><span class="o">::</span><span class="kt">T1</span>
+<span class="k">end</span>
+
+<span class="k">function</span> <span class="n">Test</span><span class="p">(</span>
+        <span class="n">f</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="o">&lt;:</span> <span class="kt">Real</span><span class="p">},</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="kt">Float32</span><span class="p">,</span> <span class="n">length</span><span class="p">(</span><span class="n">f</span><span class="p">)),</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">ones</span><span class="p">(</span><span class="kt">Int64</span><span class="p">,</span> <span class="n">length</span><span class="p">(</span><span class="n">f</span><span class="p">)),</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="kt">Float32</span><span class="p">,</span> <span class="n">length</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="n">Test</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="k">function</span> <span class="n">Test</span><span class="p">(</span>
+        <span class="n">img</span><span class="o">::</span><span class="kt">Array</span><span class="p">{</span><span class="o">&lt;:</span> <span class="kt">Real</span><span class="p">},</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="kt">Float32</span><span class="p">,</span> <span class="n">size</span><span class="p">(</span><span class="n">img</span><span class="p">)),</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">ones</span><span class="p">(</span><span class="kt">Int64</span><span class="p">,</span> <span class="n">size</span><span class="p">(</span><span class="n">img</span><span class="p">)),</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="kt">Float32</span><span class="p">,</span> <span class="n">size</span><span class="p">(</span><span class="n">img</span><span class="p">)</span> <span class="o">.+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="n">Test</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="n">tfm</span> <span class="o">=</span> <span class="n">SquaredEuclidean</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+</code></pre></div>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">tfm</span>
+<span class="kt">MethodError</span><span class="o">:</span> <span class="n">Main</span><span class="o">.</span><span class="n">workspace162</span><span class="o">.</span><span class="n">Test</span><span class="p">(</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Float32</span><span class="p">},</span> <span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Int64</span><span class="p">},</span> <span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Float32</span><span class="p">})</span> <span class="n">is</span> <span class="n">ambiguous</span><span class="o">.</span> <span class="n">Candidates</span><span class="o">:</span>
+
+<span class="n">Main</span><span class="o">.</span><span class="n">workspace162</span><span class="o">.</span><span class="n">Test</span><span class="p">(</span><span class="n">dt</span><span class="o">::</span><span class="kt">T1</span><span class="p">,</span> <span class="n">v</span><span class="o">::</span><span class="kt">T2</span><span class="p">,</span> <span class="n">z</span><span class="o">::</span><span class="kt">T1</span><span class="p">)</span> <span class="k">where</span> <span class="p">{</span><span class="kt">T1</span><span class="o">&lt;:</span><span class="kt">AbstractArray</span><span class="p">,</span> <span class="kt">T2</span><span class="o">&lt;:</span><span class="kt">AbstractArray</span><span class="p">}</span> <span class="k">in</span> <span class="n">Main</span><span class="o">.</span><span class="n">workspace162</span> <span class="n">at</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">daleblack</span><span class="o">/</span><span class="n">Google</span> <span class="n">Drive</span><span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">julia</span><span class="o">/</span><span class="n">pluto</span> <span class="n">notebooks</span><span class="o">/</span><span class="n">restructure_distance_transforms</span><span class="o">.</span><span class="n">jl</span><span class="cm">#==#</span><span class="mi">95897</span><span class="n">bab</span><span class="o">-</span><span class="mi">7702</span><span class="o">-</span><span class="mf">48e7</span><span class="o">-</span><span class="mf">8e0</span><span class="n">d</span><span class="o">-</span><span class="n">b5c0c83d4d94</span><span class="o">:</span><span class="mi">3</span>
+
+<span class="n">Main</span><span class="o">.</span><span class="n">workspace162</span><span class="o">.</span><span class="n">Test</span><span class="p">(</span><span class="n">f</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">var</span><span class="s">"#s1108"</span><span class="p">}</span> <span class="k">where</span> <span class="kt">var</span><span class="s">"#s1108"</span><span class="o">&lt;:</span><span class="kt">Real</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">in</span> <span class="n">Main</span><span class="o">.</span><span class="n">workspace162</span> <span class="n">at</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">daleblack</span><span class="o">/</span><span class="n">Google</span> <span class="n">Drive</span><span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">julia</span><span class="o">/</span><span class="n">pluto</span> <span class="n">notebooks</span><span class="o">/</span><span class="n">restructure_distance_transforms</span><span class="o">.</span><span class="n">jl</span><span class="cm">#==#</span><span class="mi">95897</span><span class="n">bab</span><span class="o">-</span><span class="mi">7702</span><span class="o">-</span><span class="mf">48e7</span><span class="o">-</span><span class="mf">8e0</span><span class="n">d</span><span class="o">-</span><span class="n">b5c0c83d4d94</span><span class="o">:</span><span class="mi">8</span>
+
+<span class="n">Main</span><span class="o">.</span><span class="n">workspace162</span><span class="o">.</span><span class="n">Test</span><span class="p">(</span><span class="n">img</span><span class="o">::</span><span class="kt">Array</span><span class="p">{</span><span class="kt">var</span><span class="s">"#s1112"</span><span class="p">,</span> <span class="kt">N</span><span class="p">}</span> <span class="k">where</span> <span class="p">{</span><span class="kt">var</span><span class="s">"#s1112"</span><span class="o">&lt;:</span><span class="kt">Real</span><span class="p">,</span> <span class="kt">N</span><span class="p">},</span> <span class="n">dt</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">in</span> <span class="n">Main</span><span class="o">.</span><span class="n">workspace162</span> <span class="n">at</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">daleblack</span><span class="o">/</span><span class="n">Google</span> <span class="n">Drive</span><span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">julia</span><span class="o">/</span><span class="n">pluto</span> <span class="n">notebooks</span><span class="o">/</span><span class="n">restructure_distance_transforms</span><span class="o">.</span><span class="n">jl</span><span class="cm">#==#</span><span class="mi">95897</span><span class="n">bab</span><span class="o">-</span><span class="mi">7702</span><span class="o">-</span><span class="mf">48e7</span><span class="o">-</span><span class="mf">8e0</span><span class="n">d</span><span class="o">-</span><span class="n">b5c0c83d4d94</span><span class="o">:</span><span class="mi">18</span>
+
+<span class="n">Possible</span> <span class="n">fix</span><span class="p">,</span> <span class="n">define</span>
+
+<span class="n">Main</span><span class="o">.</span><span class="n">workspace162</span><span class="o">.</span><span class="n">Test</span><span class="p">(</span><span class="o">::</span><span class="kt">T1</span><span class="p">,</span> <span class="o">::</span><span class="kt">T2</span><span class="p">,</span> <span class="o">::</span><span class="kt">T1</span><span class="p">)</span> <span class="k">where</span> <span class="p">{</span><span class="kt">T1</span><span class="o">&lt;:</span><span class="p">(</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">var</span><span class="s">"#s1108"</span><span class="p">}</span> <span class="kt">where</span> <span class="kt">var</span><span class="s">"#s1108"</span><span class="o">&lt;:</span><span class="kt">Real</span><span class="p">),</span> <span class="kt">T2</span><span class="o">&lt;:</span><span class="kt">AbstractArray</span><span class="p">}</span>
+
+<span class="n">Main</span><span class="o">.</span><span class="n">workspace162</span><span class="o">.</span><span class="n">Test</span><span class="p">(</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Float32</span><span class="p">},</span> <span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Float32</span><span class="p">},</span> <span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Int64</span><span class="p">},</span> <span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Float32</span><span class="p">})</span><span class="nd">@Other</span><span class="o">:</span> <span class="mi">15</span>
+<span class="n">top</span><span class="o">-</span><span class="n">level</span> <span class="n">scope</span><span class="nd">@Local</span><span class="o">:</span> <span class="mi">1</span><span class="p">[</span><span class="n">inlined</span><span class="p">]</span>
+</code></pre></div>
+
+
+
+<a name="247840606"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Add%20fields%20to%20struct%20without%20losing%20performance/near/247840606" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Add.20fields.20to.20struct.20without.20losing.20performance.html#247840606">(Aug 01 2021 at 04:57)</a>:</h4>
+<p>At this point you have introduced too many functions, best thing you can do is to restart Julia.</p>
+
+
+
+<a name="247840843"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Add%20fields%20to%20struct%20without%20losing%20performance/near/247840843" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Add.20fields.20to.20struct.20without.20losing.20performance.html#247840843">(Aug 01 2021 at 05:03)</a>:</h4>
+<p>But I can't understand, what is the difference between all these methods, they all create the same object. You do not use type information at all, so you can for example define</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">Test</span><span class="p">(</span>
+  <span class="n">img</span><span class="o">::</span><span class="kt">AbstractArray</span><span class="p">,</span>
+  <span class="n">dt</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="kt">Float32</span><span class="p">,</span> <span class="n">size</span><span class="p">(</span><span class="n">img</span><span class="p">)),</span>
+  <span class="n">v</span> <span class="o">=</span> <span class="n">ones</span><span class="p">(</span><span class="kt">Int64</span><span class="p">,</span> <span class="n">size</span><span class="p">(</span><span class="n">img</span><span class="p">)),</span>
+  <span class="n">z</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="kt">Float32</span><span class="p">,</span> <span class="n">size</span><span class="p">(</span><span class="n">img</span><span class="p">)</span> <span class="o">.+</span> <span class="mi">1</span><span class="p">)</span>
+<span class="p">)</span>
+  <span class="n">Test</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>This definition will work for vectors and matrices, and for any type of elements.</p>
+
+
+
+<a name="247840892"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Add%20fields%20to%20struct%20without%20losing%20performance/near/247840892" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Add.20fields.20to.20struct.20without.20losing.20performance.html#247840892">(Aug 01 2021 at 05:04)</a>:</h4>
+<p>There is no need to over constrain.</p>
+
+
+
+<a name="247869394"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Add%20fields%20to%20struct%20without%20losing%20performance/near/247869394" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Add.20fields.20to.20struct.20without.20losing.20performance.html#247869394">(Aug 01 2021 at 17:49)</a>:</h4>
+<p>Yeah, great point. <code>AbstractArray</code> covers all that I need</p>
+
+
+
+<a name="247869398"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Add%20fields%20to%20struct%20without%20losing%20performance/near/247869398" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Add.20fields.20to.20struct.20without.20losing.20performance.html#247869398">(Aug 01 2021 at 17:49)</a>:</h4>
+<p>Thank you for all the help everyone!</p>
+
+
+
+<a name="247869401"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Add%20fields%20to%20struct%20without%20losing%20performance/near/247869401" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Add.20fields.20to.20struct.20without.20losing.20performance.html#247869401">(Aug 01 2021 at 17:49)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="352971">Dale Black</span> has marked this topic as resolved.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

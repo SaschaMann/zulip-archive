@@ -1,0 +1,149 @@
+<html>
+<head><meta charset="utf-8"><title>Dispatch on same type but different type parameters? · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Dispatch.20on.20same.20type.20but.20different.20type.20parameters.3F.html">Dispatch on same type but different type parameters?</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="242920043"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Dispatch%20on%20same%20type%20but%20different%20type%20parameters%3F/near/242920043" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> pg. <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Dispatch.20on.20same.20type.20but.20different.20type.20parameters.3F.html#242920043">(Jun 16 2021 at 18:11)</a>:</h4>
+<p>I would like to do the following</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">foo</span><span class="p">(</span><span class="n">a</span><span class="o">::</span><span class="kt">T</span><span class="p">{</span><span class="kt">R1</span><span class="p">},</span> <span class="n">b</span><span class="o">::</span><span class="kt">T</span><span class="p">{</span><span class="kt">R2</span><span class="p">})</span> <span class="k">where</span> <span class="p">{</span><span class="kt">R1</span><span class="p">,</span><span class="kt">R2</span><span class="p">,</span> <span class="kt">T</span> <span class="o">&lt;:</span> <span class="kt">SomeAbstractType</span><span class="p">}</span>
+
+<span class="k">end</span>
+</code></pre></div>
+<p>but this doesn't compile. </p>
+<p>Is there a way to accomplish such a thing? I want <code>foo</code> to dispatch only when <code>a,b</code> have the same subtype of some abstract type <em>but</em> possibly different type parameters.</p>
+<p>edit: missing curly bracket, clarification</p>
+
+
+
+<a name="242920322"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Dispatch%20on%20same%20type%20but%20different%20type%20parameters%3F/near/242920322" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Max Köhler <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Dispatch.20on.20same.20type.20but.20different.20type.20parameters.3F.html#242920322">(Jun 16 2021 at 18:12)</a>:</h4>
+<p>Is your abstract type also parametrized? If so, I think you could do </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">foo</span><span class="p">(</span><span class="n">a</span><span class="o">::</span><span class="kt">T</span><span class="p">,</span> <span class="n">b</span><span class="o">::</span><span class="kt">T</span><span class="p">)</span> <span class="k">where</span> <span class="p">{</span><span class="kt">R1</span><span class="p">,</span><span class="kt">R2</span><span class="p">,</span> <span class="kt">T</span> <span class="o">&lt;:</span> <span class="kt">SomeAbstractType</span><span class="p">{</span><span class="kt">R1</span><span class="p">,</span><span class="kt">R2</span><span class="p">}}</span>
+
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="242921751"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Dispatch%20on%20same%20type%20but%20different%20type%20parameters%3F/near/242921751" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> pg. <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Dispatch.20on.20same.20type.20but.20different.20type.20parameters.3F.html#242921751">(Jun 16 2021 at 18:24)</a>:</h4>
+<p>It is, but only with one type parameter, so that does not work.</p>
+
+
+
+<a name="242923173"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Dispatch%20on%20same%20type%20but%20different%20type%20parameters%3F/near/242923173" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Dispatch.20on.20same.20type.20but.20different.20type.20parameters.3F.html#242923173">(Jun 16 2021 at 18:35)</a>:</h4>
+<p>This must be possible, I think, since one can do:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">(</span><span class="n">xx</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Int</span><span class="p">},</span> <span class="n">yy</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Float64</span><span class="p">})</span> <span class="o">=</span> <span class="nb">true</span>
+<span class="n">f</span> <span class="p">(</span><span class="n">generic</span> <span class="k">function</span> <span class="n">with</span> <span class="mi">2</span> <span class="n">methods</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">])</span>
+<span class="nb">true</span>
+</code></pre></div>
+
+
+
+<a name="242924712"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Dispatch%20on%20same%20type%20but%20different%20type%20parameters%3F/near/242924712" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Max Köhler <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Dispatch.20on.20same.20type.20but.20different.20type.20parameters.3F.html#242924712">(Jun 16 2021 at 18:48)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">foo</span><span class="p">(</span><span class="n">a</span><span class="o">::</span><span class="kt">T1</span><span class="p">,</span> <span class="n">b</span><span class="o">::</span><span class="kt">T2</span><span class="p">)</span> <span class="k">where</span> <span class="p">{</span><span class="kt">R1</span><span class="p">,</span><span class="kt">R2</span><span class="p">,</span> <span class="kt">T1</span> <span class="o">&lt;:</span> <span class="kt">SomeAbstractType</span><span class="p">{</span><span class="kt">R1</span><span class="p">},</span> <span class="kt">T2</span> <span class="o">&lt;:</span><span class="kt">SomeAbstractType</span><span class="p">{</span><span class="kt">R2</span><span class="p">}}</span>
+
+<span class="k">end</span>
+</code></pre></div>
+<p>but probably there's a more elegant version</p>
+
+
+
+<a name="242925394"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Dispatch%20on%20same%20type%20but%20different%20type%20parameters%3F/near/242925394" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> pg. <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Dispatch.20on.20same.20type.20but.20different.20type.20parameters.3F.html#242925394">(Jun 16 2021 at 18:53)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="276387">Max Köhler</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Dispatch.20on.20same.20type.20but.20different.20type.20parameters.3F/near/242924712">said</a>:</p>
+<blockquote>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">foo</span><span class="p">(</span><span class="n">a</span><span class="o">::</span><span class="kt">T1</span><span class="p">,</span> <span class="n">b</span><span class="o">::</span><span class="kt">T2</span><span class="p">)</span> <span class="k">where</span> <span class="p">{</span><span class="kt">R1</span><span class="p">,</span><span class="kt">R2</span><span class="p">,</span> <span class="kt">T1</span> <span class="o">&lt;:</span> <span class="kt">SomeAbstractType</span><span class="p">{</span><span class="kt">R1</span><span class="p">},</span> <span class="kt">T2</span> <span class="o">&lt;:</span><span class="kt">SomeAbstractType</span><span class="p">{</span><span class="kt">R2</span><span class="p">}}</span>
+
+<span class="k">end</span>
+</code></pre></div>
+<p>but probably there's a more elegant version</p>
+</blockquote>
+<p>Thanks, but this doesn't satisfy the question since it dispatches even if T1 and T2 are different subtypes of SomeAbstractType.</p>
+<p>e.g.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">abstract type</span> <span class="kt">Bar</span><span class="p">{</span><span class="kt">T</span><span class="p">}</span> <span class="k">end</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="k">struct</span> <span class="kt">Bar1</span><span class="p">{</span><span class="kt">T</span><span class="p">}</span> <span class="o">&lt;:</span> <span class="kt">Bar</span><span class="p">{</span><span class="kt">T</span><span class="p">}</span> <span class="k">end</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="k">struct</span> <span class="kt">Bar2</span><span class="p">{</span><span class="kt">T</span><span class="p">}</span> <span class="o">&lt;:</span> <span class="kt">Bar</span><span class="p">{</span><span class="kt">T</span><span class="p">}</span> <span class="k">end</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="k">function</span> <span class="n">foo</span><span class="p">(</span><span class="n">a</span><span class="o">::</span><span class="kt">T1</span><span class="p">,</span> <span class="n">b</span><span class="o">::</span><span class="kt">T2</span><span class="p">)</span> <span class="k">where</span> <span class="p">{</span><span class="kt">R1</span><span class="p">,</span> <span class="kt">R2</span><span class="p">,</span> <span class="kt">T1</span><span class="o">&lt;:</span><span class="kt">Bar</span><span class="p">{</span><span class="kt">R1</span><span class="p">},</span> <span class="kt">T2</span><span class="o">&lt;:</span><span class="kt">Bar</span><span class="p">{</span><span class="kt">R2</span><span class="p">}}</span>
+       <span class="k">return</span> <span class="nb">true</span>
+       <span class="k">end</span>
+<span class="n">foo</span> <span class="p">(</span><span class="n">generic</span> <span class="k">function</span> <span class="n">with</span> <span class="mi">1</span> <span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">b</span> <span class="o">=</span> <span class="kt">Bar1</span><span class="p">{</span><span class="kt">Int</span><span class="p">}()</span>
+<span class="kt">Bar1</span><span class="p">{</span><span class="kt">Int64</span><span class="p">}()</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">a</span> <span class="o">=</span> <span class="kt">Bar2</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}()</span>
+<span class="kt">Bar2</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}()</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">foo</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">)</span>
+<span class="nb">true</span>
+</code></pre></div>
+
+
+
+<a name="242925618"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Dispatch%20on%20same%20type%20but%20different%20type%20parameters%3F/near/242925618" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Max Köhler <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Dispatch.20on.20same.20type.20but.20different.20type.20parameters.3F.html#242925618">(Jun 16 2021 at 18:54)</a>:</h4>
+<p>but can't you just do</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">foo</span><span class="p">(</span><span class="n">a</span><span class="o">::</span><span class="kt">T1</span><span class="p">,</span> <span class="n">b</span><span class="o">::</span><span class="kt">T2</span><span class="p">)</span> <span class="k">where</span> <span class="p">{</span><span class="kt">R1</span><span class="p">,</span><span class="kt">R2</span><span class="p">,</span> <span class="kt">T1</span> <span class="o">&lt;:</span> <span class="kt">Bar1</span><span class="p">{</span><span class="kt">R1</span><span class="p">},</span> <span class="kt">T2</span> <span class="o">&lt;:</span><span class="kt">Bar1</span><span class="p">{</span><span class="kt">R2</span><span class="p">}}</span>
+
+<span class="k">end</span>
+</code></pre></div>
+<p>then?</p>
+
+
+
+<a name="242925743"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Dispatch%20on%20same%20type%20but%20different%20type%20parameters%3F/near/242925743" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Max Köhler <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Dispatch.20on.20same.20type.20but.20different.20type.20parameters.3F.html#242925743">(Jun 16 2021 at 18:55)</a>:</h4>
+<p>and</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">foo</span><span class="p">(</span><span class="n">a</span><span class="o">::</span><span class="kt">T1</span><span class="p">,</span> <span class="n">b</span><span class="o">::</span><span class="kt">T2</span><span class="p">)</span> <span class="k">where</span> <span class="p">{</span><span class="kt">R1</span><span class="p">,</span><span class="kt">R2</span><span class="p">,</span> <span class="kt">T1</span> <span class="o">&lt;:</span> <span class="kt">Bar2</span><span class="p">{</span><span class="kt">R1</span><span class="p">},</span> <span class="kt">T2</span> <span class="o">&lt;:</span><span class="kt">Bar2</span><span class="p">{</span><span class="kt">R2</span><span class="p">}}</span>
+
+<span class="k">end</span>
+</code></pre></div>
+<p>respectively</p>
+
+
+
+<a name="242925950"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Dispatch%20on%20same%20type%20but%20different%20type%20parameters%3F/near/242925950" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> pg. <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Dispatch.20on.20same.20type.20but.20different.20type.20parameters.3F.html#242925950">(Jun 16 2021 at 18:57)</a>:</h4>
+<p>Yeah. This works for my actual problem,  but then I would need to define one of these for each subtype of Bar. It's more academic at this point but I'm wondering if this can work for arbitrary subtypes of Bar.</p>
+
+
+
+<a name="242926014"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Dispatch%20on%20same%20type%20but%20different%20type%20parameters%3F/near/242926014" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Max Köhler <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Dispatch.20on.20same.20type.20but.20different.20type.20parameters.3F.html#242926014">(Jun 16 2021 at 18:57)</a>:</h4>
+<p>ye sorry if my answer is not satisfying, but I actually think it's a nice problem, so happy to hear other solutions as well</p>
+
+
+
+<a name="242926194"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Dispatch%20on%20same%20type%20but%20different%20type%20parameters%3F/near/242926194" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> pg. <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Dispatch.20on.20same.20type.20but.20different.20type.20parameters.3F.html#242926194">(Jun 16 2021 at 18:58)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="276387">Max Köhler</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Dispatch.20on.20same.20type.20but.20different.20type.20parameters.3F/near/242926014">said</a>:</p>
+<blockquote>
+<p>ye sorry if my answer is not satisfying, but I actually think it's a nice problem, so happy to hear other solutions as well</p>
+</blockquote>
+<p>no problem, I appreciate the answers!</p>
+
+
+
+<a name="242927012"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Dispatch%20on%20same%20type%20but%20different%20type%20parameters%3F/near/242927012" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Max Köhler <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Dispatch.20on.20same.20type.20but.20different.20type.20parameters.3F.html#242927012">(Jun 16 2021 at 19:04)</a>:</h4>
+<p>I think for a general approach, this conversation is essentially the same problem, isn't it? <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Functions.20of.20abstract.20parametric.20types">https://julialang.zulipchat.com/#narrow/stream/274208-helpdesk-.28published.29/topic/Functions.20of.20abstract.20parametric.20types</a></p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

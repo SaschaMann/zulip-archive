@@ -1,0 +1,84 @@
+<html>
+<head><meta charset="utf-8"><title>✔ Enzyme.jl Forward vs Reverse Mode · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Enzyme.2Ejl.20Forward.20vs.20Reverse.20Mode.html">✔ Enzyme.jl Forward vs Reverse Mode</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="419962299"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Enzyme.jl%20Forward%20vs%20Reverse%20Mode/near/419962299" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Alec <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Enzyme.2Ejl.20Forward.20vs.20Reverse.20Mode.html#419962299">(Feb 06 2024 at 02:13)</a>:</h4>
+<p>Two questions which may be related:</p>
+<ol>
+<li>Why does forward mode return a tuple while reverse mode return an array? </li>
+<li>How do I get the right derivative <code>[2,-2,4]</code> for the input array with <code>autodiff(Forward)</code>?  </li>
+</ol>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">Enzyme</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">sum_of_squares</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="w">               </span><span class="n">sum</span><span class="p">(</span><span class="n">x</span><span class="o">.^</span><span class="mi">2</span><span class="p">)</span>
+<span class="w">       </span><span class="k">end</span>
+<span class="go">sum_of_squares (generic function with 1 method)</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">gradient</span><span class="p">(</span><span class="n">Reverse</span><span class="p">,</span><span class="n">sum_of_squares</span><span class="p">,[</span><span class="mf">1.</span><span class="p">,</span><span class="o">-</span><span class="mf">1.</span><span class="p">,</span><span class="mf">2.</span><span class="p">]),</span>
+<span class="w">       </span><span class="n">gradient</span><span class="p">(</span><span class="n">Forward</span><span class="p">,</span><span class="n">sum_of_squares</span><span class="p">,[</span><span class="mf">1.</span><span class="p">,</span><span class="o">-</span><span class="mf">1.</span><span class="p">,</span><span class="mf">2.</span><span class="p">])</span>
+<span class="go">([2.0, -2.0, 4.0], (2.0, -2.0, 4.0))</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="k">let</span>
+<span class="w">               </span><span class="n">d1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="w">               </span><span class="n">d2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="w">               </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Enzyme</span><span class="o">.</span><span class="n">autodiff</span><span class="p">(</span><span class="n">Reverse</span><span class="p">,</span><span class="n">sum_of_squares</span><span class="p">,</span><span class="n">Duplicated</span><span class="p">([</span><span class="mf">1.</span><span class="p">,</span><span class="o">-</span><span class="mf">1.</span><span class="p">,</span><span class="mf">2.</span><span class="p">],</span><span class="n">d1</span><span class="p">))</span>
+<span class="w">               </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Enzyme</span><span class="o">.</span><span class="n">autodiff</span><span class="p">(</span><span class="n">Forward</span><span class="p">,</span><span class="n">sum_of_squares</span><span class="p">,</span><span class="n">Duplicated</span><span class="p">,</span><span class="n">Duplicated</span><span class="p">([</span><span class="mf">1.</span><span class="p">,</span><span class="o">-</span><span class="mf">1.</span><span class="p">,</span><span class="mf">2.</span><span class="p">],</span><span class="n">d2</span><span class="p">))</span>
+<span class="w">               </span><span class="n">d1</span><span class="p">,</span><span class="n">d2</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span>
+<span class="w">       </span><span class="k">end</span>
+<span class="go">([2.0, -2.0, 4.0], [0.0, 0.0, 0.0], ((nothing,),), (6.0, 0.0))</span>
+</code></pre></div>
+
+
+
+<a name="422906762"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Enzyme.jl%20Forward%20vs%20Reverse%20Mode/near/422906762" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Simone Carlo Surace <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Enzyme.2Ejl.20Forward.20vs.20Reverse.20Mode.html#422906762">(Feb 22 2024 at 21:22)</a>:</h4>
+<p>When you use forward mode you inject a tangent at the input (in your case a zero array) and get out the value and velocity of the output. To get the gradient you have to repeat that for each unit vector.</p>
+
+
+
+<a name="425007405"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Enzyme.jl%20Forward%20vs%20Reverse%20Mode/near/425007405" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Alec <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Enzyme.2Ejl.20Forward.20vs.20Reverse.20Mode.html#425007405">(Mar 06 2024 at 04:56)</a>:</h4>
+<p>Thank you, that helped enough to get the answers I was looking for. </p>
+<p>To get the right derivative in <code>b</code>, <code>d2</code> needs to be seeded with the initial dual number components of one:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="k">let</span>
+<span class="w">           </span><span class="n">d1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="w">           </span><span class="n">d2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mf">1.0</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0</span><span class="p">]</span><span class="w">  </span><span class="c"># Seed vector for forward mode</span>
+<span class="w">           </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Enzyme</span><span class="o">.</span><span class="n">autodiff</span><span class="p">(</span><span class="n">Reverse</span><span class="p">,</span><span class="w"> </span><span class="n">sum_of_squares</span><span class="p">,</span><span class="w"> </span><span class="n">Duplicated</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span><span class="w"> </span><span class="mf">2.0</span><span class="p">],</span><span class="w"> </span><span class="n">d1</span><span class="p">))</span>
+<span class="w">           </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Enzyme</span><span class="o">.</span><span class="n">autodiff</span><span class="p">(</span><span class="n">Forward</span><span class="p">,</span><span class="w"> </span><span class="n">sum_of_squares</span><span class="p">,</span><span class="w"> </span><span class="n">Duplicated</span><span class="p">,</span><span class="w"> </span><span class="n">Duplicated</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span><span class="w"> </span><span class="mf">2.0</span><span class="p">],</span><span class="w"> </span><span class="n">d2</span><span class="p">))</span>
+<span class="w">           </span><span class="n">d1</span><span class="p">,</span><span class="w"> </span><span class="n">d2</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span>
+<span class="w">       </span><span class="k">end</span>
+<span class="go">([2.0, -2.0, 4.0], [1.0, 1.0, 1.0], ((nothing,),), (6.0, 4.0))</span>
+</code></pre></div>
+<p>And to get the components of the gradient, I need to get the component from each unit vector:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="k">let</span>
+<span class="w">                  </span><span class="n">d1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="w">                  </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Enzyme</span><span class="o">.</span><span class="n">autodiff</span><span class="p">(</span><span class="n">Reverse</span><span class="p">,</span><span class="w"> </span><span class="n">sum_of_squares</span><span class="p">,</span><span class="w"> </span><span class="n">Duplicated</span><span class="p">([</span><span class="mf">1.</span><span class="p">,</span><span class="o">-</span><span class="mf">1.</span><span class="p">,</span><span class="mf">2.</span><span class="p">],</span><span class="w"> </span><span class="n">d1</span><span class="p">))</span>
+
+<span class="go">                  b1 = Enzyme.autodiff(Forward, sum_of_squares, Duplicated([1.,-1.,2.], [1.0, 0.0, 0.0]))</span>
+<span class="go">                  b2 = Enzyme.autodiff(Forward, sum_of_squares, Duplicated([1.,-1.,2.], [0.0, 1.0, 0.0]))</span>
+<span class="go">                  b3 = Enzyme.autodiff(Forward, sum_of_squares, Duplicated([1.,-1.,2.], [0.0, 0.0, 1.0]))</span>
+
+<span class="go">                  d1, a, [b1, b2, b3]</span>
+<span class="go">              end</span>
+<span class="go">([2.0, -2.0, 4.0], ((nothing,),), [(2.0,), (-2.0,), (4.0,)])</span>
+</code></pre></div>
+
+
+
+<a name="425007421"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Enzyme.jl%20Forward%20vs%20Reverse%20Mode/near/425007421" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Enzyme.2Ejl.20Forward.20vs.20Reverse.20Mode.html#425007421">(Mar 06 2024 at 04:56)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="272612">Alec</span> has marked this topic as resolved.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

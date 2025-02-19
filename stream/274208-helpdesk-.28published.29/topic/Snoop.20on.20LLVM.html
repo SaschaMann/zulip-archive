@@ -1,0 +1,100 @@
+<html>
+<head><meta charset="utf-8"><title>Snoop on LLVM · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Snoop.20on.20LLVM.html">Snoop on LLVM</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="287147077"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Snoop%20on%20LLVM/near/287147077" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Bagge Carlson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Snoop.20on.20LLVM.html#287147077">(Jun 23 2022 at 05:48)</a>:</h4>
+<p>If I run</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">SnoopCompile</span><span class="w"></span>
+<span class="nd">@snoopl</span><span class="w"> </span><span class="s">"func_names.csv"</span><span class="w"> </span><span class="s">"llvm_timings.yaml"</span><span class="w"> </span><span class="k">begin</span><span class="w"></span>
+<span class="w">   </span><span class="n">my_code</span><span class="p">()</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+<span class="n">times</span><span class="p">,</span><span class="w"> </span><span class="n">info</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SnoopCompile</span><span class="o">.</span><span class="n">read_snoopl</span><span class="p">(</span><span class="s">"func_names.csv"</span><span class="p">,</span><span class="w"> </span><span class="s">"llvm_timings.yaml"</span><span class="p">)</span><span class="w"></span>
+<span class="n">sum</span><span class="p">(</span><span class="n">first</span><span class="p">,</span><span class="w"> </span><span class="n">times</span><span class="p">)</span><span class="w"></span>
+</code></pre></div>
+<p>Is <code>sum(first, times)</code> going to return approximately the total time spent by LLVM optimizing the function call?</p>
+
+
+
+<a name="287147111"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Snoop%20on%20LLVM/near/287147111" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Bagge Carlson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Snoop.20on.20LLVM.html#287147111">(Jun 23 2022 at 05:49)</a>:</h4>
+<p>When I snoop on inference using <code>@snoopi_deep</code>, I get that about half of the compilation time is in inference. With the approach above, I get a time corresponding roughly to the other half, indicating that (if the approach is reasonable) the compilation time is roughly 50/50 inferece/LLVM</p>
+
+
+
+<a name="287148920"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Snoop%20on%20LLVM/near/287148920" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rik Huijzer <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Snoop.20on.20LLVM.html#287148920">(Jun 23 2022 at 06:26)</a>:</h4>
+<p>You mean LLVM compiling binary code? I heard Valentin Churavy say that it’s about 30% LLVM time</p>
+
+
+
+<a name="287149864"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Snoop%20on%20LLVM/near/287149864" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Bagge Carlson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Snoop.20on.20LLVM.html#287149864">(Jun 23 2022 at 06:36)</a>:</h4>
+<p>Yeah, I'm after the percentage of total compilation time that is taken up by LLVM, since I will not attempt to reduce this any further. LLVM really dislikes some things, e.g., very large functions, so the LLVM time can be greater in some situations than others</p>
+
+
+
+<a name="287193641"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Snoop%20on%20LLVM/near/287193641" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Snoop.20on.20LLVM.html#287193641">(Jun 23 2022 at 13:55)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="431304">Rik Huijzer</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Snoop.20on.20LLVM/near/287148920">said</a>:</p>
+<blockquote>
+<p>You mean LLVM compiling binary code? I heard Valentin Churavy say that it’s about 30% LLVM time</p>
+</blockquote>
+<p>I think that's a rule of thumb, because I've also seen breakdowns like what <span class="user-mention" data-user-id="272599">@Fredrik Bagge Carlson</span> mentioned. Large functions definitely appear to be a culprit.</p>
+
+
+
+<a name="287226427"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Snoop%20on%20LLVM/near/287226427" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Snoop.20on.20LLVM.html#287226427">(Jun 23 2022 at 17:57)</a>:</h4>
+<p>either way, LLVM time is a big chunk and there's no really easy way for us to speed that up</p>
+
+
+
+<a name="287226647"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Snoop%20on%20LLVM/near/287226647" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Snoop.20on.20LLVM.html#287226647">(Jun 23 2022 at 17:58)</a>:</h4>
+<p>Mechanisms for finer-grained application of optlevels could help. e.g. exclude "glue code" but keep optimizing hot loops, broadcasts etc. The current module-level setting is too coarse.</p>
+
+
+
+<a name="287228667"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Snoop%20on%20LLVM/near/287228667" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Snoop.20on.20LLVM.html#287228667">(Jun 23 2022 at 18:15)</a>:</h4>
+<p>Maybe julia could add some benchmarks to the llvm benchmark tracker </p>
+<p><a href="https://www.npopov.com/2020/05/10/Make-LLVM-fast-again.html">https://www.npopov.com/2020/05/10/Make-LLVM-fast-again.html</a><br>
+<a href="http://llvm-compile-time-tracker.com/index.php">http://llvm-compile-time-tracker.com/index.php</a></p>
+
+
+
+<a name="287235217"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Snoop%20on%20LLVM/near/287235217" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Snoop.20on.20LLVM.html#287235217">(Jun 23 2022 at 19:10)</a>:</h4>
+<p>Compile with <code>-DENABLE_TIMINGS</code> or uncomment:<br>
+<a href="https://github.com/JuliaLang/julia/blob/4873773d37e06d01ad13a0d55df684789ddd29ad/src/options.h#L87">https://github.com/JuliaLang/julia/blob/4873773d37e06d01ad13a0d55df684789ddd29ad/src/options.h#L87</a></p>
+
+
+
+<a name="287235282"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Snoop%20on%20LLVM/near/287235282" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Snoop.20on.20LLVM.html#287235282">(Jun 23 2022 at 19:11)</a>:</h4>
+<p>That will give you a breakdown of where time was spent whenever a Julia process exits.</p>
+
+
+
+<a name="287235343"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Snoop%20on%20LLVM/near/287235343" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Snoop.20on.20LLVM.html#287235343">(Jun 23 2022 at 19:12)</a>:</h4>
+<p><code>JULIA_LLVM_ARGS="-time-passes" julia</code></p>
+
+
+
+<a name="287235347"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Snoop%20on%20LLVM/near/287235347" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Snoop.20on.20LLVM.html#287235347">(Jun 23 2022 at 19:12)</a>:</h4>
+<p>will give you a breakdown of where LLVM spent its time.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

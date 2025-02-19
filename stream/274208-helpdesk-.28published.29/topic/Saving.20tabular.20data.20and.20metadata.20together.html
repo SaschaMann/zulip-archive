@@ -1,0 +1,487 @@
+<html>
+<head><meta charset="utf-8"><title>Saving tabular data and metadata together · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html">Saving tabular data and metadata together</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="423062769"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423062769" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423062769">(Feb 23 2024 at 17:31)</a>:</h4>
+<p>So I have a dataframe with a bunch of benchmarking data, I want to save this dataframe (preferably as plaintext), together with some metadata with things like the machine the benchmarks were performed on, the git commit of the package when it got benchmarked, etc. What's the best way to go about this?</p>
+<p>There's no obvious way to include metadata in a CSV file from what I can tell. Do I need to work with JSON or something here?</p>
+
+
+
+<a name="423062865"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423062865" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423062865">(Feb 23 2024 at 17:31)</a>:</h4>
+<p>My go-to usually would just be to use JLD2 to store a <code>DataFrame</code> and struct with my metadata, but I'd like to store it as plaintext and have the results not be tied to literal julia objects if possible.</p>
+
+
+
+<a name="423068042"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423068042" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jordan Cluts <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423068042">(Feb 23 2024 at 18:01)</a>:</h4>
+<p>Very imperfect but my recent solution to this problem was to smash together a TOML file as a header with the CSV at the bottom. I can re-ingest the CSV by just skipping the correct number of rows and separately I can read the meta-data by slicing off the CSV at the bottom and parsing the TOML file at the top. Not the best solution ever but has worked well enough I suppose.</p>
+<p>For now I just manually tell the reader how many rows to skip, not sure what would be the easiest way to detect the "split point" automatically so I could write a function that handles both halves automatically for me.</p>
+
+
+
+<a name="423068191"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423068191" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423068191">(Feb 23 2024 at 18:02)</a>:</h4>
+<p>JLD2 uses HDF5 files, and HDF5 files support arbitrary key-value metadata (attributes). What I'm less sure about is whether you can use JLD2 itself to read and write such metadata, or if you'd need <a href="https://github.com/JuliaIO/HDF5.jl">https://github.com/JuliaIO/HDF5.jl</a></p>
+
+
+
+<a name="423068557"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423068557" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423068557">(Feb 23 2024 at 18:05)</a>:</h4>
+<p>But HDF5 isn't human-readable right?</p>
+
+
+
+<a name="423068757"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423068757" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jordan Cluts <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423068757">(Feb 23 2024 at 18:06)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269150">Mason Protter</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together/near/423068557">said</a>:</p>
+<blockquote>
+<p>But HDF5 isn't human-readable right?</p>
+</blockquote>
+<p>Answering on behalf of Brian, that's correct. It's a binary format.</p>
+
+
+
+<a name="423068776"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423068776" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423068776">(Feb 23 2024 at 18:06)</a>:</h4>
+<p>Another low-tech solution would be to put the data file and metadata file into a single tarball or other archive. I personally would prefer everything in one JSON or HDF5 file, but it's hard to beat the simplicity of this approach</p>
+
+
+
+<a name="423068915"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423068915" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423068915">(Feb 23 2024 at 18:07)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269150">Mason Protter</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together/near/423068557">said</a>:</p>
+<blockquote>
+<p>But HDF5 isn't human-readable right?</p>
+</blockquote>
+<p>Correct. I interpreted your statement as being fine with storing the dataframe as binary, as long as the metadata is readable outside of Julia</p>
+
+
+
+<a name="423068922"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423068922" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423068922">(Feb 23 2024 at 18:07)</a>:</h4>
+<p>I personally advocate the tarball approach.  Trying to cram different data formats together into the same file in an ad hoc way rarely ends well.</p>
+
+
+
+<a name="423069029"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423069029" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423069029">(Feb 23 2024 at 18:08)</a>:</h4>
+<p>Man, data sucks.</p>
+
+
+
+<a name="423069041"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423069041" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423069041">(Feb 23 2024 at 18:08)</a>:</h4>
+<p>If the requirement is to have everything plaintext and readable, the JSON table approach may be the way to go. Less efficient, but no tarball required</p>
+
+
+
+<a name="423069331"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423069331" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423069331">(Feb 23 2024 at 18:10)</a>:</h4>
+<p>I'll probably just go for a binary format, because the whole tarball thing sounds awful</p>
+
+
+
+<a name="423069503"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423069503" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jordan Cluts <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423069503">(Feb 23 2024 at 18:11)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269446">Expanding Man</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together/near/423068922">said</a>:</p>
+<blockquote>
+<p>I personally advocate the tarball approach.  Trying to cram different data formats together into the same file in an ad hoc way rarely ends well.</p>
+</blockquote>
+<p>There is a legacy "format" at my employer that is a few thousand bytes of ascii with metadata fields (I don't recall the exact number) directly prepended to Float32 raw arrays. You have to just know the standard ascii size and split it at the right spot to ingest. It's horrible. I tried to advocate for a .zip archive custom format (or HDF5) but was shot down.</p>
+
+
+
+<a name="423069587"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423069587" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423069587">(Feb 23 2024 at 18:11)</a>:</h4>
+<p>Parquet has limited metadata support, and I believe arrow does as well,  though my feeling about your context ("a bunch of benchmarking data") is that you probably shouldn't be eager to start whipping out dedicated tabular formats.</p>
+
+
+
+<a name="423069663"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423069663" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423069663">(Feb 23 2024 at 18:12)</a>:</h4>
+<p>I figured it would be better to not recommend Parquet in case you had thoughts :D</p>
+
+
+
+<a name="423069729"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423069729" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423069729">(Feb 23 2024 at 18:12)</a>:</h4>
+<p>Yeah, I am probably notorious by now for being both the primary maintainer of parquet in the julia ecosystem and an individual who hates the parquet format.</p>
+
+
+
+<a name="423069807"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423069807" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423069807">(Feb 23 2024 at 18:13)</a>:</h4>
+<p>I'm honestly tempted to just write a CSV with an extra column that has the first cell holding the metadata, and the rest of the column empty</p>
+
+
+
+<a name="423069837"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423069837" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423069837">(Feb 23 2024 at 18:13)</a>:</h4>
+<p>I just had the same thought</p>
+
+
+
+<a name="423069859"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423069859" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423069859">(Feb 23 2024 at 18:13)</a>:</h4>
+<p>all I want is CSV with a quick description. This is so stupid.</p>
+
+
+
+<a name="423069972"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423069972" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jordan Cluts <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423069972">(Feb 23 2024 at 18:14)</a>:</h4>
+<p>I wonder how many of these types of "need a quick table format with some other stuff" could be handled by a version of JSON or TOML that included a CSV field as one of the embeddable types</p>
+
+
+
+<a name="423069982"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423069982" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423069982">(Feb 23 2024 at 18:14)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269150">Mason Protter</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together/near/423069859">said</a>:</p>
+<blockquote>
+<p>This is so stupid.</p>
+</blockquote>
+<p>The perpetual sentiment of "data scientists" everywhere.  Just wait until you see SQL.</p>
+
+
+
+<a name="423070005"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423070005" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423070005">(Feb 23 2024 at 18:14)</a>:</h4>
+<p><a href="https://stackoverflow.com/a/33846112">https://stackoverflow.com/a/33846112</a> TIL</p>
+
+
+
+<a name="423070030"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423070030" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423070030">(Feb 23 2024 at 18:15)</a>:</h4>
+<p>Wonder if <a href="https://juliahub.com/ui/Packages/General/CSV">CSV.jl</a> knows about this</p>
+
+
+
+<a name="423070056"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423070056" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423070056">(Feb 23 2024 at 18:15)</a>:</h4>
+<p>You can tell <a href="https://juliahub.com/ui/Packages/General/CSV">CSV.jl</a> about comment characters, I'm pretty sure.</p>
+
+
+
+<a name="423070165"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423070165" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423070165">(Feb 23 2024 at 18:16)</a>:</h4>
+<p>I was just going to say that ways of appending data to csv's or concatenating csv's of different formats in the same file are not totally unheard of but I wouldn't necessarily recommend it.</p>
+
+
+
+<a name="423070458"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423070458" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423070458">(Feb 23 2024 at 18:18)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="278065">Brian Chen</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together/near/423070030">said</a>:</p>
+<blockquote>
+<p>Wonder if <a href="https://juliahub.com/ui/Packages/General/CSV">CSV.jl</a> knows about this</p>
+</blockquote>
+<p>lolno</p>
+
+
+
+<a name="423070470"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423070470" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423070470">(Feb 23 2024 at 18:18)</a>:</h4>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">CSV</span><span class="p">,</span><span class="w"> </span><span class="n">DataFrames</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tempname</span><span class="p">()</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="s">".csv"</span><span class="p">;</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">open</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="w"> </span><span class="s">"w+"</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">io</span>
+<span class="w">           </span><span class="n">write</span><span class="p">(</span><span class="n">io</span><span class="p">,</span><span class="w"> </span><span class="s">"""</span>
+<span class="w">      </span><span class="s"> #publisher,W3C</span>
+<span class="w">      </span><span class="s"> #updated,2015-10-17T00:00:00Z</span>
+<span class="w">      </span><span class="s"> #name,sensor,temperature</span>
+<span class="w">      </span><span class="s"> #datatype,string,float</span>
+<span class="w">      </span><span class="s"> sensor,temperature</span>
+<span class="w">      </span><span class="s"> s-1,25.5</span>
+<span class="w">      </span><span class="s"> """</span><span class="p">)</span>
+<span class="w">       </span><span class="k">end</span><span class="p">;</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">CSV</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="w"> </span><span class="n">DataFrame</span><span class="p">)</span>
+<span class="go">┌ Warning: thread = 1 warning: parsed expected 2 columns, but didn't reach end of line around data row: 2. Parsing extra columns and widening final columnset</span>
+<span class="go">└ @ CSV ~/.julia/packages/CSV/aoJqo/src/file.jl:587</span>
+<span class="go">┌ Warning: thread = 1 warning: only found 2 / 3 columns around data row: 4. Filling remaining columns with `missing`</span>
+<span class="go">└ @ CSV ~/.julia/packages/CSV/aoJqo/src/file.jl:586</span>
+<span class="go">5×3 DataFrame</span>
+<span class="go"> Row │ #publisher  W3C                   Column3</span>
+<span class="go">     │ String15    String31              String15?</span>
+<span class="go">─────┼───────────────────────────────────────────────</span>
+<span class="go">   1 │ #updated    2015-10-17T00:00:00Z  missing</span>
+<span class="go">   2 │ #name       sensor                temperature</span>
+<span class="go">   3 │ #datatype   string                float</span>
+<span class="go">   4 │ sensor      temperature           missing</span>
+<span class="go">   5 │ s-1         25.5                  missing</span>
+</code></pre></div>
+
+
+
+<a name="423070523"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423070523" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423070523">(Feb 23 2024 at 18:18)</a>:</h4>
+<p>As <span class="user-mention" data-user-id="269446">@Expanding Man</span> said, at least it can be taught to ignore the comments</p>
+
+
+
+<a name="423070533"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423070533" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423070533">(Feb 23 2024 at 18:18)</a>:</h4>
+<p><a href="https://csv.juliadata.org/latest/examples.html#comment_example">https://csv.juliadata.org/latest/examples.html#comment_example</a></p>
+
+
+
+<a name="423070584"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423070584" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423070584">(Feb 23 2024 at 18:19)</a>:</h4>
+<p>But that still leaves having to parse them out into a usable form</p>
+
+
+
+<a name="423070597"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423070597" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423070597">(Feb 23 2024 at 18:19)</a>:</h4>
+<p>yeah</p>
+
+
+
+<a name="423070837"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423070837" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423070837">(Feb 23 2024 at 18:20)</a>:</h4>
+<p>Probably what we need, at least from a Julia ecosystem point of view, is utility functions for making it as simple and effortless as possible to do what you are trying to do with tarballs.  Will still involve separate objects from an API point of view though (i.e. metadata as a separate object from table).</p>
+
+
+
+<a name="423071219"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423071219" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423071219">(Feb 23 2024 at 18:23)</a>:</h4>
+<p><a href="/user_uploads/7178/s-WRXBYIw64w89HFD8r4xUiR/image.png">image.png</a></p>
+<div class="message_inline_image"><a href="/user_uploads/7178/s-WRXBYIw64w89HFD8r4xUiR/image.png" title="image.png"><img src="/user_uploads/7178/s-WRXBYIw64w89HFD8r4xUiR/image.png"></a></div>
+
+
+
+<a name="423071268"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423071268" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jordan Cluts <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423071268">(Feb 23 2024 at 18:23)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269446">Expanding Man</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together/near/423070837">said</a>:</p>
+<blockquote>
+<p>Probably what we need, at least from a Julia ecosystem point of view, is utility functions for making it as simple and effortless as possible to do what you are trying to do with tarballs.  Will still involve separate objects from an API point of view though (i.e. metadata as a separate object from table).</p>
+</blockquote>
+<p>Depending on one's view of how "human readable" a tarball or zip archive is you're just reinventing HDF5 at that point, no?</p>
+
+
+
+<a name="423071795"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423071795" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423071795">(Feb 23 2024 at 18:27)</a>:</h4>
+<p>It's possible using a zip instead would make this easier. <a href="https://github.com/JuliaIO/ZipArchives.jl">https://github.com/JuliaIO/ZipArchives.jl</a> for example lets you read out individual entries with a single call</p>
+
+
+
+<a name="423072016"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423072016" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423072016">(Feb 23 2024 at 18:28)</a>:</h4>
+<p>I guess my next question would then become, if I use HDF5, what's the easiest way to store tabular data with heterogeneous columns?</p>
+<p>I'm pretty tempted to just shove a DataFrame into JLD2 but I am kinda worried about the compatability of it if the future layout of DataFrames changes</p>
+
+
+
+<a name="423072046"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423072046" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423072046">(Feb 23 2024 at 18:28)</a>:</h4>
+<p>I guess I could always go for a <code>Vector{&lt;:NamedTuple}</code></p>
+
+
+
+<a name="423072133"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423072133" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423072133">(Feb 23 2024 at 18:29)</a>:</h4>
+<p>I'm only storing <code>Int</code>, <code>Float64</code>, and <code>String</code></p>
+
+
+
+<a name="423072739"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423072739" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423072739">(Feb 23 2024 at 18:33)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="274356">Jordan Cluts</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together/near/423071268">said</a>:</p>
+<blockquote>
+<p>Depending on one's view of how "human readable" a tarball or zip archive is you're just reinventing HDF5 at that point, no?</p>
+</blockquote>
+<p>Not really.  You could of course argue that HDF5 supports any format because you can stick a binary blob in it, but by design there is a natural isomorphism between a tarball and a file system directory, so you don't need any additional conventions on top of what already exists in the file system to identify files or file format metadata.</p>
+
+
+
+<a name="423073506"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423073506" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jordan Cluts <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423073506">(Feb 23 2024 at 18:38)</a>:</h4>
+<p>I guess I see what you're saying but I suppose this query started with "I have a dataframe and some metadata and I'd like to store and retrieve them" instead of "I have a folder of files of various kinds I'd like to keep together" and while it's easy to transition between those two states HDF5 handles the first rather directly while tarball/zip handle the latter rather directly. And in neither case can you directly inspect the result with a text editor.</p>
+<p>(For a broad definition of the word "directly")</p>
+
+
+
+<a name="423073677"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423073677" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423073677">(Feb 23 2024 at 18:40)</a>:</h4>
+<p>yeah, dealing with multiple files is exactly what I want to avoid</p>
+
+
+
+<a name="423073803"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423073803" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423073803">(Feb 23 2024 at 18:41)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269150">Mason Protter</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together/near/423072133">said</a>:</p>
+<blockquote>
+<p>I'm only storing <code>Int</code>, <code>Float64</code>, and <code>String</code></p>
+</blockquote>
+<p>So in theory HDF5 eats this use case for breakfast, but I can only find very old an conflicting info on whether there's any integration between <a href="https://juliahub.com/ui/Packages/General/DF">DF.jl</a> and <a href="https://juliahub.com/ui/Packages/General/HDF5">HDF5.jl</a></p>
+
+
+
+<a name="423073820"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423073820" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423073820">(Feb 23 2024 at 18:41)</a>:</h4>
+<p><a href="https://github.com/JuliaData/DataFrames.jl/issues/64">https://github.com/JuliaData/DataFrames.jl/issues/64</a></p>
+
+
+
+<a name="423073984"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423073984" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423073984">(Feb 23 2024 at 18:42)</a>:</h4>
+<p><a href="https://github.com/JuliaIO/HDF5.jl/issues/122">https://github.com/JuliaIO/HDF5.jl/issues/122</a></p>
+
+
+
+<a name="423074026"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423074026" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423074026">(Feb 23 2024 at 18:42)</a>:</h4>
+<p>Would have to look into how JLD serializes dataframes</p>
+
+
+
+<a name="423074107"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423074107" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423074107">(Feb 23 2024 at 18:43)</a>:</h4>
+<p>Honestly at this point, I think having everything in one JSON file might be the least bad approach as long as you don't have too much data</p>
+
+
+
+<a name="423075534"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423075534" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jordan Cluts <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423075534">(Feb 23 2024 at 18:52)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="278065">Brian Chen</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together/near/423074107">said</a>:</p>
+<blockquote>
+<p>Honestly at this point, I think having everything in one JSON file might be the least bad approach as long as you don't have too much data</p>
+</blockquote>
+<p>I haven't tried this but a similar idea is simply to use TOML directly as well. It would be more verbose and less readable than a CSV but for "small" amounts of data could work. It supports a type called an <a href="https://toml.io/en/v1.0.0#array-of-tables">Array of Tables</a> which is basically identical to a vector of named tuples i.e. a <a href="https://juliahub.com/ui/Packages/General/Tables">Tables.jl</a> compatible source (I don't actually know what <a href="https://juliahub.com/ui/Packages/General/TOML">TOML.jl</a> converts this to but presumably getting it back into a DataFrame should be pretty easy).</p>
+<p>edit: I went and checked and <a href="https://juliahub.com/ui/Packages/General/TOML">TOML.jl</a> generates a dictionary containing a vector of dictionaries. It'd take a bit of finagling to convert the dictionaries all to named tuples and eventually into a DataFrame but definitely conceivable.</p>
+
+
+
+<a name="423076461"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423076461" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423076461">(Feb 23 2024 at 18:59)</a>:</h4>
+<p>My point, more broadly, is that readers of tarballs already understand the concept of files and the usual metadata tricks (file extensions and magic bytes) for specifying their format.  A reader of a tarball containing a bunch of separate data in different formats should then be able to understand it with almost no context, whereas with HDF5 you'd need to specify which blobs are files.  Maybe there is already a standard for this, but my understanding was that it is not necessarily guaranteed that you are supposed to treat paths in HDF5 as paths in a file system.</p>
+
+
+
+<a name="423077026"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423077026" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423077026">(Feb 23 2024 at 19:03)</a>:</h4>
+<p><a href="https://juliahub.com/ui/Packages/General/DataFrames">DataFrames.jl</a> has table-level metadata <a href="https://dataframes.juliadata.org/stable/lib/functions/#DataAPI.metadata">https://dataframes.juliadata.org/stable/lib/functions/#DataAPI.metadata</a> <br>
+<a href="https://juliahub.com/ui/Packages/General/Arrow">Arrow.jl</a> does too <a href="https://arrow.apache.org/julia/stable/manual/#Custom-application-metadata">https://arrow.apache.org/julia/stable/manual/#Custom-application-metadata</a></p>
+<p>I haven't tried it but that's where I'd start.</p>
+
+
+
+<a name="423077147"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423077147" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423077147">(Feb 23 2024 at 19:04)</a>:</h4>
+<p>The metadata doesn't get preserved when you write it to a CSV or other non-binary format</p>
+
+
+
+<a name="423077888"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423077888" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423077888">(Feb 23 2024 at 19:09)</a>:</h4>
+<p>Metadata won't get preserved if you write it into a format that doesn't support metadata, such as CSV. Other human-readable formats may support metadata.</p>
+
+
+
+<a name="423078531"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423078531" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jordan Cluts <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423078531">(Feb 23 2024 at 19:13)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="326776">jar</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together/near/423077888">said</a>:</p>
+<blockquote>
+<p>Metadata won't get preserved if you write it into a format that doesn't support metadata, such as CSV. Other human-readable formats may support metadata.</p>
+</blockquote>
+<p>Yes but it's frustrating that for "human-readable table formats" CSV is the clear victor except for its glaring lack of standard frontmatter/metadata support. And alternatives that handle this sort of key-value store well (JSON, TOML, etc.) in turn don't handle anything larger than very small tables gracefully or at all. Clearly there <em>could</em> be a universal meta-data CSV standard but we (society writ large, not Julia community) haven't managed to do so.</p>
+
+
+
+<a name="423079563"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423079563" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423079563">(Feb 23 2024 at 19:20)</a>:</h4>
+<p>I don't think smarter text formats is the way to go. With either text or binary formats I'm going to need a program to display and edit a table. A simple program like <code>cat</code> isn't going to cut it for either, it's gotta be at least somewhat smart. So instead of trying to make text formats smarter, I'd rather we make our viewers/editors for binary tables more usable.</p>
+
+
+
+<a name="423079639"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423079639" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423079639">(Feb 23 2024 at 19:21)</a>:</h4>
+<p>I really don't think it's that unreasonable or weird to want some quick over-all metadata at the start of a CSV file</p>
+
+
+
+<a name="423079703"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423079703" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423079703">(Feb 23 2024 at 19:21)</a>:</h4>
+<p>like literally just a string description field. Nothing clever</p>
+
+
+
+<a name="423079915"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423079915" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423079915">(Feb 23 2024 at 19:23)</a>:</h4>
+<p>So you can look at it in a text editor?</p>
+
+
+
+<a name="423080084"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423080084" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jordan Cluts <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423080084">(Feb 23 2024 at 19:24)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="326776">jar</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together/near/423079563">said</a>:</p>
+<blockquote>
+<p>I don't think smarter text formats is the way to go. With either text or binary formats I'm going to need a program to display and edit a table. A simple program like <code>cat</code> isn't going to cut it for either, it's gotta be at least somewhat smart. So instead of trying to make text formats smarter, I'd rather we make our viewers/editors for binary tables more usable.</p>
+</blockquote>
+<p>I agree with the sentiment completely. I tried that approach and the senior engineers (not computer science but other engineering fields) at my employer were a) intolerant of change and b) refused to use anything that can't be investigated as text since they don't trust any binary reader program to still work 150 years from now which apparently is a crucial requirement. As such I have been forced to be inventive with text formats and sympathize strongly with Mason about this.</p>
+
+
+
+<a name="423080346"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423080346" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423080346">(Feb 23 2024 at 19:26)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="326776">jar</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together/near/423079915">said</a>:</p>
+<blockquote>
+<p>So you can look at it in a text editor?</p>
+</blockquote>
+<p>in this case, yes, I just want someone to be able to look at it and see what it says. But in more advanced examples, if someone wanted to put some data in there and parse it themselves they should be free to do so</p>
+
+
+
+<a name="423080622"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423080622" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423080622">(Feb 23 2024 at 19:27)</a>:</h4>
+<blockquote>
+<p>put some data in there and parse it themselves</p>
+</blockquote>
+<p>what do these mean?</p>
+
+
+
+<a name="423081199"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423081199" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423081199">(Feb 23 2024 at 19:31)</a>:</h4>
+<p>whatever they want it to mean</p>
+
+
+
+<a name="423082019"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423082019" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423082019">(Feb 23 2024 at 19:36)</a>:</h4>
+<p>Anyway you can put <code>#</code> comments at the top of a csv, many readers have an option to strip them</p>
+
+
+
+<a name="423082406"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423082406" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423082406">(Feb 23 2024 at 19:39)</a>:</h4>
+<p>but not to read them</p>
+
+
+
+<a name="423234806"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/423234806" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Carsten Bauer <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#423234806">(Feb 25 2024 at 05:40)</a>:</h4>
+<p>Fwiw, my lesson with data (at least on HPC clusters): either use different files (annoying but simple) or established binary formats (like e.g. HDF5).</p>
+<p>I wouldn't use JLD2 for "long term" storage. Actually, I did in the past and had to manually convert everything to plain HDF5 because of incompatibilities and broken files.</p>
+<p>As for the "human readable" debate, I kind of agree with @jar. Binary viewers, say for HDF5, are fine, as long as it is a established binary format with a standard.</p>
+
+
+
+<a name="469138786"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Saving%20tabular%20data%20and%20metadata%20together/near/469138786" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Peter Deffebach <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together.html#469138786">(Sep 10 2024 at 15:58)</a>:</h4>
+<p>Probably not the solution you want, but <a href="https://juliahub.com/ui/Packages/General/TableMetaDataTools">TableMetaDataTools.jl</a> has some functions to help you save and read metadata. If would have to be a separate toml file, not in the .csv, but at least it automates attaching the metadata in a toml file to the julia object you want.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

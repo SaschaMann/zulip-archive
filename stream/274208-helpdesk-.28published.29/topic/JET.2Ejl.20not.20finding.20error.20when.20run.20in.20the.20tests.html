@@ -1,0 +1,91 @@
+<html>
+<head><meta charset="utf-8"><title>JET.jl not finding error when run in the tests · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/JET.2Ejl.20not.20finding.20error.20when.20run.20in.20the.20tests.html">JET.jl not finding error when run in the tests</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="449935226"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/JET.jl%20not%20finding%20error%20when%20run%20in%20the%20tests/near/449935226" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> James Wrigley <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/JET.2Ejl.20not.20finding.20error.20when.20run.20in.20the.20tests.html#449935226">(Jul 08 2024 at 17:26)</a>:</h4>
+<p>With this module in a package:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">module</span><span class="w"> </span><span class="n">JetDebug</span>
+
+<span class="n">greet</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">blah</span><span class="p">()</span>
+
+<span class="k">end</span><span class="w"> </span><span class="c"># module JetDebug</span>
+</code></pre></div>
+<p>JET finds the problem when run in the REPL:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">JET</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="k">import</span><span class="w"> </span><span class="n">JetDebug</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">report_package</span><span class="p">(</span><span class="n">JetDebug</span><span class="p">)</span>
+<span class="go">[toplevel-info] virtualized the context of Main (took 0.022 sec)</span>
+<span class="go">[toplevel-info] entered into /home/james/git/scratch/JetDebug/src/JetDebug.jl</span>
+<span class="go">[toplevel-info]  exited from /home/james/git/scratch/JetDebug/src/JetDebug.jl (took 0.142 sec)</span>
+<span class="go">[toplevel-info] analyzing from top-level definitions (1/1)</span>
+<span class="go">[toplevel-info] analyzed 1 top-level definitions (took 2.595 sec)</span>
+<span class="go">[ Info: tracking Base</span>
+<span class="go">═════ 1 possible error found ═════</span>
+<span class="go">┌ greet() @ JetDebug /home/james/git/scratch/JetDebug/src/JetDebug.jl:3</span>
+<span class="go">│┌ getproperty(x::Module, f::Symbol) @ Base ./Base.jl:42</span>
+<span class="go">││ `Base.blah` is not defined: Base.getglobal(x::Module, f::Symbol)</span>
+<span class="go">│└────────────────────</span>
+</code></pre></div>
+<p>But with this in my <code>runtests.jl</code>:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">JET</span>
+<span class="k">using</span><span class="w"> </span><span class="n">JetDebug</span>
+
+<span class="n">report_package</span><span class="p">(</span><span class="n">JetDebug</span><span class="p">)</span>
+</code></pre></div>
+<p>It does not find the problem:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="go">Precompiling project for configuration --code-coverage=none --color=yes --check-bounds=yes --warn-overwrite=yes --depwarn=yes --inline=yes --startup-file=no --track-allocation=none...</span>
+<span class="go">  ✓ JetDebug</span>
+<span class="go">  1 dependency successfully precompiled in 1 seconds. 33 already precompiled.</span>
+<span class="go">  1 dependency precompiled but a different version is currently loaded. Restart julia to access the new version</span>
+<span class="go">     Testing Running tests...</span>
+<span class="go">[toplevel-info] virtualized the context of Main (took 0.026 sec)</span>
+<span class="go">[toplevel-info] entered into /home/james/git/scratch/JetDebug/src/JetDebug.jl</span>
+<span class="go">[toplevel-info]  exited from /home/james/git/scratch/JetDebug/src/JetDebug.jl (took 0.164 sec)</span>
+<span class="go">[toplevel-info] analyzing from top-level definitions (1/1)</span>
+<span class="go">[toplevel-info] analyzed 1 top-level definitions (took 3.472 sec)</span>
+<span class="go">     Testing JetDebug tests passed</span>
+</code></pre></div>
+<p>Why is that? <span aria-label="thinking" class="emoji emoji-1f914" role="img" title="thinking">:thinking:</span> I see that when run from the REPL it tracks <code>Base</code>, which might have something to do with it. But I don't know why it wouldn't track base when run in the tests.</p>
+
+
+
+<a name="449938527"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/JET.jl%20not%20finding%20error%20when%20run%20in%20the%20tests/near/449938527" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> James Wrigley <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/JET.2Ejl.20not.20finding.20error.20when.20run.20in.20the.20tests.html#449938527">(Jul 08 2024 at 17:43)</a>:</h4>
+<p>Ok, it also fails to find this problem when run in the tests:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">module</span><span class="w"> </span><span class="n">JetDebug</span>
+
+<span class="n">greet</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">blah</span><span class="p">()</span>
+
+<span class="k">end</span><span class="w"> </span><span class="c"># module JetDebug</span>
+</code></pre></div>
+<p>So I guess the <code>Base</code> tracking is a red herring.</p>
+
+
+
+<a name="457312554"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/JET.jl%20not%20finding%20error%20when%20run%20in%20the%20tests/near/457312554" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jesper Stemann Andersen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/JET.2Ejl.20not.20finding.20error.20when.20run.20in.20the.20tests.html#457312554">(Aug 08 2024 at 09:15)</a>:</h4>
+<p>I think the explanation is that <code>report_package</code> returns a value that is displayed by the REPL, but when you run <br>
+<code>report_package</code> in the tests, this value is not automatically displayed.</p>
+<p>You could inspect the returned value to get something similar to the behaviour in the REPL: <a href="https://gitlab.com/stemann/julia-gitlab-ci-templates/-/blob/v1.5.0/templates.gitlab-ci.yaml#L185-192">https://gitlab.com/stemann/julia-gitlab-ci-templates/-/blob/v1.5.0/templates.gitlab-ci.yaml#L185-192</a></p>
+
+
+
+<a name="457334030"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/JET.jl%20not%20finding%20error%20when%20run%20in%20the%20tests/near/457334030" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> James Wrigley <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/JET.2Ejl.20not.20finding.20error.20when.20run.20in.20the.20tests.html#457334030">(Aug 08 2024 at 10:43)</a>:</h4>
+<p>Thanks, yes I actually made an issue about and it turns out I was dumb <span aria-label="upside down" class="emoji emoji-1f643" role="img" title="upside down">:upside_down:</span> <a href="https://github.com/aviatesk/JET.jl/issues/646">https://github.com/aviatesk/JET.jl/issues/646</a><br>
+<code>test_package()</code> is the one I need.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

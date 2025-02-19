@@ -1,0 +1,78 @@
+<html>
+<head><meta charset="utf-8"><title>`take!` from `IOBuffer` copies · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.60take.21.60.20from.20.60IOBuffer.60.20copies.html">`take!` from `IOBuffer` copies</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="229397022"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%60take%21%60%20from%20%60IOBuffer%60%20copies/near/229397022" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.60take.21.60.20from.20.60IOBuffer.60.20copies.html#229397022">(Mar 08 2021 at 23:42)</a>:</h4>
+<p>The documentation claims that <code>take!(::IOBuffer)</code> does not copying, but it's clearly lying:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">io</span> <span class="o">=</span> <span class="kt">IOBuffer</span><span class="p">(</span><span class="n">zeros</span><span class="p">(</span><span class="kt">UInt8</span><span class="p">,</span> <span class="mi">2</span><span class="o">^</span><span class="mi">18</span><span class="p">));</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">v</span> <span class="o">=</span> <span class="n">take!</span><span class="p">(</span><span class="n">io</span><span class="p">);</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">io</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mh">0xff</span>
+<span class="mh">0xff</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="mh">0x00</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@btime</span> <span class="n">take!</span><span class="p">(</span><span class="o">$</span><span class="n">io</span><span class="p">);</span>
+  <span class="mf">17.486</span> <span class="n">μs</span> <span class="p">(</span><span class="mi">2</span> <span class="n">allocations</span><span class="o">:</span> <span class="mf">256.14</span> <span class="n">KiB</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="229397415"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%60take%21%60%20from%20%60IOBuffer%60%20copies/near/229397415" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.60take.21.60.20from.20.60IOBuffer.60.20copies.html#229397415">(Mar 08 2021 at 23:46)</a>:</h4>
+<p>As far as I can tell this happens whenever the buffer is <em>not</em> writable.  I guess because it assumes in those cases the data in the buffer has to be preserved at all costs?</p>
+
+
+
+<a name="229399732"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%60take%21%60%20from%20%60IOBuffer%60%20copies/near/229399732" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.60take.21.60.20from.20.60IOBuffer.60.20copies.html#229399732">(Mar 09 2021 at 00:08)</a>:</h4>
+<p><code>take!</code>'s docstring is correct. it just does not say that it will also create a new array</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">io</span> <span class="o">=</span> <span class="kt">IOBuffer</span><span class="p">();</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">data</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">data</span><span class="p">;</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">take!</span><span class="p">(</span><span class="n">io</span><span class="p">)</span> <span class="o">===</span> <span class="n">data</span>
+<span class="kc">true</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">io</span><span class="o">.</span><span class="n">data</span> <span class="o">===</span> <span class="n">data</span>
+<span class="kc">false</span>
+</code></pre></div>
+
+
+
+<a name="229400243"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%60take%21%60%20from%20%60IOBuffer%60%20copies/near/229400243" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.60take.21.60.20from.20.60IOBuffer.60.20copies.html#229400243">(Mar 09 2021 at 00:13)</a>:</h4>
+<p>so where are you saying it's creating an array here?</p>
+
+
+
+<a name="229401436"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%60take%21%60%20from%20%60IOBuffer%60%20copies/near/229401436" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.60take.21.60.20from.20.60IOBuffer.60.20copies.html#229401436">(Mar 09 2021 at 00:26)</a>:</h4>
+<p><code>take!(io) === data</code> indicates that it returns the internal buffer as-is. <code>io.data !== data</code> indicates that the internal buffer is re-allocated. You can also see the code here: <a href="https://github.com/JuliaLang/julia/blob/970edc7d7734ce0175177699e474ffc8f7b9eb27/base/iobuffer.jl#L391">https://github.com/JuliaLang/julia/blob/970edc7d7734ce0175177699e474ffc8f7b9eb27/base/iobuffer.jl#L391</a></p>
+
+
+
+<a name="229401494"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%60take%21%60%20from%20%60IOBuffer%60%20copies/near/229401494" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.60take.21.60.20from.20.60IOBuffer.60.20copies.html#229401494">(Mar 09 2021 at 00:26)</a>:</h4>
+<p>Ok, I was so confused about the internal buffer being re-allocated I just kind of dind't believe it lol</p>
+
+
+
+<a name="229401518"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%60take%21%60%20from%20%60IOBuffer%60%20copies/near/229401518" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.60take.21.60.20from.20.60IOBuffer.60.20copies.html#229401518">(Mar 09 2021 at 00:26)</a>:</h4>
+<p>I mean, I guess it's for the same reason I said above, to preserve the data, it's just really confusing</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

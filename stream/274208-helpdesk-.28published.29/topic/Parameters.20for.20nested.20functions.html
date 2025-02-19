@@ -1,0 +1,78 @@
+<html>
+<head><meta charset="utf-8"><title>Parameters for nested functions · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Parameters.20for.20nested.20functions.html">Parameters for nested functions</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="469677044"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Parameters%20for%20nested%20functions/near/469677044" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Moorits Muru <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Parameters.20for.20nested.20functions.html#469677044">(Sep 12 2024 at 13:31)</a>:</h4>
+<p>I am writing a module for my personal use. I have some utility functions where I usually only need to change one or a few arguments and others have default values. But sometimes I would like to be able to use something other than the default values. I guess this is a suitable job for a config, but I am not sure how to do that in Julia. I guess I could use some global or const values, but I am not sure if this is a good approach.</p>
+<p>For example, I have a function that outputs a path of a file based on some inputs. One of the inputs is also the base path of the data directory, which I would like to just give a default value.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">const</span><span class="w"> </span><span class="n">base_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"/drive/data"</span>
+<span class="k">function</span><span class="w"> </span><span class="n">get_sim_path</span><span class="p">(</span><span class="n">simID</span><span class="p">)</span>
+<span class="w">    </span><span class="n">joinpath</span><span class="p">(</span><span class="n">base_path</span><span class="p">,</span><span class="w"> </span><span class="s">"simulation_</span><span class="si">$</span><span class="p">(</span><span class="n">simID</span><span class="p">)</span><span class="s">_raw.csv"</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>or</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">get_sim_path</span><span class="p">(</span><span class="n">simID</span><span class="p">,</span><span class="w"> </span><span class="n">base_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"/drive/data"</span><span class="p">)</span>
+<span class="w">    </span><span class="n">joinpath</span><span class="p">(</span><span class="n">base_path</span><span class="p">,</span><span class="w"> </span><span class="s">"simulation_</span><span class="si">$</span><span class="p">(</span><span class="n">simID</span><span class="p">)</span><span class="s">_raw.csv"</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>This function is used by another function, such as</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">extract_IDs</span><span class="p">(</span><span class="n">simID</span><span class="p">)</span>
+<span class="w">    </span><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_sim_path</span><span class="p">(</span><span class="n">simID</span><span class="p">)</span>
+<span class="w">    </span><span class="o">....</span>
+<span class="w">    </span><span class="n">IDs</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>In reality these function take more arguments and are sometimes even more nested. I would like to not have to include all the arguments all the way up. What are the common solutions for this? I don't expect to need to change these values interactively. These would be read once, run once kinda thing.</p>
+
+
+
+<a name="469692815"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Parameters%20for%20nested%20functions/near/469692815" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gunnar Farnebäck <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Parameters.20for.20nested.20functions.html#469692815">(Sep 12 2024 at 14:32)</a>:</h4>
+<p>I did this in my current job project:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">Preferences</span>
+<span class="k">export</span><span class="w"> </span><span class="n">set_test_data_dir</span><span class="p">,</span><span class="w"> </span><span class="n">get_test_data_dir</span>
+
+<span class="c"># This gets stored in a LocalPreferences.toml file, which is .gitignored.</span>
+<span class="k">function</span><span class="w"> </span><span class="n">set_test_data_dir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<span class="w">    </span><span class="nd">@set_preferences!</span><span class="p">(</span><span class="s">"test_data_dir"</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">path</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="k">function</span><span class="w"> </span><span class="n">get_test_data_dir</span><span class="p">()</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nd">@load_preference</span><span class="p">(</span><span class="s">"test_data_dir"</span><span class="p">,</span>
+<span class="w">                            </span><span class="n">joinpath</span><span class="p">(</span><span class="n">dirname</span><span class="p">(</span><span class="nd">@__DIR__</span><span class="p">),</span><span class="w"> </span><span class="s">"test"</span><span class="p">,</span><span class="w"> </span><span class="s">"data"</span><span class="p">))</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="469859847"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Parameters%20for%20nested%20functions/near/469859847" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Parameters.20for.20nested.20functions.html#469859847">(Sep 13 2024 at 06:03)</a>:</h4>
+<p>A low tech solution is to just slurp and splat keyword arguments. Once you have added it to the higher level functions you can just add keyword arguments to the lower ones and they will just propagate.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">foo_top</span><span class="p">(</span><span class="n">x</span><span class="p">;</span><span class="w"> </span><span class="n">kws</span><span class="o">...</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">foo_mid</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">kws</span><span class="o">...</span><span class="p">)</span>
+
+<span class="k">function</span><span class="w"> </span><span class="n">foo_mid</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">mid_kw</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">kws</span><span class="o">...</span><span class="p">)</span>
+<span class="c">#use mid_kw for something</span>
+<span class="n">foo_bottom</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">kws</span><span class="o">...</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="n">foo_bottom</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">kw1</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">kw2</span><span class="o">=</span><span class="s">"aa"</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">...</span>
+</code></pre></div>
+
+
+
+<a name="470050084"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Parameters%20for%20nested%20functions/near/470050084" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Moorits Muru <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Parameters.20for.20nested.20functions.html#470050084">(Sep 13 2024 at 21:15)</a>:</h4>
+<p>Thanks for showing how to do it with kwargs, but I think that would be a bit too much noise. I think I will use <a href="https://juliahub.com/ui/Packages/General/Preferences">Preferences.jl</a>. I found now that it is also the recommended package in the <a href="https://juliahub.com/ui/Packages/General/Pkg">Pkg.jl</a> docs.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

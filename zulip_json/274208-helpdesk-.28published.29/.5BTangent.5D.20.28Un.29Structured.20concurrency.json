@@ -1,0 +1,104 @@
+[
+    {
+        "content": "<p>Sorry for derailing this conversation, but why are you saying that one should never write \"rogue\" async operations? This is contradicts the idea, that was in <a href=\"https://julialang.org/blog/2019/07/multithreading/#how_to_use_it\">https://julialang.org/blog/2019/07/multithreading/#how_to_use_it</a> Sort example shows how to use spawn without <code>@sync</code> , and I suppose it cannot be written with one.</p>",
+        "id": 229161377,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1615097842
+    },
+    {
+        "content": "<p>(I detached the tangent starting from my comment <a href=\"#narrow/stream/274208-helpdesk-%28published%29/topic/how.20does.20.60Threads.2ECondition.60.20work.3F/near/229137749\">https://julialang.zulipchat.com/#narrow/stream/274208-helpdesk-%28published%29/topic/how.20does.20.60Threads.2ECondition.60.20work.3F/near/229137749</a>)</p>",
+        "id": 229162171,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1615098680
+    },
+    {
+        "content": "<p>You don't see <code>@sync</code> in the blog post because the core devs are not buying the idea of so-called structured concurrency <a href=\"https://en.wikipedia.org/wiki/Structured_concurrency\">https://en.wikipedia.org/wiki/Structured_concurrency</a></p>",
+        "id": 229162234,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1615098735
+    },
+    {
+        "content": "<p>There is a discussion in GitHub issue: <a href=\"https://github.com/JuliaLang/julia/issues/33248\">https://github.com/JuliaLang/julia/issues/33248</a></p>",
+        "id": 229162244,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1615098742
+    },
+    {
+        "content": "<p>It is perhaps fair to say I'm an extremist in the discussion of structured concurrency. But considering the \"convergent evolution\" in the space of concurrency programming (ref Python, Kotlin, Java, etc.), it's just too interesting topic to ignore.</p>",
+        "id": 229162543,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1615099061
+    },
+    {
+        "content": "<p>Ah, I've seen that thread before, but I thought that you propose structured concurrency as an additional optional layer, not as a complete switch from one paradigm to another.</p>\n<p>It's easier to understand complex concepts on example. Just to be more concrete (sorry if I am asking too much), how sort example could be written in the structured concurrency paradigm? Presuming that we added necessary keywords (they can be explained on the go).</p>",
+        "id": 229162544,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1615099072
+    },
+    {
+        "content": "<p>Oh, just read first few sentences from wiki and I have additional question. What should we do if task should never complete? I am thinking of web server and producer/consumers pattern, when we spawn bunch of workers and they continuously process requests that are coming from external world.</p>",
+        "id": 229162718,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1615099241
+    },
+    {
+        "content": "<p>Or even, to make it simple, some <code>cron</code> like task, which should run indefinitely and produce signals to external world.</p>",
+        "id": 229162809,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1615099369
+    },
+    {
+        "content": "<p>Or to other parts of my application.</p>",
+        "id": 229162837,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1615099401
+    },
+    {
+        "content": "<blockquote>\n<p>how sort example could be written in the structured concurrency paradigm</p>\n</blockquote>\n<p>The relevant part of the sort example would be</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"nd\">@sync</span> <span class=\"k\">begin</span>\n    <span class=\"nd\">@spawn</span> <span class=\"n\">psort!</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"p\">,</span> <span class=\"n\">lo</span><span class=\"p\">,</span> <span class=\"n\">mid</span><span class=\"p\">)</span>\n    <span class=\"n\">psort!</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"p\">,</span> <span class=\"n\">mid</span><span class=\"o\">+</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"n\">hi</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>To be fair, <code>@sync</code> allocates a <code>Channel</code> so you might see a performance penalty for it. But I'd say it's just a missed optimization opportunity, rather than a fundamental limitation. Also, sorting is an example where we can (potentially) optimize the code even more, by using a parallel programming model that is a strict subset of structured concurrency (Ref: my PR for it <a href=\"https://github.com/JuliaLang/julia/pull/39773\">https://github.com/JuliaLang/julia/pull/39773</a>)</p>\n<blockquote>\n<p>What should we do if task should never complete?</p>\n</blockquote>\n<p>If you write \"server-like\" software, your server starts all the tasks that are required for it to function. So, there is no need to have unstructured concurrency that leaks tasks. When the server ends, no tasks are needed to exist afterward.</p>\n<p>If you have a <em>sub</em>-component of your server that wants to leak tasks (e.g., a request handler of a web server initiating a background work on a request) you can use the \"nursery passing style.\" I'm not sure what's the best resource explaining it in a language-agnostic manner. Here is a relevant part in Trio's (Python) documentation: <a href=\"https://trio.readthedocs.io/en/stable/reference-core.html#spawning-tasks-without-becoming-a-parent\">https://trio.readthedocs.io/en/stable/reference-core.html#spawning-tasks-without-becoming-a-parent</a></p>",
+        "id": 229164272,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1615100957
+    },
+    {
+        "content": "<p>This is a very interesting reading, thank you. I am trying to understand how to apply it to a real world examples.</p>\n<p>I am currently writing reminder bot for zulip, and I run exactly into this sort of problems. Or maybe it's not a problem, or maybe it's not a problem yet. Code is here: <a href=\"https://github.com/Arkoniak/ZulipReminderBot.jl/blob/master/src/ZulipReminderBot.jl#L80-L133\">https://github.com/Arkoniak/ZulipReminderBot.jl/blob/master/src/ZulipReminderBot.jl#L80-L133</a></p>\n<p>Idea of the bot is simple: user is writing message in chat \"remind me in 4 hours\" and in 4 hours bot sends a message. Solution (it is prototype now, only skeleton of all things that needs to be done) is quite simple, I have three workers:</p>\n<ul>\n<li><code>cron</code> which is running indefinitely and just verify if any of the messages are due to be reminded of.</li>\n<li><code>messenger</code> which is doing actual delivery</li>\n<li><code>main</code> which is process incoming messages and sends them to a <code>cron</code>.</li>\n</ul>\n<p>As you can see from the code, I basically do it like this</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">run</span><span class=\"p\">()</span>\n  <span class=\"nd\">@async</span> <span class=\"n\">cron</span><span class=\"p\">()</span>\n  <span class=\"nd\">@async</span> <span class=\"n\">messenger</span><span class=\"p\">()</span>\n  <span class=\"n\">main</span><span class=\"p\">()</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>And they communicate through various channels.</p>\n<p>Now the question is, how it should be structured according to the principles of structured concurrency and what benefits I get here?</p>\n<p>Just rewriting everything as</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">run</span><span class=\"p\">()</span>\n  <span class=\"nd\">@sync</span> <span class=\"k\">begin</span>\n    <span class=\"nd\">@async</span> <span class=\"n\">cron</span><span class=\"p\">()</span>\n    <span class=\"nd\">@async</span> <span class=\"n\">messenger</span><span class=\"p\">()</span>\n    <span class=\"n\">main</span><span class=\"p\">()</span>\n  <span class=\"k\">end</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>doesn't look like much of improvement.</p>",
+        "id": 229255427,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1615186524
+    },
+    {
+        "content": "<p>Without <code>@sync</code>, you don't notice exceptions unless you have other mechanisms implemented <em>manually and consciously</em>. I believe it makes bug finding, debugging, and error recovery hard. In sequential programs, you have to try hard to ignore an error. With unstructured concurrency, programs are ignoring errors by default.</p>",
+        "id": 229579538,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1615334840
+    },
+    {
+        "content": "<p>Don't get me wrong, I am not arguing with the idea, quite the contrary! I want to explore these uncharted regions and ReminderBot looks like a good toy, where I would be glad to apply it.</p>\n<p>The only problem is that it hasn't clicked yet in my head, how to do it properly. I've read through <a href=\"https://vorpus.org/blog/notes-on-structured-concurrency-or-go-statement-considered-harmful/\">https://vorpus.org/blog/notes-on-structured-concurrency-or-go-statement-considered-harmful/</a> and Trio tutorial <a href=\"https://trio.readthedocs.io/en/stable/tutorial.html\">https://trio.readthedocs.io/en/stable/tutorial.html</a>. Also I looked at the PR you've mentioned, but it's too much about IR so it is beyond my understanding.</p>\n<p>I do understand that it is more a plans for the future, but if there is anything (even experimental) like a Trio, that can be used as a foundation for structured concurrency, I'll be glad to try it. </p>\n<p>I have only some pieces of puzzle in my head. First of all, it seems that <code>@sync</code> is not exactly the same as <code>nursery</code> in Trio. I suppose that equivalent code in Julia should look like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">child1</span><span class=\"p\">()</span>\n   <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"s\">\"  child1: started! sleeping now...\"</span><span class=\"p\">)</span>\n   <span class=\"n\">sleep</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">)</span>\n   <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"s\">\"  child1: exiting!\"</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n\n<span class=\"k\">function</span> <span class=\"n\">child2</span><span class=\"p\">()</span>\n   <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"s\">\"  child2: started! sleeping now...\"</span><span class=\"p\">)</span>\n   <span class=\"n\">sleep</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">)</span>\n   <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"s\">\"  child2: exiting!\"</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n\n<span class=\"k\">function</span> <span class=\"n\">parent</span><span class=\"p\">()</span>\n  <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"s\">\"parent: started\"</span><span class=\"p\">)</span>\n  <span class=\"n\">open_nursery</span><span class=\"p\">()</span> <span class=\"k\">do</span> <span class=\"n\">nursery</span>\n     <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"s\">\"parent: spawning child\"</span><span class=\"p\">)</span>\n     <span class=\"n\">start_soon</span><span class=\"p\">(</span><span class=\"n\">nursery</span><span class=\"p\">,</span> <span class=\"n\">child1</span><span class=\"p\">)</span>\n\n     <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"s\">\"parent: spawning child\"</span><span class=\"p\">)</span>\n     <span class=\"n\">start_soon</span><span class=\"p\">(</span><span class=\"n\">nursery</span><span class=\"p\">,</span> <span class=\"n\">child2</span><span class=\"p\">)</span>\n  <span class=\"k\">end</span>\n  <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"s\">\"parent: all done!\"</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>Where <code>open_nursery</code> and <code>start_soon</code> has all the magic.<br>\nBut I do not quite understand how these functions should look internally.<br>\nAnd maybe there is no need to copy python so literally and <code>@async</code> and <code>@sync</code> is already enough, only they should be used properly?</p>",
+        "id": 229644513,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1615377620
+    },
+    {
+        "content": "<p>(Ah, sorry if my comment sounded too harsh. I just wanted to write a concise reply.)</p>",
+        "id": 229720966,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1615402250
+    },
+    {
+        "content": "<blockquote>\n<p>But I do not quite understand how these functions should look internally.</p>\n</blockquote>\n<p>Yeah, I think it'd be tricky to implement them. I've been thinking to implement <a href=\"https://en.wikipedia.org/wiki/Concurrent_ML\">Concurrent ML</a> which provides composable synchronizations (think Go's <code>select</code> but extensible). Concurrent ML itself is not structured but it looks like we can build robust cancellation like Trio on top of it (<a href=\"https://doi.org/10.1145/996893.996849\">https://doi.org/10.1145/996893.996849</a>).</p>\n<blockquote>\n<p>And maybe there is no need to copy python so literally and <code>@async</code> and <code>@sync</code> is already enough, only they should be used properly?</p>\n</blockquote>\n<p>Yeah, I don't think we need to change the surface syntax. <code>@sync</code>/<code>@async</code> sound perfectly fine to me.</p>",
+        "id": 229721134,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1615402321
+    },
+    {
+        "content": "<p>Thing that bothers me about <code>@sync/@async</code> is that it hides context inside. Both <code>Trio</code> author and <a href=\"https://elizarov.medium.com/structured-concurrency-722d765aa952\">Elizarov in his article</a> uses idea of context. At least nursery looks like context to me in the light of the idea that you can pass <code>nursery</code> around to care about child that you do not have time to care about.</p>\n<p>Maybe I am wrong, but when I looked into the code of <code>@sync</code> , it uses constant <code>sync_varname</code> which looks very context to me.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"kd\">const</span> <span class=\"n\">sync_varname</span> <span class=\"o\">=</span> <span class=\"n\">gensym</span><span class=\"p\">(</span><span class=\"o\">:</span><span class=\"n\">sync</span><span class=\"p\">)</span>\n\n<span class=\"k\">macro</span> <span class=\"n\">sync</span><span class=\"p\">(</span><span class=\"n\">block</span><span class=\"p\">)</span>\n    <span class=\"n\">var</span> <span class=\"o\">=</span> <span class=\"n\">esc</span><span class=\"p\">(</span><span class=\"n\">sync_varname</span><span class=\"p\">)</span>\n    <span class=\"k\">quote</span>\n        <span class=\"k\">let</span> <span class=\"o\">$</span><span class=\"n\">var</span> <span class=\"o\">=</span> <span class=\"kt\">Channel</span><span class=\"p\">(</span><span class=\"nb\">Inf</span><span class=\"p\">)</span>\n            <span class=\"n\">v</span> <span class=\"o\">=</span> <span class=\"o\">$</span><span class=\"p\">(</span><span class=\"n\">esc</span><span class=\"p\">(</span><span class=\"n\">block</span><span class=\"p\">))</span>\n            <span class=\"n\">sync_end</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">var</span><span class=\"p\">)</span>\n            <span class=\"n\">v</span>\n        <span class=\"k\">end</span>\n    <span class=\"k\">end</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>So, I was thinking, may be using something like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">macro</span> <span class=\"n\">sync</span><span class=\"p\">(</span><span class=\"n\">nursery</span><span class=\"p\">,</span> <span class=\"n\">block</span><span class=\"p\">)</span>\n    <span class=\"n\">var</span> <span class=\"o\">=</span> <span class=\"n\">esc</span><span class=\"p\">(</span><span class=\"n\">nursery</span><span class=\"p\">)</span>\n    <span class=\"k\">quote</span>\n        <span class=\"k\">let</span> <span class=\"o\">$</span><span class=\"n\">var</span> <span class=\"o\">=</span> <span class=\"kt\">Channel</span><span class=\"p\">(</span><span class=\"nb\">Inf</span><span class=\"p\">)</span>\n            <span class=\"n\">v</span> <span class=\"o\">=</span> <span class=\"o\">$</span><span class=\"p\">(</span><span class=\"n\">esc</span><span class=\"p\">(</span><span class=\"n\">block</span><span class=\"p\">))</span>\n            <span class=\"n\">sync_end</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">var</span><span class=\"p\">)</span>\n            <span class=\"n\">v</span>\n        <span class=\"k\">end</span>\n    <span class=\"k\">end</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>gives the same context notion? Of course, one need much more than just passing more than one channel around.</p>",
+        "id": 229723044,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1615402969
+    },
+    {
+        "content": "<p>With your 2-arg <code>@sync</code> and maybe something like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">macro</span> <span class=\"n\">getnursery</span><span class=\"p\">()</span>\n    <span class=\"n\">esc</span><span class=\"p\">(</span><span class=\"n\">sync_varname</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>we can do</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">nursery</span><span class=\"p\">)</span>\n    <span class=\"nd\">@sync</span> <span class=\"n\">nursery</span> <span class=\"k\">begin</span>\n        <span class=\"nd\">@sync</span> <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"s\">\"hello\"</span><span class=\"p\">)</span>\n    <span class=\"k\">end</span>\n<span class=\"k\">end</span>\n\n<span class=\"k\">function</span> <span class=\"n\">g</span><span class=\"p\">()</span>\n    <span class=\"nd\">@sync</span> <span class=\"k\">begin</span>\n        <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"nd\">@getnursery</span><span class=\"p\">)</span>\n        <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"nd\">@getnursery</span><span class=\"p\">)</span>\n    <span class=\"k\">end</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 229726824,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1615404282
+    }
+]

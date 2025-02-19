@@ -1,0 +1,522 @@
+<html>
+<head><meta charset="utf-8"><title>Creating a variable-length list comprehension using a macro · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html">Creating a variable-length list comprehension using a macro</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="352515947"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Creating%20a%20variable-length%20list%20comprehension%20using%20a%20macro/near/352515947" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Or Golan <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html#352515947">(Apr 25 2023 at 12:00)</a>:</h4>
+<p>I'm trying to create a list comprehension to create a list of tuples of length <code>k</code>, and I figured that macro is the way to do it.<br>
+An example for k = 2 of the list comprehension i'm trying to get (for some given <code>n</code>):</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="p">[[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">]</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="o">=</span><span class="mi">1</span><span class="o">:</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">j</span><span class="o">=</span><span class="p">(</span><span class="n">k</span><span class="o">+</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">:</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="n">k</span><span class="o">+</span><span class="mi">2</span><span class="p">)]</span>
+</code></pre></div>
+<p>The m-th index i_m would go from i_{m-1}+1 to n-k+m.</p>
+<p>I tried creating the following macro, but this seems way off:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">macro</span><span class="w"> </span><span class="n">create_indices</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span>
+<span class="w">    </span><span class="n">iterator_expressions</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">map</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">s</span>
+<span class="w">        </span><span class="kt">Expr</span><span class="p">(</span>
+<span class="w">            </span><span class="o">:</span><span class="p">(</span><span class="o">=</span><span class="p">),</span>
+<span class="w">            </span><span class="kt">Symbol</span><span class="p">(</span><span class="s">"i"</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">),</span>
+<span class="w">            </span><span class="k">quote</span><span class="w"> </span><span class="o">$</span><span class="p">(</span><span class="n">esc</span><span class="p">(</span><span class="n">s</span><span class="p">))</span><span class="o">:$</span><span class="p">(</span><span class="n">esc</span><span class="p">(</span><span class="n">s</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">n</span><span class="p">))</span><span class="w"> </span><span class="k">end</span>
+<span class="w">        </span><span class="p">)</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="w">    </span><span class="kt">Expr</span><span class="p">(</span>
+<span class="w">        </span><span class="ss">:comprehension</span><span class="p">,</span>
+<span class="w">        </span><span class="p">[</span><span class="n">esc</span><span class="p">(</span><span class="kt">Symbol</span><span class="p">(</span><span class="s">"i"</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">))</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="o">:</span><span class="n">k</span><span class="p">],</span>
+<span class="w">        </span><span class="n">iterator_expressions</span><span class="o">...</span><span class="p">,</span>
+<span class="w">    </span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>for some reason i'm only getting a matrix of expressions, and I have no idea what i'm doing wrong. Please help!</p>
+
+
+
+<a name="352518859"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Creating%20a%20variable-length%20list%20comprehension%20using%20a%20macro/near/352518859" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Leandro Martínez <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html#352518859">(Apr 25 2023 at 12:13)</a>:</h4>
+<p>Why do you need a macro for that? </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">create_indices</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="o">=</span><span class="mi">1</span><span class="o">:</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">j</span><span class="o">=</span><span class="p">(</span><span class="n">k</span><span class="o">+</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">:</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="n">k</span><span class="o">+</span><span class="mi">2</span><span class="p">)]</span>
+<span class="n">create_indices</span><span class="w"> </span><span class="p">(</span><span class="n">generic</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">create_indices</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+<span class="mi">3</span><span class="o">-</span><span class="n">element</span><span class="w"> </span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Tuple</span><span class="p">{</span><span class="kt">Int64</span><span class="p">,</span><span class="w"> </span><span class="kt">Int64</span><span class="p">}}</span><span class="o">:</span>
+<span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
+<span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span>
+<span class="w"> </span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="352519158"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Creating%20a%20variable-length%20list%20comprehension%20using%20a%20macro/near/352519158" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Or Golan <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html#352519158">(Apr 25 2023 at 12:15)</a>:</h4>
+<p>because for <code>k=3</code> I need</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="p">[[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">l</span><span class="p">]</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="o">=</span><span class="mi">1</span><span class="o">:</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">j</span><span class="o">=</span><span class="p">(</span><span class="n">k</span><span class="o">+</span><span class="n">i</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span><span class="o">:</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="n">k</span><span class="o">+</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">l</span><span class="o">=</span><span class="p">(</span><span class="n">k</span><span class="o">+</span><span class="n">j</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span><span class="o">:</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="n">k</span><span class="o">+</span><span class="mi">3</span><span class="p">)]</span>
+</code></pre></div>
+
+
+
+<a name="352519228"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Creating%20a%20variable-length%20list%20comprehension%20using%20a%20macro/near/352519228" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sebastian Pfitzner <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html#352519228">(Apr 25 2023 at 12:15)</a>:</h4>
+<p><del><code>collect(zip([s:s-k+n for s in 1:k]...))</code>?</del></p>
+
+
+
+<a name="352520708"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Creating%20a%20variable-length%20list%20comprehension%20using%20a%20macro/near/352520708" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Leandro Martínez <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html#352520708">(Apr 25 2023 at 12:21)</a>:</h4>
+<p>This will not generate the correct indices, but very likely you can adapt it to do it:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">create_indices</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="n">k</span><span class="p">)</span>
+<span class="w">           </span><span class="p">[</span><span class="w"> </span><span class="n">ntuple</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">i</span>
+<span class="w">                   </span><span class="n">j</span><span class="o">-</span><span class="n">k</span><span class="o">+</span><span class="n">i</span>
+<span class="w">              </span><span class="k">end</span>
+<span class="w">              </span><span class="k">for</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="n">n</span>
+<span class="w">           </span><span class="p">]</span>
+<span class="w">       </span><span class="k">end</span>
+<span class="n">create_indices</span><span class="w"> </span><span class="p">(</span><span class="n">generic</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">create_indices</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
+<span class="mi">3</span><span class="o">-</span><span class="n">element</span><span class="w"> </span><span class="kt">Vector</span><span class="p">{</span><span class="kt">NTuple</span><span class="p">{</span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="kt">Int64</span><span class="p">}}</span><span class="o">:</span>
+<span class="w"> </span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w"> </span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
+<span class="w"> </span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span>
+</code></pre></div>
+<p>(in any case I'm sure a macro will only make things more complicated. If you can write the indexing correctly in a macro, it will be easier with a standar function)</p>
+
+
+
+<a name="352523237"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Creating%20a%20variable-length%20list%20comprehension%20using%20a%20macro/near/352523237" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Or Golan <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html#352523237">(Apr 25 2023 at 12:30)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="455681">Leandro Martínez</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro/near/352520708">said</a>:</p>
+<blockquote>
+<p>This will not generate the correct indices, but very likely you can adapt it to do it:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">create_indices</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="n">k</span><span class="p">)</span>
+<span class="w">           </span><span class="p">[</span><span class="w"> </span><span class="n">ntuple</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">i</span>
+<span class="w">                   </span><span class="n">j</span><span class="o">-</span><span class="n">k</span><span class="o">+</span><span class="n">i</span>
+<span class="w">              </span><span class="k">end</span>
+<span class="w">              </span><span class="k">for</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="n">n</span>
+<span class="w">           </span><span class="p">]</span>
+<span class="w">       </span><span class="k">end</span>
+<span class="n">create_indices</span><span class="w"> </span><span class="p">(</span><span class="n">generic</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">create_indices</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
+<span class="mi">3</span><span class="o">-</span><span class="n">element</span><span class="w"> </span><span class="kt">Vector</span><span class="p">{</span><span class="kt">NTuple</span><span class="p">{</span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="kt">Int64</span><span class="p">}}</span><span class="o">:</span>
+<span class="w"> </span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w"> </span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
+<span class="w"> </span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span>
+</code></pre></div>
+<p>(in any case I'm sure a macro will only make things more complicated. If you can write the indexing correctly in a macro, it will be easier with a standar function)</p>
+</blockquote>
+<p>I'm not sure this is possible as the indices depend on each other:</p>
+<p>The m-th index i_m would go from i_{m-1}+1 to n-k+m.</p>
+
+
+
+<a name="352555008"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Creating%20a%20variable-length%20list%20comprehension%20using%20a%20macro/near/352555008" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Leandro Martínez <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html#352555008">(Apr 25 2023 at 14:32)</a>:</h4>
+<p>Getting that kind of thing right is tricky, but it is trickier with a macro. In either case you need to figure out which is the (possible recursive) algorithm that will generate the correct sequence. And then, implementing that as a function is easier than as a macro.</p>
+
+
+
+<a name="352584442"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Creating%20a%20variable-length%20list%20comprehension%20using%20a%20macro/near/352584442" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html#352584442">(Apr 25 2023 at 16:18)</a>:</h4>
+<p>I think, you can write iterator with a somewhat complicated state. Update of the state can have some overhead of course,  but usually it should be overshadowed by main calculations.</p>
+
+
+
+<a name="352590381"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Creating%20a%20variable-length%20list%20comprehension%20using%20a%20macro/near/352590381" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html#352590381">(Apr 25 2023 at 16:43)</a>:</h4>
+<p><span class="user-mention" data-user-id="327072">@Or Golan</span> It's not very clear to me what you're trying to do here, but here's me fixing the syntax errors in your macro. It at least correctly parses now, but I don't know if this is exactly the iteration layout you wanted, I left all the actual logic how you wrote it. </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">macro</span><span class="w"> </span><span class="n">create_indices</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span>
+<span class="w">    </span><span class="n">iterator_expressions</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">map</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">s</span>
+<span class="w">        </span><span class="o">:</span><span class="p">(</span><span class="o">$</span><span class="p">(</span><span class="kt">Symbol</span><span class="p">(</span><span class="s">"i"</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">))</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">$</span><span class="n">s</span><span class="o">:$</span><span class="p">(</span><span class="n">s</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">n</span><span class="p">))</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="w">    </span><span class="kt">Expr</span><span class="p">(</span>
+<span class="w">        </span><span class="ss">:comprehension</span><span class="p">,</span>
+<span class="w">        </span><span class="kt">Expr</span><span class="p">(</span><span class="ss">:tuple</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">Symbol</span><span class="p">(</span><span class="s">"i"</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="o">:</span><span class="n">k</span><span class="p">)</span><span class="o">...</span><span class="p">),</span>
+<span class="w">        </span><span class="p">(</span><span class="n">iterator_expressions</span><span class="p">)</span><span class="o">...</span><span class="p">,</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">esc</span>
+<span class="k">end</span>
+</code></pre></div>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="nd">@create_indices</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
+<span class="go">3×3 Matrix{Tuple{Int64, Int64}}:</span>
+<span class="go"> (1, 2)  (1, 3)  (1, 4)</span>
+<span class="go"> (2, 2)  (2, 3)  (2, 4)</span>
+<span class="go"> (3, 2)  (3, 3)  (3, 4)</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="nd">@create_indices</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span>
+<span class="go">2×2×2 Array{Tuple{Int64, Int64, Int64}, 3}:</span>
+<span class="go">[:, :, 1] =</span>
+<span class="go"> (1, 2, 3)  (1, 3, 3)</span>
+<span class="go"> (2, 2, 3)  (2, 3, 3)</span>
+
+<span class="go">[:, :, 2] =</span>
+<span class="go"> (1, 2, 4)  (1, 3, 4)</span>
+<span class="go"> (2, 2, 4)  (2, 3, 4)</span>
+</code></pre></div>
+
+
+
+<a name="352591147"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Creating%20a%20variable-length%20list%20comprehension%20using%20a%20macro/near/352591147" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html#352591147">(Apr 25 2023 at 16:46)</a>:</h4>
+<p>I suspect this isn't the logic you actually intended though because the example you have <code>[[i, j] for i=1:(n-k+1) for j=(k+i-1):(n-k+2)]</code> is different</p>
+
+
+
+<a name="352591863"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Creating%20a%20variable-length%20list%20comprehension%20using%20a%20macro/near/352591863" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html#352591863">(Apr 25 2023 at 16:49)</a>:</h4>
+<p>But also that example you gave contracts what you said about "The m-th index i_m would go from i_{m-1}+1 to n-k+m."</p>
+
+
+
+<a name="352600339"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Creating%20a%20variable-length%20list%20comprehension%20using%20a%20macro/near/352600339" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Or Golan <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html#352600339">(Apr 25 2023 at 17:29)</a>:</h4>
+<p>I'm trying to get all <code>k</code>-combinations from some collection of length <code>n</code></p>
+<p><span class="user-mention silent" data-user-id="269150">Mason Protter</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro/near/352591147">said</a>:</p>
+<blockquote>
+<p>I suspect this isn't the logic you actually intended though because the example you have <code>[[i, j] for i=1:(n-k+1) for j=(k+i-1):(n-k+2)]</code> is different</p>
+</blockquote>
+<p>that's actually the same for <code>k=2</code> - <code>k+i-1 = i+1</code>.</p>
+<p>I started with a recursive function that does this, but I'm trying to reduce the number of allocations, so I thought that generating the list comprehension using a macro would be more efficient. Here is the recursive function:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">combinations</span><span class="p">(</span><span class="n">collection</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span>
+<span class="w">    </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">length</span><span class="p">(</span><span class="n">collection</span><span class="p">)</span>
+<span class="w">    </span><span class="n">combs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[]</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="n">n</span>
+<span class="w">        </span><span class="n">el</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">collection</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">            </span><span class="n">push!</span><span class="p">(</span><span class="n">combs</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="n">el</span><span class="p">])</span>
+<span class="w">        </span><span class="k">else</span>
+<span class="w">            </span><span class="n">rest</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">collection</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="o">:</span><span class="k">end</span><span class="p">]</span>
+<span class="w">            </span><span class="n">subcombs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">combinations</span><span class="p">(</span><span class="n">rest</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="n">subcomb</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">subcombs</span>
+<span class="w">                </span><span class="n">push!</span><span class="p">(</span><span class="n">combs</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="n">el</span><span class="p">;</span><span class="w"> </span><span class="n">subcomb</span><span class="p">])</span>
+<span class="w">            </span><span class="k">end</span>
+<span class="w">        </span><span class="k">end</span>
+<span class="w">    </span><span class="k">end</span>
+<span class="w">    </span><span class="n">combs</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="352602023"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Creating%20a%20variable-length%20list%20comprehension%20using%20a%20macro/near/352602023" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html#352602023">(Apr 25 2023 at 17:37)</a>:</h4>
+<p>Your <code>combs</code> is a <code>Vector{Any}</code>, you should give it a concrete eltype</p>
+
+
+
+<a name="352602613"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Creating%20a%20variable-length%20list%20comprehension%20using%20a%20macro/near/352602613" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gunnar Farnebäck <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html#352602613">(Apr 25 2023 at 17:39)</a>:</h4>
+<p>Just for fun and not in any way efficient:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">create_indices</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reverse</span><span class="o">.</span><span class="p">(</span><span class="n">collect</span><span class="p">(</span><span class="n">Iterators</span><span class="o">.</span><span class="n">Filter</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">issorted</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">lt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">!&lt;</span><span class="p">),</span><span class="w"> </span><span class="n">Iterators</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="n">fill</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="o">...</span><span class="p">))))</span>
+<span class="n">create_indices</span><span class="w"> </span><span class="p">(</span><span class="n">generic</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">create_indices</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span>
+<span class="mi">10</span><span class="o">-</span><span class="n">element</span><span class="w"> </span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Tuple</span><span class="p">{</span><span class="kt">Int64</span><span class="p">,</span><span class="w"> </span><span class="kt">Int64</span><span class="p">,</span><span class="w"> </span><span class="kt">Int64</span><span class="p">}}</span><span class="o">:</span>
+<span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span>
+<span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span>
+<span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span>
+<span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span>
+<span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span>
+<span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span>
+<span class="w"> </span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span>
+<span class="w"> </span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span>
+<span class="w"> </span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span>
+<span class="w"> </span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="352603615"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Creating%20a%20variable-length%20list%20comprehension%20using%20a%20macro/near/352603615" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gunnar Farnebäck <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html#352603615">(Apr 25 2023 at 17:44)</a>:</h4>
+<p>Regarding the macro approach,</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">dump</span><span class="p">(</span><span class="o">:</span><span class="p">([[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">l</span><span class="p">]</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="o">=</span><span class="mi">1</span><span class="o">:</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">j</span><span class="o">=</span><span class="p">(</span><span class="n">k</span><span class="o">+</span><span class="n">i</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span><span class="o">:</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="n">k</span><span class="o">+</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">l</span><span class="o">=</span><span class="p">(</span><span class="n">k</span><span class="o">+</span><span class="n">j</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span><span class="o">:</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="n">k</span><span class="o">+</span><span class="mi">3</span><span class="p">)]))</span>
+<span class="kt">Expr</span>
+<span class="w">  </span><span class="n">head</span><span class="o">:</span><span class="w"> </span><span class="kt">Symbol</span><span class="w"> </span><span class="n">comprehension</span>
+<span class="w">  </span><span class="n">args</span><span class="o">:</span><span class="w"> </span><span class="kt">Array</span><span class="p">{</span><span class="kt">Any</span><span class="p">}((</span><span class="mi">1</span><span class="p">,))</span>
+<span class="w">    </span><span class="mi">1</span><span class="o">:</span><span class="w"> </span><span class="kt">Expr</span>
+<span class="w">      </span><span class="n">head</span><span class="o">:</span><span class="w"> </span><span class="kt">Symbol</span><span class="w"> </span><span class="n">flatten</span>
+<span class="w">      </span><span class="n">args</span><span class="o">:</span><span class="w"> </span><span class="kt">Array</span><span class="p">{</span><span class="kt">Any</span><span class="p">}((</span><span class="mi">1</span><span class="p">,))</span>
+<span class="w">        </span><span class="mi">1</span><span class="o">:</span><span class="w"> </span><span class="kt">Expr</span>
+<span class="w">          </span><span class="n">head</span><span class="o">:</span><span class="w"> </span><span class="kt">Symbol</span><span class="w"> </span><span class="n">generator</span>
+<span class="w">          </span><span class="n">args</span><span class="o">:</span><span class="w"> </span><span class="kt">Array</span><span class="p">{</span><span class="kt">Any</span><span class="p">}((</span><span class="mi">2</span><span class="p">,))</span>
+<span class="w">            </span><span class="mi">1</span><span class="o">:</span><span class="w"> </span><span class="kt">Expr</span>
+<span class="w">              </span><span class="n">head</span><span class="o">:</span><span class="w"> </span><span class="kt">Symbol</span><span class="w"> </span><span class="n">flatten</span>
+<span class="w">              </span><span class="n">args</span><span class="o">:</span><span class="w"> </span><span class="kt">Array</span><span class="p">{</span><span class="kt">Any</span><span class="p">}((</span><span class="mi">1</span><span class="p">,))</span>
+<span class="w">                </span><span class="mi">1</span><span class="o">:</span><span class="w"> </span><span class="kt">Expr</span>
+<span class="w">            </span><span class="mi">2</span><span class="o">:</span><span class="w"> </span><span class="kt">Expr</span>
+<span class="w">              </span><span class="n">head</span><span class="o">:</span><span class="w"> </span><span class="kt">Symbol</span><span class="w"> </span><span class="o">=</span>
+<span class="w">              </span><span class="n">args</span><span class="o">:</span><span class="w"> </span><span class="kt">Array</span><span class="p">{</span><span class="kt">Any</span><span class="p">}((</span><span class="mi">2</span><span class="p">,))</span>
+<span class="w">                </span><span class="mi">1</span><span class="o">:</span><span class="w"> </span><span class="kt">Symbol</span><span class="w"> </span><span class="n">i</span>
+<span class="w">                </span><span class="mi">2</span><span class="o">:</span><span class="w"> </span><span class="kt">Expr</span>
+</code></pre></div>
+<p>indicates that you would need to nest <code>flatten</code> and <code>generator</code> expressions.</p>
+<p>But I tend to agree with the opinion that an iterator should be the best approach for this problem.</p>
+
+
+
+<a name="352604810"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Creating%20a%20variable-length%20list%20comprehension%20using%20a%20macro/near/352604810" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gunnar Farnebäck <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html#352604810">(Apr 25 2023 at 17:50)</a>:</h4>
+<p>Or you could just use <code>Combinatorics.combinations</code> of course. :-)</p>
+
+
+
+<a name="352605125"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Creating%20a%20variable-length%20list%20comprehension%20using%20a%20macro/near/352605125" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html#352605125">(Apr 25 2023 at 17:51)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="327072">Or Golan</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro/near/352600339">said</a>:</p>
+<blockquote>
+<p>I'm trying to get all <code>k</code>-combinations from some collection of length <code>n</code></p>
+<p><span class="user-mention silent" data-user-id="269150">Mason Protter</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro/near/352591147">said</a>:</p>
+<blockquote>
+<p>I suspect this isn't the logic you actually intended though because the example you have <code>[[i, j] for i=1:(n-k+1) for j=(k+i-1):(n-k+2)]</code> is different</p>
+</blockquote>
+<p>that's actually the same for <code>k=2</code> - <code>k+i-1 = i+1</code>.</p>
+</blockquote>
+<p>Are you sure?</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="k">let</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span>
+<span class="w">           </span><span class="p">[[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">]</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="o">=</span><span class="mi">1</span><span class="o">:</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">j</span><span class="o">=</span><span class="p">(</span><span class="n">k</span><span class="o">+</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">:</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="n">k</span><span class="o">+</span><span class="mi">2</span><span class="p">)]</span>
+<span class="w">       </span><span class="k">end</span>
+<span class="go">10-element Vector{Vector{Int64}}:</span>
+<span class="go"> [1, 2]</span>
+<span class="go"> [1, 3]</span>
+<span class="go"> [1, 4]</span>
+<span class="go"> [1, 5]</span>
+<span class="go"> [2, 3]</span>
+<span class="go"> [2, 4]</span>
+<span class="go"> [2, 5]</span>
+<span class="go"> [3, 4]</span>
+<span class="go"> [3, 5]</span>
+<span class="go"> [4, 5]</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="k">macro</span><span class="w"> </span><span class="n">create_indices</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span>
+<span class="w">           </span><span class="n">iterator_expressions</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">map</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">s</span>
+<span class="w">               </span><span class="o">:</span><span class="p">(</span><span class="o">$</span><span class="p">(</span><span class="kt">Symbol</span><span class="p">(</span><span class="s">"i"</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">))</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">$</span><span class="n">s</span><span class="o">:$</span><span class="p">(</span><span class="n">s</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">n</span><span class="p">))</span>
+<span class="w">           </span><span class="k">end</span>
+<span class="w">           </span><span class="kt">Expr</span><span class="p">(</span>
+<span class="w">               </span><span class="ss">:comprehension</span><span class="p">,</span>
+<span class="w">               </span><span class="kt">Expr</span><span class="p">(</span><span class="ss">:tuple</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">Symbol</span><span class="p">(</span><span class="s">"i"</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="o">:</span><span class="n">k</span><span class="p">)</span><span class="o">...</span><span class="p">),</span>
+<span class="w">               </span><span class="p">(</span><span class="n">iterator_expressions</span><span class="p">)</span><span class="o">...</span><span class="p">,</span>
+<span class="w">           </span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">esc</span>
+<span class="w">       </span><span class="k">end</span>
+<span class="go">@create_indices (macro with 1 method)</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="nd">@create_indices</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
+<span class="go">4×4 Matrix{Tuple{Int64, Int64}}:</span>
+<span class="go"> (1, 2)  (1, 3)  (1, 4)  (1, 5)</span>
+<span class="go"> (2, 2)  (2, 3)  (2, 4)  (2, 5)</span>
+<span class="go"> (3, 2)  (3, 3)  (3, 4)  (3, 5)</span>
+<span class="go"> (4, 2)  (4, 3)  (4, 4)  (4, 5)</span>
+</code></pre></div>
+
+
+
+<a name="352605689"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Creating%20a%20variable-length%20list%20comprehension%20using%20a%20macro/near/352605689" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html#352605689">(Apr 25 2023 at 17:53)</a>:</h4>
+<p>Looks like you want the upper-triangle of what the macro is making</p>
+
+
+
+<a name="352609800"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Creating%20a%20variable-length%20list%20comprehension%20using%20a%20macro/near/352609800" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Or Golan <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html#352609800">(Apr 25 2023 at 18:14)</a>:</h4>
+<p>Yeah, the macro I tried writing was wrong, but in two dimensions. Thanks to you it is wrong only in one way, but when I tried to correct the logic I'm still way off:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">macro</span><span class="w"> </span><span class="n">create_indices</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span>
+<span class="w">    </span><span class="k">local</span><span class="w"> </span><span class="n">i0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">    </span><span class="n">iterator_expressions</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">map</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">s</span>
+<span class="w">        </span><span class="o">:</span><span class="p">(</span><span class="o">$</span><span class="p">(</span><span class="kt">Symbol</span><span class="p">(</span><span class="s">"i"</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">))</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="o">$</span><span class="p">(</span><span class="kt">Symbol</span><span class="p">(</span><span class="s">"i"</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">:$</span><span class="p">(</span><span class="n">s</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">n</span><span class="p">))</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="w">    </span><span class="kt">Expr</span><span class="p">(</span>
+<span class="w">        </span><span class="ss">:comprehension</span><span class="p">,</span>
+<span class="w">        </span><span class="kt">Expr</span><span class="p">(</span><span class="ss">:tuple</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">Symbol</span><span class="p">(</span><span class="s">"i"</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="o">:</span><span class="n">k</span><span class="p">)</span><span class="o">...</span><span class="p">),</span>
+<span class="w">        </span><span class="p">(</span><span class="n">iterator_expressions</span><span class="p">)</span><span class="o">...</span><span class="p">,</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">esc</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>It's telling me that <code>i0</code> is not defined, and if I define it outside, it says that <code>i1</code> is not defined. I think there is something to do with hygiene here?</p>
+
+
+
+<a name="352611523"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Creating%20a%20variable-length%20list%20comprehension%20using%20a%20macro/near/352611523" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html#352611523">(Apr 25 2023 at 18:22)</a>:</h4>
+<p>Here's how I'd do this:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="nd">@generated</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">create_indices</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="o">::</span><span class="kt">Val</span><span class="p">{</span><span class="kt">k</span><span class="p">})</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="p">{</span><span class="kt">k</span><span class="p">}</span>
+<span class="w">           </span><span class="n">ex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">foldr</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="o">=:</span><span class="p">(</span><span class="n">push!</span><span class="p">(</span><span class="n">out</span><span class="p">,</span><span class="w"> </span><span class="o">$</span><span class="p">(</span><span class="kt">Expr</span><span class="p">(</span><span class="ss">:tuple</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">Symbol</span><span class="p">(</span><span class="ss">:i_</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">∈</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="n">k</span><span class="p">)</span><span class="o">...</span><span class="p">)))))</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">s</span><span class="p">,</span><span class="w"> </span><span class="n">old</span>
+<span class="w">               </span><span class="n">lower</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="o">:</span><span class="p">(</span><span class="n">k</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="o">$</span><span class="p">(</span><span class="kt">Symbol</span><span class="p">(</span><span class="ss">:i_</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">               </span><span class="k">quote</span>
+<span class="w">                   </span><span class="k">for</span><span class="w"> </span><span class="o">$</span><span class="p">(</span><span class="kt">Symbol</span><span class="p">(</span><span class="ss">:i_</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">))</span><span class="w"> </span><span class="o">∈</span><span class="w"> </span><span class="o">$</span><span class="n">lower</span><span class="o">:</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="o">$</span><span class="n">s</span><span class="p">)</span>
+<span class="w">                       </span><span class="o">$</span><span class="n">old</span>
+<span class="w">                   </span><span class="k">end</span>
+<span class="w">               </span><span class="k">end</span>
+<span class="w">           </span><span class="k">end</span>
+<span class="w">           </span><span class="k">quote</span>
+<span class="w">               </span><span class="n">out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">NTuple</span><span class="p">{</span><span class="o">$</span><span class="kt">k</span><span class="p">,</span><span class="w"> </span><span class="kt">Int</span><span class="p">}[]</span>
+<span class="w">               </span><span class="o">$</span><span class="n">ex</span>
+<span class="w">               </span><span class="n">out</span>
+<span class="w">           </span><span class="k">end</span>
+<span class="w">       </span><span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="352611797"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Creating%20a%20variable-length%20list%20comprehension%20using%20a%20macro/near/352611797" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html#352611797">(Apr 25 2023 at 18:23)</a>:</h4>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="n">create_indices</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="kt">Val</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+<span class="go">10-element Vector{Tuple{Int64, Int64}}:</span>
+<span class="go"> (1, 2)</span>
+<span class="go"> (1, 3)</span>
+<span class="go"> (1, 4)</span>
+<span class="go"> (1, 5)</span>
+<span class="go"> (2, 3)</span>
+<span class="go"> (2, 4)</span>
+<span class="go"> (2, 5)</span>
+<span class="go"> (3, 4)</span>
+<span class="go"> (3, 5)</span>
+<span class="go"> (4, 5)</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">create_indices</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="kt">Val</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+<span class="go">20-element Vector{Tuple{Int64, Int64, Int64}}:</span>
+<span class="go"> (1, 3, 5)</span>
+<span class="go"> (1, 3, 6)</span>
+<span class="go"> (1, 3, 7)</span>
+<span class="go"> (1, 3, 8)</span>
+<span class="go"> (1, 4, 6)</span>
+<span class="go"> (1, 4, 7)</span>
+<span class="go"> (1, 4, 8)</span>
+<span class="go"> (1, 5, 7)</span>
+<span class="go"> (1, 5, 8)</span>
+<span class="go"> (1, 6, 8)</span>
+<span class="go"> (2, 4, 6)</span>
+<span class="go"> (2, 4, 7)</span>
+<span class="go"> (2, 4, 8)</span>
+<span class="go"> (2, 5, 7)</span>
+<span class="go"> (2, 5, 8)</span>
+<span class="go"> (2, 6, 8)</span>
+<span class="go"> (3, 5, 7)</span>
+<span class="go"> (3, 5, 8)</span>
+<span class="go"> (3, 6, 8)</span>
+<span class="go"> (4, 6, 8)</span>
+</code></pre></div>
+
+
+
+<a name="352614774"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Creating%20a%20variable-length%20list%20comprehension%20using%20a%20macro/near/352614774" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> aplavin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html#352614774">(Apr 25 2023 at 18:38)</a>:</h4>
+<p>Also something along these lines may help:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">Base</span><span class="o">.</span><span class="n">Cartesian</span><span class="o">.</span><span class="nd">@nloops</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="n">m</span><span class="o">-&gt;</span><span class="p">(</span><span class="n">k</span><span class="o">+</span><span class="kt">i_</span><span class="p">{</span><span class="kt">m</span><span class="o">+</span><span class="mi">1</span><span class="p">}</span><span class="o">-</span><span class="mi">2</span><span class="o">:</span><span class="n">n</span><span class="o">-</span><span class="n">k</span><span class="o">+</span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="k">begin</span>
+<span class="w">       </span><span class="n">push!</span><span class="p">(</span><span class="n">res</span><span class="p">,</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">Cartesian</span><span class="o">.</span><span class="nd">@ntuple</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="n">i</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="352618947"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Creating%20a%20variable-length%20list%20comprehension%20using%20a%20macro/near/352618947" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Or Golan <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html#352618947">(Apr 25 2023 at 18:58)</a>:</h4>
+<p>Thanks <span class="user-mention" data-user-id="269150">@Mason Protter</span> ! I was able to build exactly what I needed from this code.<br>
+In case anyone else is interested:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="nd">@generated</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">create_indices</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="o">::</span><span class="kt">Val</span><span class="p">{</span><span class="kt">k</span><span class="p">})</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="p">{</span><span class="kt">k</span><span class="p">}</span>
+<span class="w">    </span><span class="n">ex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">foldr</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="o">=:</span><span class="p">(</span><span class="n">push!</span><span class="p">(</span><span class="n">out</span><span class="p">,</span><span class="w"> </span><span class="o">$</span><span class="p">(</span><span class="kt">Expr</span><span class="p">(</span><span class="ss">:vect</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">Symbol</span><span class="p">(</span><span class="ss">:i_</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">∈</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="n">k</span><span class="p">)</span><span class="o">...</span><span class="p">)))))</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">s</span><span class="p">,</span><span class="w"> </span><span class="n">old</span>
+<span class="w">        </span><span class="n">lower</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="o">:</span><span class="p">(</span><span class="o">$</span><span class="p">(</span><span class="kt">Symbol</span><span class="p">(</span><span class="ss">:i_</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">        </span><span class="k">quote</span>
+<span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="o">$</span><span class="p">(</span><span class="kt">Symbol</span><span class="p">(</span><span class="ss">:i_</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">))</span><span class="w"> </span><span class="o">∈</span><span class="w"> </span><span class="o">$</span><span class="n">lower</span><span class="o">:</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="o">$</span><span class="n">s</span><span class="p">)</span>
+<span class="w">                </span><span class="o">$</span><span class="n">old</span>
+<span class="w">            </span><span class="k">end</span>
+<span class="w">        </span><span class="k">end</span>
+<span class="w">    </span><span class="k">end</span>
+<span class="w">    </span><span class="k">quote</span>
+<span class="w">        </span><span class="n">out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Int</span><span class="p">}[]</span>
+<span class="w">        </span><span class="o">$</span><span class="n">ex</span>
+<span class="w">        </span><span class="n">out</span>
+<span class="w">    </span><span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>By the way, why did you need to use <code>Val</code>?</p>
+
+
+
+<a name="352619827"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Creating%20a%20variable-length%20list%20comprehension%20using%20a%20macro/near/352619827" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html#352619827">(Apr 25 2023 at 19:02)</a>:</h4>
+<p>Why are you storing vectors instead of Tuples?</p>
+
+
+
+<a name="352619983"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Creating%20a%20variable-length%20list%20comprehension%20using%20a%20macro/near/352619983" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html#352619983">(Apr 25 2023 at 19:03)</a>:</h4>
+<blockquote>
+<p>By the way, why did you need to use Val?</p>
+</blockquote>
+<p>That's because generated functions operate on types rather than values, so to generate a different number of loops depending on <code>k</code>, I needed to lift <code>k</code> into the type domain using <code>Val</code></p>
+
+
+
+<a name="352624340"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Creating%20a%20variable-length%20list%20comprehension%20using%20a%20macro/near/352624340" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gunnar Farnebäck <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html#352624340">(Apr 25 2023 at 19:28)</a>:</h4>
+<p>So how did the performance end up compared to <code>Combinatorics.combinations</code>?</p>
+
+
+
+<a name="352626670"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Creating%20a%20variable-length%20list%20comprehension%20using%20a%20macro/near/352626670" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html#352626670">(Apr 25 2023 at 19:43)</a>:</h4>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">Combinatorics</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="nd">@generated</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">create_indices_tup</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="o">::</span><span class="kt">Val</span><span class="p">{</span><span class="kt">k</span><span class="p">})</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="p">{</span><span class="kt">k</span><span class="p">}</span>
+<span class="w">           </span><span class="n">ex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">foldr</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="o">=:</span><span class="p">(</span><span class="n">push!</span><span class="p">(</span><span class="n">out</span><span class="p">,</span><span class="w"> </span><span class="o">$</span><span class="p">(</span><span class="kt">Expr</span><span class="p">(</span><span class="ss">:tuple</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">Symbol</span><span class="p">(</span><span class="ss">:i_</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">∈</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="n">k</span><span class="p">)</span><span class="o">...</span><span class="p">)))))</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">s</span><span class="p">,</span><span class="w"> </span><span class="n">old</span>
+<span class="w">               </span><span class="n">lower</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="o">:</span><span class="p">(</span><span class="n">k</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="o">$</span><span class="p">(</span><span class="kt">Symbol</span><span class="p">(</span><span class="ss">:i_</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">               </span><span class="k">quote</span>
+<span class="w">                   </span><span class="k">for</span><span class="w"> </span><span class="o">$</span><span class="p">(</span><span class="kt">Symbol</span><span class="p">(</span><span class="ss">:i_</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">))</span><span class="w"> </span><span class="o">∈</span><span class="w"> </span><span class="o">$</span><span class="n">lower</span><span class="o">:</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="o">$</span><span class="n">s</span><span class="p">)</span>
+<span class="w">                       </span><span class="o">$</span><span class="n">old</span>
+<span class="w">                   </span><span class="k">end</span>
+<span class="w">               </span><span class="k">end</span>
+<span class="w">           </span><span class="k">end</span>
+<span class="w">           </span><span class="k">quote</span>
+<span class="w">               </span><span class="n">out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">NTuple</span><span class="p">{</span><span class="o">$</span><span class="kt">k</span><span class="p">,</span><span class="w"> </span><span class="kt">Int</span><span class="p">}[]</span>
+<span class="w">               </span><span class="o">$</span><span class="n">ex</span>
+<span class="w">               </span><span class="n">out</span>
+<span class="w">           </span><span class="k">end</span>
+<span class="w">       </span><span class="k">end</span><span class="p">;</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="nd">@generated</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">create_indices_vec</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="o">::</span><span class="kt">Val</span><span class="p">{</span><span class="kt">k</span><span class="p">})</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="p">{</span><span class="kt">k</span><span class="p">}</span>
+<span class="w">           </span><span class="n">ex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">foldr</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="o">=:</span><span class="p">(</span><span class="n">push!</span><span class="p">(</span><span class="n">out</span><span class="p">,</span><span class="w"> </span><span class="o">$</span><span class="p">(</span><span class="kt">Expr</span><span class="p">(</span><span class="ss">:vect</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">Symbol</span><span class="p">(</span><span class="ss">:i_</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">∈</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="n">k</span><span class="p">)</span><span class="o">...</span><span class="p">)))))</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">s</span><span class="p">,</span><span class="w"> </span><span class="n">old</span>
+<span class="w">               </span><span class="n">lower</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="o">:</span><span class="p">(</span><span class="o">$</span><span class="p">(</span><span class="kt">Symbol</span><span class="p">(</span><span class="ss">:i_</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">               </span><span class="k">quote</span>
+<span class="w">                   </span><span class="k">for</span><span class="w"> </span><span class="o">$</span><span class="p">(</span><span class="kt">Symbol</span><span class="p">(</span><span class="ss">:i_</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">))</span><span class="w"> </span><span class="o">∈</span><span class="w"> </span><span class="o">$</span><span class="n">lower</span><span class="o">:</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="o">$</span><span class="n">s</span><span class="p">)</span>
+<span class="w">                       </span><span class="o">$</span><span class="n">old</span>
+<span class="w">                   </span><span class="k">end</span>
+<span class="w">               </span><span class="k">end</span>
+<span class="w">           </span><span class="k">end</span>
+<span class="w">           </span><span class="k">quote</span>
+<span class="w">               </span><span class="n">out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Int</span><span class="p">}[]</span>
+<span class="w">               </span><span class="o">$</span><span class="n">ex</span>
+<span class="w">               </span><span class="n">out</span>
+<span class="w">           </span><span class="k">end</span>
+<span class="w">       </span><span class="k">end</span><span class="p">;</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="k">let</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Ref</span><span class="p">(</span><span class="mi">5</span><span class="p">),</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span>
+<span class="w">           </span><span class="nd">@btime</span><span class="w"> </span><span class="n">collect</span><span class="p">(</span><span class="n">Combinatorics</span><span class="o">.</span><span class="n">combinations</span><span class="p">(</span><span class="mi">1</span><span class="o">:$</span><span class="n">n</span><span class="p">[],</span><span class="w"> </span><span class="o">$</span><span class="n">k</span><span class="p">))</span>
+<span class="w">           </span><span class="nd">@btime</span><span class="w"> </span><span class="n">create_indices_vec</span><span class="p">(</span><span class="o">$</span><span class="n">n</span><span class="p">[],</span><span class="w"> </span><span class="kt">Val</span><span class="p">(</span><span class="o">$</span><span class="n">k</span><span class="p">))</span>
+<span class="w">           </span><span class="nd">@btime</span><span class="w"> </span><span class="n">create_indices_tup</span><span class="p">(</span><span class="o">$</span><span class="n">n</span><span class="p">[],</span><span class="w"> </span><span class="kt">Val</span><span class="p">(</span><span class="o">$</span><span class="n">k</span><span class="p">))</span>
+<span class="w">       </span><span class="k">end</span><span class="p">;</span>
+<span class="go">  356.250 ns (22 allocations: 1.30 KiB)</span>
+<span class="go">  326.026 ns (13 allocations: 1.23 KiB)</span>
+<span class="go">  122.733 ns (2 allocations: 272 bytes)</span>
+</code></pre></div>
+
+
+
+<a name="352626737"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Creating%20a%20variable-length%20list%20comprehension%20using%20a%20macro/near/352626737" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html#352626737">(Apr 25 2023 at 19:43)</a>:</h4>
+<p>This is of course under the assumption that you can statically know the value of <code>k</code>.</p>
+
+
+
+<a name="352709582"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Creating%20a%20variable-length%20list%20comprehension%20using%20a%20macro/near/352709582" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Or Golan <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Creating.20a.20variable-length.20list.20comprehension.20using.20a.20macro.html#352709582">(Apr 26 2023 at 07:17)</a>:</h4>
+<p>I used vec since I want to index a collection with it</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

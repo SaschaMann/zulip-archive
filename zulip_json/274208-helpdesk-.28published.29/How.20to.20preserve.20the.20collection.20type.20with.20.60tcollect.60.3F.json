@@ -1,0 +1,116 @@
+[
+    {
+        "content": "<p>The <a href=\"https://juliahub.com/ui/Packages/General/Transducers\">Transducers.jl</a> <code>tcollect</code> function is super useful, but it seems to always return a <code>Vector</code> regardless of the input type.</p>\n<p>Is there a way to preserve the input type with <a href=\"https://juliahub.com/ui/Packages/General/Transducers\">Transducers.jl</a> or Base.Threads?</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">Transducers</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">CircularArrays</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">tcollect</span><span class=\"p\">((</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"mi\">3</span><span class=\"p\">))</span>\n<span class=\"mi\">3</span><span class=\"o\">-</span><span class=\"n\">element</span><span class=\"w\"> </span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">}</span><span class=\"o\">:</span>\n<span class=\"w\"> </span><span class=\"mi\">1</span>\n<span class=\"w\"> </span><span class=\"mi\">2</span>\n<span class=\"w\"> </span><span class=\"mi\">3</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">tcollect</span><span class=\"p\">([</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"mi\">3</span><span class=\"p\">])</span>\n<span class=\"mi\">3</span><span class=\"o\">-</span><span class=\"n\">element</span><span class=\"w\"> </span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">}</span><span class=\"o\">:</span>\n<span class=\"w\"> </span><span class=\"mi\">1</span>\n<span class=\"w\"> </span><span class=\"mi\">2</span>\n<span class=\"w\"> </span><span class=\"mi\">3</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">tcollect</span><span class=\"p\">(</span><span class=\"n\">CircularVector</span><span class=\"p\">([</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"mi\">3</span><span class=\"p\">]))</span>\n<span class=\"mi\">3</span><span class=\"o\">-</span><span class=\"n\">element</span><span class=\"w\"> </span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">}</span><span class=\"o\">:</span>\n<span class=\"w\"> </span><span class=\"mi\">1</span>\n<span class=\"w\"> </span><span class=\"mi\">2</span>\n<span class=\"w\"> </span><span class=\"mi\">3</span>\n</code></pre></div>",
+        "id": 420543874,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1707427209
+    },
+    {
+        "content": "<p>The underlying issue is that we have a couple of <code>map(fun, iter)</code> that we would like to parallelize. But replacing <code>map</code> with <code>tcollect</code> doesn't work as expected.</p>",
+        "id": 420544125,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1707427350
+    },
+    {
+        "content": "<p>Yeah, this is something <a href=\"https://juliahub.com/ui/Packages/General/Transducers\">Transducers.jl</a> doesn't really handle well. I think the right function here is <code>tcopy</code> since that doesn't try to follow the behaviour of <code>collect</code></p>",
+        "id": 420552573,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1707431193
+    },
+    {
+        "content": "<p>but trying your examples with <code>tcopy</code>, none of them work still</p>",
+        "id": 420552647,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1707431240
+    },
+    {
+        "content": "<p>which I guess we should classify as bugs that need to be fixed.</p>",
+        "id": 420552659,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1707431251
+    },
+    {
+        "content": "<p>The circular arrays one could potentially be a package extension</p>",
+        "id": 420552681,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1707431265
+    },
+    {
+        "content": "<p>but this is in general a hard problem</p>",
+        "id": 420552752,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1707431287
+    },
+    {
+        "content": "<p>I would suggest though that if your problem is so time consuming that it requires parallelism, then maybe it's not <em>so</em> bad to have to do a convert after, i.e.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"kt\">Tuple</span><span class=\"p\">(</span><span class=\"n\">tcollect</span><span class=\"p\">((</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"mi\">3</span><span class=\"p\">)))</span>\n<span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">3</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">CircularVector</span><span class=\"p\">(</span><span class=\"n\">tcollect</span><span class=\"p\">(</span><span class=\"n\">CircularVector</span><span class=\"p\">([</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"mi\">3</span><span class=\"p\">])))</span>\n<span class=\"mi\">3</span><span class=\"o\">-</span><span class=\"n\">element</span><span class=\"w\"> </span><span class=\"n\">CircularVector</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">})</span><span class=\"o\">:</span>\n<span class=\"w\"> </span><span class=\"mi\">1</span>\n<span class=\"w\"> </span><span class=\"mi\">2</span>\n<span class=\"w\"> </span><span class=\"mi\">3</span>\n</code></pre></div>",
+        "id": 420552876,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1707431373
+    },
+    {
+        "content": "<p>but I get that's also annoying</p>",
+        "id": 420552906,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1707431397
+    },
+    {
+        "content": "<p>Yes, we ended up following this route.</p>",
+        "id": 420553325,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1707431616
+    },
+    {
+        "content": "<p>It would be super nice if these things worked. Also, is it too big of a dream to imagine a future where we can just replace map by a pmap and choose the form of parallelism? Threads vs GPU threads vs processes...</p>",
+        "id": 420553536,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1707431713
+    },
+    {
+        "content": "<p>I wish we had a general pmap that performed all sorts of parallelism with keyword options</p>",
+        "id": 420553577,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1707431736
+    },
+    {
+        "content": "<blockquote>\n<p>Also, is it too big of a dream to imagine a future where we can just replace map by a pmap and choose the form of parallelism? Threads vs GPU threads vs processes...</p>\n</blockquote>\n<p>That's what <a href=\"https://juliahub.com/ui/Packages/General/Transducers\">Transducers.jl</a> / <a href=\"https://juliahub.com/ui/Packages/General/Folds\">Folds.jl</a> already does. They provide sequential, threaded, and distributed backends</p>",
+        "id": 420553976,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1707431946
+    },
+    {
+        "content": "<p>Taka worked on a GPU backend but it's broken now</p>",
+        "id": 420554000,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1707431962
+    },
+    {
+        "content": "<p>would be great if we could revive it</p>",
+        "id": 420554010,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1707431968
+    },
+    {
+        "content": "<p>Perhaps it is an issue of documentation then. I never saw the GPU case for instance</p>",
+        "id": 420554209,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1707432053
+    },
+    {
+        "content": "<p><a href=\"https://github.com/JuliaFolds/FoldsCUDA.jl\">https://github.com/JuliaFolds/FoldsCUDA.jl</a></p>",
+        "id": 420554230,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1707432067
+    },
+    {
+        "content": "<p>It was always experimental though</p>",
+        "id": 420554267,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1707432088
+    },
+    {
+        "content": "<p>but yes, the idea is that Transducers can give us a very general way of doing parallelism that can be re-implemented for many different backends</p>",
+        "id": 420554400,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1707432145
+    }
+]

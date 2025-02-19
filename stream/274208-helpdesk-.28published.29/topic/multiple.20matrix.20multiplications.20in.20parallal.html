@@ -1,0 +1,319 @@
+<html>
+<head><meta charset="utf-8"><title>multiple matrix multiplications in parallal · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/multiple.20matrix.20multiplications.20in.20parallal.html">multiple matrix multiplications in parallal</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="257808845"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/multiple%20matrix%20multiplications%20in%20parallal/near/257808845" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/multiple.20matrix.20multiplications.20in.20parallal.html#257808845">(Oct 16 2021 at 07:00)</a>:</h4>
+<p>can I run multiple different matrix multiplications in parallel, where I use multiple blas threads per matrix multiplication?</p>
+<p>It seems that if I run 4 blas threads, and spawn different threads doing matrix multiplications, that actually the multiplications are done serially, over those 4 threads.</p>
+
+
+
+<a name="257809330"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/multiple%20matrix%20multiplications%20in%20parallal/near/257809330" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/multiple.20matrix.20multiplications.20in.20parallal.html#257809330">(Oct 16 2021 at 07:08)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="335397">Maarten</span> has marked this topic as resolved.</p>
+
+
+
+<a name="257809335"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/multiple%20matrix%20multiplications%20in%20parallal/near/257809335" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/multiple.20matrix.20multiplications.20in.20parallal.html#257809335">(Oct 16 2021 at 07:08)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="335397">Maarten</span> has marked this topic as unresolved.</p>
+
+
+
+<a name="257812037"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/multiple%20matrix%20multiplications%20in%20parallal/near/257812037" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mark Kittisopikul <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/multiple.20matrix.20multiplications.20in.20parallal.html#257812037">(Oct 16 2021 at 07:55)</a>:</h4>
+<p>I'm not sure if I understand your thread setup. What is the output of <code>Threads.nthreads()</code>?</p>
+
+
+
+<a name="257901057"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/multiple%20matrix%20multiplications%20in%20parallal/near/257901057" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/multiple.20matrix.20multiplications.20in.20parallal.html#257901057">(Oct 17 2021 at 08:36)</a>:</h4>
+<p>8 or so. I just want to verify that if I have 8 julia threads, where I spawn multiple different matrix contractions (with blas.set_num_threads(4)), that those mulitplications are done in parallel. It looks like they are done serially, and every individual one is done over those 4 blas threads.</p>
+
+
+
+<a name="257991362"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/multiple%20matrix%20multiplications%20in%20parallal/near/257991362" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/multiple.20matrix.20multiplications.20in.20parallal.html#257991362">(Oct 18 2021 at 08:05)</a>:</h4>
+<p>perhaps to clarify. What can I do to make parallelworker outperform serialworker:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span> <span class="n">LinearAlgebra</span><span class="p">,</span><span class="n">Base</span><span class="o">.</span><span class="n">Threads</span><span class="p">,</span><span class="n">BenchmarkTools</span><span class="p">;</span>
+
+<span class="k">function</span> <span class="n">serialworker</span><span class="p">(</span><span class="n">As</span><span class="p">,</span><span class="n">Bs</span><span class="p">)</span>
+    <span class="n">sum</span><span class="p">(</span><span class="n">map</span><span class="p">(</span><span class="n">zip</span><span class="p">(</span><span class="n">As</span><span class="p">,</span><span class="n">Bs</span><span class="p">))</span> <span class="k">do</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">)</span>
+        <span class="n">a</span><span class="o">*</span><span class="n">b</span>
+    <span class="k">end</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="k">function</span> <span class="n">parallelworker</span><span class="p">(</span><span class="n">As</span><span class="p">,</span><span class="n">Bs</span><span class="p">)</span>
+    <span class="n">temp</span> <span class="o">=</span> <span class="n">similar</span><span class="p">(</span><span class="n">As</span><span class="p">);</span>
+    <span class="nd">@sync</span> <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="n">length</span><span class="p">(</span><span class="n">As</span><span class="p">)</span>
+        <span class="nd">@Threads</span><span class="o">.</span><span class="n">spawn</span> <span class="n">temp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">As</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">Bs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="k">end</span>
+    <span class="n">sum</span><span class="p">(</span><span class="n">temp</span><span class="p">);</span>
+<span class="k">end</span>
+
+<span class="k">let</span>
+<span class="n">BLAS</span><span class="o">.</span><span class="n">set_num_threads</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span>
+
+<span class="n">As</span> <span class="o">=</span> <span class="p">[</span><span class="n">rand</span><span class="p">(</span><span class="mi">3000</span><span class="p">,</span><span class="mi">3000</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">];</span>
+<span class="n">Bs</span> <span class="o">=</span> <span class="p">[</span><span class="n">rand</span><span class="p">(</span><span class="mi">3000</span><span class="p">,</span><span class="mi">3000</span><span class="p">)</span> <span class="k">for</span> <span class="n">b</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">];</span>
+
+
+<span class="nd">@btime</span> <span class="n">serialworker</span><span class="p">(</span><span class="o">$</span><span class="n">As</span><span class="p">,</span><span class="o">$</span><span class="n">Bs</span><span class="p">);</span>
+
+<span class="nd">@btime</span> <span class="n">parallelworker</span><span class="p">(</span><span class="o">$</span><span class="n">As</span><span class="p">,</span><span class="o">$</span><span class="n">Bs</span><span class="p">);</span>
+
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="258025490"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/multiple%20matrix%20multiplications%20in%20parallal/near/258025490" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/multiple.20matrix.20multiplications.20in.20parallal.html#258025490">(Oct 18 2021 at 13:06)</a>:</h4>
+<p>That code is going to oversubscribe threads, so it will be slower.</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span> <span class="k">function</span> <span class="n">parallelworker</span><span class="p">(</span><span class="n">As</span><span class="p">,</span><span class="n">Bs</span><span class="p">)</span>
+           <span class="n">nt</span> <span class="o">=</span> <span class="p">(</span><span class="n">Threads</span><span class="o">.</span><span class="n">nthreads</span><span class="p">()</span><span class="o">÷</span> <span class="mi">2</span><span class="p">)</span> <span class="o">÷</span> <span class="n">BLAS</span><span class="o">.</span><span class="n">get_num_threads</span><span class="p">();</span>
+           <span class="n">temp</span> <span class="o">=</span> <span class="n">similar</span><span class="p">(</span><span class="n">As</span><span class="p">,</span> <span class="n">nt</span><span class="p">)</span>
+           <span class="nd">@sync</span> <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="n">nt</span>
+               <span class="n">Threads</span><span class="o">.</span><span class="nd">@spawn</span> <span class="k">begin</span>
+                   <span class="n">Al</span> <span class="o">=</span> <span class="o">$</span><span class="n">As</span><span class="p">;</span> <span class="n">Bl</span> <span class="o">=</span> <span class="o">$</span><span class="n">Bs</span><span class="p">;</span> <span class="n">n</span> <span class="o">=</span> <span class="o">$</span><span class="n">nt</span>
+                   <span class="n">start</span> <span class="o">=</span> <span class="mi">1</span><span class="o">+</span><span class="p">((</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">length</span><span class="p">(</span><span class="n">Al</span><span class="p">))</span> <span class="o">÷</span> <span class="n">n</span>
+                   <span class="n">stop</span> <span class="o">=</span>    <span class="p">(</span> <span class="n">i</span>   <span class="o">*</span><span class="n">length</span><span class="p">(</span><span class="n">Al</span><span class="p">))</span> <span class="o">÷</span> <span class="n">n</span>
+                   <span class="n">C</span> <span class="o">=</span> <span class="n">Al</span><span class="p">[</span><span class="n">start</span><span class="p">]</span> <span class="o">*</span> <span class="n">Bl</span><span class="p">[</span><span class="n">start</span><span class="p">]</span>
+                   <span class="k">for</span> <span class="n">j</span> <span class="k">in</span> <span class="n">start</span><span class="o">+</span><span class="mi">1</span><span class="o">:</span><span class="n">stop</span>
+                       <span class="n">mul!</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="n">Al</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">Bl</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+                   <span class="k">end</span>
+                   <span class="o">$</span><span class="n">temp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">C</span>
+               <span class="k">end</span>
+           <span class="k">end</span>
+           <span class="n">sum</span><span class="p">(</span><span class="n">temp</span><span class="p">);</span>
+       <span class="k">end</span>
+<span class="go">parallelworker (generic function with 1 method)</span>
+
+<span class="gp">julia&gt;</span> <span class="nd">@time</span> <span class="n">parallelworker</span><span class="p">(</span><span class="n">As</span><span class="p">,</span> <span class="n">Bs</span><span class="p">);</span>
+<span class="go">  0.597088 seconds (87.75 k allocations: 485.472 MiB, 6.26% compilation time)</span>
+
+<span class="gp">julia&gt;</span> <span class="nd">@time</span> <span class="n">parallelworker</span><span class="p">(</span><span class="n">As</span><span class="p">,</span> <span class="n">Bs</span><span class="p">);</span>
+<span class="go">  0.542520 seconds (53 allocations: 480.655 MiB)</span>
+
+<span class="gp">julia&gt;</span> <span class="nd">@time</span> <span class="n">serialworker</span><span class="p">(</span><span class="n">As</span><span class="p">,</span> <span class="n">Bs</span><span class="p">);</span>
+<span class="go">  1.468851 seconds (39 allocations: 1.274 GiB, 0.96% gc time)</span>
+</code></pre></div>
+<p>Note that I'm only using <code>nt = (Threads.nthreads()÷ 2) ÷ BLAS.get_num_threads()</code>.</p>
+
+
+
+<a name="258025625"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/multiple%20matrix%20multiplications%20in%20parallal/near/258025625" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/multiple.20matrix.20multiplications.20in.20parallal.html#258025625">(Oct 18 2021 at 13:07)</a>:</h4>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span> <span class="n">As</span> <span class="o">=</span> <span class="p">[</span><span class="n">rand</span><span class="p">(</span><span class="mi">3000</span><span class="p">,</span><span class="mi">3000</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="p">];</span>
+
+<span class="gp">julia&gt;</span> <span class="n">Bs</span> <span class="o">=</span> <span class="p">[</span><span class="n">rand</span><span class="p">(</span><span class="mi">3000</span><span class="p">,</span><span class="mi">3000</span><span class="p">)</span> <span class="k">for</span> <span class="n">b</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="p">];</span>
+
+<span class="gp">julia&gt;</span> <span class="nd">@time</span> <span class="n">parallelworker</span><span class="p">(</span><span class="n">As</span><span class="p">,</span> <span class="n">Bs</span><span class="p">);</span>
+<span class="go">  3.940653 seconds (53 allocations: 480.655 MiB)</span>
+
+<span class="gp">julia&gt;</span> <span class="nd">@time</span> <span class="n">serialworker</span><span class="p">(</span><span class="n">As</span><span class="p">,</span> <span class="n">Bs</span><span class="p">);</span>
+<span class="go"> 15.268181 seconds (399 allocations: 13.344 GiB, 3.55% gc time)</span>
+
+<span class="gp">julia&gt;</span> <span class="n">Threads</span><span class="o">.</span><span class="n">nthreads</span><span class="p">(),</span> <span class="n">BLAS</span><span class="o">.</span><span class="n">get_num_threads</span><span class="p">()</span>
+<span class="go">(36, 4)</span>
+</code></pre></div>
+
+
+
+<a name="258028804"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/multiple%20matrix%20multiplications%20in%20parallal/near/258028804" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/multiple.20matrix.20multiplications.20in.20parallal.html#258028804">(Oct 18 2021 at 13:29)</a>:</h4>
+<p>I cannot replicate this</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">using</span> <span class="n">LinearAlgebra</span><span class="p">,</span><span class="n">Base</span><span class="o">.</span><span class="n">Threads</span><span class="p">,</span><span class="n">BenchmarkTools</span><span class="p">;</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="k">function</span> <span class="n">parallelworker</span><span class="p">(</span><span class="n">As</span><span class="p">,</span><span class="n">Bs</span><span class="p">)</span>
+          <span class="n">nt</span> <span class="o">=</span> <span class="p">(</span><span class="n">Threads</span><span class="o">.</span><span class="n">nthreads</span><span class="p">()</span><span class="o">÷</span> <span class="mi">2</span><span class="p">)</span> <span class="o">÷</span> <span class="n">BLAS</span><span class="o">.</span><span class="n">get_num_threads</span><span class="p">();</span>
+          <span class="n">temp</span> <span class="o">=</span> <span class="n">similar</span><span class="p">(</span><span class="n">As</span><span class="p">,</span> <span class="n">nt</span><span class="p">)</span>
+          <span class="nd">@sync</span> <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="n">nt</span>
+              <span class="n">Threads</span><span class="o">.</span><span class="nd">@spawn</span> <span class="k">begin</span>
+                  <span class="n">Al</span> <span class="o">=</span> <span class="o">$</span><span class="n">As</span><span class="p">;</span> <span class="n">Bl</span> <span class="o">=</span> <span class="o">$</span><span class="n">Bs</span><span class="p">;</span> <span class="n">n</span> <span class="o">=</span> <span class="o">$</span><span class="n">nt</span>
+                  <span class="n">start</span> <span class="o">=</span> <span class="mi">1</span><span class="o">+</span><span class="p">((</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">length</span><span class="p">(</span><span class="n">Al</span><span class="p">))</span> <span class="o">÷</span> <span class="n">n</span>
+                  <span class="n">stop</span> <span class="o">=</span>    <span class="p">(</span> <span class="n">i</span>   <span class="o">*</span><span class="n">length</span><span class="p">(</span><span class="n">Al</span><span class="p">))</span> <span class="o">÷</span> <span class="n">n</span>
+                  <span class="n">C</span> <span class="o">=</span> <span class="n">Al</span><span class="p">[</span><span class="n">start</span><span class="p">]</span> <span class="o">*</span> <span class="n">Bl</span><span class="p">[</span><span class="n">start</span><span class="p">]</span>
+                  <span class="k">for</span> <span class="n">j</span> <span class="k">in</span> <span class="n">start</span><span class="o">+</span><span class="mi">1</span><span class="o">:</span><span class="n">stop</span>
+                      <span class="n">mul!</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="n">Al</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">Bl</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+                  <span class="k">end</span>
+                  <span class="o">$</span><span class="n">temp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">C</span>
+              <span class="k">end</span>
+          <span class="k">end</span>
+          <span class="n">sum</span><span class="p">(</span><span class="n">temp</span><span class="p">);</span>
+       <span class="k">end</span>
+<span class="n">parallelworker</span> <span class="p">(</span><span class="n">generic</span> <span class="k">function</span> <span class="n">with</span> <span class="mi">1</span> <span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="k">function</span> <span class="n">serialworker</span><span class="p">(</span><span class="n">As</span><span class="p">,</span><span class="n">Bs</span><span class="p">)</span>
+          <span class="n">nt</span> <span class="o">=</span> <span class="p">(</span><span class="n">Threads</span><span class="o">.</span><span class="n">nthreads</span><span class="p">()</span><span class="o">÷</span> <span class="mi">2</span><span class="p">)</span> <span class="o">÷</span> <span class="n">BLAS</span><span class="o">.</span><span class="n">get_num_threads</span><span class="p">();</span>
+          <span class="n">temp</span> <span class="o">=</span> <span class="n">similar</span><span class="p">(</span><span class="n">As</span><span class="p">,</span> <span class="n">nt</span><span class="p">)</span>
+          <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="n">nt</span>
+
+              <span class="n">Al</span> <span class="o">=</span> <span class="n">As</span><span class="p">;</span> <span class="n">Bl</span> <span class="o">=</span> <span class="n">Bs</span><span class="p">;</span> <span class="n">n</span> <span class="o">=</span> <span class="n">nt</span>
+              <span class="n">start</span> <span class="o">=</span> <span class="mi">1</span><span class="o">+</span><span class="p">((</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">length</span><span class="p">(</span><span class="n">Al</span><span class="p">))</span> <span class="o">÷</span> <span class="n">n</span>
+              <span class="n">stop</span> <span class="o">=</span>    <span class="p">(</span> <span class="n">i</span>   <span class="o">*</span><span class="n">length</span><span class="p">(</span><span class="n">Al</span><span class="p">))</span> <span class="o">÷</span> <span class="n">n</span>
+              <span class="n">C</span> <span class="o">=</span> <span class="n">Al</span><span class="p">[</span><span class="n">start</span><span class="p">]</span> <span class="o">*</span> <span class="n">Bl</span><span class="p">[</span><span class="n">start</span><span class="p">]</span>
+              <span class="k">for</span> <span class="n">j</span> <span class="k">in</span> <span class="n">start</span><span class="o">+</span><span class="mi">1</span><span class="o">:</span><span class="n">stop</span>
+                  <span class="n">mul!</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="n">Al</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">Bl</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+              <span class="k">end</span>
+              <span class="n">temp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">C</span>
+          <span class="k">end</span>
+          <span class="n">sum</span><span class="p">(</span><span class="n">temp</span><span class="p">);</span>
+       <span class="k">end</span>
+<span class="n">serialworker</span> <span class="p">(</span><span class="n">generic</span> <span class="k">function</span> <span class="n">with</span> <span class="mi">1</span> <span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">As</span> <span class="o">=</span> <span class="p">[</span><span class="n">rand</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span><span class="mi">1000</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="mi">50</span><span class="p">];</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">Bs</span> <span class="o">=</span> <span class="p">[</span><span class="n">rand</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span><span class="mi">1000</span><span class="p">)</span> <span class="k">for</span> <span class="n">b</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="mi">50</span><span class="p">];</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@time</span> <span class="n">parallelworker</span><span class="p">(</span><span class="n">As</span><span class="p">,</span><span class="n">Bs</span><span class="p">);</span>
+  <span class="mf">1.790027</span> <span class="n">seconds</span> <span class="p">(</span><span class="mf">4.18</span> <span class="n">M</span> <span class="n">allocations</span><span class="o">:</span> <span class="mf">215.780</span> <span class="n">MiB</span><span class="p">,</span> <span class="mf">61.53</span><span class="o">%</span> <span class="n">compilation</span> <span class="n">time</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@time</span> <span class="n">serialworker</span><span class="p">(</span><span class="n">As</span><span class="p">,</span><span class="n">Bs</span><span class="p">);</span>
+  <span class="mf">0.806896</span> <span class="n">seconds</span> <span class="p">(</span><span class="mf">29.02</span> <span class="n">k</span> <span class="n">allocations</span><span class="o">:</span> <span class="mf">9.217</span> <span class="n">MiB</span><span class="p">,</span> <span class="mf">7.13</span><span class="o">%</span> <span class="n">compilation</span> <span class="n">time</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@time</span> <span class="n">parallelworker</span><span class="p">(</span><span class="n">As</span><span class="p">,</span><span class="n">Bs</span><span class="p">);</span>
+  <span class="mf">0.700317</span> <span class="n">seconds</span> <span class="p">(</span><span class="mi">22</span> <span class="n">allocations</span><span class="o">:</span> <span class="mf">7.631</span> <span class="n">MiB</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@time</span> <span class="n">serialworker</span><span class="p">(</span><span class="n">As</span><span class="p">,</span><span class="n">Bs</span><span class="p">);</span>
+  <span class="mf">0.700381</span> <span class="n">seconds</span> <span class="p">(</span><span class="mi">3</span> <span class="n">allocations</span><span class="o">:</span> <span class="mf">7.630</span> <span class="n">MiB</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">Threads</span><span class="o">.</span><span class="n">nthreads</span><span class="p">(),</span> <span class="n">BLAS</span><span class="o">.</span><span class="n">get_num_threads</span><span class="p">()</span>
+<span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">BLAS</span><span class="o">.</span><span class="n">set_num_threads</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@time</span> <span class="n">parallelworker</span><span class="p">(</span><span class="n">As</span><span class="p">,</span><span class="n">Bs</span><span class="p">);</span>
+  <span class="mf">0.721815</span> <span class="n">seconds</span> <span class="p">(</span><span class="mi">32</span> <span class="n">allocations</span><span class="o">:</span> <span class="mf">22.890</span> <span class="n">MiB</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@time</span> <span class="n">parallelworker</span><span class="p">(</span><span class="n">As</span><span class="p">,</span><span class="n">Bs</span><span class="p">);</span>
+  <span class="mf">0.691697</span> <span class="n">seconds</span> <span class="p">(</span><span class="mi">32</span> <span class="n">allocations</span><span class="o">:</span> <span class="mf">22.890</span> <span class="n">MiB</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@time</span> <span class="n">serialworker</span><span class="p">(</span><span class="n">As</span><span class="p">,</span><span class="n">Bs</span><span class="p">);</span>
+  <span class="mf">0.654302</span> <span class="n">seconds</span> <span class="p">(</span><span class="mi">7</span> <span class="n">allocations</span><span class="o">:</span> <span class="mf">22.888</span> <span class="n">MiB</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@time</span> <span class="n">serialworker</span><span class="p">(</span><span class="n">As</span><span class="p">,</span><span class="n">Bs</span><span class="p">);</span>
+  <span class="mf">0.663570</span> <span class="n">seconds</span> <span class="p">(</span><span class="mi">7</span> <span class="n">allocations</span><span class="o">:</span> <span class="mf">22.888</span> <span class="n">MiB</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="258029097"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/multiple%20matrix%20multiplications%20in%20parallal/near/258029097" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/multiple.20matrix.20multiplications.20in.20parallal.html#258029097">(Oct 18 2021 at 13:31)</a>:</h4>
+<p>I also don't understand how it would work. I have difficulty finding documentation on how the blas and julia threads play together, but it is my understanding that they kind of don't. Currently I'm getting really good results for my particular problem by using Strided and blas_num_threads(1), where strided then divide&amp;conquer's the matrix multiplications, and spawns appropriate mul! jobs.</p>
+
+
+
+<a name="258084014"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/multiple%20matrix%20multiplications%20in%20parallal/near/258084014" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/multiple.20matrix.20multiplications.20in.20parallal.html#258084014">(Oct 18 2021 at 19:17)</a>:</h4>
+<p>The entire point behind the design of Julia's multithreading system was to avoid this flaw in the way BLAS and other systems use threads</p>
+
+
+
+<a name="258084091"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/multiple%20matrix%20multiplications%20in%20parallal/near/258084091" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/multiple.20matrix.20multiplications.20in.20parallal.html#258084091">(Oct 18 2021 at 19:17)</a>:</h4>
+<p>The whole problem with most multithreaded programs is that they suffer catastrophic performance losses if you nest them</p>
+
+
+
+<a name="258084198"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/multiple%20matrix%20multiplications%20in%20parallal/near/258084198" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/multiple.20matrix.20multiplications.20in.20parallal.html#258084198">(Oct 18 2021 at 19:18)</a>:</h4>
+<p>That was part of why I was playing around with <a href="https://github.com/search?q=Gaius.jl&amp;type=Repositories">Gaius.jl</a> because it won't suffer this slowdown</p>
+
+
+
+<a name="258084407"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/multiple%20matrix%20multiplications%20in%20parallal/near/258084407" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/multiple.20matrix.20multiplications.20in.20parallal.html#258084407">(Oct 18 2021 at 19:19)</a>:</h4>
+<p><span class="user-mention" data-user-id="297129">@Takafumi Arakaki (tkf)</span> has a branch of it that requires his TAPIR branch of Julia that is way faster</p>
+
+
+
+<a name="258087235"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/multiple%20matrix%20multiplications%20in%20parallal/near/258087235" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/multiple.20matrix.20multiplications.20in.20parallal.html#258087235">(Oct 18 2021 at 19:39)</a>:</h4>
+<p>I looked at gaius, but it seems that the successor is octavian, which in turn builds on cheapthreads (polyester), which is then incompatible with Threads.@spawn :'(</p>
+
+
+
+<a name="258087494"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/multiple%20matrix%20multiplications%20in%20parallal/near/258087494" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/multiple.20matrix.20multiplications.20in.20parallal.html#258087494">(Oct 18 2021 at 19:41)</a>:</h4>
+<p>If TAPIR progresses well, then <a href="https://github.com/search?q=Gaius.jl&amp;type=Repositories">Gaius.jl</a> might live on</p>
+
+
+
+<a name="258087636"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/multiple%20matrix%20multiplications%20in%20parallal/near/258087636" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/multiple.20matrix.20multiplications.20in.20parallal.html#258087636">(Oct 18 2021 at 19:42)</a>:</h4>
+<p>giving Gaius a LRU cache, Tapir, and some more tuning would probably put it in the same ballpark as Octavian</p>
+
+
+
+<a name="258087798"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/multiple%20matrix%20multiplications%20in%20parallal/near/258087798" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/multiple.20matrix.20multiplications.20in.20parallal.html#258087798">(Oct 18 2021 at 19:43)</a>:</h4>
+<p>Out of curiousity I will benchmark with gaius as is. This tapir is a different kind of scheduler? Is it a serious possible successor of the current scheduler?</p>
+
+
+
+<a name="258088139"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/multiple%20matrix%20multiplications%20in%20parallal/near/258088139" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/multiple.20matrix.20multiplications.20in.20parallal.html#258088139">(Oct 18 2021 at 19:46)</a>:</h4>
+<p>It's basically a way to make stronger guarantees to the compiler about what can possibly happen in multithreaded code <a href="https://github.com/JuliaLang/julia/pull/39773">https://github.com/JuliaLang/julia/pull/39773</a></p>
+
+
+
+<a name="258089665"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/multiple%20matrix%20multiplications%20in%20parallal/near/258089665" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/multiple.20matrix.20multiplications.20in.20parallal.html#258089665">(Oct 18 2021 at 19:57)</a>:</h4>
+<p>I'll bump the compat bounds on <a href="https://github.com/search?q=Gaius.jl&amp;type=Repositories">Gaius.jl</a> so that it doesn't downgrade your other packages. It'll take a little while to appear though</p>
+
+
+
+<a name="258089666"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/multiple%20matrix%20multiplications%20in%20parallal/near/258089666" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/multiple.20matrix.20multiplications.20in.20parallal.html#258089666">(Oct 18 2021 at 19:57)</a>:</h4>
+<p>it looks very cool!</p>
+
+
+
+<a name="258091324"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/multiple%20matrix%20multiplications%20in%20parallal/near/258091324" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/multiple.20matrix.20multiplications.20in.20parallal.html#258091324">(Oct 18 2021 at 20:06)</a>:</h4>
+<p><a href="https://github.com/JuliaRegistries/General/pull/46981">https://github.com/JuliaRegistries/General/pull/46981</a></p>
+
+
+
+<a name="258091694"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/multiple%20matrix%20multiplications%20in%20parallal/near/258091694" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/multiple.20matrix.20multiplications.20in.20parallal.html#258091694">(Oct 18 2021 at 20:08)</a>:</h4>
+<p>thanks! it's crazy that it performs on par with openblas, which I assume is rather optimized for specific pc architectures</p>
+
+
+
+<a name="258097529"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/multiple%20matrix%20multiplications%20in%20parallal/near/258097529" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/multiple.20matrix.20multiplications.20in.20parallal.html#258097529">(Oct 18 2021 at 20:47)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="335397">Maarten</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/multiple.20matrix.20multiplications.20in.20parallal/near/258087235">said</a>:</p>
+<blockquote>
+<p>I looked at gaius, but it seems that the successor is octavian, which in turn builds on cheapthreads (polyester), which is then incompatible with Threads.@spawn :'(</p>
+</blockquote>
+<p>It is compatible with <code>Polyester.@batch</code>, though.</p>
+<p>The Tapir work definitely looks exciting, though.</p>
+
+
+
+<a name="258116843"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/multiple%20matrix%20multiplications%20in%20parallal/near/258116843" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/multiple.20matrix.20multiplications.20in.20parallal.html#258116843">(Oct 18 2021 at 23:16)</a>:</h4>
+<p>I've just been playing with <a href="https://github.com/search?q=Gaius.jl&amp;type=Repositories">Gaius.jl</a> a couple of days. I was trying to analyze the task DAG structure using <a href="https://github.com/tkf/TaskDAGAnalyzers.jl">https://github.com/tkf/TaskDAGAnalyzers.jl</a><br>
+<a href="/user_uploads/7178/u8ErnFKT_YwYm-C-VFk4FPgf/image.png">image.png</a></p>
+<div class="message_inline_image"><a href="/user_uploads/7178/u8ErnFKT_YwYm-C-VFk4FPgf/image.png" title="image.png"><img src="/user_uploads/7178/u8ErnFKT_YwYm-C-VFk4FPgf/image.png"></a></div>
+
+
+
+<a name="258116881"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/multiple%20matrix%20multiplications%20in%20parallal/near/258116881" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/multiple.20matrix.20multiplications.20in.20parallal.html#258116881">(Oct 18 2021 at 23:17)</a>:</h4>
+<p>If you look at a typical DAG like above, its width expands and shrinks a few times during execution. This is because GEMM is a complex mixture of parallel tasks and sequential dependencies. So, it's helpful if the scheduler helps you to run another GEMMs if your GEMM is in the middle of the sequential portion. But, at the same time, the scheduler shouldn't be destroying the memory locality of each library function invocation; i.e., the second GEMM should "back off" if the first GEMM starts executing the parallel portion in the DGA.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

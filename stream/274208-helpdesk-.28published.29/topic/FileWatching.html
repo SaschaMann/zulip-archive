@@ -1,0 +1,140 @@
+<html>
+<head><meta charset="utf-8"><title>FileWatching · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/FileWatching.html">FileWatching</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="223546845"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/FileWatching/near/223546845" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Bagge Carlson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/FileWatching.html#223546845">(Jan 21 2021 at 18:01)</a>:</h4>
+<p>I'm struggling to understand how <code>FileWatching.watch_folder</code> works. If I set up a small "server" that is listening to a folder according to</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">watchserver</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="nd">@info</span> <span class="s">"Starting server watching for changes in "</span><span class="p">,</span> <span class="n">path</span>
+    <span class="k">while</span> <span class="kc">true</span>
+        <span class="n">file</span><span class="p">,</span> <span class="n">event</span> <span class="o">=</span> <span class="n">watch_folder</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="c"># timeout inf</span>
+        <span class="n">file</span> <span class="o">===</span> <span class="nb">nothing</span> <span class="o">&amp;&amp;</span> <span class="k">continue</span>
+        <span class="nd">@info</span> <span class="s">"Got "</span><span class="p">,</span> <span class="n">event</span><span class="p">,</span> <span class="n">file</span>
+        <span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">changed</span> <span class="o">||</span> <span class="n">event</span><span class="o">.</span><span class="n">renamed</span>
+            <span class="k">try</span>
+                <span class="n">println</span><span class="p">(</span><span class="s">"doing the work"</span><span class="p">)</span> <span class="c"># display_data(joinpath(path, file))</span>
+            <span class="k">catch</span> <span class="nb">e</span>
+                <span class="nd">@error</span> <span class="s">"Plotting failed, got error"</span> <span class="nb">e</span>
+            <span class="k">end</span>
+        <span class="k">end</span>
+        <span class="n">event</span><span class="o">.</span><span class="n">timedout</span> <span class="o">&amp;&amp;</span> <span class="k">return</span>
+    <span class="k">end</span>
+<span class="k">end</span>
+
+<span class="n">path</span> <span class="o">=</span> <span class="s">"/home/fredrikb/Documents/"</span>
+<span class="c"># path = ARGS[1]</span>
+<span class="n">task</span> <span class="o">=</span> <span class="n">watchserver</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+</code></pre></div>
+<p>I expect to get a signle event when something happens. Instead, I seem to get repeated events causing the <code>println</code> statement to be executed indefinitely. I suspect my understanding of how <code>watch_folder</code> works might be wrong?</p>
+
+
+
+<a name="223546944"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/FileWatching/near/223546944" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Bagge Carlson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/FileWatching.html#223546944">(Jan 21 2021 at 18:01)</a>:</h4>
+<p>I expect <code>watch_folder</code> to be blocking, and return something when an event occurs?</p>
+
+
+
+<a name="223547229"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/FileWatching/near/223547229" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Bagge Carlson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/FileWatching.html#223547229">(Jan 21 2021 at 18:03)</a>:</h4>
+<p>It appears as if I get at least 3 events for a single change</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">clinton</span> <span class="o">~/</span><span class="n">scratch</span><span class="o">&gt;</span> <span class="n">julia6</span> <span class="n">data_verification_app</span><span class="o">.</span><span class="n">jl</span> <span class="s">"/home/fredrikb/Documents/"</span>
+<span class="p">[</span> <span class="n">Info</span><span class="o">:</span> <span class="p">(</span><span class="s">"Starting server watching for changes in "</span><span class="p">,</span> <span class="s">"/home/fredrikb/Documents/"</span><span class="p">)</span>
+<span class="p">[</span> <span class="n">Info</span><span class="o">:</span> <span class="p">(</span><span class="s">"Got "</span><span class="p">,</span> <span class="n">FileWatching</span><span class="o">.</span><span class="n">FileEvent</span><span class="p">(</span><span class="kc">true</span><span class="p">,</span> <span class="kc">false</span><span class="p">,</span> <span class="kc">false</span><span class="p">),</span> <span class="s">"2021-01-19 - HKM (another copy).zip"</span><span class="p">)</span>
+<span class="mi">2021</span><span class="o">-</span><span class="mi">01</span><span class="o">-</span><span class="mi">19</span> <span class="o">-</span> <span class="n">HKM</span> <span class="p">(</span><span class="n">another</span> <span class="n">copy</span><span class="p">)</span><span class="o">.</span><span class="n">zip</span>
+<span class="p">[</span> <span class="n">Info</span><span class="o">:</span> <span class="p">(</span><span class="s">"Got "</span><span class="p">,</span> <span class="n">FileWatching</span><span class="o">.</span><span class="n">FileEvent</span><span class="p">(</span><span class="kc">false</span><span class="p">,</span> <span class="kc">true</span><span class="p">,</span> <span class="kc">false</span><span class="p">),</span> <span class="s">"2021-01-19 - HKM (another copy).zip"</span><span class="p">)</span>
+<span class="mi">2021</span><span class="o">-</span><span class="mi">01</span><span class="o">-</span><span class="mi">19</span> <span class="o">-</span> <span class="n">HKM</span> <span class="p">(</span><span class="n">another</span> <span class="n">copy</span><span class="p">)</span><span class="o">.</span><span class="n">zip</span>
+<span class="p">[</span> <span class="n">Info</span><span class="o">:</span> <span class="p">(</span><span class="s">"Got "</span><span class="p">,</span> <span class="n">FileWatching</span><span class="o">.</span><span class="n">FileEvent</span><span class="p">(</span><span class="kc">false</span><span class="p">,</span> <span class="kc">true</span><span class="p">,</span> <span class="kc">false</span><span class="p">),</span> <span class="s">"2021-01-19 - HKM (another copy).zip"</span><span class="p">)</span>
+<span class="mi">2021</span><span class="o">-</span><span class="mi">01</span><span class="o">-</span><span class="mi">19</span> <span class="o">-</span> <span class="n">HKM</span> <span class="p">(</span><span class="n">another</span> <span class="n">copy</span><span class="p">)</span><span class="o">.</span><span class="n">zip</span>
+</code></pre></div>
+
+
+
+<a name="223548362"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/FileWatching/near/223548362" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Bagge Carlson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/FileWatching.html#223548362">(Jan 21 2021 at 18:11)</a>:</h4>
+<p>If I save all files that have generated an event in a set and only proceed if it's an event for a new file, I seem to get what I want.</p>
+
+
+
+<a name="223548753"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/FileWatching/near/223548753" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/FileWatching.html#223548753">(Jan 21 2021 at 18:14)</a>:</h4>
+<p><a href="https://nodejs.org/api/fs.html#fs_caveats">https://nodejs.org/api/fs.html#fs_caveats</a> from the docstring of <code>watch_folder</code> might be relevant? I only get 2 events for a created file though.</p>
+
+
+
+<a name="223549667"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/FileWatching/near/223549667" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/FileWatching.html#223549667">(Jan 21 2021 at 18:21)</a>:</h4>
+<p>For a new file it looks like you get two events, which makes sense when you think about it: one event for creating the file (<code>.renamed</code>) and one event for writing the content to the file (<code>.changed</code>).<br>
+Appending to an existing file gives one event (<code>.changed</code>) and deleting a file gives one event (<code>.renamed</code>).</p>
+
+
+
+<a name="223550527"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/FileWatching/near/223550527" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Bagge Carlson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/FileWatching.html#223550527">(Jan 21 2021 at 18:28)</a>:</h4>
+<p>That seems to agree with my experimentation. This was a bit trickier than I anticipated. It turns out that after the first handled file event that induces precompilation, subsequent file events are triggered too fast for the file to be written completely and reading it fails without some <code>sleep</code> before ^^</p>
+
+
+
+<a name="223550615"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/FileWatching/near/223550615" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Bagge Carlson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/FileWatching.html#223550615">(Jan 21 2021 at 18:29)</a>:</h4>
+<p>For completeness, here's my working implementation</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="kd">const</span> <span class="n">handled</span> <span class="o">=</span> <span class="kt">Set</span><span class="p">{</span><span class="n">String</span><span class="p">}()</span>
+<span class="k">function</span> <span class="n">watchserver</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="nd">@info</span> <span class="s">"Starting server watching for changes in "</span> <span class="n">path</span>
+    <span class="k">while</span> <span class="kc">true</span>
+        <span class="n">file</span><span class="p">,</span> <span class="n">event</span> <span class="o">=</span> <span class="n">watch_folder</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="c"># timeout inf</span>
+        <span class="p">(</span><span class="n">file</span> <span class="o">===</span> <span class="nb">nothing</span> <span class="o">||</span> <span class="n">file</span> <span class="o">∈</span> <span class="n">handled</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">changed</span>
+            <span class="nd">@info</span> <span class="s">"Got "</span> <span class="n">event</span> <span class="n">file</span>
+            <span class="n">push!</span><span class="p">(</span><span class="n">handled</span><span class="p">,</span> <span class="n">file</span><span class="p">)</span>
+            <span class="k">try</span>
+                <span class="n">fullpath</span> <span class="o">=</span> <span class="n">joinpath</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">file</span><span class="p">)</span>
+                <span class="c"># println(file)</span>
+                <span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+                <span class="n">display_data</span><span class="p">(</span><span class="n">fullpath</span><span class="p">)</span>
+            <span class="k">catch</span> <span class="nb">e</span>
+                <span class="nd">@error</span> <span class="s">"Plotting failed, got error"</span> <span class="nb">e</span>
+            <span class="k">end</span>
+        <span class="k">end</span>
+        <span class="n">event</span><span class="o">.</span><span class="n">timedout</span> <span class="o">&amp;&amp;</span> <span class="k">return</span>
+    <span class="k">end</span>
+<span class="k">end</span>
+
+<span class="c"># path = "/home/fredrikb/Documents/"</span>
+<span class="n">path</span> <span class="o">=</span> <span class="nb">ARGS</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">task</span> <span class="o">=</span> <span class="n">watchserver</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="223551644"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/FileWatching/near/223551644" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Bagge Carlson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/FileWatching.html#223551644">(Jan 21 2021 at 18:36)</a>:</h4>
+<p>Thanks for clarifying Fredrik :)</p>
+
+
+
+<a name="223559826"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/FileWatching/near/223559826" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Max Köhler <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/FileWatching.html#223559826">(Jan 21 2021 at 19:37)</a>:</h4>
+<p>I couldn't resist, sorry..<br>
+<a href="/user_uploads/7178/l1utc-JfFW23JitdhBlGh3K0/grafik.png">grafik.png</a></p>
+<div class="message_inline_image"><a href="/user_uploads/7178/l1utc-JfFW23JitdhBlGh3K0/grafik.png" title="grafik.png"><img src="/user_uploads/7178/l1utc-JfFW23JitdhBlGh3K0/grafik.png"></a></div>
+
+
+
+<a name="223634060"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/FileWatching/near/223634060" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> TheCedarPrince <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/FileWatching.html#223634060">(Jan 22 2021 at 12:23)</a>:</h4>
+<p>Hey <span class="user-mention" data-user-id="272599">@Fredrik Bagge Carlson</span> - you may be interested in this discourse post I opened talking about Julia usage on a server: <a href="https://discourse.julialang.org/t/running-julia-on-a-personal-linux-server/53449">https://discourse.julialang.org/t/running-julia-on-a-personal-linux-server/53449</a> It discusses using both FileWatching and DaemonMode for Julia usage with a crontab.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

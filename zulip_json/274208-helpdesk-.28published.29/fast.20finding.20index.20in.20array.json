@@ -1,0 +1,56 @@
+[
+    {
+        "content": "<p>I am in search of the appropriate data structure to fast retrieve the index of an object in an array.<br>\nI am currently using an one dimensional array to store some objects and the order matters.<br>\nUp until now I was just searching through a array objects, i.e. with complexity O(n), to find an object's index.</p>\n<p>Since I do that often I would like to improve it to sublinear or even constant time complexity.<br>\nFor sublinear I think I need to sort the array, which cannot happen because, as mentioned, the order matters.<br>\nFor a constant time I can implement a hash table where each object of the array is mapped to its index.</p>\n<p>I think the  the <code>OrderedDict</code> from the <a href=\"https://github.com/search?q=OrderedCollections.jl&amp;type=Repositories\">OrderedCollections.jl</a> package could be used.<br>\nBut when I do:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">d</span> <span class=\"o\">=</span> <span class=\"kt\">OrderedDict</span><span class=\"p\">{</span><span class=\"kt\">Char</span><span class=\"p\">,</span><span class=\"kt\">Int</span><span class=\"p\">}()</span>\n<span class=\"k\">for</span> <span class=\"n\">c</span> <span class=\"k\">in</span> <span class=\"sc\">'a'</span><span class=\"o\">:</span><span class=\"sc\">'e'</span>\n    <span class=\"n\">d</span><span class=\"p\">[</span><span class=\"n\">c</span><span class=\"p\">]</span> <span class=\"o\">=</span> <span class=\"n\">c</span><span class=\"o\">-</span><span class=\"sc\">'a'</span><span class=\"o\">+</span><span class=\"mi\">1</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>then I cannot get the n-th index. I can only iterate through the dict.<br>\ne.g.</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"n\">d</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span>\n<span class=\"gr\">ERROR: KeyError: key 1 not found</span>\n<span class=\"gr\">Stacktrace:</span>\n<span class=\"gr\"> [1] getindex(h::OrderedDict{Char, Int64}, key::Int64)</span>\n<span class=\"gr\">   @ OrderedCollections ~/.julia/packages/OrderedCollections/PRayh/src/ordered_dict.jl:380</span>\n<span class=\"gr\"> [2] top-level scope</span>\n<span class=\"gr\">   @ REPL[6]:1</span>\n</code></pre></div>\n<p>Ideally with <code>d[1]</code> I would like to get the first object .i.e. 'a'.<br>\nand with d['a'] I would like to get the uint index .i.e. 1.</p>\n<p>Do I miss an interface for <code>OrderedDict</code> or do you hve any other data structure suggestions ?</p>",
+        "id": 275703425,
+        "sender_full_name": "Filippos Christou",
+        "timestamp": 1647540559
+    },
+    {
+        "content": "<p>The best data structure would probably be a hash table with the implementation of <code>Dictionaries.jl</code> - they contain the ordered vector of values as part of the structure and is also often more efficient than the <code>Dict</code> of Base</p>",
+        "id": 275703871,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1647540763
+    },
+    {
+        "content": "<p>Another option could be just making your own bootleg data structure with a vector and a dict inside</p>",
+        "id": 275703911,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1647540782
+    },
+    {
+        "content": "<p>Does anybody have any idea how expensive is actually  hashing? I mean okey, it is constant cost but if I have a relative small array e.g. 1-100 elements it might be  on average  faster just to check all elements.</p>",
+        "id": 275704710,
+        "sender_full_name": "Filippos Christou",
+        "timestamp": 1647541149
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"272650\">Jakob Nybo Nissen</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/fast.20finding.20index.20in.20array/near/275703871\">said</a>:</p>\n<blockquote>\n<p>The best data structure would probably be a hash table with the implementation of <code>Dictionaries.jl</code> - they contain the ordered vector of values as part of the structure and is also often more efficient than the <code>Dict</code> of Base</p>\n</blockquote>\n<p>I 've heard of <a href=\"https://github.com/search?q=DIctionaries.jl&amp;type=Repositories\">DIctionaries.jl</a> before and I intended to give it a closer look. I guess the time has come.</p>",
+        "id": 275704809,
+        "sender_full_name": "Filippos Christou",
+        "timestamp": 1647541201
+    },
+    {
+        "content": "<p>It also depends on how expensive it is to compare with equality. For things like integers, I seem to recall the crossover point is somewhere around 30-60 elements (but don't rely on that, I can't quite remember)</p>",
+        "id": 275704881,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1647541214
+    },
+    {
+        "content": "<p>In fact, I seem to recall that just a few days ago, there was a proposal to make Base's <code>Dict</code> simply be an array if there were fewer than N elements in it.</p>",
+        "id": 275705193,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1647541372
+    },
+    {
+        "content": "<p>(deleted)</p>",
+        "id": 275715461,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1647546297
+    },
+    {
+        "content": "<p><a href=\"https://github.com/scheinerman/Bijections.jl\">Bijections.jl</a> works pretty  similar to what you want, but it doesn't seem to be very actively used/maintained, so I'm not sure how it does in terms of performance and reliability. </p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"n\">b</span> <span class=\"o\">=</span> <span class=\"kt\">Bijection</span><span class=\"p\">{</span><span class=\"kt\">Char</span><span class=\"p\">,</span> <span class=\"kt\">Int</span><span class=\"p\">}()</span>\n<span class=\"go\">Bijection{Char,Int64} (with 0 pairs)</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"k\">for</span> <span class=\"n\">c</span> <span class=\"k\">in</span> <span class=\"sc\">'a'</span><span class=\"o\">:</span><span class=\"sc\">'e'</span>\n           <span class=\"n\">b</span><span class=\"p\">[</span><span class=\"n\">c</span><span class=\"p\">]</span> <span class=\"o\">=</span> <span class=\"n\">c</span><span class=\"o\">-</span><span class=\"sc\">'a'</span><span class=\"o\">+</span><span class=\"mi\">1</span>\n       <span class=\"k\">end</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">b</span><span class=\"p\">[</span><span class=\"sc\">'a'</span><span class=\"p\">]</span>\n<span class=\"go\">1</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">b</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">)</span>\n<span class=\"go\">'a': ASCII/Unicode U+0061 (category Ll: Letter, lowercase)</span>\n</code></pre></div>",
+        "id": 275885773,
+        "sender_full_name": "Sundar R",
+        "timestamp": 1647659406
+    }
+]

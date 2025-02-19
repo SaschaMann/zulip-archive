@@ -1,0 +1,99 @@
+<html>
+<head><meta charset="utf-8"><title>Getting code lowered with only the function type · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Getting.20code.20lowered.20with.20only.20the.20function.20type.html">Getting code lowered with only the function type</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="229034498"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Getting%20code%20lowered%20with%20only%20the%20function%20type/near/229034498" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Getting.20code.20lowered.20with.20only.20the.20function.20type.html#229034498">(Mar 05 2021 at 22:21)</a>:</h4>
+<p>So I know that I can get the lowered code for a method with <code>code_lowered(f, Tuple{...})</code>, but that requires an <em>instance</em> of the function. What if I only have the type? Usually, you can proceed by just doing <code>F.instance</code>, but that won't work for a closure.</p>
+
+
+
+<a name="229034908"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Getting%20code%20lowered%20with%20only%20the%20function%20type/near/229034908" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Getting.20code.20lowered.20with.20only.20the.20function.20type.html#229034908">(Mar 05 2021 at 22:25)</a>:</h4>
+<p>To be clear, how could this generated function body get the proper <code>code_lowered</code> for this closure?</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">cl</span> <span class="o">=</span> <span class="k">let</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">1</span>
+           <span class="n">y</span> <span class="o">-&gt;</span> <span class="n">x</span> <span class="o">+</span> <span class="n">y</span>
+       <span class="k">end</span>
+<span class="c">#4 (generic function with 1 method)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@generated</span> <span class="k">function</span> <span class="n">foo</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+           <span class="c"># need the code_lowered for `f(::typeof(x))` here</span>
+       <span class="k">end</span>
+<span class="n">foo</span> <span class="p">(</span><span class="n">generic</span> <span class="k">function</span> <span class="n">with</span> <span class="mi">1</span> <span class="n">method</span><span class="p">)</span>
+</code></pre></div>
+<p>given that I can't do</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">typeof</span><span class="p">(</span><span class="n">cl</span><span class="p">)</span><span class="o">.</span><span class="n">instance</span>
+<span class="n">ERROR</span><span class="o">:</span> <span class="kt">UndefRefError</span><span class="o">:</span> <span class="n">access</span> <span class="n">to</span> <span class="n">undefined</span> <span class="n">reference</span>
+</code></pre></div>
+
+
+
+<a name="229035376"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Getting%20code%20lowered%20with%20only%20the%20function%20type/near/229035376" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Getting.20code.20lowered.20with.20only.20the.20function.20type.html#229035376">(Mar 05 2021 at 22:29)</a>:</h4>
+<p>It looks like you can do <code>Base.uncompressed_ir(Base.which(Tuple{typeof(identity),Int}))</code> after 1.6.</p>
+
+
+
+<a name="229037753"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Getting%20code%20lowered%20with%20only%20the%20function%20type/near/229037753" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Getting.20code.20lowered.20with.20only.20the.20function.20type.html#229037753">(Mar 05 2021 at 22:51)</a>:</h4>
+<p>There's gotta be a way that works with all julia versions though, right? Since cassette.jl and <a href="https://github.com/search?q=IRTools.jl&amp;type=Repositories">IRTools.jl</a> worth through generated functions and worked on 1.0</p>
+
+
+
+<a name="229038210"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Getting%20code%20lowered%20with%20only%20the%20function%20type/near/229038210" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Getting.20code.20lowered.20with.20only.20the.20function.20type.html#229038210">(Mar 05 2021 at 22:55)</a>:</h4>
+<p>Yeah, I was just too lazy to cook it up. I know you can use <code>Base.uncompressed_ast</code> for backward compatibility. Not sure what's the backward-compatible way to emulate <code>which(::Type)</code>, though.</p>
+
+
+
+<a name="229038365"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Getting%20code%20lowered%20with%20only%20the%20function%20type/near/229038365" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Getting.20code.20lowered.20with.20only.20the.20function.20type.html#229038365">(Mar 05 2021 at 22:57)</a>:</h4>
+<p>since <code>which</code> is a public API, it'd make sense to put it in <a href="https://github.com/search?q=Compat.jl&amp;type=Repositories">Compat.jl</a></p>
+
+
+
+<a name="229039530"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Getting%20code%20lowered%20with%20only%20the%20function%20type/near/229039530" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Getting.20code.20lowered.20with.20only.20the.20function.20type.html#229039530">(Mar 05 2021 at 23:07)</a>:</h4>
+<p>Ah I see</p>
+
+
+
+<a name="229040664"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Getting%20code%20lowered%20with%20only%20the%20function%20type/near/229040664" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Getting.20code.20lowered.20with.20only.20the.20function.20type.html#229040664">(Mar 05 2021 at 23:16)</a>:</h4>
+<p>It looks like you can just copy &amp; paste the last few lines of <code>which</code>:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">function</span> <span class="n">getmethod</span><span class="p">(</span><span class="n">tt</span><span class="p">)</span>
+           <span class="n">m</span> <span class="o">=</span> <span class="k">ccall</span><span class="p">(</span><span class="o">:</span><span class="n">jl_gf_invoke_lookup</span><span class="p">,</span> <span class="kt">Any</span><span class="p">,</span> <span class="p">(</span><span class="kt">Any</span><span class="p">,</span> <span class="kt">UInt</span><span class="p">),</span> <span class="n">tt</span><span class="p">,</span> <span class="n">typemax</span><span class="p">(</span><span class="kt">UInt</span><span class="p">))</span>
+           <span class="k">if</span> <span class="n">m</span> <span class="o">===</span> <span class="nb">nothing</span>
+               <span class="n">error</span><span class="p">(</span><span class="s">"no unique matching method found for the specified argument types"</span><span class="p">)</span>
+           <span class="k">end</span>
+           <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">func</span><span class="o">::</span><span class="kt">Method</span>
+       <span class="k">end</span>
+<span class="n">getmethod</span> <span class="p">(</span><span class="n">generic</span> <span class="k">function</span> <span class="n">with</span> <span class="mi">1</span> <span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">getmethod</span><span class="p">(</span><span class="kt">Tuple</span><span class="p">{</span><span class="n">typeof</span><span class="p">(</span><span class="n">identity</span><span class="p">),</span><span class="kt">Int</span><span class="p">})</span>
+<span class="n">identity</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="kp">in</span> <span class="n">Base</span> <span class="n">at</span> <span class="n">operators</span><span class="o">.</span><span class="n">jl</span><span class="o">:</span><span class="mi">511</span>
+</code></pre></div>
+
+
+
+<a name="229040705"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Getting%20code%20lowered%20with%20only%20the%20function%20type/near/229040705" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Getting.20code.20lowered.20with.20only.20the.20function.20type.html#229040705">(Mar 05 2021 at 23:16)</a>:</h4>
+<p>(works in 1.0 and 1.5)</p>
+
+
+
+<a name="229040752"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Getting%20code%20lowered%20with%20only%20the%20function%20type/near/229040752" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Getting.20code.20lowered.20with.20only.20the.20function.20type.html#229040752">(Mar 05 2021 at 23:17)</a>:</h4>
+<p>beautiful, thank you!</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

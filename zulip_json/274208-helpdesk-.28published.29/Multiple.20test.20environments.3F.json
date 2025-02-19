@@ -1,0 +1,110 @@
+[
+    {
+        "content": "<p>Is there an ergonomic way to run a subset of tests in a separate environment from the rest of the test suite? The context is that one of my test dependencies has very restrictive compat bounds and ends up downgrading several low-level packages compared to how the main environment is resolved. I'd prefer to isolate the tests that require this dependency in their own environment.</p>",
+        "id": 453281105,
+        "sender_full_name": "Daniel Wennberg",
+        "timestamp": 1721683708
+    },
+    {
+        "content": "<p>I know this normally wouldn't matter if everyone follows semver, however, I'm testing things that are not guaranteed by semver such as inference and allocations.</p>",
+        "id": 453281468,
+        "sender_full_name": "Daniel Wennberg",
+        "timestamp": 1721683932
+    },
+    {
+        "content": "<p><a href=\"https://juliahub.com/ui/Packages/General/SafeTestsets\">SafeTestsets.jl</a> does that if I recall correctly</p>",
+        "id": 453281908,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1721684207
+    },
+    {
+        "content": "<p>Looks like SafeTestsets puts each testset in a separate module, which is not quite the same as a separate environment</p>",
+        "id": 453282142,
+        "sender_full_name": "Daniel Wennberg",
+        "timestamp": 1721684360
+    },
+    {
+        "content": "<p>oh, whoops yeah I misread the question</p>",
+        "id": 453291161,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1721689344
+    },
+    {
+        "content": "<p>I tried to hack it together using Pkg operations inside a safetestset, but precompilation fails for reasons I don't understand.</p>",
+        "id": 453291515,
+        "sender_full_name": "Daniel Wennberg",
+        "timestamp": 1721689622
+    },
+    {
+        "content": "<p>Use a separate Project.toml + Manifest.toml and spawn a new process is probably the easiest.</p>",
+        "id": 453291951,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1721689943
+    },
+    {
+        "content": "<p>Yeah, that's where I'm heading. Is it possible to start a <a href=\"https://juliahub.com/ui/Packages/General/Distributed\">Distributed.jl</a> worker in a separate environment, or is it better to just use <code>run(`julia --project=\"extratests\" \"extratests/extratests.jl\"`)</code>?</p>",
+        "id": 453292348,
+        "sender_full_name": "Daniel Wennberg",
+        "timestamp": 1721690275
+    },
+    {
+        "content": "<p>The latter seems much easier (but you can pass <code>exeflags</code> to <code>Distributed.addprocs</code> if you want to go down that route).</p>",
+        "id": 453293157,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1721690907
+    },
+    {
+        "content": "<p>For posterity, here's how I ended up configuring the separate test process to mimic the launch configuration for normal tests as closely as possible:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"nd\">@testset</span><span class=\"w\"> </span><span class=\"s\">\"SpecialTests\"</span><span class=\"w\"> </span><span class=\"k\">begin</span>\n<span class=\"w\">    </span><span class=\"n\">code</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"s\">\"using Pkg; Pkg.update(); include(</span><span class=\"se\">\\\"</span><span class=\"s\">SpecialTests/runtests.jl</span><span class=\"se\">\\\"</span><span class=\"s\">)\"</span>\n<span class=\"w\">    </span><span class=\"n\">cmd</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">addenv</span><span class=\"p\">(</span>\n<span class=\"w\">        </span><span class=\"kt\">Cmd</span><span class=\"p\">(</span><span class=\"sb\">`</span><span class=\"si\">$</span><span class=\"p\">(</span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">julia_cmd</span><span class=\"p\">())</span><span class=\"sb\"> --eval \"</span><span class=\"si\">$code</span><span class=\"sb\">\"`</span><span class=\"p\">),</span>\n<span class=\"w\">        </span><span class=\"kt\">Dict</span><span class=\"p\">(</span><span class=\"s\">\"JULIA_LOAD_PATH\"</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"s\">\"@:SpecialTests\"</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"s\">\"JULIA_PROJECT\"</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"nb\">nothing</span><span class=\"p\">),</span>\n<span class=\"w\">    </span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"nd\">@test</span><span class=\"w\"> </span><span class=\"n\">success</span><span class=\"p\">(</span><span class=\"n\">run</span><span class=\"p\">(</span><span class=\"n\">cmd</span><span class=\"p\">))</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 453332511,
+        "sender_full_name": "Daniel Wennberg",
+        "timestamp": 1721713409
+    },
+    {
+        "content": "<p>See how OrdinaryDiffEq does it</p>",
+        "id": 454611053,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1722172219
+    },
+    {
+        "content": "<p>We have different safetestsets which have if statements over them based on environment variables, and then CI is spawned over many environment variables</p>",
+        "id": 454611078,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1722172245
+    },
+    {
+        "content": "<p>That allows for separate CI runs to run different parts of the test, parallelizing the tests as well</p>",
+        "id": 454611086,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1722172260
+    },
+    {
+        "content": "<p>Distributed for that parallelism doesn't work too well because then you're limited by the core size you get on the free machine, which isn't much</p>",
+        "id": 454611104,
+        "sender_full_name": "Christopher Rackauckas",
+        "timestamp": 1722172282
+    },
+    {
+        "content": "<p>I'm using <a href=\"https://juliahub.com/ui/Packages/General/Malt\">Malt.jl</a> for a similare case where I need to test that the data produced by<code>ZipArchives.jl</code> can be read by <code>ZipStreams.jl</code> even if they may have incompatible dependancies. <a href=\"https://github.com/JuliaIO/ZipArchives.jl/blob/479436a31c01b2378861f456d67474205795776b/test/test_writer.jl#L126-L168\">https://github.com/JuliaIO/ZipArchives.jl/blob/479436a31c01b2378861f456d67474205795776b/test/test_writer.jl#L126-L168</a> </p>\n<p>I found <a href=\"https://juliahub.com/ui/Packages/General/Malt\">Malt.jl</a> is much nicer than <a href=\"https://juliahub.com/ui/Packages/General/Distributed\">Distributed.jl</a> for the case where the worker is in a different environment.</p>",
+        "id": 454620466,
+        "sender_full_name": "Nathan Zimmerberg",
+        "timestamp": 1722178326
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"278119\">Christopher Rackauckas</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Multiple.20test.20environments.3F/near/454611078\">said</a>:</p>\n<blockquote>\n<p>We have different safetestsets which have if statements over them based on environment variables, and then CI is spawned over many environment variables</p>\n</blockquote>\n<p>This is local small-potatoes exploratory development, I haven't set up CI on a hosting service for now (and I wouldn't want to push every dead-end attempt I make to the cloud anyway), so I'd like to be able to run the entire test suite with a simple <code>]test MyPackage</code> in the REPL and no faffing with environment variables.</p>\n<p>But what I take from OrdinaryDiffEq's setup is that I can of course just call <code>Pkg.activate</code> in the main test process rather than spawning a separate process. If I make sure the <code>SpecialTests</code> testset is the last one to run, that's really all I need.</p>\n<p>Now to figure out if there's a safe way to do <code>Pkg.activate</code> when using <code>TestItems</code> and <code>TestItemRunner</code>, given that they run the testitems in unspecified order and in parallel.</p>",
+        "id": 454659423,
+        "sender_full_name": "Daniel Wennberg",
+        "timestamp": 1722196853
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"368583\">Daniel Wennberg</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Multiple.20test.20environments.3F/near/454659423\">said</a>:</p>\n<blockquote>\n<p>I can of course just call <code>Pkg.activate</code> in the main test process rather than spawning a separate process</p>\n</blockquote>\n<p>Hm, no, it's probably not a good idea to do this in a process where other versions of packages are already loaded. I'll stick to my solution with <code>run</code> from above, it's working great. But I'll follow OrdinaryDiffEq and put <code>Pkg.develop</code> in the code I'm evaluating rather than having the package already <code>dev</code>-ed in the SpecialTests environment---that way I don't have to check in the Manifest.</p>",
+        "id": 454664063,
+        "sender_full_name": "Daniel Wennberg",
+        "timestamp": 1722198715
+    },
+    {
+        "content": "<p>Updated solution:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"nd\">@testset</span><span class=\"w\"> </span><span class=\"s\">\"SpecialTests\"</span><span class=\"w\"> </span><span class=\"k\">begin</span>\n<span class=\"w\">    </span><span class=\"n\">code</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"s\">\"\"\"</span>\n<span class=\"s\">        using Pkg</span>\n<span class=\"s\">        Pkg.develop(path=\"..\")</span>\n<span class=\"s\">        Pkg.instantiate()</span>\n<span class=\"s\">        try</span>\n<span class=\"s\">            include(\"SpecialTests/runtests.jl\")</span>\n<span class=\"s\">        finally</span>\n<span class=\"s\">            redirect_stderr(devnull) do</span>\n<span class=\"s\">                Pkg.rm(\"MyPackage\")</span>\n<span class=\"s\">                rm(\"SpecialTests/Manifest.toml\")</span>\n<span class=\"s\">            end</span>\n<span class=\"s\">        end</span>\n<span class=\"s\">    \"\"\"</span>\n<span class=\"w\">    </span><span class=\"n\">cmd</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">addenv</span><span class=\"p\">(</span>\n<span class=\"w\">        </span><span class=\"kt\">Cmd</span><span class=\"p\">(</span><span class=\"sb\">`</span><span class=\"si\">$</span><span class=\"p\">(</span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">julia_cmd</span><span class=\"p\">())</span><span class=\"sb\"> --eval \"</span><span class=\"si\">$code</span><span class=\"sb\">\"`</span><span class=\"p\">),</span>\n<span class=\"w\">        </span><span class=\"kt\">Dict</span><span class=\"p\">(</span><span class=\"s\">\"JULIA_LOAD_PATH\"</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"s\">\"@:SpecialTests\"</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"s\">\"JULIA_PROJECT\"</span><span class=\"w\"> </span><span class=\"o\">=&gt;</span><span class=\"w\"> </span><span class=\"nb\">nothing</span><span class=\"p\">),</span>\n<span class=\"w\">    </span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"nd\">@test</span><span class=\"w\"> </span><span class=\"n\">success</span><span class=\"p\">(</span><span class=\"n\">run</span><span class=\"p\">(</span><span class=\"n\">cmd</span><span class=\"p\">))</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 454665504,
+        "sender_full_name": "Daniel Wennberg",
+        "timestamp": 1722199329
+    }
+]

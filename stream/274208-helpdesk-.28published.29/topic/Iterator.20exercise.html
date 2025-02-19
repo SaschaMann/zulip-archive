@@ -1,0 +1,265 @@
+<html>
+<head><meta charset="utf-8"><title>Iterator exercise · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Iterator.20exercise.html">Iterator exercise</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="258832192"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Iterator%20exercise/near/258832192" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> rocco sprmnt21 <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Iterator.20exercise.html#258832192">(Oct 23 2021 at 16:46)</a>:</h4>
+<p>I was reading <a href="http://slendermeans.org/julia-iterators.html">this </a> blog trying to understand how iterators work </p>
+<p>I tried to adapt the following script using the iterate function in place of start (), next () and done () . With some difficulty, but in the end I succeeded. </p>
+<p>#######<br>
+ Jeff Bezanson • 8 years ago</p>
+<p>Very nice and thorough discussion of julia iterators!</p>
+<p>I'm surprised the fibonacci example uses mutation, since it is very naturally functional:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">immutable</span> <span class="n">Fibs</span>
+<span class="k">end</span>
+
+<span class="n">start</span><span class="p">(</span><span class="n">f</span><span class="o">::</span><span class="kt">Fibs</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">next</span><span class="p">(</span><span class="n">f</span><span class="o">::</span><span class="kt">Fibs</span><span class="p">,</span> <span class="n">st</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">st</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">st</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+<span class="n">done</span><span class="p">(</span><span class="n">f</span><span class="o">::</span><span class="kt">Fibs</span><span class="p">,</span> <span class="n">st</span><span class="p">)</span> <span class="o">=</span> <span class="nb">false</span>
+</code></pre></div>
+<p>Then you can do e.g. <code>take(Fibs(), 10)</code> (using the Iterators package).</p>
+<p>#################</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="kt">Fibs</span>
+<span class="k">end</span>
+
+<span class="n">Base</span><span class="o">.</span><span class="n">iterate</span><span class="p">(</span><span class="n">f</span><span class="o">::</span><span class="kt">Fibs</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+<span class="n">Base</span><span class="o">.</span><span class="n">iterate</span><span class="p">(</span><span class="n">f</span><span class="o">::</span><span class="kt">Fibs</span><span class="p">,</span> <span class="n">st</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">st</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">st</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+
+<span class="k">using</span> <span class="n">IterTools</span>
+
+<span class="n">collect</span><span class="p">(</span><span class="n">takestrict</span><span class="p">(</span><span class="n">Fibs</span><span class="p">(),</span><span class="mi">10</span><span class="p">))</span>
+</code></pre></div>
+<p>I tried later to define a non-infinite iterator, as follows: </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="kt">Fibn</span>
+    <span class="n">n</span><span class="o">::</span><span class="kt">Int</span>
+<span class="k">end</span>
+
+<span class="n">ϕ</span><span class="o">=</span><span class="mi">2</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+<span class="n">fb</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="o">=</span><span class="kt">Int</span><span class="p">(</span><span class="n">trunc</span><span class="p">(((</span><span class="o">-</span><span class="n">ϕ</span><span class="p">)</span><span class="o">^</span><span class="n">n</span> <span class="o">-</span><span class="n">ϕ</span><span class="o">^</span><span class="p">(</span><span class="o">-</span><span class="n">n</span><span class="p">))</span><span class="o">/</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">5</span><span class="p">)))</span>
+
+<span class="n">f</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="o">=</span><span class="n">Fibn</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+<span class="n">length</span><span class="p">(</span><span class="n">f</span><span class="o">::</span><span class="kt">Fibn</span><span class="p">)</span><span class="o">=</span><span class="n">f</span><span class="o">.</span><span class="n">n</span>
+<span class="n">Base</span><span class="o">.</span><span class="n">iterate</span><span class="p">(</span><span class="n">f</span><span class="o">::</span><span class="kt">Fibn</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+<span class="n">Base</span><span class="o">.</span><span class="n">iterate</span><span class="p">(</span><span class="n">f</span><span class="o">::</span><span class="kt">Fibn</span><span class="p">,</span> <span class="n">st</span><span class="p">)</span> <span class="o">=</span> <span class="n">st</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">fb</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">?</span> <span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">st</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">st</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span> <span class="o">:</span> <span class="nb">nothing</span>
+
+<span class="k">using</span> <span class="n">IterTools</span>
+
+<span class="k">for</span> <span class="n">i</span><span class="o">=</span><span class="n">f</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+    <span class="n">println</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>I just wanted to do an exercise on iterators, it's not meant to be a solution to some real problem. <br>
+I was unable to fix things to get the collect () function to work though.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">collect</span><span class="p">(</span><span class="n">f</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+<span class="n">ERROR</span><span class="o">:</span> <span class="kt">MethodError</span><span class="o">:</span> <span class="n">no</span> <span class="n">method</span> <span class="n">matching</span> <span class="n">length</span><span class="p">(</span><span class="o">::</span><span class="kt">Fibn</span><span class="p">)</span>
+</code></pre></div>
+<p>How should I do instead of ...? </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">length</span><span class="p">(</span><span class="n">f</span><span class="o">::</span><span class="kt">Fibn</span><span class="p">)</span><span class="o">=</span><span class="n">f</span><span class="o">.</span><span class="n">n</span>
+</code></pre></div>
+
+
+
+<a name="258834054"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Iterator%20exercise/near/258834054" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sundar R <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Iterator.20exercise.html#258834054">(Oct 23 2021 at 17:27)</a>:</h4>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span> <span class="n">Base</span><span class="o">.</span><span class="n">length</span><span class="p">(</span><span class="n">f</span><span class="o">::</span><span class="kt">Fibn</span><span class="p">)</span><span class="o">=</span><span class="n">f</span><span class="o">.</span><span class="n">n</span>
+
+<span class="gp">julia&gt;</span> <span class="n">collect</span><span class="p">(</span><span class="n">f</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+<span class="go">10-element Vector{Any}:</span>
+<span class="go">  0</span>
+<span class="go">  1</span>
+<span class="go">  1</span>
+<span class="go">  2</span>
+<span class="go">  3</span>
+<span class="go">  5</span>
+<span class="go">  8</span>
+<span class="go"> 13</span>
+<span class="go"> 21</span>
+<span class="go"> 34</span>
+</code></pre></div>
+
+
+
+<a name="258834190"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Iterator%20exercise/near/258834190" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> rocco sprmnt21 <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Iterator.20exercise.html#258834190">(Oct 23 2021 at 17:30)</a>:</h4>
+<p>tanks! <span aria-label="smile" class="emoji emoji-1f642" role="img" title="smile">:smile:</span></p>
+
+
+
+<a name="258834208"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Iterator%20exercise/near/258834208" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sundar R <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Iterator.20exercise.html#258834208">(Oct 23 2021 at 17:30)</a>:</h4>
+<p><code>length(f::Fibn)=f.n</code>creates a <code>Main.length</code>, which is why that didn't work</p>
+
+
+
+<a name="258834294"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Iterator%20exercise/near/258834294" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> rocco sprmnt21 <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Iterator.20exercise.html#258834294">(Oct 23 2021 at 17:33)</a>:</h4>
+<p>As an alternative to using the Base prefix, could I import the functions of which I need to define a new method?<br>
+So</p>
+<p>import Base: iterate, eltype, length, size, peek</p>
+
+
+
+<a name="258835002"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Iterator%20exercise/near/258835002" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sebastian Pfitzner <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Iterator.20exercise.html#258835002">(Oct 23 2021 at 17:51)</a>:</h4>
+<p>yes</p>
+
+
+
+<a name="258844394"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Iterator%20exercise/near/258844394" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> rocco sprmnt21 <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Iterator.20exercise.html#258844394">(Oct 23 2021 at 21:51)</a>:</h4>
+<p>this is the version without bothering with Binet's formula </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="kt">Fibn</span><span class="p">{</span><span class="kt">Int</span><span class="p">}</span>
+    <span class="n">n</span><span class="o">::</span><span class="kt">Int</span>
+<span class="k">end</span>
+<span class="k">import</span> <span class="n">Base</span><span class="o">:</span> <span class="n">iterate</span><span class="p">,</span> <span class="n">length</span>
+<span class="n">f</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="o">=</span><span class="n">Fibn</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+<span class="n">length</span><span class="p">(</span><span class="n">f</span><span class="o">::</span><span class="kt">Fibn</span><span class="p">)</span><span class="o">=</span><span class="n">f</span><span class="o">.</span><span class="n">n</span>
+<span class="n">iterate</span><span class="p">(</span><span class="n">f</span><span class="o">::</span><span class="kt">Fibn</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+<span class="n">iterate</span><span class="p">(</span><span class="n">f</span><span class="o">::</span><span class="kt">Fibn</span><span class="p">,</span> <span class="n">st</span><span class="p">)</span> <span class="o">=</span> <span class="n">st</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">f</span><span class="o">.</span><span class="n">n</span> <span class="o">?</span> <span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">st</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">st</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">st</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span> <span class="o">:</span> <span class="nb">nothing</span>
+<span class="n">collect</span><span class="p">(</span><span class="n">f</span><span class="p">(</span><span class="mi">17</span><span class="p">))</span>
+</code></pre></div>
+
+
+
+<a name="258846941"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Iterator%20exercise/near/258846941" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Iterator.20exercise.html#258846941">(Oct 23 2021 at 22:55)</a>:</h4>
+<p>Nice!</p>
+
+
+
+<a name="258847539"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Iterator%20exercise/near/258847539" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Iterator.20exercise.html#258847539">(Oct 23 2021 at 23:10)</a>:</h4>
+<p>By the way the type parameter you used is a bit misleading. It defines a parameter named "<code>Int</code>" that can be any type</p>
+
+
+
+<a name="258848501"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Iterator%20exercise/near/258848501" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Iterator.20exercise.html#258848501">(Oct 23 2021 at 23:40)</a>:</h4>
+<p>Here is the naïve way one might translate this to <a href="https://github.com/search?q=Transducers.jl&amp;type=Repositories">Transducers.jl</a> speak:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">using</span> <span class="n">Transducers</span><span class="p">;</span> <span class="k">using</span> <span class="n">Transducers</span><span class="o">:</span> <span class="nd">@next</span><span class="p">,</span> <span class="n">complete</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="k">struct</span> <span class="kt">Fibnt</span>
+           <span class="n">n</span><span class="o">::</span><span class="kt">Int</span>
+       <span class="k">end</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="k">function</span> <span class="n">Transducers</span><span class="o">.</span><span class="n">__foldl__</span><span class="p">(</span><span class="n">rf</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">f</span><span class="o">::</span><span class="kt">Fibnt</span><span class="p">)</span>
+           <span class="n">val</span> <span class="o">=</span> <span class="nd">@next</span><span class="p">(</span><span class="n">rf</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+           <span class="n">st</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+           <span class="k">while</span> <span class="n">st</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">f</span><span class="o">.</span><span class="n">n</span>
+               <span class="n">val</span> <span class="o">=</span> <span class="nd">@next</span><span class="p">(</span><span class="n">rf</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">st</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+               <span class="n">st</span> <span class="o">=</span> <span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">st</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">st</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">st</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+           <span class="k">end</span>
+           <span class="n">complete</span><span class="p">(</span><span class="n">rf</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+       <span class="k">end</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">collect</span><span class="p">(</span><span class="n">Map</span><span class="p">(</span><span class="n">identity</span><span class="p">),</span> <span class="n">Fibnt</span><span class="p">(</span><span class="mi">17</span><span class="p">))</span>
+<span class="mi">17</span><span class="o">-</span><span class="n">element</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">Int64</span><span class="p">}</span><span class="o">:</span>
+   <span class="mi">0</span>
+   <span class="mi">1</span>
+   <span class="mi">1</span>
+   <span class="mi">2</span>
+   <span class="mi">3</span>
+   <span class="mi">5</span>
+   <span class="mi">8</span>
+  <span class="mi">13</span>
+  <span class="mi">21</span>
+  <span class="mi">34</span>
+  <span class="mi">55</span>
+  <span class="mi">89</span>
+ <span class="mi">144</span>
+ <span class="mi">233</span>
+ <span class="mi">377</span>
+ <span class="mi">610</span>
+ <span class="mi">987</span>
+</code></pre></div>
+
+
+
+<a name="258848585"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Iterator%20exercise/near/258848585" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Iterator.20exercise.html#258848585">(Oct 23 2021 at 23:43)</a>:</h4>
+<p>This gives you a lot of things for free, like an efficient implementation of the sum of the sines of the first 5 Fibonacci numbers:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">foldl</span><span class="p">(</span><span class="o">+</span><span class="p">,</span> <span class="n">Map</span><span class="p">(</span><span class="n">sin</span><span class="p">),</span> <span class="n">Fibnt</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+<span class="mf">2.733359404501342</span>
+</code></pre></div>
+
+
+
+<a name="258865063"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Iterator%20exercise/near/258865063" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> rocco sprmnt21 <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Iterator.20exercise.html#258865063">(Oct 24 2021 at 07:37)</a>:</h4>
+<p>Tanks @Mason.<br>
+In fact I don't know well the syntax of structures and types (I went a little naively, maybe too much ...)<br>
+I'll try to study your example once I understand how the iterate interface works.<br>
+For example, I don't know what's wrong with the collect (f (10)) part in the following script - the rest seems to work fine.<br>
+It seems that the iterate function that calls collect is different from the ones defined by me.<br>
+Can't I change the position of the parameters (itr and status)?<br>
+Must these parameters necessarily be two and in the above order? </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="kt">Fib</span>
+    <span class="n">n</span><span class="o">::</span><span class="kt">Int</span>
+<span class="k">end</span>
+
+<span class="n">f</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="o">=</span><span class="n">Fib</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+<span class="n">Base</span><span class="o">.</span><span class="n">length</span><span class="p">(</span><span class="n">f</span><span class="o">::</span><span class="kt">Fib</span><span class="p">)</span><span class="o">=</span><span class="n">f</span><span class="o">.</span><span class="n">n</span>
+<span class="n">Base</span><span class="o">.</span><span class="n">iterate</span><span class="p">(</span><span class="n">f</span><span class="o">::</span><span class="kt">Fib</span><span class="p">)</span> <span class="o">=</span> <span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">Base</span><span class="o">.</span><span class="n">iterate</span><span class="p">(</span><span class="n">st</span><span class="p">,</span><span class="n">f</span><span class="o">::</span><span class="kt">Fib</span><span class="p">)</span> <span class="o">=</span> <span class="n">st</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">f</span><span class="o">.</span><span class="n">n</span> <span class="o">?</span> <span class="p">((</span><span class="n">st</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">st</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">st</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">st</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span><span class="n">st</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span> <span class="o">:</span> <span class="nb">nothing</span>
+<span class="c"># this seems work</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">f1</span><span class="o">=</span><span class="n">Base</span><span class="o">.</span><span class="n">iterate</span><span class="p">(</span><span class="n">f</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+<span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">f2</span><span class="o">=</span><span class="n">Base</span><span class="o">.</span><span class="n">iterate</span><span class="p">(</span><span class="n">f1</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">f</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+<span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">f3</span><span class="o">=</span><span class="n">Base</span><span class="o">.</span><span class="n">iterate</span><span class="p">(</span><span class="n">f2</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">f</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+<span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="c">#this not</span>
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">collect</span><span class="p">(</span><span class="n">f</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+<span class="n">ERROR</span><span class="o">:</span> <span class="kt">MethodError</span><span class="o">:</span> <span class="n">no</span> <span class="n">method</span> <span class="n">matching</span> <span class="n">iterate</span><span class="p">(</span><span class="o">::</span><span class="kt">Fib</span><span class="p">,</span> <span class="o">::</span><span class="kt">Int64</span><span class="p">)</span>
+</code></pre></div>
+<p>The first thing I'm not sure I understand well is the following definition:  </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">f</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="o">=</span><span class="n">Fib</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="258880270"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Iterator%20exercise/near/258880270" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Simeon Schaub <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Iterator.20exercise.html#258880270">(Oct 24 2021 at 14:01)</a>:</h4>
+<blockquote>
+<p><code>Base.iterate(st,f::Fib) = st[3] &lt; f.n ? ((st[2], st[1]+st[2],st[3]+1),st[2]) : nothing</code></p>
+</blockquote>
+<p>This is the wrong argument order. <code>f::Fib</code> needs to be the first argument.</p>
+
+
+
+<a name="258886582"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Iterator%20exercise/near/258886582" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> rocco sprmnt21 <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Iterator.20exercise.html#258886582">(Oct 24 2021 at 16:35)</a>:</h4>
+<p>I apologize in advance if I say nonsense: I proceed a little by analogies.<br>
+I have not explicitly seen the constraint that the arguments to iterate (args ...) must be 1 or 2 and in the order itr, state.<br>
+But I am aware that thinks are like this ( (that's why I asked the questions on these aspects at the beginning of the previous message),<br>
+I wanted to understand if it was just a convention or a strict necessity.<br>
+The hand-made simulation of the iterative calls of the iterate function that I have defined seems to work.<br>
+Collect () instead seems to expect another function / method iterate.<br>
+There is a way to force the function to zero type<br>
+Base.iterate (f :: Fib) = ((0, 1, 1), 0)<br>
+so that it is of type Fib?<br>
+That is to have<br>
+Base.iterate (f :: Fib) = ((0, 1, 1), zero (Fib)).<br>
+Would this force collect () to call the iterate function with the arguments reversed?</p>
+
+
+
+<a name="258887027"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Iterator%20exercise/near/258887027" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sebastian Pfitzner <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Iterator.20exercise.html#258887027">(Oct 24 2021 at 16:47)</a>:</h4>
+<p>check out <a href="https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-iteration">https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-iteration</a> for you questions about the iteration API</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

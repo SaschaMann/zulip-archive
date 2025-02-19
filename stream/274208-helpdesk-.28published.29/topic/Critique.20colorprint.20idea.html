@@ -1,0 +1,316 @@
+<html>
+<head><meta charset="utf-8"><title>Critique colorprint idea · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html">Critique colorprint idea</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="272983389"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/272983389" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#272983389">(Feb 23 2022 at 17:36)</a>:</h4>
+<p>Hi!</p>
+<p>I want to ask to critique my idea of colorprinting. Maybe it's too complicated, maybe solution already exists in Julia, may be it's ok, but can be done better.</p>
+<h2>Problem</h2>
+<p>Sometimes we need colorful output, but current printing facilities like <code>printstyled</code> or <a href="https://github.com/search?q=Crayons.jl&amp;type=Repositories">Crayons.jl</a> are too low level, verbose and inflexible. By inflexible, I mean that it is very hard to change colorscheme for example, because everything is hard coded. And low level means, that by looking at code it's hard to understand how final output will look like.</p>
+<h2>Proposal</h2>
+<p>Make a macro, which accepts following arguments: <code>io</code>, <code>colorscheme</code> and <code>string</code> where <code>string</code> encodes colors inside itself. Example:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="nd">@colorprint</span> <span class="n">io</span> <span class="n">colorscheme</span> <span class="s">"{The quick brown fox}:fox jumps over the lazy dog:dog"</span>
+</code></pre></div>
+<p>Here colorscheme is a <code>Dict</code> of the form <code>Dict(:fox =&gt; :brown, :dog =&gt; :yellow)</code></p>
+<p>When this macro parse this string, it do one of two things:</p>
+<ol>
+<li>If it encounters <code>{...}:&lt;color&gt;</code> group, then color applies to all group</li>
+<li>If it encounters <code>word:&lt;color&gt;</code> then color applies only to the word.</li>
+</ol>
+<p>So, this string will turn into this:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">printstyled</span><span class="p">(</span><span class="n">io</span><span class="p">,</span> <span class="s">"The quick brown fox"</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="kt">Dict</span><span class="p">[</span><span class="ss">:fox</span><span class="p">])</span>
+<span class="n">printstyled</span><span class="p">(</span><span class="n">io</span><span class="p">,</span> <span class="s">" jumps over the lazy "</span><span class="p">)</span>
+<span class="n">printstyled</span><span class="p">(</span><span class="n">io</span><span class="p">,</span> <span class="s">"dog"</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="kt">Dict</span><span class="p">[</span><span class="ss">:dog</span><span class="p">])</span>
+</code></pre></div>
+<p>With this approach, we can get </p>
+<ol>
+<li>readable printing string (i think that small color tags <code>:fox</code> wouldn't make it less readable)</li>
+<li>flexible colorscheme, because it's enough to change one <code>Dict</code> with colors to another to get new output.</li>
+</ol>
+<p>Of course, it is more limited then <code>printstyled</code> or Crayons, but if it covers more than 50% usecases I am fine with that.</p>
+<p>And of course there is problem of <code>bold</code> etc, but it can be easily solved by changing<code>Dict</code> to <code>Dict(:fox =&gt; (; color = :brown, bold = true, underline = false))</code> and splatting in <code>printstyled</code>.</p>
+
+
+
+<a name="272984844"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/272984844" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#272984844">(Feb 23 2022 at 17:45)</a>:</h4>
+<p>That sounds pretty good to me.  I have two suggestions</p>
+<ul>
+<li>Is there a more standard syntax?  It's good to avoid custom parsers wherever possible, though I don't know of any good options for this.</li>
+<li>It would be nice to have a <code>@color_str</code> macro which returns and object that when <code>print</code>ed does what you'd expect.</li>
+</ul>
+<p>If you develop this I'm likely to use it.  It never ceases to amaze me how hard it is to print things nicely.  My own most recent attempt (which I consider a failure, too hard to use) was <a href="https://gitlab.com/ExpandingMan/ShowCases.jl">ShowCases.jl</a></p>
+
+
+
+<a name="272985260"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/272985260" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#272985260">(Feb 23 2022 at 17:47)</a>:</h4>
+<p>To expand on my comment about <code>@color_str</code>, it makes a better API to have "shallow" macros, though in this case I'm not entirely sure it's possible to do it that way and get performance as good as a macro that converts directly to <code>printstyled</code> calls.</p>
+
+
+
+<a name="273002924"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/273002924" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#273002924">(Feb 23 2022 at 19:56)</a>:</h4>
+<p>I like the idea of <code>@color_str</code> macro. But since I still want to support colorschemes, resulting interface looks like</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">print</span><span class="p">(</span><span class="n">colorscheme</span><span class="p">,</span> <span class="sa">color</span><span class="s">"{The quick brown fox}:fox jumps over the lazy dog:dog"</span><span class="p">)</span>
+</code></pre></div>
+<p>Of course, I can make default dict with relation <code>:black =&gt; :black</code>, so one can use default color's naming and get colorized output.</p>
+
+
+
+<a name="273003280"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/273003280" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#273003280">(Feb 23 2022 at 19:58)</a>:</h4>
+<p>As for the first question, I do not know any standard syntax (that was part of the question, actually). It is possible to use colors in markdown, but it looks long and verbose. I've used similar syntax in few packages already (e.g. <a href="https://github.com/JuliaLogging/MiniLoggers.jl">https://github.com/JuliaLogging/MiniLoggers.jl</a>), so it looks reasonable enough for me, but I am biased.</p>
+
+
+
+<a name="273003772"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/273003772" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#273003772">(Feb 23 2022 at 20:02)</a>:</h4>
+<p>Yeah, it looks reasonable to me to.  Maybe there isn't a standard alternative, I don't know</p>
+
+
+
+<a name="273004131"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/273004131" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#273004131">(Feb 23 2022 at 20:05)</a>:</h4>
+<p>Personally I think it would be clearer if the color came first.</p>
+
+
+
+<a name="273005985"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/273005985" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#273005985">(Feb 23 2022 at 20:20)</a>:</h4>
+<p>color"fox:{The quick brown fox} jumps over the lazy dog:dog"?</p>
+
+
+
+<a name="273006176"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/273006176" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#273006176">(Feb 23 2022 at 20:21)</a>:</h4>
+<p>Ha, <code>dog</code> is a bad example :-)</p>
+
+
+
+<a name="273006232"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/273006232" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#273006232">(Feb 23 2022 at 20:21)</a>:</h4>
+<p>Or <code>color"{blue:this text is blue} this is default"</code></p>
+
+
+
+<a name="273006706"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/273006706" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#273006706">(Feb 23 2022 at 20:25)</a>:</h4>
+<p>Ah, I see.<br>
+Yeah, it's like active voice.<br>
+"apply action" to "something", instead of "something" "acted upon"</p>
+
+
+
+<a name="273006714"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/273006714" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#273006714">(Feb 23 2022 at 20:25)</a>:</h4>
+<p>Yeah, this is good.</p>
+
+
+
+<a name="273006788"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/273006788" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#273006788">(Feb 23 2022 at 20:26)</a>:</h4>
+<p>I think parsing should be more or less the same.</p>
+
+
+
+<a name="273007323"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/273007323" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#273007323">(Feb 23 2022 at 20:31)</a>:</h4>
+<p>I don't really like the color inside of the brackets because <code>blue:this text is blue</code> looks like it only applies to <code>this</code></p>
+
+
+
+<a name="273007419"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/273007419" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#273007419">(Feb 23 2022 at 20:31)</a>:</h4>
+<p>You could maybe go a simplified latex route <code>{\blue this text is blue} this text is default</code></p>
+
+
+
+<a name="273007587"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/273007587" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#273007587">(Feb 23 2022 at 20:32)</a>:</h4>
+<p>I just feel like I have seen the syntax I suggested somewhere.</p>
+
+
+
+<a name="273007629"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/273007629" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#273007629">(Feb 23 2022 at 20:33)</a>:</h4>
+<p>And something like <code>{\blue\bold this text is blue and bold} this text is default</code>, is it readable?</p>
+
+
+
+<a name="273007803"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/273007803" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#273007803">(Feb 23 2022 at 20:35)</a>:</h4>
+<p>Hm, and I immediately run into the problem</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">f</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">=</span> <span class="n">s</span>
+<span class="k">macro</span> <span class="n">foo_str</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+    <span class="n">f</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="sa">foo</span><span class="s">"_</span><span class="si">$x_</span><span class="s">"</span>
+<span class="s">"_</span><span class="se">\$</span><span class="s">x_"</span>
+</code></pre></div>
+<p>Is it possible to interpolate string, which is used in macro?</p>
+
+
+
+<a name="273007850"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/273007850" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#273007850">(Feb 23 2022 at 20:35)</a>:</h4>
+<p>Otherwise this idea lose 50% of it's usefulness.</p>
+
+
+
+<a name="273007991"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/273007991" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#273007991">(Feb 23 2022 at 20:37)</a>:</h4>
+<p>You have to implement the interpolation yourself.</p>
+
+
+
+<a name="273008035"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/273008035" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#273008035">(Feb 23 2022 at 20:37)</a>:</h4>
+<p>Any references how to do it? I do not know where to start.</p>
+
+
+
+<a name="273008268"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/273008268" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#273008268">(Feb 23 2022 at 20:39)</a>:</h4>
+<p>Ah, ok, <code>dump</code> it is.</p>
+
+
+
+<a name="273008440"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/273008440" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#273008440">(Feb 23 2022 at 20:40)</a>:</h4>
+<p>I am sure there are better examples, but here is one: <a href="https://github.com/JuliaWeb/HTTP.jl/blob/99d46a0f93215eb1d235f82eab432774ff74fcee/src/access_log.jl#L41">search for $</a> then parse an <a href="https://github.com/JuliaWeb/HTTP.jl/blob/99d46a0f93215eb1d235f82eab432774ff74fcee/src/access_log.jl#L50">identifier</a>.</p>
+
+
+
+<a name="273010105"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/273010105" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#273010105">(Feb 23 2022 at 20:54)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="272771">Andrey Oskin</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea/near/273007629">said</a>:</p>
+<blockquote>
+<p>And something like <code>{\blue\bold this text is blue and bold} this text is default</code>, is it readable?</p>
+</blockquote>
+<p>To me yes, but that probably says a lot more about how much of my life I've spent looking at latex than how many people are likely to find it readable</p>
+
+
+
+<a name="273011990"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/273011990" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#273011990">(Feb 23 2022 at 21:10)</a>:</h4>
+<p>Well, the only problem I see is that backslash interfere with other backslash usage. "\b" is bell as far as I remember, "\n" is caret return and so on. So it's better to use other direction "/blue/bold"</p>
+
+
+
+<a name="273012009"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/273012009" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#273012009">(Feb 23 2022 at 21:11)</a>:</h4>
+<p>But at this point maybe colon is ok too :)</p>
+
+
+
+<a name="273016669"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/273016669" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Abbott <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#273016669">(Feb 23 2022 at 21:56)</a>:</h4>
+<p>Can the colour dictionary be inserted into <code>io</code>? </p>
+<p>One nice thing about colours after the text is that string macros can take a flag at the end, so you could allow a format without the extra brackets: </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">ioc</span> <span class="o">=</span> <span class="kt">IOContext</span><span class="p">(</span><span class="n">io</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="kt">Dict</span><span class="p">(</span><span class="ss">:fox</span> <span class="o">=&gt;</span> <span class="ss">:brown</span><span class="p">,</span> <span class="ss">:dog</span> <span class="o">=&gt;</span> <span class="ss">:yellow</span><span class="p">))</span>
+<span class="n">print</span><span class="p">(</span><span class="n">ioc</span><span class="p">,</span> <span class="sa">c</span><span class="s">"this text is blue"</span><span class="sa">blue</span><span class="p">,</span> <span class="s">" and "</span><span class="p">,</span> <span class="sa">c</span><span class="s">"{The quick brown fox}:fox jumps over the lazy dog:dog"</span><span class="p">)</span>
+</code></pre></div>
+<p>Very seldom have I wanted to print colour without interpolating some data or objects, too, so that deserves thought. Should I be able to put <code>:dollar =&gt; :red</code> or something in the dictionary? <code>:code =&gt; blue</code> for things in backticks?</p>
+
+
+
+<a name="275176962"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/275176962" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#275176962">(Mar 13 2022 at 21:55)</a>:</h4>
+<p>Ok, here is some preliminary details. Of course, there are some bugs which should be fixed, but I think that these preliminary details are already rather good.</p>
+<ol>
+<li>Colorschemes are working through <code>IOContext</code>, but can be used without it. Depends on how you prefer to work.</li>
+<li>Color strings supports nesting. Here is an example</li>
+</ol>
+<p><a href="/user_uploads/7178/2YP2tWcSKU1bynYKFQvh6bNB/flameshot-2022-03-13T23-54-37.png">flameshot-2022-03-13T23-54-37.png</a></p>
+<div class="message_inline_image"><a href="/user_uploads/7178/2YP2tWcSKU1bynYKFQvh6bNB/flameshot-2022-03-13T23-54-37.png" title="flameshot-2022-03-13T23-54-37.png"><img src="/user_uploads/7178/2YP2tWcSKU1bynYKFQvh6bNB/flameshot-2022-03-13T23-54-37.png"></a></div><p><a href="/user_uploads/7178/3ZU9kMD19vNDrXl8x8UljjVk/flameshot-2022-03-13T23-54-50.png">flameshot-2022-03-13T23-54-50.png</a></p>
+<div class="message_inline_image"><a href="/user_uploads/7178/3ZU9kMD19vNDrXl8x8UljjVk/flameshot-2022-03-13T23-54-50.png" title="flameshot-2022-03-13T23-54-50.png"><img src="/user_uploads/7178/3ZU9kMD19vNDrXl8x8UljjVk/flameshot-2022-03-13T23-54-50.png"></a></div>
+
+
+
+<a name="275177044"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/275177044" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#275177044">(Mar 13 2022 at 21:57)</a>:</h4>
+<ol start="3">
+<li>It supports interpolation</li>
+<li>It supports unicode</li>
+</ol>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span> <span class="n">Statistics</span>
+<span class="n">v</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="mi">100</span><span class="p">);</span>
+<span class="n">cs</span> <span class="o">=</span> <span class="n">ColorScheme</span><span class="p">(</span><span class="ss">:median</span> <span class="o">=&gt;</span> <span class="ss">:red</span><span class="p">,</span> <span class="ss">:δ</span> <span class="o">=&gt;</span> <span class="ss">:yellow</span><span class="p">)</span>
+
+<span class="n">s</span> <span class="o">=</span> <span class="sa">c</span><span class="s">"""</span>
+<span class="s">Median: :median{</span><span class="si">$</span><span class="p">(</span><span class="n">median</span><span class="p">(</span><span class="n">v</span><span class="p">))</span><span class="s">}</span>
+<span class="s">Standard deviation: :δ{</span><span class="si">$</span><span class="p">(</span><span class="n">std</span><span class="p">(</span><span class="n">v</span><span class="p">))</span><span class="s">}</span>
+<span class="s">"""</span>
+
+<span class="n">print</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
+</code></pre></div>
+<p><a href="/user_uploads/7178/1fmwY2r5M528QHVGj1O9omTt/flameshot-2022-03-13T23-56-59.png">flameshot-2022-03-13T23-56-59.png</a></p>
+<div class="message_inline_image"><a href="/user_uploads/7178/1fmwY2r5M528QHVGj1O9omTt/flameshot-2022-03-13T23-56-59.png" title="flameshot-2022-03-13T23-56-59.png"><img src="/user_uploads/7178/1fmwY2r5M528QHVGj1O9omTt/flameshot-2022-03-13T23-56-59.png"></a></div>
+
+
+
+<a name="275177117"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/275177117" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#275177117">(Mar 13 2022 at 21:59)</a>:</h4>
+<p>I use <code>:</code> because latex <code>\</code> interfere with escape symbol. But it can be changed to anything of course.</p>
+
+
+
+<a name="275177281"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/275177281" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#275177281">(Mar 13 2022 at 22:01)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="272550">Michael Abbott</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea/near/273016669">said</a>:</p>
+<blockquote>
+<p>Should I be able to put <code>:dollar =&gt; :red</code> or something in the dictionary? <code>:code =&gt; blue</code> for things in backticks?</p>
+</blockquote>
+<p>Well, if you want automated resolution of <code>$</code> or code, then I think it's too complicated. Best way to achieve it is by merging somehow current approach and <a href="https://github.com/search?q=JuliaParser.jl&amp;type=Repositories">JuliaParser.jl</a> I think. This is an interesting experiment on it's own, I should give it a thought.</p>
+
+
+
+<a name="275177451"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/275177451" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#275177451">(Mar 13 2022 at 22:04)</a>:</h4>
+<p>If anyone is interested, you can find this experimental package in <a href="https://github.com/Arkoniak/ColorPrinting.jl">https://github.com/Arkoniak/ColorPrinting.jl</a></p>
+
+
+
+<a name="275177465"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/275177465" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#275177465">(Mar 13 2022 at 22:04)</a>:</h4>
+<p>It is unregistered of course.</p>
+
+
+
+<a name="276648465"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/276648465" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#276648465">(Mar 25 2022 at 16:56)</a>:</h4>
+<p>I didn't go through all the discussion but have you had a look in <a href="https://github.com/search?q=Term.jl&amp;type=Repositories">Term.jl</a> ?</p>
+
+
+
+<a name="276648582"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/276648582" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#276648582">(Mar 25 2022 at 16:57)</a>:</h4>
+<p>It has a very similar syntaxes with the one you suggested. Inspired from the python <code>rich</code> lib.</p>
+
+
+
+<a name="276996016"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Critique%20colorprint%20idea/near/276996016" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Critique.20colorprint.20idea.html#276996016">(Mar 29 2022 at 12:16)</a>:</h4>
+<p>Ah, it's nice, but not quite what I want.</p>
+<ol>
+<li>Markup tags are rather heavy</li>
+<li>There is no colorscheme support (you can do one by providing custom names, but it is always user responsibility)</li>
+</ol>
+<p>Thank you for the reference anyway, I can see how this package can be quite popular.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

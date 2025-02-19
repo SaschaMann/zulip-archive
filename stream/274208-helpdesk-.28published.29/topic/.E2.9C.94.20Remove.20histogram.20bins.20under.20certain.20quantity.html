@@ -1,0 +1,62 @@
+<html>
+<head><meta charset="utf-8"><title>✔ Remove histogram bins under certain quantity · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Remove.20histogram.20bins.20under.20certain.20quantity.html">✔ Remove histogram bins under certain quantity</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="252849364"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Remove%20histogram%20bins%20under%20certain%20quantity/near/252849364" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Remove.20histogram.20bins.20under.20certain.20quantity.html#252849364">(Sep 10 2021 at 20:57)</a>:</h4>
+<p>If I plot a histogram of an array, like the one below, what is the easiest way to remove values in that array that correspond to bins below a certain threshold? For example, once I look at the histogram, it's pretty easy to see that something like -160 is a good threshold in order to turn it into a more normal distribution, but I would like to do this automatically without using a plot</p>
+<p><a href="/user_uploads/7178/wwN0ahyWo_gt5SKH9EczeDRb/image.png">image.png</a> </p>
+<div class="message_inline_image"><a href="/user_uploads/7178/wwN0ahyWo_gt5SKH9EczeDRb/image.png" title="image.png"><img src="/user_uploads/7178/wwN0ahyWo_gt5SKH9EczeDRb/image.png"></a></div><div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">array_new</span> <span class="o">=</span> <span class="n">array</span><span class="p">[</span><span class="n">array</span> <span class="o">.&gt;</span> <span class="o">-</span><span class="mi">160</span><span class="p">]</span>
+</code></pre></div>
+<p><a href="/user_uploads/7178/OIHxvoWsXDN_VoLPpIa8C8NO/image.png">image.png</a></p>
+<div class="message_inline_image"><a href="/user_uploads/7178/OIHxvoWsXDN_VoLPpIa8C8NO/image.png" title="image.png"><img src="/user_uploads/7178/OIHxvoWsXDN_VoLPpIa8C8NO/image.png"></a></div>
+
+
+
+<a name="252864464"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Remove%20histogram%20bins%20under%20certain%20quantity/near/252864464" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Robbie Rosati <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Remove.20histogram.20bins.20under.20certain.20quantity.html#252864464">(Sep 10 2021 at 23:31)</a>:</h4>
+<p>Maybe you want to find the best fitting gaussian, and plot around the fitted mean and the fitted variance?<br>
+Or an easier and cruder way might be to just throw out the lowest 10% of the data (and maybe also the top 1% ? ):</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span> <span class="n">Statistics</span>
+<span class="k">using</span> <span class="n">Plots</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="n">vcat</span><span class="p">(</span><span class="n">randn</span><span class="p">(</span><span class="mi">1000</span><span class="p">),</span><span class="o">-</span><span class="mf">10.0</span><span class="o">.+</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">))</span>
+
+<span class="n">left</span> <span class="o">=</span> <span class="n">quantile!</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="mf">0.1</span><span class="p">)</span>
+<span class="n">right</span> <span class="o">=</span> <span class="n">quantile!</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="mf">0.99</span><span class="p">)</span>
+
+<span class="n">histogram</span><span class="p">(</span><span class="n">data</span><span class="p">[</span> <span class="n">left</span> <span class="o">.&lt;</span> <span class="n">data</span> <span class="o">.&lt;</span> <span class="n">right</span><span class="p">])</span>
+</code></pre></div>
+
+
+
+<a name="252864889"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Remove%20histogram%20bins%20under%20certain%20quantity/near/252864889" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Robbie Rosati <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Remove.20histogram.20bins.20under.20certain.20quantity.html#252864889">(Sep 10 2021 at 23:36)</a>:</h4>
+<p>Or for that matter you could estimate the mean and variance of the gaussian from more quantiles</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">approx_mean</span> <span class="o">=</span> <span class="n">quantile!</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">approx_stdev</span> <span class="o">=</span> <span class="p">(</span> <span class="n">quantile!</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="mf">0.185</span><span class="p">)</span> <span class="o">+</span> <span class="n">quantile!</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="mf">0.815</span><span class="p">)</span> <span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>   <span class="c"># middle 63%</span>
+</code></pre></div>
+
+
+
+<a name="252939369"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Remove%20histogram%20bins%20under%20certain%20quantity/near/252939369" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Remove.20histogram.20bins.20under.20certain.20quantity.html#252939369">(Sep 11 2021 at 22:19)</a>:</h4>
+<p>Thank you! That works great</p>
+
+
+
+<a name="252939370"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Remove%20histogram%20bins%20under%20certain%20quantity/near/252939370" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Remove.20histogram.20bins.20under.20certain.20quantity.html#252939370">(Sep 11 2021 at 22:19)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="352971">Dale Black</span> has marked this topic as resolved.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

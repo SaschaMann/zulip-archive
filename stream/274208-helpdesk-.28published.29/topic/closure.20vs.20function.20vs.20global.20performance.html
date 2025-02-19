@@ -1,0 +1,431 @@
+<html>
+<head><meta charset="utf-8"><title>closure vs function vs global performance · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/closure.20vs.20function.20vs.20global.20performance.html">closure vs function vs global performance</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="285117420"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/closure%20vs%20function%20vs%20global%20performance/near/285117420" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/closure.20vs.20function.20vs.20global.20performance.html#285117420">(Jun 06 2022 at 14:11)</a>:</h4>
+<p>It is said that using a closure is fast (at least in comparison with global variables).<br>
+I decided to try that out with a simple example.</p>
+<p>Following functions  adds a number 100 times, once using a closure, once with function parameters and once with a global variable.<br>
+I used a random generator, so that the compiler doesn't cheat.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">BenchmarkTools</span><span class="w"></span>
+<span class="k">using</span><span class="w"> </span><span class="n">Random</span><span class="w"></span>
+
+<span class="k">function</span><span class="w"> </span><span class="n">addclos</span><span class="p">()</span><span class="w"></span>
+<span class="w">    </span><span class="n">rng</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MersenneTwister</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"></span>
+<span class="w">    </span><span class="k">function</span><span class="w"> </span><span class="p">()</span><span class="w"></span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="n">_</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="w"></span>
+<span class="w">            </span><span class="n">x</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">end</span><span class="w"></span>
+<span class="w">        </span><span class="n">x</span><span class="w"></span>
+<span class="w">    </span><span class="k">end</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+
+<span class="k">function</span><span class="w"> </span><span class="n">addfun</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">_</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="w"></span>
+<span class="w">        </span><span class="n">x</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">end</span><span class="w"></span>
+<span class="w">    </span><span class="n">x</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+
+<span class="n">gx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"></span>
+
+<span class="k">function</span><span class="w"> </span><span class="n">addglob</span><span class="p">(</span><span class="n">rng</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">_</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="w"></span>
+<span class="w">        </span><span class="k">global</span><span class="w"> </span><span class="n">gx</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">end</span><span class="w"></span>
+<span class="w">    </span><span class="n">gx</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+
+<span class="nd">@assert</span><span class="w"> </span><span class="n">addclos</span><span class="p">()()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">addfun</span><span class="p">(</span><span class="n">MersenneTwister</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">addglob</span><span class="p">(</span><span class="n">MersenneTwister</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span><span class="w"></span>
+
+<span class="n">gx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"></span>
+
+<span class="n">clos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">addclos</span><span class="p">()</span><span class="w"></span>
+<span class="nd">@btime</span><span class="w"> </span><span class="n">clos</span><span class="p">()</span><span class="w"></span>
+<span class="c"># 2.597 μs (100 allocations: 1.56 KiB)</span><span class="w"></span>
+
+<span class="nd">@btime</span><span class="w"> </span><span class="n">addfun</span><span class="p">(</span><span class="n">MersenneTwister</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="c"># 14.521 μs (13 allocations: 36.45 KiB)</span><span class="w"></span>
+
+<span class="nd">@btime</span><span class="w"> </span><span class="n">addglob</span><span class="p">(</span><span class="n">MersenneTwister</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span><span class="w"></span>
+<span class="c"># 16.939 μs (113 allocations: 38.02 KiB)</span><span class="w"></span>
+</code></pre></div>
+<p>Closure scores <code>2.597 μs (100 allocations: 1.56 KiB)</code><br>
+Passing as parameters in a function scores <code>14.521 μs (13 allocations: 36.45 KiB)</code><br>
+Using a global variables scores <code>16.939 μs (113 allocations: 38.02 KiB)</code></p>
+<p>So, with this very simplistic example it looks like using closures is the way to go.<br>
+Although I find it weird that they even overperform the traditional function style. <span aria-label="thinking" class="emoji emoji-1f914" role="img" title="thinking">:thinking:</span> <br>
+It would be nice if someone could explain why.</p>
+<p>Lastly if you have any comments or suggestions regarding closures and best practices and recommended use cases please let us know !</p>
+<p><em>run on Julia stable 1.7.3</em></p>
+
+
+
+<a name="285117756"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/closure%20vs%20function%20vs%20global%20performance/near/285117756" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Chad Scherrer <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/closure.20vs.20function.20vs.20global.20performance.html#285117756">(Jun 06 2022 at 14:13)</a>:</h4>
+<p>For this to be a fair comparison, I think you need</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="nd">@btime</span><span class="w"> </span><span class="n">addfun</span><span class="p">(</span><span class="o">$</span><span class="p">(</span><span class="n">MersenneTwister</span><span class="p">(</span><span class="mi">0</span><span class="p">)),</span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="285117849"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/closure%20vs%20function%20vs%20global%20performance/near/285117849" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Chad Scherrer <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/closure.20vs.20function.20vs.20global.20performance.html#285117849">(Jun 06 2022 at 14:14)</a>:</h4>
+<p>Oh wait, maybe that's wrong. <code>addclos</code> should also include the RNG creation cost</p>
+
+
+
+<a name="285118180"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/closure%20vs%20function%20vs%20global%20performance/near/285118180" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Chad Scherrer <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/closure.20vs.20function.20vs.20global.20performance.html#285118180">(Jun 06 2022 at 14:17)</a>:</h4>
+<p>But I think I'd still do</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">addfun</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">rng</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MersenneTwister</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">_</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="w"></span>
+<span class="w">        </span><span class="n">x</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">end</span><span class="w"></span>
+<span class="w">    </span><span class="n">x</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+<p>Otherwise the RNG difference is confounded with the function call structure difference</p>
+
+
+
+<a name="285119019"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/closure%20vs%20function%20vs%20global%20performance/near/285119019" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/closure.20vs.20function.20vs.20global.20performance.html#285119019">(Jun 06 2022 at 14:24)</a>:</h4>
+<p><code>btime clos()</code> doesn't include the RNG initialization, so I guess passing <code>@btime addfun($(MersenneTwister(0)),0)</code> should be fine, since the evaluation already happens before benchmarking ?</p>
+<p>e.g. by doing</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">clos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">addclos</span><span class="p">()</span><span class="w"></span>
+<span class="nd">@btime</span><span class="w"> </span><span class="n">clos</span><span class="p">()</span><span class="w"></span>
+<span class="c"># 2.500 μs (100 allocations: 1.56 KiB)</span><span class="w"></span>
+
+<span class="nd">@btime</span><span class="w"> </span><span class="n">addfun</span><span class="p">(</span><span class="o">$</span><span class="p">(</span><span class="n">MersenneTwister</span><span class="p">(</span><span class="mi">0</span><span class="p">)),</span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="c"># 426.075 ns (0 allocations: 0 bytes)</span><span class="w"></span>
+
+<span class="nd">@btime</span><span class="w"> </span><span class="n">addglob</span><span class="p">(</span><span class="o">$</span><span class="p">(</span><span class="n">MersenneTwister</span><span class="p">(</span><span class="mi">0</span><span class="p">)))</span><span class="w"></span>
+<span class="c"># 2.630 μs (100 allocations: 1.56 KiB)</span><span class="w"></span>
+</code></pre></div>
+<p>The results are also more credible, actually suggesting that using a closure is somewhat faster than global but still way slower than function params.</p>
+
+
+
+<a name="285119567"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/closure%20vs%20function%20vs%20global%20performance/near/285119567" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/closure.20vs.20function.20vs.20global.20performance.html#285119567">(Jun 06 2022 at 14:28)</a>:</h4>
+<p>putting the <code>RNG</code> initialization inside the benchmarking function creates similar results:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">BenchmarkTools</span><span class="w"></span>
+<span class="k">using</span><span class="w"> </span><span class="n">Random</span><span class="w"></span>
+
+<span class="k">function</span><span class="w"> </span><span class="n">addclos</span><span class="p">()</span><span class="w"></span>
+<span class="w">    </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"></span>
+<span class="w">    </span><span class="k">function</span><span class="w"> </span><span class="p">()</span><span class="w"></span>
+<span class="w">        </span><span class="n">rng</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MersenneTwister</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="n">_</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="w"></span>
+<span class="w">            </span><span class="n">x</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">end</span><span class="w"></span>
+<span class="w">        </span><span class="n">x</span><span class="w"></span>
+<span class="w">    </span><span class="k">end</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+
+<span class="k">function</span><span class="w"> </span><span class="n">addfun</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">rng</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MersenneTwister</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">_</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="w"></span>
+<span class="w">        </span><span class="n">x</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">end</span><span class="w"></span>
+<span class="w">    </span><span class="n">x</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+
+<span class="n">gx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"></span>
+
+<span class="k">function</span><span class="w"> </span><span class="n">addglob</span><span class="p">()</span><span class="w"></span>
+<span class="w">    </span><span class="n">rng</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MersenneTwister</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">_</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="w"></span>
+<span class="w">        </span><span class="k">global</span><span class="w"> </span><span class="n">gx</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">end</span><span class="w"></span>
+<span class="w">    </span><span class="n">gx</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+
+<span class="nd">@assert</span><span class="w"> </span><span class="n">addclos</span><span class="p">()()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">addfun</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">addglob</span><span class="p">()</span><span class="w"></span>
+
+<span class="n">gx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"></span>
+
+<span class="n">clos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">addclos</span><span class="p">()</span><span class="w"></span>
+<span class="nd">@btime</span><span class="w"> </span><span class="n">clos</span><span class="p">()</span><span class="w"></span>
+<span class="c"># 16.564 μs (113 allocations: 38.02 KiB)</span><span class="w"></span>
+
+<span class="nd">@btime</span><span class="w"> </span><span class="n">addfun</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="c"># 14.517 μs (13 allocations: 36.45 KiB)</span><span class="w"></span>
+
+<span class="nd">@btime</span><span class="w"> </span><span class="n">addglob</span><span class="p">()</span><span class="w"></span>
+<span class="c"># 16.765 μs (113 allocations: 38.02 KiB)</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="285119856"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/closure%20vs%20function%20vs%20global%20performance/near/285119856" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/closure.20vs.20function.20vs.20global.20performance.html#285119856">(Jun 06 2022 at 14:30)</a>:</h4>
+<p>which suggests that there is only a minor win by using closures. So, what's the hype ? <span aria-label="stuck out tongue" class="emoji emoji-1f61b" role="img" title="stuck out tongue">:stuck_out_tongue:</span></p>
+
+
+
+<a name="285120972"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/closure%20vs%20function%20vs%20global%20performance/near/285120972" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Chad Scherrer <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/closure.20vs.20function.20vs.20global.20performance.html#285120972">(Jun 06 2022 at 14:39)</a>:</h4>
+<p>I don't know of any "closures are better than pure functions" hype - I've never heard that claim before.</p>
+
+
+
+<a name="285121374"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/closure%20vs%20function%20vs%20global%20performance/near/285121374" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/closure.20vs.20function.20vs.20global.20performance.html#285121374">(Jun 06 2022 at 14:42)</a>:</h4>
+<p>I do not exclude that this hype may be a misconception I had only inside my head. xD</p>
+
+
+
+<a name="285121400"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/closure%20vs%20function%20vs%20global%20performance/near/285121400" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Chad Scherrer <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/closure.20vs.20function.20vs.20global.20performance.html#285121400">(Jun 06 2022 at 14:42)</a>:</h4>
+<p>To see why these are slower than you might expect, you should try <code>@code_warntype</code>:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="nd">@code_warntype</span><span class="w"> </span><span class="n">addclos</span><span class="p">()</span><span class="w"></span>
+<span class="n">MethodInstance</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">addclos</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="n">from</span><span class="w"> </span><span class="n">addclos</span><span class="p">()</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">Main</span><span class="w"> </span><span class="n">at</span><span class="w"> </span><span class="n">REPL</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span><span class="o">:</span><span class="mi">1</span><span class="w"></span>
+<span class="n">Arguments</span><span class="w"></span>
+<span class="w">  </span><span class="c">#self#::Core.Const(addclos)</span><span class="w"></span>
+<span class="n">Locals</span><span class="w"></span>
+<span class="w">  </span><span class="c">#3::var"#3#4"</span><span class="w"></span>
+<span class="w">  </span><span class="n">x</span><span class="o">::</span><span class="kt">Core</span><span class="o">.</span><span class="n">Box</span><span class="w"></span>
+<span class="n">Body</span><span class="o">::</span><span class="kt">var</span><span class="s">"#3#4"</span><span class="w"></span>
+<span class="mi">1</span><span class="w"> </span><span class="n">─</span><span class="w">     </span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Core</span><span class="o">.</span><span class="n">Box</span><span class="p">())</span><span class="w"></span>
+<span class="n">│</span><span class="w">       </span><span class="n">Core</span><span class="o">.</span><span class="n">setfield!</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="ss">:contents</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="n">│</span><span class="w">       </span><span class="p">(</span><span class="c">#3 = %new(Main.:(var"#3#4"), x))</span><span class="w"></span>
+<span class="n">└──</span><span class="w">     </span><span class="k">return</span><span class="w"> </span><span class="c">#3</span><span class="w"></span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="nd">@code_warntype</span><span class="w"> </span><span class="n">addfun</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="n">MethodInstance</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">addfun</span><span class="p">(</span><span class="o">::</span><span class="kt">Int64</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="n">from</span><span class="w"> </span><span class="n">addfun</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">Main</span><span class="w"> </span><span class="n">at</span><span class="w"> </span><span class="n">REPL</span><span class="p">[</span><span class="mi">8</span><span class="p">]</span><span class="o">:</span><span class="mi">1</span><span class="w"></span>
+<span class="n">Arguments</span><span class="w"></span>
+<span class="w">  </span><span class="c">#self#::Core.Const(addfun)</span><span class="w"></span>
+<span class="w">  </span><span class="n">x</span><span class="nd">@_2</span><span class="o">::</span><span class="kt">Int64</span><span class="w"></span>
+<span class="n">Locals</span><span class="w"></span>
+<span class="w">  </span><span class="nd">@_3</span><span class="o">::</span><span class="kt">Union</span><span class="p">{</span><span class="kt">Nothing</span><span class="p">,</span><span class="w"> </span><span class="kt">Tuple</span><span class="p">{</span><span class="kt">Int64</span><span class="p">,</span><span class="w"> </span><span class="kt">Int64</span><span class="p">}}</span><span class="w"></span>
+<span class="w">  </span><span class="n">rng</span><span class="o">::</span><span class="kt">Any</span><span class="w"></span>
+<span class="w">  </span><span class="n">x</span><span class="nd">@_5</span><span class="o">::</span><span class="kt">Int64</span><span class="w"></span>
+<span class="n">Body</span><span class="o">::</span><span class="kt">Int64</span><span class="w"></span>
+<span class="mi">1</span><span class="w"> </span><span class="n">─</span><span class="w">       </span><span class="p">(</span><span class="n">x</span><span class="nd">@_5</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="nd">@_2</span><span class="p">)</span><span class="w"></span>
+<span class="n">│</span><span class="w">         </span><span class="p">(</span><span class="n">rng</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Main</span><span class="o">.</span><span class="n">MersenneTwister</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span><span class="w"></span>
+<span class="n">│</span><span class="w">   </span><span class="o">%</span><span class="mi">3</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="p">)</span><span class="o">::</span><span class="kt">Core</span><span class="o">.</span><span class="n">Const</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="p">)</span><span class="w"></span>
+<span class="n">│</span><span class="w">         </span><span class="p">(</span><span class="nd">@_3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">iterate</span><span class="p">(</span><span class="o">%</span><span class="mi">3</span><span class="p">))</span><span class="w"></span>
+<span class="n">│</span><span class="w">   </span><span class="o">%</span><span class="mi">5</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="nd">@_3</span><span class="o">::</span><span class="kt">Core</span><span class="o">.</span><span class="n">Const</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">))</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="nb">nothing</span><span class="p">)</span><span class="o">::</span><span class="kt">Core</span><span class="o">.</span><span class="n">Const</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span><span class="w"></span>
+<span class="n">│</span><span class="w">   </span><span class="o">%</span><span class="mi">6</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">not_int</span><span class="p">(</span><span class="o">%</span><span class="mi">5</span><span class="p">)</span><span class="o">::</span><span class="kt">Core</span><span class="o">.</span><span class="n">Const</span><span class="p">(</span><span class="nb">true</span><span class="p">)</span><span class="w"></span>
+<span class="n">└──</span><span class="w">       </span><span class="n">goto</span><span class="w"> </span><span class="c">#4 if not %6</span><span class="w"></span>
+<span class="mi">2</span><span class="w"> </span><span class="n">┄</span><span class="w"> </span><span class="o">%</span><span class="mi">8</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="nd">@_3</span><span class="o">::</span><span class="kt">Tuple</span><span class="p">{</span><span class="kt">Int64</span><span class="p">,</span><span class="w"> </span><span class="kt">Int64</span><span class="p">}</span><span class="w"></span>
+<span class="n">│</span><span class="w">         </span><span class="n">Core</span><span class="o">.</span><span class="n">getfield</span><span class="p">(</span><span class="o">%</span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
+<span class="n">│</span><span class="w">   </span><span class="o">%</span><span class="mi">10</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Core</span><span class="o">.</span><span class="n">getfield</span><span class="p">(</span><span class="o">%</span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="o">::</span><span class="kt">Int64</span><span class="w"></span>
+<span class="n">│</span><span class="w">   </span><span class="o">%</span><span class="mi">11</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="nd">@_5</span><span class="o">::</span><span class="kt">Int64</span><span class="w"></span>
+<span class="n">│</span><span class="w">   </span><span class="o">%</span><span class="mi">12</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rng</span><span class="o">::</span><span class="kt">Any</span><span class="w"></span>
+<span class="n">│</span><span class="w">   </span><span class="o">%</span><span class="mi">13</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">)</span><span class="o">::</span><span class="kt">Core</span><span class="o">.</span><span class="n">Const</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">)</span><span class="w"></span>
+<span class="n">│</span><span class="w">   </span><span class="o">%</span><span class="mi">14</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Main</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="o">%</span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="o">%</span><span class="mi">13</span><span class="p">)</span><span class="o">::</span><span class="kt">Int64</span><span class="w"></span>
+<span class="n">│</span><span class="w">         </span><span class="p">(</span><span class="n">x</span><span class="nd">@_5</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">%</span><span class="mi">11</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="o">%</span><span class="mi">14</span><span class="p">)</span><span class="w"></span>
+<span class="n">│</span><span class="w">         </span><span class="p">(</span><span class="nd">@_3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">iterate</span><span class="p">(</span><span class="o">%</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="o">%</span><span class="mi">10</span><span class="p">))</span><span class="w"></span>
+<span class="n">│</span><span class="w">   </span><span class="o">%</span><span class="mi">17</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="nd">@_3</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="nb">nothing</span><span class="p">)</span><span class="o">::</span><span class="kt">Bool</span><span class="w"></span>
+<span class="n">│</span><span class="w">   </span><span class="o">%</span><span class="mi">18</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">not_int</span><span class="p">(</span><span class="o">%</span><span class="mi">17</span><span class="p">)</span><span class="o">::</span><span class="kt">Bool</span><span class="w"></span>
+<span class="n">└──</span><span class="w">       </span><span class="n">goto</span><span class="w"> </span><span class="c">#4 if not %18</span><span class="w"></span>
+<span class="mi">3</span><span class="w"> </span><span class="n">─</span><span class="w">       </span><span class="n">goto</span><span class="w"> </span><span class="c">#2</span><span class="w"></span>
+<span class="mi">4</span><span class="w"> </span><span class="n">┄</span><span class="w">       </span><span class="k">return</span><span class="w"> </span><span class="n">x</span><span class="nd">@_5</span><span class="w"></span>
+
+
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="nd">@code_warntype</span><span class="w"> </span><span class="n">addglob</span><span class="p">()</span><span class="w"></span>
+<span class="n">MethodInstance</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">addglob</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="n">from</span><span class="w"> </span><span class="n">addglob</span><span class="p">()</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">Main</span><span class="w"> </span><span class="n">at</span><span class="w"> </span><span class="n">REPL</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">:</span><span class="mi">1</span><span class="w"></span>
+<span class="n">Arguments</span><span class="w"></span>
+<span class="w">  </span><span class="c">#self#::Core.Const(addglob)</span><span class="w"></span>
+<span class="n">Locals</span><span class="w"></span>
+<span class="w">  </span><span class="nd">@_2</span><span class="o">::</span><span class="kt">Union</span><span class="p">{</span><span class="kt">Nothing</span><span class="p">,</span><span class="w"> </span><span class="kt">Tuple</span><span class="p">{</span><span class="kt">Int64</span><span class="p">,</span><span class="w"> </span><span class="kt">Int64</span><span class="p">}}</span><span class="w"></span>
+<span class="w">  </span><span class="n">rng</span><span class="o">::</span><span class="kt">Any</span><span class="w"></span>
+<span class="n">Body</span><span class="o">::</span><span class="kt">Any</span><span class="w"></span>
+<span class="mi">1</span><span class="w"> </span><span class="n">─</span><span class="w">       </span><span class="p">(</span><span class="n">rng</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Main</span><span class="o">.</span><span class="n">MersenneTwister</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span><span class="w"></span>
+<span class="n">│</span><span class="w">   </span><span class="o">%</span><span class="mi">2</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="p">)</span><span class="o">::</span><span class="kt">Core</span><span class="o">.</span><span class="n">Const</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="p">)</span><span class="w"></span>
+<span class="n">│</span><span class="w">         </span><span class="p">(</span><span class="nd">@_2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">iterate</span><span class="p">(</span><span class="o">%</span><span class="mi">2</span><span class="p">))</span><span class="w"></span>
+<span class="n">│</span><span class="w">   </span><span class="o">%</span><span class="mi">4</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="nd">@_2</span><span class="o">::</span><span class="kt">Core</span><span class="o">.</span><span class="n">Const</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">))</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="nb">nothing</span><span class="p">)</span><span class="o">::</span><span class="kt">Core</span><span class="o">.</span><span class="n">Const</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span><span class="w"></span>
+<span class="n">│</span><span class="w">   </span><span class="o">%</span><span class="mi">5</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">not_int</span><span class="p">(</span><span class="o">%</span><span class="mi">4</span><span class="p">)</span><span class="o">::</span><span class="kt">Core</span><span class="o">.</span><span class="n">Const</span><span class="p">(</span><span class="nb">true</span><span class="p">)</span><span class="w"></span>
+<span class="n">└──</span><span class="w">       </span><span class="n">goto</span><span class="w"> </span><span class="c">#4 if not %5</span><span class="w"></span>
+<span class="mi">2</span><span class="w"> </span><span class="n">┄</span><span class="w"> </span><span class="o">%</span><span class="mi">7</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="nd">@_2</span><span class="o">::</span><span class="kt">Tuple</span><span class="p">{</span><span class="kt">Int64</span><span class="p">,</span><span class="w"> </span><span class="kt">Int64</span><span class="p">}</span><span class="w"></span>
+<span class="n">│</span><span class="w">         </span><span class="n">Core</span><span class="o">.</span><span class="n">getfield</span><span class="p">(</span><span class="o">%</span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
+<span class="n">│</span><span class="w">   </span><span class="o">%</span><span class="mi">9</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">Core</span><span class="o">.</span><span class="n">getfield</span><span class="p">(</span><span class="o">%</span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="o">::</span><span class="kt">Int64</span><span class="w"></span>
+<span class="n">│</span><span class="w">         </span><span class="nb">nothing</span><span class="w"></span>
+<span class="n">│</span><span class="w">   </span><span class="o">%</span><span class="mi">11</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rng</span><span class="o">::</span><span class="kt">Any</span><span class="w"></span>
+<span class="n">│</span><span class="w">   </span><span class="o">%</span><span class="mi">12</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">)</span><span class="o">::</span><span class="kt">Core</span><span class="o">.</span><span class="n">Const</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">)</span><span class="w"></span>
+<span class="n">│</span><span class="w">   </span><span class="o">%</span><span class="mi">13</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Main</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="o">%</span><span class="mi">11</span><span class="p">,</span><span class="w"> </span><span class="o">%</span><span class="mi">12</span><span class="p">)</span><span class="o">::</span><span class="kt">Int64</span><span class="w"></span>
+<span class="n">│</span><span class="w">   </span><span class="o">%</span><span class="mi">14</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">Main</span><span class="o">.</span><span class="n">gx</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="o">%</span><span class="mi">13</span><span class="p">)</span><span class="o">::</span><span class="kt">Any</span><span class="w"></span>
+<span class="n">│</span><span class="w">   </span><span class="o">%</span><span class="mi">15</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Core</span><span class="o">.</span><span class="n">get_binding_type</span><span class="p">(</span><span class="n">Main</span><span class="p">,</span><span class="w"> </span><span class="ss">:gx</span><span class="p">)</span><span class="o">::</span><span class="kt">Core</span><span class="o">.</span><span class="n">Const</span><span class="p">(</span><span class="kt">Any</span><span class="p">)</span><span class="w"></span>
+<span class="n">│</span><span class="w">   </span><span class="o">%</span><span class="mi">16</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="o">%</span><span class="mi">15</span><span class="p">,</span><span class="w"> </span><span class="o">%</span><span class="mi">14</span><span class="p">)</span><span class="o">::</span><span class="kt">Any</span><span class="w"></span>
+<span class="n">│</span><span class="w">   </span><span class="o">%</span><span class="mi">17</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Core</span><span class="o">.</span><span class="n">typeassert</span><span class="p">(</span><span class="o">%</span><span class="mi">16</span><span class="p">,</span><span class="w"> </span><span class="o">%</span><span class="mi">15</span><span class="p">)</span><span class="o">::</span><span class="kt">Any</span><span class="w"></span>
+<span class="n">│</span><span class="w">         </span><span class="p">(</span><span class="n">Main</span><span class="o">.</span><span class="n">gx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">%</span><span class="mi">17</span><span class="p">)</span><span class="w"></span>
+<span class="n">│</span><span class="w">         </span><span class="p">(</span><span class="nd">@_2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">iterate</span><span class="p">(</span><span class="o">%</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="o">%</span><span class="mi">9</span><span class="p">))</span><span class="w"></span>
+<span class="n">│</span><span class="w">   </span><span class="o">%</span><span class="mi">20</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="nd">@_2</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="nb">nothing</span><span class="p">)</span><span class="o">::</span><span class="kt">Bool</span><span class="w"></span>
+<span class="n">│</span><span class="w">   </span><span class="o">%</span><span class="mi">21</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">not_int</span><span class="p">(</span><span class="o">%</span><span class="mi">20</span><span class="p">)</span><span class="o">::</span><span class="kt">Bool</span><span class="w"></span>
+<span class="n">└──</span><span class="w">       </span><span class="n">goto</span><span class="w"> </span><span class="c">#4 if not %21</span><span class="w"></span>
+<span class="mi">3</span><span class="w"> </span><span class="n">─</span><span class="w">       </span><span class="n">goto</span><span class="w"> </span><span class="c">#2</span><span class="w"></span>
+<span class="mi">4</span><span class="w"> </span><span class="n">┄</span><span class="w">       </span><span class="k">return</span><span class="w"> </span><span class="n">Main</span><span class="o">.</span><span class="n">gx</span><span class="w"></span>
+</code></pre></div>
+<p>On your screen, problem areas will show in red. Here you see lots of <code>Any</code> and <code>Core.Box</code></p>
+
+
+
+<a name="285122438"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/closure%20vs%20function%20vs%20global%20performance/near/285122438" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/closure.20vs.20function.20vs.20global.20performance.html#285122438">(Jun 06 2022 at 14:50)</a>:</h4>
+<p>| Here you see lots of Any and Core.Box</p>
+<p>which is weird, because the closure definition looks to me as type stable as it can get.</p>
+<p>I've heard before of a similar issue  <a href="https://github.com/JuliaLang/julia/issues/15276">https://github.com/JuliaLang/julia/issues/15276</a>, which maybe is to blame (?)</p>
+<p>But on the other hand if we hit this issue with such a  simple code, it seems impossible (at least not for expert users) to write type-stable closures.</p>
+
+
+
+<a name="285123100"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/closure%20vs%20function%20vs%20global%20performance/near/285123100" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Chad Scherrer <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/closure.20vs.20function.20vs.20global.20performance.html#285123100">(Jun 06 2022 at 14:56)</a>:</h4>
+<p>If you want to use a closure, I'd probably do</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">addclos2</span><span class="p">()</span><span class="w"></span>
+<span class="w">    </span><span class="k">function</span><span class="w"> </span><span class="n">f</span><span class="p">(</span><span class="n">rng</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"></span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="n">_</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="w"></span>
+<span class="w">            </span><span class="n">x</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">end</span><span class="w"></span>
+<span class="w">        </span><span class="n">x</span><span class="w"></span>
+<span class="w">    </span><span class="k">end</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">f</span><span class="p">(</span><span class="n">MersenneTwister</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="nd">@code_warntype</span><span class="w"> </span><span class="n">addclos2</span><span class="p">()</span><span class="w"></span>
+<span class="n">MethodInstance</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">addclos2</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="n">from</span><span class="w"> </span><span class="n">addclos2</span><span class="p">()</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">Main</span><span class="w"> </span><span class="n">at</span><span class="w"> </span><span class="n">REPL</span><span class="p">[</span><span class="mi">17</span><span class="p">]</span><span class="o">:</span><span class="mi">1</span><span class="w"></span>
+<span class="n">Arguments</span><span class="w"></span>
+<span class="w">  </span><span class="c">#self#::Core.Const(addclos2)</span><span class="w"></span>
+<span class="n">Locals</span><span class="w"></span>
+<span class="w">  </span><span class="n">f</span><span class="o">::</span><span class="kt">var</span><span class="s">"#f#11"</span><span class="w"></span>
+<span class="n">Body</span><span class="o">::</span><span class="kt">Int64</span><span class="w"></span>
+<span class="mi">1</span><span class="w"> </span><span class="n">─</span><span class="w">      </span><span class="p">(</span><span class="n">f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">%</span><span class="n">new</span><span class="p">(</span><span class="n">Main</span><span class="o">.:</span><span class="p">(</span><span class="sa">var</span><span class="s">"#f#11"</span><span class="p">)))</span><span class="w"></span>
+<span class="n">│</span><span class="w">   </span><span class="o">%</span><span class="mi">2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Main</span><span class="o">.</span><span class="n">MersenneTwister</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">::</span><span class="kt">MersenneTwister</span><span class="w"></span>
+<span class="n">│</span><span class="w">   </span><span class="o">%</span><span class="mi">3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">f</span><span class="p">)(</span><span class="o">%</span><span class="mi">2</span><span class="p">)</span><span class="o">::</span><span class="kt">Int64</span><span class="w"></span>
+<span class="n">└──</span><span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="o">%</span><span class="mi">3</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="285124320"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/closure%20vs%20function%20vs%20global%20performance/near/285124320" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/closure.20vs.20function.20vs.20global.20performance.html#285124320">(Jun 06 2022 at 15:04)</a>:</h4>
+<p>technically it is a closure, but this way you cannot pass the closured function around, e.g. to the caller or even hold some internal states (like <code>addclos</code> holds a state of <code>x</code> that is implicitly accesible  outside the function)</p>
+
+
+
+<a name="285124414"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/closure%20vs%20function%20vs%20global%20performance/near/285124414" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Chad Scherrer <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/closure.20vs.20function.20vs.20global.20performance.html#285124414">(Jun 06 2022 at 15:05)</a>:</h4>
+<p>I think this is the right way to think about it. First figure out what semantics you need, then look for an efficient way to do that.</p>
+
+
+
+<a name="285127752"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/closure%20vs%20function%20vs%20global%20performance/near/285127752" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/closure.20vs.20function.20vs.20global.20performance.html#285127752">(Jun 06 2022 at 15:30)</a>:</h4>
+<p>That problem here is that you’re benchmarking incorrectly. When you write </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">clos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">addclos</span><span class="p">()</span><span class="w"></span>
+<span class="nd">@btime</span><span class="w"> </span><span class="n">clos</span><span class="p">()</span><span class="w"></span>
+</code></pre></div>
+<p>Then <code>clos</code> is a non-constant global variable.</p>
+
+
+
+<a name="285127914"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/closure%20vs%20function%20vs%20global%20performance/near/285127914" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/closure.20vs.20function.20vs.20global.20performance.html#285127914">(Jun 06 2022 at 15:31)</a>:</h4>
+<p>In this case, you should write</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="nd">@btime</span><span class="w"> </span><span class="o">$</span><span class="n">clos</span><span class="p">()</span><span class="w"></span>
+</code></pre></div>
+<p>Or</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">let</span><span class="w"> </span><span class="n">rclos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Ref</span><span class="p">(</span><span class="n">clos</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="nd">@btime</span><span class="w"> </span><span class="o">$</span><span class="n">rclos</span><span class="p">[]()</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="285128048"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/closure%20vs%20function%20vs%20global%20performance/near/285128048" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Chad Scherrer <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/closure.20vs.20function.20vs.20global.20performance.html#285128048">(Jun 06 2022 at 15:32)</a>:</h4>
+<p>Good catch, I missed that!</p>
+
+
+
+<a name="285128141"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/closure%20vs%20function%20vs%20global%20performance/near/285128141" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/closure.20vs.20function.20vs.20global.20performance.html#285128141">(Jun 06 2022 at 15:33)</a>:</h4>
+<p>But yeah, it’ll still be slower due to the closure boxing issue</p>
+
+
+
+<a name="285141562"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/closure%20vs%20function%20vs%20global%20performance/near/285141562" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/closure.20vs.20function.20vs.20global.20performance.html#285141562">(Jun 06 2022 at 17:08)</a>:</h4>
+<p>in this example, I think  it hardly makes any difference, because the evaluation of the global variable is done only once. <br>
+But thank you for mentioning. I will keep it in mind for future best practices !</p>
+
+
+
+<a name="285150631"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/closure%20vs%20function%20vs%20global%20performance/near/285150631" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/closure.20vs.20function.20vs.20global.20performance.html#285150631">(Jun 06 2022 at 18:22)</a>:</h4>
+<p>In case you didn’t see in the linked issue, you can solve the boxing problem  by turning <code>x</code> into a <code>Ref</code> and mutating it instead of rebinding it</p>
+
+
+
+<a name="285150753"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/closure%20vs%20function%20vs%20global%20performance/near/285150753" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/closure.20vs.20function.20vs.20global.20performance.html#285150753">(Jun 06 2022 at 18:23)</a>:</h4>
+<p>That is</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">addclos</span><span class="p">()</span><span class="w"></span>
+<span class="w">    </span><span class="n">rng</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MersenneTwister</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Ref</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">function</span><span class="w"> </span><span class="p">()</span><span class="w"></span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="n">_</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="w"></span>
+<span class="w">            </span><span class="n">x</span><span class="p">[]</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">end</span><span class="w"></span>
+<span class="w">        </span><span class="n">x</span><span class="p">[]</span><span class="w"></span>
+<span class="w">    </span><span class="k">end</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="285150931"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/closure%20vs%20function%20vs%20global%20performance/near/285150931" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/closure.20vs.20function.20vs.20global.20performance.html#285150931">(Jun 06 2022 at 18:24)</a>:</h4>
+<p>Basically, any variable you capture in a closure should not be rebound in the closure body, it should instead be mutated.</p>
+
+
+
+<a name="285207186"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/closure%20vs%20function%20vs%20global%20performance/near/285207186" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/closure.20vs.20function.20vs.20global.20performance.html#285207186">(Jun 07 2022 at 06:04)</a>:</h4>
+<p>very cool. It takes around 450ns, i.e., similar to the pure function case.  When this Box issue is fixed, I can imagine it will be a game changer for substituting global variables. For example one can define different operations that can happen to the enclosed variable.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="nd">@enum</span><span class="w"> </span><span class="n">operation</span><span class="w"> </span><span class="n">add_op</span><span class="w"> </span><span class="n">subtract_op</span><span class="w"></span>
+<span class="k">function</span><span class="w"> </span><span class="n">process</span><span class="p">()</span><span class="w"></span>
+<span class="w">    </span><span class="n">rng</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MersenneTwister</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Ref</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">function</span><span class="w"> </span><span class="p">(</span><span class="n">op</span><span class="o">::</span><span class="kt">operation</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">op</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">add_op</span><span class="w"></span>
+<span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="n">_</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="w"></span>
+<span class="w">                </span><span class="n">x</span><span class="p">[]</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">)</span><span class="w"></span>
+<span class="w">            </span><span class="k">end</span><span class="w"></span>
+<span class="w">        </span><span class="k">elseif</span><span class="w"> </span><span class="n">op</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">subtract_op</span><span class="w"></span>
+<span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="n">_</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="w"></span>
+<span class="w">                </span><span class="n">x</span><span class="p">[]</span><span class="w"> </span><span class="o">-=</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">)</span><span class="w"></span>
+<span class="w">            </span><span class="k">end</span><span class="w"></span>
+<span class="w">        </span><span class="k">end</span><span class="w"></span>
+<span class="w">        </span><span class="n">x</span><span class="p">[]</span><span class="w"></span>
+<span class="w">    </span><span class="k">end</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+<p>which is a decent alternative and way faster than globals.<br>
+Well, this deserves some "hype" <span aria-label="grinning face with smiling eyes" class="emoji emoji-1f601" role="img" title="grinning face with smiling eyes">:grinning_face_with_smiling_eyes:</span></p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

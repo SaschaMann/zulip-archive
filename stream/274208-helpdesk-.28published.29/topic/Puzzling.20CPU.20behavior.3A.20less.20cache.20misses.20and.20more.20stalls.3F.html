@@ -1,0 +1,62 @@
+<html>
+<head><meta charset="utf-8"><title>Puzzling CPU behavior: less cache misses and more stalls? · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Puzzling.20CPU.20behavior.3A.20less.20cache.20misses.20and.20more.20stalls.3F.html">Puzzling CPU behavior: less cache misses and more stalls?</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="263226584"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Puzzling%20CPU%20behavior%3A%20less%20cache%20misses%20and%20more%20stalls%3F/near/263226584" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Puzzling.20CPU.20behavior.3A.20less.20cache.20misses.20and.20more.20stalls.3F.html#263226584">(Nov 30 2021 at 23:59)</a>:</h4>
+<p>I'm playing with a cache-oblivious algorithm (single-threaded) and seeing some puzzling behavior where smaller base case sizes (x-axis) produce:</p>
+<ul>
+<li>slower run-time (first row) which is bad and unexpected</li>
+<li>smaller L1 cache misses (second row) which is good and expected</li>
+<li>more backend stalls (third row)</li>
+</ul>
+<p>I guess the wall clock and the backend stall measurements agree but I don't know why.</p>
+<p>Any idea how to debug/fix this?</p>
+<p><a href="/user_uploads/7178/LLQXkRARjuc93n8Eujuk2uR_/image.png">image.png</a></p>
+<div class="message_inline_image"><a href="/user_uploads/7178/LLQXkRARjuc93n8Eujuk2uR_/image.png" title="image.png"><img src="/user_uploads/7178/LLQXkRARjuc93n8Eujuk2uR_/image.png"></a></div>
+
+
+
+<a name="263226743"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Puzzling%20CPU%20behavior%3A%20less%20cache%20misses%20and%20more%20stalls%3F/near/263226743" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Puzzling.20CPU.20behavior.3A.20less.20cache.20misses.20and.20more.20stalls.3F.html#263226743">(Dec 01 2021 at 00:00)</a>:</h4>
+<p>The algorithm I'm playing with is a cache-oblivious implementation of a stencil. You can find the code here: <a href="https://github.com/tkf/ToyStencils.jl/blob/main/src/trapezoid.jl">https://github.com/tkf/ToyStencils.jl/blob/main/src/trapezoid.jl</a> If you are curious, you can run the benchmark with <code>make</code> at the root of the repository.</p>
+
+
+
+<a name="263227191"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Puzzling%20CPU%20behavior%3A%20less%20cache%20misses%20and%20more%20stalls%3F/near/263227191" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Puzzling.20CPU.20behavior.3A.20less.20cache.20misses.20and.20more.20stalls.3F.html#263227191">(Dec 01 2021 at 00:04)</a>:</h4>
+<p>More plots of <code>perf</code> output <a href="https://vega.github.io/editor/#/gist/b71b202a14e0b7abd1518ab3339673aa/plot.vegalite">https://vega.github.io/editor/#/gist/b71b202a14e0b7abd1518ab3339673aa/plot.vegalite</a></p>
+
+
+
+<a name="263227431"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Puzzling%20CPU%20behavior%3A%20less%20cache%20misses%20and%20more%20stalls%3F/near/263227431" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Puzzling.20CPU.20behavior.3A.20less.20cache.20misses.20and.20more.20stalls.3F.html#263227431">(Dec 01 2021 at 00:06)</a>:</h4>
+<p><span class="user-mention" data-user-id="284680">@chriselrod</span> <span class="user-mention" data-user-id="269150">@Mason Protter</span>  I wonder if you guys saw something like this?</p>
+
+
+
+<a name="263253648"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Puzzling%20CPU%20behavior%3A%20less%20cache%20misses%20and%20more%20stalls%3F/near/263253648" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Puzzling.20CPU.20behavior.3A.20less.20cache.20misses.20and.20more.20stalls.3F.html#263253648">(Dec 01 2021 at 07:36)</a>:</h4>
+<p>I haven't run or looked at the code, but my assumption would be that smaller blocks at one level require more passes over the data at the next level. E.g., if you have 84 iterations, a block size of 7 would mean 12 passes, while a block size of 12 would mean only 7 repetitions.<br>
+Blocking == reuse, and larger blocks yield more reuse.<br>
+Of course, you'll hit a limit with cache sizes. When a block size gets large enough to start leading to cache evictions, then reuse (of the memory movement) starts to plummet.<br>
+So there's some balance involved, but typically you'd want blocks to make use of most of the cache size.</p>
+<p>Although, I don't have much experience with cache oblivious algorithms, for which this probably rings less true.</p>
+
+
+
+<a name="263392187"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Puzzling%20CPU%20behavior%3A%20less%20cache%20misses%20and%20more%20stalls%3F/near/263392187" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Puzzling.20CPU.20behavior.3A.20less.20cache.20misses.20and.20more.20stalls.3F.html#263392187">(Dec 02 2021 at 04:38)</a>:</h4>
+<p>When the block size (base case size) goes from 2^12 to 2^11, I see big a drop in the L1 miss. It's consistent with this machine's L1 size 32 KiB = 2^15 bytes = 2^12 <code>Float64</code>s. I need two blocks for one base case so it makes sense that 2^11 is just enough. So, I think it's consistent with your cache eviction argument? The puzzle is that the time is worse in base size = 2^11 than in 2^12.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

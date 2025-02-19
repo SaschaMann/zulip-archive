@@ -1,0 +1,221 @@
+<html>
+<head><meta charset="utf-8"><title>Threaded `randn` and benchmarking error · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Threaded.20.60randn.60.20and.20benchmarking.20error.html">Threaded `randn` and benchmarking error</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="290633856"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Threaded%20%60randn%60%20and%20benchmarking%20error/near/290633856" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Alec <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Threaded.20.60randn.60.20and.20benchmarking.20error.html#290633856">(Jul 23 2022 at 21:14)</a>:</h4>
+<p>When benchmarking some code for <a href="https://github.com/JuliaActuary/EconomicScenarioGenerators.jl">EconomicScenarioGenerators.jl</a>, I encountered this issue that I've only encountered <em>while benchmarking</em>.  When using a shared <code>Random.MersenneTwister</code>, <code>randn</code> will hit a complex number and error. Here's a minimal replicating example:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">g</span><span class="p">()</span><span class="w"></span>
+<span class="w">    </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">zeros</span><span class="p">(</span><span class="mi">100000</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">Threads</span><span class="o">.</span><span class="nd">@threads</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="n">length</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="n">randn</span><span class="p">(</span><span class="n">Random</span><span class="o">.</span><span class="n">MersenneTwister</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="w"></span>
+<span class="w">    </span><span class="k">end</span><span class="w"></span>
+<span class="w">    </span><span class="n">v</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+
+<span class="k">function</span><span class="w"> </span><span class="n">g</span><span class="p">(</span><span class="n">RNG</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">zeros</span><span class="p">(</span><span class="mi">100000</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">Threads</span><span class="o">.</span><span class="nd">@threads</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="n">length</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="n">randn</span><span class="p">(</span><span class="n">RNG</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">end</span><span class="w"></span>
+<span class="w">    </span><span class="n">v</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+
+<span class="c"># these do not error</span><span class="w"></span>
+<span class="nd">@btime</span><span class="w"> </span><span class="n">g</span><span class="p">()</span><span class="w"></span>
+<span class="n">g</span><span class="p">()</span><span class="w"></span>
+<span class="n">g</span><span class="p">(</span><span class="n">Random</span><span class="o">.</span><span class="n">MersenneTwister</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="w"></span>
+
+<span class="c"># this errors</span><span class="w"></span>
+<span class="nd">@btime</span><span class="w"> </span><span class="n">g</span><span class="p">(</span><span class="n">Random</span><span class="o">.</span><span class="n">MersenneTwister</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="w"></span>
+</code></pre></div>
+<p>Is this indeed an issue worth filing? If so, with Julia or with BenchmarkTools?</p>
+
+
+
+<a name="290633882"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Threaded%20%60randn%60%20and%20benchmarking%20error/near/290633882" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Alec <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Threaded.20.60randn.60.20and.20benchmarking.20error.html#290633882">(Jul 23 2022 at 21:15)</a>:</h4>
+<p>Full stacktrace on Mac M1, Julia 1.8 RC3</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="nd">@btime</span><span class="w"> </span><span class="n">g</span><span class="p">(</span><span class="n">Random</span><span class="o">.</span><span class="n">MersenneTwister</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="w"></span>
+<span class="gr">ERROR: TaskFailedException</span>
+<span class="gr">Stacktrace:</span>
+<span class="gr">  [1] wait</span>
+<span class="gr">    @ ./task.jl:345 [inlined]</span>
+<span class="gr">  [2] threading_run(fun::var"#128#threadsfor_fun#31"{var"#128#threadsfor_fun#30#32"{MersenneTwister, Vector{Float64}, UnitRange{Int64}}}, static::Bool)</span>
+<span class="gr">    @ Base.Threads ./threadingconstructs.jl:38</span>
+<span class="gr">  [3] macro expansion</span>
+<span class="gr">    @ ./threadingconstructs.jl:89 [inlined]</span>
+<span class="gr">  [4] g</span>
+<span class="gr">    @ ./Untitled-1:13 [inlined]</span>
+<span class="gr">  [5] var"##core#393"()</span>
+<span class="gr">    @ Main ~/.julia/packages/BenchmarkTools/7xSXH/src/execution.jl:489</span>
+<span class="gr">  [6] var"##sample#394"(::Tuple{}, __params::BenchmarkTools.Parameters)</span>
+<span class="gr">    @ Main ~/.julia/packages/BenchmarkTools/7xSXH/src/execution.jl:497</span>
+<span class="gr">  [7] _lineartrial(b::BenchmarkTools.Benchmark, p::BenchmarkTools.Parameters; maxevals::Int64, kwargs::Base.Pairs{Symbol, Union{}, Tuple{}, NamedTuple{(), Tuple{}}})</span>
+<span class="gr">    @ BenchmarkTools ~/.julia/packages/BenchmarkTools/7xSXH/src/execution.jl:161</span>
+<span class="gr">  [8] _lineartrial(b::BenchmarkTools.Benchmark, p::BenchmarkTools.Parameters)</span>
+<span class="gr">    @ BenchmarkTools ~/.julia/packages/BenchmarkTools/7xSXH/src/execution.jl:152</span>
+<span class="gr">  [9] #invokelatest#2</span>
+<span class="gr">    @ ./essentials.jl:729 [inlined]</span>
+<span class="gr"> [10] invokelatest</span>
+<span class="gr">    @ ./essentials.jl:726 [inlined]</span>
+<span class="gr"> [11] #lineartrial#46</span>
+<span class="gr">    @ ~/.julia/packages/BenchmarkTools/7xSXH/src/execution.jl:35 [inlined]</span>
+<span class="gr"> [12] lineartrial</span>
+<span class="gr">    @ ~/.julia/packages/BenchmarkTools/7xSXH/src/execution.jl:35 [inlined]</span>
+<span class="gr"> [13] tune!(b::BenchmarkTools.Benchmark, p::BenchmarkTools.Parameters; progressid::Nothing, nleaves::Float64, ndone::Float64, verbose::Bool, pad::String, kwargs::Base.Pairs{Symbol, Union{}, Tuple{}, NamedTuple{(), Tuple{}}})</span>
+<span class="gr">    @ BenchmarkTools ~/.julia/packages/BenchmarkTools/7xSXH/src/execution.jl:251</span>
+<span class="gr"> [14] tune! (repeats 2 times)</span>
+<span class="gr">    @ ~/.julia/packages/BenchmarkTools/7xSXH/src/execution.jl:247 [inlined]</span>
+<span class="gr"> [15] top-level scope</span>
+<span class="gr">    @ ~/.julia/packages/BenchmarkTools/7xSXH/src/execution.jl:576</span>
+
+<span class="gr">    nested task error: DomainError with -1.0:</span>
+<span class="gr">    log will only return a complex result if called with a complex argument. Try log(Complex(x)).</span>
+<span class="gr">    Stacktrace:</span>
+<span class="gr">     [1] throw_complex_domainerror(f::Symbol, x::Float64)</span>
+<span class="gr">       @ Base.Math ./math.jl:33</span>
+<span class="gr">     [2] _log(x::Float64, base::Val{:ℯ}, func::Symbol)</span>
+<span class="gr">       @ Base.Math ./special/log.jl:292</span>
+<span class="gr">     [3] log</span>
+<span class="gr">       @ ./special/log.jl:257 [inlined]</span>
+<span class="gr">     [4] randn_unlikely(rng::MersenneTwister, idx::Int64, rabs::Int64, x::Float64)</span>
+<span class="gr">       @ Random ~/prog/julia-dd/usr/share/julia/stdlib/v1.8/Random/src/normal.jl:73</span>
+<span class="gr">     [5] randn</span>
+<span class="gr">       @ ~/prog/julia-dd/usr/share/julia/stdlib/v1.8/Random/src/normal.jl:54 [inlined]</span>
+<span class="gr">     [6] macro expansion</span>
+<span class="gr">       @ ./Untitled-1:14 [inlined]</span>
+<span class="gr">     [7] (::var"#128#threadsfor_fun#31"{var"#128#threadsfor_fun#30#32"{MersenneTwister, Vector{Float64}, UnitRange{Int64}}})(tid::Int64; onethread::Bool)</span>
+<span class="gr">       @ Main ./threadingconstructs.jl:84</span>
+<span class="gr">     [8] #128#threadsfor_fun</span>
+<span class="gr">       @ ./threadingconstructs.jl:51 [inlined]</span>
+<span class="gr">     [9] (::Base.Threads.var"#1#2"{var"#128#threadsfor_fun#31"{var"#128#threadsfor_fun#30#32"{MersenneTwister, Vector{Float64}, UnitRange{Int64}}}, Int64})()</span>
+<span class="gr">       @ Base.Threads ./threadingconstructs.jl:30</span>
+</code></pre></div>
+
+
+
+<a name="290633947"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Threaded%20%60randn%60%20and%20benchmarking%20error/near/290633947" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Alec <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Threaded.20.60randn.60.20and.20benchmarking.20error.html#290633947">(Jul 23 2022 at 21:16)</a>:</h4>
+<p>FWIW I hit the same thing (error only while benchmarking) with ThreadsX, but the above just uses Base to narrow in on the issue.</p>
+
+
+
+<a name="290634786"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Threaded%20%60randn%60%20and%20benchmarking%20error/near/290634786" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Threaded.20.60randn.60.20and.20benchmarking.20error.html#290634786">(Jul 23 2022 at 21:37)</a>:</h4>
+<p>You should probably use the <code>setup</code> argument or interpolate the rng into <code>@btime</code>. It is creating too many rng's I think. Not sure who to blame yet, but I would expect you to have the same issue with <code>@belapsed</code> and <code>@benchmark</code> unless you setup the RNG first.</p>
+
+
+
+<a name="290634933"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Threaded%20%60randn%60%20and%20benchmarking%20error/near/290634933" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Threaded.20.60randn.60.20and.20benchmarking.20error.html#290634933">(Jul 23 2022 at 21:40)</a>:</h4>
+<p>Also might want to try the newer RNG algorithm. MT has a lot of bad properties in general.</p>
+
+
+
+<a name="290635280"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Threaded%20%60randn%60%20and%20benchmarking%20error/near/290635280" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Threaded.20.60randn.60.20and.20benchmarking.20error.html#290635280">(Jul 23 2022 at 21:48)</a>:</h4>
+<p>I’d assume this is an M1 Mac bug</p>
+
+
+
+<a name="290643739"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Threaded%20%60randn%60%20and%20benchmarking%20error/near/290643739" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Alec <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Threaded.20.60randn.60.20and.20benchmarking.20error.html#290643739">(Jul 24 2022 at 01:21)</a>:</h4>
+<p><span class="user-mention" data-user-id="374994">@Michael Fiano</span> what would you recommend? I was using MT because I thought it was the new thread-safe option</p>
+
+
+
+<a name="290644305"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Threaded%20%60randn%60%20and%20benchmarking%20error/near/290644305" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mosè Giordano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Threaded.20.60randn.60.20and.20benchmarking.20error.html#290644305">(Jul 24 2022 at 01:37)</a>:</h4>
+<p>MT is the old thread-unsafe RNG</p>
+
+
+
+<a name="290644874"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Threaded%20%60randn%60%20and%20benchmarking%20error/near/290644874" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Threaded.20.60randn.60.20and.20benchmarking.20error.html#290644874">(Jul 24 2022 at 01:55)</a>:</h4>
+<p>The new one is thread-local Xoshiro256++</p>
+
+
+
+<a name="290645436"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Threaded%20%60randn%60%20and%20benchmarking%20error/near/290645436" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Alec <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Threaded.20.60randn.60.20and.20benchmarking.20error.html#290645436">(Jul 24 2022 at 02:11)</a>:</h4>
+<p>Thanks. I was using MT based on the recommendations on the <a href="https://julialang.org/blog/2019/07/multithreading/#random_number_generation">Julia blog</a>.</p>
+<ul>
+<li>I tested on an ubuntu system on 1.7.3 and could not reproduce it (I had tested 1.7.0 and 1.8 RC3 on M1). </li>
+<li><code>Random.Xoshiro</code> did not error</li>
+</ul>
+
+
+
+<a name="290645664"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Threaded%20%60randn%60%20and%20benchmarking%20error/near/290645664" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Threaded.20.60randn.60.20and.20benchmarking.20error.html#290645664">(Jul 24 2022 at 02:16)</a>:</h4>
+<p>Ah yes, a good bit has changed in the last three years on this front</p>
+
+
+
+<a name="290645679"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Threaded%20%60randn%60%20and%20benchmarking%20error/near/290645679" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Threaded.20.60randn.60.20and.20benchmarking.20error.html#290645679">(Jul 24 2022 at 02:17)</a>:</h4>
+<p>The new one probably could have been better advertized</p>
+
+
+
+<a name="290659971"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Threaded%20%60randn%60%20and%20benchmarking%20error/near/290659971" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Threaded.20.60randn.60.20and.20benchmarking.20error.html#290659971">(Jul 24 2022 at 08:12)</a>:</h4>
+<p><span class="user-mention" data-user-id="272612">@Alec</span> The blogpost you've linked only talked about <code>rand()</code>, i.e. random calls that use the thread/task specific default RNG. It does not imply that sharing <code>MersenneTwister</code> instances is thread safe.</p>
+
+
+
+<a name="290659984"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Threaded%20%60randn%60%20and%20benchmarking%20error/near/290659984" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Threaded.20.60randn.60.20and.20benchmarking.20error.html#290659984">(Jul 24 2022 at 08:13)</a>:</h4>
+<p>Since that blogpost was published, the default RNG was changed to <code>Xoshiro</code>, due to being smaller memory wise and faster. I'm not sure if sharing instances of that is thread safe.</p>
+
+
+
+<a name="291504453"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Threaded%20%60randn%60%20and%20benchmarking%20error/near/291504453" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jameson Nash <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Threaded.20.60randn.60.20and.20benchmarking.20error.html#291504453">(Jul 31 2022 at 18:16)</a>:</h4>
+<p>To the original question, it is forbidden to share objects (instances of Random.MersenneTwister or Xoshiro, for example) with mutable state between threads. This will create a data-race, and will lead to undefined behavior</p>
+
+
+
+<a name="291960004"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Threaded%20%60randn%60%20and%20benchmarking%20error/near/291960004" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Alec <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Threaded.20.60randn.60.20and.20benchmarking.20error.html#291960004">(Aug 04 2022 at 03:34)</a>:</h4>
+<p>The <a href="https://docs.julialang.org/en/v1/stdlib/Random/">current (1.7.3) docs</a> say:</p>
+<blockquote>
+<p>In a multi-threaded program, you should generally use different RNG objects from different threads or tasks in order to be thread-safe. However, the default RNG is thread-safe as of Julia 1.3 (using a per-thread RNG up to version 1.6, and per-task thereafter).</p>
+</blockquote>
+<p>Would the following clarify the situation? I current read that and think that since 1.3, the default RNG is thread safe, and now that Xoshiro is the default, it's thread-safe.</p>
+<blockquote>
+<p>In a multi-threaded program, you should generally use different RNG objects from different threads or tasks in order to be thread-safe. However, the default global RNG is thread-safe as of Julia 1.3 (using a per-thread RNG up to version 1.6, and per-task thereafter). The global RNG refers to per-thread RNG instances; If you instantiate a non-global RNG, you should create a new RNG instance for each thread to avoid possible data-races.</p>
+</blockquote>
+
+
+
+<a name="291995548"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Threaded%20%60randn%60%20and%20benchmarking%20error/near/291995548" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Threaded.20.60randn.60.20and.20benchmarking.20error.html#291995548">(Aug 04 2022 at 11:44)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">Random</span><span class="w"></span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">()</span><span class="w"></span>
+<span class="n">TaskLocalRNG</span><span class="p">()</span><span class="w"></span>
+</code></pre></div>
+<p>This is a special object. The core RNG isn't thread safe.</p>
+
+
+
+<a name="291997121"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Threaded%20%60randn%60%20and%20benchmarking%20error/near/291997121" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sundar R <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Threaded.20.60randn.60.20and.20benchmarking.20error.html#291997121">(Aug 04 2022 at 12:00)</a>:</h4>
+<p>That seems worth explicitly mentioning, since "the default" seems bound to be misinterpreted as the core/"default" RNG. </p>
+<blockquote>
+<p>However, the default global RNG (obtained via <code>Random.default_rng()</code>) is thread-safe as of Julia 1.3</p>
+</blockquote>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

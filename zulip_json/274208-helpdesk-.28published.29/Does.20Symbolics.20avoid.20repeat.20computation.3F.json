@@ -1,0 +1,20 @@
+[
+    {
+        "content": "<p>Hi, I'm trying to wrap my head around <a href=\"https://github.com/search?q=Symbolics.jl&amp;type=Repositories\">Symbolics.jl</a> and figure out if it's a good fit for my use case.</p>\n<p>Basically I have an application that receives a few data points every hour (say <code>x_t, y_t</code>) and I need to calculate a large number of values derived from those, with some dependencies. For example:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">c</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">a</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span> <span class=\"o\">+</span> <span class=\"n\">b</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n<span class=\"n\">b</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"mi\">2</span><span class=\"o\">*</span><span class=\"n\">a</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n<span class=\"n\">a</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">exp</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n<span class=\"n\">d</span><span class=\"p\">(</span><span class=\"n\">y</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">y</span><span class=\"o\">^</span><span class=\"mi\">2</span>\n</code></pre></div>\n<p>Here, a naive approach might calculate <code>a(x)</code> twice, whereas I'd like to do the computation once. I'd also ideally like to calculate <code>d(y)</code> and <code>c(x)</code> in parallel.  The actual update step is of course much more complex, with a few thousand functions where the dependencies are very difficult to keep track of. </p>\n<p>Is Symbolics a good approach for this? On the one hand, <code>substitute</code> and <code>simplify</code> look really helpful, but I have a hard time telling from the documentation whether Symbolics actually does this reuse &amp; parallelization.</p>",
+        "id": 241313249,
+        "sender_full_name": "Satvik Souza Beri",
+        "timestamp": 1622664747
+    },
+    {
+        "content": "<p>I'm not an expert on this. So, you might need a combination of two things: 1) solve the system for a,b,c,d  (treating) exp(x), etc as constants. 2) efficient way to compute the solution for given input.<br>\nIs you system always linear wrt a,b,c,d? How large is the set of equations?</p>",
+        "id": 243121734,
+        "sender_full_name": "Steffen Plunder",
+        "timestamp": 1623998443
+    },
+    {
+        "content": "<p>If you are after code generation, dependencies are exploited in <a href=\"https://github.com/chakravala/Reduce.jl\">https://github.com/chakravala/Reduce.jl</a></p>\n<p>julia&gt; Algebra.optimize(:(z = a^2*b^2+10*a^2*m^6+a^2*m^2+2<em>a</em>b*m^4+2*b^2*m^6+b^2*m^2))<br>\nquote<br>\n    g40 = b * a<br>\n    g44 = m * m<br>\n    g41 = g44 * b * b<br>\n    g42 = g44 * a * a<br>\n    g43 = g44 * g44<br>\n    z = g41 + g42 + g40 * (2g43 + g40) + g43 * (2g41 + 10g42)<br>\nend</p>",
+        "id": 268115431,
+        "sender_full_name": "Bardo",
+        "timestamp": 1642237355
+    }
+]

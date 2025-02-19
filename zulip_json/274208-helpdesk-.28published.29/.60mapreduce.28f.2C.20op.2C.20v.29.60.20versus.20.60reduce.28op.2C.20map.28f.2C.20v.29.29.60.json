@@ -1,0 +1,152 @@
+[
+    {
+        "content": "<p>In some applications, we noticed that <code>reduce(op, map(f, v))</code> is faster, specially when <code>v</code> items have a complicated parametric type.</p>\n<p>Is there a clear rule to choose between the two functions? When is one expected to outperform the other?</p>",
+        "id": 482219681,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731517165
+    },
+    {
+        "content": "<p>I don't know for sure, but I suspect you already nailed it.  <code>mapreduce</code> will try to do a loop over <code>s = op(s, f(v))</code> and unless <code>f(v)</code> is something relatively simple it'll give up and type <code>s</code> as <code>Any</code>.  When you do <code>reduce(op, map(f, v))</code>, it's essentially forcing the type of <code>s</code> to be <code>op(::T, ::T)</code> where <code>T = eltype(map(f, v))</code>.  The compiler doesn't guarantee that the type inference is equivalent in these cases.</p>",
+        "id": 482221792,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1731517850
+    },
+    {
+        "content": "<p>Is there a helper function in Base that can be used to tell when the compiler will give up given <code>f</code> and <code>v</code>?</p>",
+        "id": 482222053,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731517947
+    },
+    {
+        "content": "<p>We have some algorithms to write, and it would be nice to know a priori when to use <code>mapreduce</code> or <code>reduce</code>.</p>",
+        "id": 482222220,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731518022
+    },
+    {
+        "content": "<p>There's undoubtedly a way to do it with internals, but you should not do that in package code.  The best thing to do would be to assume no and to work around it.</p>",
+        "id": 482222340,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1731518061
+    },
+    {
+        "content": "<p>We wouldn't use it in package code. Just curious if there is tooling to help decide between the two during development.</p>",
+        "id": 482222577,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731518153
+    },
+    {
+        "content": "<p>There is a bit of general advice I can give that I'm not sure applies to you, but which I suspect may having seen some of what's going on in <a href=\"https://juliahub.com/ui/Packages/General/Meshes\">Meshes.jl</a>: Julia really, really, really does not like containers (or iterators) of mixed eltype, even if those types look to you like they are very similar (i.e. differ only by a single parameter or something).  Yes, you can get miraculously good performance out of containers with small union types, but for one, the compiler does not narrow the containers to those types for you, you'd have to do it yourself, and for another, this holds fragile promise and can break type inference in more complicated code down the road.</p>",
+        "id": 482222661,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1731518174
+    },
+    {
+        "content": "<p>Would be nice if VSCode could give hints to developers about <code>mapreduce</code> for example.</p>",
+        "id": 482222825,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731518243
+    },
+    {
+        "content": "<p>The code in <a href=\"https://juliahub.com/ui/Packages/General/Meshes\">Meshes.jl</a> assumes heterogeneous containers in general, and when the containers are homogeneous of the same geometry type, things run with the top performance, and inference works. We do a few checks here and there in the test suite for that.</p>",
+        "id": 482223006,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731518295
+    },
+    {
+        "content": "<p>Yeah I suspected that.  You may want to seriously consider wrapper types that hold different objects in separate containers internally, otherwise it's pretty much a guarantee that you will repeatedly slam into type inference issues.  For some things you can rely on small union types, but again, this is fragile, and if you hand over an object that's typed that way to a \"user\" it's easy for them to break it unless they understand very clearly what is happening.</p>",
+        "id": 482223211,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1731518383
+    },
+    {
+        "content": "<p>As an example, the <code>Grid</code> subtypes are heavily optimized because the grid elements are always of the same type. Same for <code>SimpleMesh</code> of <code>Triangle</code> elements. In the case of a <code>GeometrySet</code>, there is nothing we can do. It can store heterogeneous containers. It still allows homogeneous containers though, as is the case with <code>PointSet</code>.</p>",
+        "id": 482223387,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731518445
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269446\">Expanding Man</span> <a href=\"#narrow/channel/274208-helpdesk-.28published.29/topic/.60mapreduce.28f.2C.20op.2C.20v.29.60.20versus.20.60reduce.28op.2C.20map.28f.2C.20v.29.29.60/near/482223211\">said</a>:</p>\n<blockquote>\n<p>Yeah I suspected that.  You may want to seriously consider wrapper types that hold different objects in separate containers internally, otherwise it's pretty much a guarantee that you will repeatedly slam into type inference issues.  For some things you can rely on small union types, but again, this is fragile, and if you hand over an object that's typed that way to a \"user\" it's easy for them to break it unless they understand very clearly what is happening.</p>\n</blockquote>\n<p>We have evidence that everything is working pretty well with rich parametric types. Only in a few places that we need to circumvent Julia's inference problems.</p>",
+        "id": 482223551,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731518509
+    },
+    {
+        "content": "<p>Again, the problem is that it's fragile.   It can work great until it doesn't, and knowing where type inference is going to start completely giving up is really hard.  This is an issue with Julia's type system in general that I think should be better warned about in the documentation.  You can be really impressed with how it's doing with apparently dynamic types and then all of a sudden you hit a performance wall when everything in a complicated block of code starts showing up as <code>Any</code>.</p>",
+        "id": 482223856,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1731518615
+    },
+    {
+        "content": "<p>I think that is part of the game. As a Julia developer you need to handle these. I agree it should be documented better in the official docs.</p>",
+        "id": 482223997,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731518663
+    },
+    {
+        "content": "<p>I'm not talking about manifestly type stable code that just happens to have really complicated type signatures, that should be fine (sometimes it isn't, but it really should be), but stuff like containers without a single concrete type can start to get real ugly.</p>",
+        "id": 482224087,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1731518700
+    },
+    {
+        "content": "<p>Most container types in <a href=\"https://juliahub.com/ui/Packages/General/Meshes\">Meshes.jl</a> have a concrete <code>eltype</code>. The <code>GeometrySet</code> is the one with greatest potential for non-concrete <code>eltype</code>. If you find issues with the package in practical applications, please feel free to report. We will be happy to discuss improvements.</p>",
+        "id": 482225333,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731519093
+    },
+    {
+        "content": "<p>Now, coming back to the original issue. I wish VSCode could warn about <code>mapreduce</code> in some cases before running the function that uses it.</p>",
+        "id": 482225484,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731519128
+    },
+    {
+        "content": "<p>If we know the type of the arguments of the function, then we can know the intermediate type of expressions inside the function. At that point, VSCode could say: \"this mapreduce will not infer the type properly...\".</p>",
+        "id": 482225660,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731519202
+    },
+    {
+        "content": "<p>There are tools like <a href=\"https://juliahub.com/ui/Packages/General/Cthulhu\">Cthulhu.jl</a> and <code>@code_warntype</code>.  As things stand right now code has to get compiled (or lowered, or whatever <code>@code_warntype</code> does exactly) for you to know what's going to happen with type inference.</p>",
+        "id": 482225987,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1731519317
+    },
+    {
+        "content": "<p>Yes, I use <code>@code_warntype</code> in these situations, but sometimes we don't have time to launch a REPL and test these details.</p>",
+        "id": 482226216,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731519394
+    },
+    {
+        "content": "<p>VSCode can show type hints. I've got it disabled so maybe I'm not up to date with how accurate it is. I don't think VSCode would really be suggesting things like that not using <code>mapreduce</code> directly though.</p>",
+        "id": 482258369,
+        "sender_full_name": "Daniel VandenHeuvel",
+        "timestamp": 1731530914
+    },
+    {
+        "content": "<p>Sort of rephrasing and filling in: I think one thing that hasn't changed since I last used Julia frequently is that for <code>Vector{T}</code> with abstract <code>T</code> the compiler can't (does not) make any assumptions about the elements. So any dispatch, say in addition in <code>sum</code> happens at runtime. A <code>Union</code> is not concrete, but is not abstract. If <code>T</code> is a small union, then <code>sum</code> can be much faster.</p>\n<p>In general, this is a good application for sum types (tagged unions). I don't know if it would work for you. In discussing this once on slack, someone showed me that a plain old <code>Union</code> is just as good in many cases. This is easy to verify with simple examples.</p>",
+        "id": 482280015,
+        "sender_full_name": "John Lapeyre",
+        "timestamp": 1731540323
+    },
+    {
+        "content": "<p>Aside from the type inference issue, this seems like an instance of the general fusion/fission question: sometimes you want <code>map(f, map(g, xs))</code> and sometimes you want <code>map(f∘g, xs)</code>.</p>",
+        "id": 482290170,
+        "sender_full_name": "jar",
+        "timestamp": 1731546374
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"326776\">@jar</span>  I'm confused, where is the reduce?</p>",
+        "id": 482295081,
+        "sender_full_name": "Kyle Beggs",
+        "timestamp": 1731549587
+    },
+    {
+        "content": "<p>I'm just talking about doing two passes vs one pass over the data</p>",
+        "id": 482300996,
+        "sender_full_name": "jar",
+        "timestamp": 1731553719
+    }
+]

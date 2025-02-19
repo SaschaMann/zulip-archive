@@ -1,0 +1,411 @@
+<html>
+<head><meta charset="utf-8"><title>Multithreaded copyto! and permutedims! · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html">Multithreaded copyto! and permutedims!</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="282243415"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282243415" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mark Kittisopikul <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282243415">(May 13 2022 at 13:07)</a>:</h4>
+<p>Is there an accelerated version of <code>copyto!</code> and <code>permutedims!</code> somewhere?</p>
+<p>My initial experiments with <a href="https://github.com/search?q=SIMD.jl&amp;type=Repositories">SIMD.jl</a> show it is possible to speed up these procedures. I'm wondering if someone has already done this?</p>
+
+
+
+<a name="282284999"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282284999" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mark Kittisopikul <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282284999">(May 13 2022 at 18:12)</a>:</h4>
+<p>Here is a concrete problem I have. I want to make the following faster:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Array</span><span class="p">{</span><span class="kt">UInt16</span><span class="p">}(</span><span class="nb">undef</span><span class="p">,</span><span class="w"> </span><span class="mi">4608</span><span class="p">,</span><span class="w"> </span><span class="mi">2592</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="p">);</span><span class="w"></span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">B</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Array</span><span class="p">{</span><span class="kt">UInt16</span><span class="p">}(</span><span class="nb">undef</span><span class="p">,</span><span class="w"> </span><span class="mi">4608</span><span class="p">,</span><span class="w"> </span><span class="mi">2688</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="p">);</span><span class="w"></span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="nd">@time</span><span class="w"> </span><span class="n">copyto!</span><span class="p">(</span><span class="nd">@view</span><span class="p">(</span><span class="n">B</span><span class="p">[</span><span class="o">:</span><span class="p">,</span><span class="w"> </span><span class="n">axes</span><span class="p">(</span><span class="n">A</span><span class="p">)[</span><span class="mi">2</span><span class="p">],</span><span class="w"> </span><span class="o">:</span><span class="p">]),</span><span class="w"> </span><span class="n">A</span><span class="p">);</span><span class="w"></span>
+<span class="go">  3.951746 seconds (13 allocations: 384 bytes)</span>
+</code></pre></div>
+
+
+
+<a name="282285309"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282285309" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mark Kittisopikul <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282285309">(May 13 2022 at 18:15)</a>:</h4>
+<p>I could do this, but is there a faster way?</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="nd">@time</span><span class="w"> </span><span class="n">Threads</span><span class="o">.</span><span class="nd">@threads</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">128</span><span class="w"></span>
+<span class="w">           </span><span class="n">copyto!</span><span class="p">(</span><span class="nd">@view</span><span class="p">(</span><span class="n">B</span><span class="p">[</span><span class="o">:</span><span class="p">,</span><span class="w"> </span><span class="n">axes</span><span class="p">(</span><span class="n">A</span><span class="p">)[</span><span class="mi">2</span><span class="p">],</span><span class="w"> </span><span class="o">:</span><span class="p">]),</span><span class="w"> </span><span class="nd">@view</span><span class="p">(</span><span class="n">A</span><span class="p">[</span><span class="o">:</span><span class="p">,</span><span class="o">:</span><span class="p">,</span><span class="n">i</span><span class="p">]))</span><span class="w"></span>
+<span class="w">       </span><span class="k">end</span><span class="w"></span>
+<span class="go">  0.647388 seconds (21.29 k allocations: 1.134 MiB, 6.40% compilation time)</span>
+</code></pre></div>
+
+
+
+<a name="282286008"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282286008" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282286008">(May 13 2022 at 18:21)</a>:</h4>
+<p>Chris Elrod is your friend here.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">LoopVectorization</span><span class="w"></span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">my_copyto_tturbo!</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="n">B</span><span class="p">)</span><span class="w"></span>
+<span class="w">           </span><span class="nd">@tturbo</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">∈</span><span class="w"> </span><span class="n">eachindex</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="n">B</span><span class="p">)</span><span class="w"></span>
+<span class="w">               </span><span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">B</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"></span>
+<span class="w">           </span><span class="k">end</span><span class="w"></span>
+<span class="w">           </span><span class="n">A</span><span class="w"></span>
+<span class="w">       </span><span class="k">end</span><span class="p">;</span><span class="w"></span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">let</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Array</span><span class="p">{</span><span class="kt">UInt16</span><span class="p">}(</span><span class="nb">undef</span><span class="p">,</span><span class="w"> </span><span class="mi">4608</span><span class="p">,</span><span class="w"> </span><span class="mi">2592</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="p">),</span><span class="w">  </span><span class="n">B</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Array</span><span class="p">{</span><span class="kt">UInt16</span><span class="p">}(</span><span class="nb">undef</span><span class="p">,</span><span class="w"> </span><span class="mi">4608</span><span class="p">,</span><span class="w"> </span><span class="mi">2688</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="p">)</span><span class="w"></span>
+<span class="w">           </span><span class="nd">@btime</span><span class="w"> </span><span class="n">copyto!</span><span class="p">(</span><span class="nd">@view</span><span class="p">(</span><span class="o">$</span><span class="n">B</span><span class="p">[</span><span class="o">:</span><span class="p">,</span><span class="w"> </span><span class="n">axes</span><span class="p">(</span><span class="o">$</span><span class="n">A</span><span class="p">)[</span><span class="mi">2</span><span class="p">],</span><span class="w"> </span><span class="o">:</span><span class="p">]),</span><span class="w"> </span><span class="o">$</span><span class="n">A</span><span class="p">);</span><span class="w"></span>
+<span class="w">           </span><span class="nd">@btime</span><span class="w"> </span><span class="n">my_copyto_tturbo!</span><span class="p">(</span><span class="nd">@view</span><span class="p">(</span><span class="o">$</span><span class="n">B</span><span class="p">[</span><span class="o">:</span><span class="p">,</span><span class="w"> </span><span class="n">axes</span><span class="p">(</span><span class="o">$</span><span class="n">A</span><span class="p">)[</span><span class="mi">2</span><span class="p">],</span><span class="w"> </span><span class="o">:</span><span class="p">]),</span><span class="w"> </span><span class="o">$</span><span class="n">A</span><span class="p">);</span><span class="w"></span>
+<span class="w">       </span><span class="k">end</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="mf">4.636</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="p">(</span><span class="mi">0</span><span class="w"> </span><span class="n">allocations</span><span class="o">:</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">bytes</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="mf">200.800</span><span class="w"> </span><span class="n">ms</span><span class="w"> </span><span class="p">(</span><span class="mi">0</span><span class="w"> </span><span class="n">allocations</span><span class="o">:</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">bytes</span><span class="p">)</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="282318490"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282318490" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Abbott <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282318490">(May 13 2022 at 23:20)</a>:</h4>
+<p>For <code>permutedims!</code>, btw, <a href="https://github.com/search?q=TensorOperations.jl&amp;type=Repositories">TensorOperations.jl</a> is often very fast:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">TensorOperations</span><span class="p">,</span><span class="w"> </span><span class="n">LoopVectorization</span><span class="w"></span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">my_permute_tturbo!</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="n">B</span><span class="p">)</span><span class="w"></span>
+<span class="w">           </span><span class="nd">@tturbo</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">axes</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">axes</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">axes</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span><span class="w"></span>
+<span class="w">               </span><span class="n">B</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">]</span><span class="w"></span>
+<span class="w">           </span><span class="k">end</span><span class="w"></span>
+<span class="w">           </span><span class="n">A</span><span class="w"></span>
+<span class="w">       </span><span class="k">end</span><span class="p">;</span><span class="w"></span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">let</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="kt">UInt16</span><span class="p">,</span><span class="w"> </span><span class="mi">4608</span><span class="p">,</span><span class="w"> </span><span class="mi">2592</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="p">),</span><span class="w">  </span><span class="n">B</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Array</span><span class="p">{</span><span class="kt">UInt16</span><span class="p">}(</span><span class="nb">undef</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="p">,</span><span class="w"> </span><span class="mi">2592</span><span class="p">,</span><span class="w"> </span><span class="mi">4608</span><span class="p">)</span><span class="w"></span>
+<span class="w">           </span><span class="nd">@btime</span><span class="w"> </span><span class="n">permutedims!</span><span class="p">(</span><span class="o">$</span><span class="n">B</span><span class="p">,</span><span class="w"> </span><span class="o">$</span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span><span class="w"></span>
+<span class="w">           </span><span class="nd">@btime</span><span class="w"> </span><span class="n">my_permute_tturbo!</span><span class="p">(</span><span class="o">$</span><span class="n">B</span><span class="p">,</span><span class="w"> </span><span class="o">$</span><span class="n">A</span><span class="p">)</span><span class="w"></span>
+<span class="w">           </span><span class="nd">@btime</span><span class="w"> </span><span class="nd">@tensor</span><span class="w"> </span><span class="o">$</span><span class="n">B</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">$</span><span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">]</span><span class="w"></span>
+<span class="w">       </span><span class="k">end</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="mf">13.564</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="p">(</span><span class="mi">0</span><span class="w"> </span><span class="n">allocations</span><span class="o">:</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">bytes</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="mf">6.656</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="p">(</span><span class="mi">0</span><span class="w"> </span><span class="n">allocations</span><span class="o">:</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">bytes</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="mf">1.068</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="p">(</span><span class="mi">62</span><span class="w"> </span><span class="n">allocations</span><span class="o">:</span><span class="w"> </span><span class="mf">4.89</span><span class="w"> </span><span class="n">KiB</span><span class="p">)</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="282320169"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282320169" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282320169">(May 13 2022 at 23:47)</a>:</h4>
+<p>LoopVectorization's multithreading seems to be doing something bad here. </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">my_permute_polyester!</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="n">B</span><span class="p">)</span><span class="w"></span>
+<span class="w">           </span><span class="nd">@batch</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">axes</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="w"></span>
+<span class="w">           </span><span class="nd">@turbo</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">axes</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">axes</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span><span class="w"></span>
+<span class="w">               </span><span class="n">B</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">]</span><span class="w"></span>
+<span class="w">           </span><span class="k">end</span><span class="p">;</span><span class="w"> </span><span class="k">end</span><span class="w"></span>
+<span class="w">           </span><span class="n">A</span><span class="w"></span>
+<span class="w">       </span><span class="k">end</span><span class="p">;</span><span class="w"></span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">let</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="kt">UInt16</span><span class="p">,</span><span class="w"> </span><span class="mi">4608</span><span class="p">,</span><span class="w"> </span><span class="mi">2592</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="p">),</span><span class="w">  </span><span class="n">B</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Array</span><span class="p">{</span><span class="kt">UInt16</span><span class="p">}(</span><span class="nb">undef</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="p">,</span><span class="w"> </span><span class="mi">2592</span><span class="p">,</span><span class="w"> </span><span class="mi">4608</span><span class="p">)</span><span class="w"></span>
+<span class="w">           </span><span class="nd">@time</span><span class="w"> </span><span class="n">permutedims!</span><span class="p">(</span><span class="n">B</span><span class="p">,</span><span class="w"> </span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span><span class="w"></span>
+<span class="w">           </span><span class="nd">@time</span><span class="w"> </span><span class="n">my_permute_tturbo!</span><span class="p">(</span><span class="n">B</span><span class="p">,</span><span class="w"> </span><span class="n">A</span><span class="p">)</span><span class="w"></span>
+<span class="w">           </span><span class="nd">@time</span><span class="w"> </span><span class="n">my_permute_polyester!</span><span class="p">(</span><span class="n">B</span><span class="p">,</span><span class="w"> </span><span class="n">A</span><span class="p">)</span><span class="w"></span>
+<span class="w">           </span><span class="nd">@time</span><span class="w"> </span><span class="nd">@tensor</span><span class="w"> </span><span class="n">B</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">]</span><span class="w"></span>
+<span class="w">       </span><span class="k">end</span><span class="p">;</span><span class="w"></span>
+<span class="w"> </span><span class="mf">14.993049</span><span class="w"> </span><span class="n">seconds</span><span class="w"></span>
+<span class="w">  </span><span class="mf">3.187791</span><span class="w"> </span><span class="n">seconds</span><span class="w"> </span><span class="p">(</span><span class="mi">3</span><span class="w"> </span><span class="n">allocations</span><span class="o">:</span><span class="w"> </span><span class="mi">96</span><span class="w"> </span><span class="n">bytes</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="mf">0.495429</span><span class="w"> </span><span class="n">seconds</span><span class="w"></span>
+<span class="w">  </span><span class="mf">0.721222</span><span class="w"> </span><span class="n">seconds</span><span class="w"> </span><span class="p">(</span><span class="mi">515</span><span class="w"> </span><span class="n">allocations</span><span class="o">:</span><span class="w"> </span><span class="mf">41.172</span><span class="w"> </span><span class="n">KiB</span><span class="p">)</span><span class="w"></span>
+</code></pre></div>
+<p>The allocation is because I'm using <code>@time</code>, and Polyester's threads have to wake up.</p>
+
+
+
+<a name="282320475"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282320475" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282320475">(May 13 2022 at 23:52)</a>:</h4>
+<p>Anyway, as the <code>Polyester</code> example shows, LV is obviously making a stupid threading decision. I doubt my <code>@batch</code> on axis 2 is particularly smart, either, it was just the first thing I tried, and apparently 6x less stupid.</p>
+
+
+
+<a name="282320571"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282320571" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282320571">(May 13 2022 at 23:54)</a>:</h4>
+<p>I noticed with the <code>copyto!</code> example, there was no advantage to using <code>@tturbo</code> vs <code>@turbo</code> even though it was taking hundreds of miliseconds, so probably a bad heuristic there too</p>
+
+
+
+<a name="282320759"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282320759" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282320759">(May 13 2022 at 23:58)</a>:</h4>
+<p>I think it isn't picking good loops to thread.</p>
+
+
+
+<a name="282320767"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282320767" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282320767">(May 13 2022 at 23:58)</a>:</h4>
+<p>Also, <code>copyto!</code> will likely be faster than <code>@turbo</code>.</p>
+
+
+
+<a name="282320792"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282320792" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282320792">(May 13 2022 at 23:59)</a>:</h4>
+<p><code>copyto!</code> forwards to memcpy which can have optimized implementations using non-temporal stores (as well as arch-based dispatch).</p>
+
+
+
+<a name="282320918"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282320918" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282320918">(May 14 2022 at 00:00)</a>:</h4>
+<p><code>vmapnt!(identity, dst, src)</code> matched it in that example, but of course the advantage of the memcpy implementations is that they'll only use non-temporal stores for large arrays, where early copied elements are going to be flushed from your cache anyway.</p>
+
+
+
+<a name="282321118"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282321118" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282321118">(May 14 2022 at 00:04)</a>:</h4>
+<p><code>ls</code> corresponds to <code>my_permute_tturbo!</code>:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="n">LoopVectorization</span><span class="o">.</span><span class="n">choose_order</span><span class="p">(</span><span class="n">ls</span><span class="p">)</span><span class="w"></span>
+<span class="go">([:k, :i, :j], :i, :k, :i, 1, 1)</span>
+</code></pre></div>
+<p>So it looks like it's putting the <code>j</code> loop as the inner-most loop, and then threading the <code>k</code> and <code>i</code> loop. The <code>i</code> loop is also what it is vectorizing, meaning it is going with contiguous loads + scatters, which also seems questionable. gathers + contiguous stores should be faster, but I think as a heuristic it prefers faster loads as you're more likely to be bottlenecked on latency.</p>
+<p>Actually, a really clever thing I should try to get the rewrite to do is have a combined kernel that uses both gathers + contiguous stores and contiguous loads + scatters, to balance loads and store (in proportion to the actual number of each the CPU is capable of)...</p>
+
+
+
+<a name="282322217"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282322217" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Abbott <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282322217">(May 14 2022 at 00:26)</a>:</h4>
+<p>It's a pity Base's <code>permutedims!</code> is so much slower, even without multithreading. Maybe TO's algorithm should be built-in? BLAS doesn't do this if google is telling the truth, but do libraries like MKL have fast routines? <code>copyto!</code> is just tripping over the <code>view</code> somehow, costing 20x.</p>
+
+
+
+<a name="282322240"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282322240" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Abbott <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282322240">(May 14 2022 at 00:27)</a>:</h4>
+<p>(IIRC there are actually at 2 or 3 different blocking stories for <code>permutedims!</code> in different parts of Base.)</p>
+
+
+
+<a name="282322627"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282322627" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282322627">(May 14 2022 at 00:35)</a>:</h4>
+<p>Locally:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="nd">@time</span><span class="w"> </span><span class="n">my_permute_tturbo!</span><span class="p">(</span><span class="n">B</span><span class="p">,</span><span class="w"> </span><span class="n">A</span><span class="p">);</span><span class="w"></span>
+<span class="go">  0.145698 seconds</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="nd">@time</span><span class="w"> </span><span class="n">my_permute_tturbo!</span><span class="p">(</span><span class="n">B</span><span class="p">,</span><span class="w"> </span><span class="n">A</span><span class="p">);</span><span class="w"></span>
+<span class="go">  0.139114 seconds</span>
+</code></pre></div>
+
+
+
+<a name="282322794"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282322794" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282322794">(May 14 2022 at 00:39)</a>:</h4>
+<p>I just pushed to master.<br>
+It is still far from optimal, but I at least made a minimal tweak to fix the really bad behavior seen currently.</p>
+<p>I don't want to make more substantial changes, as my LV efforts are being focused on the rewrite.<br>
+But possibly handling something like this really well via balanced gather/scatters is an interesting idea I'll try and get around to trying out eventually...<br>
+Of course, part of the trick there is that you need to divide up the iteration space, and then fuse overlapping pieces.<br>
+That could perhaps be guarded by a "I don't care how much code you're generating!" flag.</p>
+
+
+
+<a name="282326424"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282326424" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282326424">(May 14 2022 at 02:03)</a>:</h4>
+<p>The <code>@tturbo</code> version's performance should be better with the newly released LoopVectorization v0.12.109.</p>
+
+
+
+<a name="282367024"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282367024" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282367024">(May 14 2022 at 18:57)</a>:</h4>
+<p>do the polyester threads already play nice with the "normal" base julia threads?</p>
+
+
+
+<a name="282369042"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282369042" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282369042">(May 14 2022 at 19:46)</a>:</h4>
+<p>AFAIK no, and there’s no plans for that.</p>
+
+
+
+<a name="282370625"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282370625" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282370625">(May 14 2022 at 20:27)</a>:</h4>
+<p>Polyester threads are better anyways <span aria-label="grinning" class="emoji emoji-1f600" role="img" title="grinning">:grinning:</span></p>
+
+
+
+<a name="282371954"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282371954" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282371954">(May 14 2022 at 21:01)</a>:</h4>
+<p>Kiran was in Boston for a week a few weeks ago (and was the hecklee at a CAJUN "heckle a Julia developer").<br>
+Improving performance of Base threads was a priority of his.</p>
+<p>He also said he'd create a benchmark repo that contains Julia and OpenMP versions for comparison, and would accept a PR that also adds Polyester/LV versions for comparison as well.</p>
+<p>Hopefully things will get better, but I do remain a bit skeptical.</p>
+
+
+
+<a name="282373054"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282373054" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282373054">(May 14 2022 at 21:31)</a>:</h4>
+<p>Oh that'd be cool!</p>
+
+
+
+<a name="282373181"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282373181" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282373181">(May 14 2022 at 21:34)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="293896">Brenhin Keller</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto!.20and.20permutedims!/near/282370625">said</a>:</p>
+<blockquote>
+<p>Polyester threads are better anyways <span aria-label="grinning" class="emoji emoji-1f600" role="img" title="grinning">:grinning:</span></p>
+</blockquote>
+<p>IMO they're not better, but they are very useful.</p>
+
+
+
+<a name="282373209"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282373209" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282373209">(May 14 2022 at 21:35)</a>:</h4>
+<p>If I was to have a language with only one threading system, I wouldn't choose Polyester's set of tradeoffs. But as a choice of one way to thread code, it's fantastic</p>
+
+
+
+<a name="282374181"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282374181" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282374181">(May 14 2022 at 21:56)</a>:</h4>
+<p>Oh not being too serious or anything -- and "better" is super subjective. That said, while it's great that there is multithreading in base, and the async / spawn approach is cool and all, for me personally the cases where multithreading is super useful are kind of squeezed between the efficiency you can get from a single thread with SIMD on one side, and multiprocessing on the other side. For the cases in-between where I want more than one thread, but don't want to reach all the way over to message passing and such, low overhead is kinda the key priority personally.</p>
+
+
+
+<a name="282375968"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282375968" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282375968">(May 14 2022 at 22:35)</a>:</h4>
+<p>I have never worked in/with HPC, but I've been told people who do really want composable task-based systems (i.e., base Julia, not Polyester).</p>
+
+
+
+<a name="282376016"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282376016" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282376016">(May 14 2022 at 22:36)</a>:</h4>
+<p>Dynamic scheduling will also become increasingly important as architectures becoming increasingly heterogenous.</p>
+
+
+
+<a name="282376080"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282376080" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282376080">(May 14 2022 at 22:39)</a>:</h4>
+<p>In principle, the idea of a few big cores optimized for single threaded performance + a bunch of little cores optimized for performance/die area makes a lot of sense for maximizing a CPU's performance.<br>
+Many programs just aren't going to scale beyond a few cores, so have a few big cores to make them fast. For programs that do scale well with more cores, throw as many as you can at them.<br>
+Intel is going this route, with their next generation of CPUs being rumored to have 16 little cores.<br>
+I'm not sure about Apple, which tends to have much fewer little cores aimed at background processes rather than doing work?<br>
+I watched a presentation by Tenstorrent that advertised a similar concept (fast big core + tons of small ones) for ML work.</p>
+<p>So maybe breadth first or work stealing work well here; i.e. we want something dynamic to best be able to take advantage of heterogenous compute, where it would be difficult to know how to actually divide work up a priori.</p>
+
+
+
+<a name="282376144"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282376144" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282376144">(May 14 2022 at 22:40)</a>:</h4>
+<p>There's a decent chance Julia moves to work stealing in the future. With work stealing, we can't be better than the competition, but -- given it is what the competition uses -- at least we'll actually be able to match it.</p>
+<p>Kiran maintains that depth first is the better algorithm in theory, but there's a lot of unsolved issues for a good implementation, while work stealing is much more of a known entity.</p>
+
+
+
+<a name="282376350"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282376350" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282376350">(May 14 2022 at 22:46)</a>:</h4>
+<p>Julia probably wants heterogenous architectures.<br>
+Compiling sucks on the A64FX, which is basically just a bunch of small cores (that have big vectors). Bolting a big core or two on there to at least run the JIT would make it much nicer for Julia</p>
+
+
+
+<a name="282376450"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282376450" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282376450">(May 14 2022 at 22:50)</a>:</h4>
+<p>Yeah, that does make sense. I'm probably an outlier; real HPC folks have been all about "hierarchical parallelism" for a while now</p>
+
+
+
+<a name="282376491"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282376491" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mosè Giordano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282376491">(May 14 2022 at 22:50)</a>:</h4>
+<p>Man, I've been doing benchmarks on a64fx, it's sooooo slow</p>
+
+
+
+<a name="282376561"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282376561" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282376561">(May 14 2022 at 22:52)</a>:</h4>
+<p>Haha, oh no</p>
+
+
+
+<a name="282376620"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282376620" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mosè Giordano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282376620">(May 14 2022 at 22:54)</a>:</h4>
+<p>With parallel precompilation in v1.7, I have to go through Julia-1.0-level precompilation times. It is very common to stare the screen for 5-10 minutes for precompilation to complete</p>
+
+
+
+<a name="282376636"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282376636" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282376636">(May 14 2022 at 22:55)</a>:</h4>
+<p>A blast from the past <span aria-label="laughing" class="emoji emoji-1f606" role="img" title="laughing">:laughing:</span></p>
+
+
+
+<a name="282376683"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282376683" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282376683">(May 14 2022 at 22:56)</a>:</h4>
+<p>What's the clock speed on those again?</p>
+
+
+
+<a name="282376888"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282376888" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mosè Giordano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282376888">(May 14 2022 at 23:00)</a>:</h4>
+<p>2.0-2.2 GHz</p>
+
+
+
+<a name="282376988"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282376988" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282376988">(May 14 2022 at 23:03)</a>:</h4>
+<p>Oh huh, so slow but not insanely slow.. so then it's lack of cache and low instructions-per-cycle and such then that limits precompilation?</p>
+
+
+
+<a name="282378296"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282378296" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mosè Giordano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282378296">(May 14 2022 at 23:38)</a>:</h4>
+<p>I'm not sure about <em>why</em> it's so slow, maybe Chris has some ideas. In general Julia's compilation is very slow on some aarch64 boards with low memory, but I don't think this is the case for this CPU. In any case the experience is pretty bad.</p>
+<p>In the last weeks I'm doing some MPI performance to measure latency when using <a href="https://github.com/search?q=MPI.jl&amp;type=Repositories">MPI.jl</a> and Julia overhead compared to C. Some results are good, others less so, but I want to run more benchmarks in the next weeks.</p>
+
+
+
+<a name="282380555"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282380555" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mosè Giordano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282380555">(May 15 2022 at 00:41)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="284680">chriselrod</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto!.20and.20permutedims!/near/282371954">said</a>:</p>
+<blockquote>
+<p>but I do remain a bit skeptical.</p>
+</blockquote>
+<p>skeptical about what specifically?</p>
+
+
+
+<a name="282383193"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282383193" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282383193">(May 15 2022 at 01:57)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269186">Mosè Giordano</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto!.20and.20permutedims!/near/282380555">said</a>:</p>
+<blockquote>
+<p><span class="user-mention silent" data-user-id="284680">chriselrod</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto!.20and.20permutedims!/near/282371954">said</a>:</p>
+<blockquote>
+<p>but I do remain a bit skeptical.</p>
+</blockquote>
+<p>skeptical about what specifically?</p>
+</blockquote>
+<p>Skeptical may not have been the right word. I guess I could say "skeptical that the approach will be able enable small multithreaded BLAS that is competitive with MKL", but that's also not really the use case they're targeting, and other than looking good on benchmarks, I have to wonder how valuable that really is.</p>
+
+
+
+<a name="282383197"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282383197" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282383197">(May 15 2022 at 01:57)</a>:</h4>
+<p>The A64FX really doesn't look that bad on paper: <a href="https://www.stonybrook.edu/commcms/ookami/support/_docs/A64FX_Microarchitecture_Manual_en_1.3.pdf">https://www.stonybrook.edu/commcms/ookami/support/_docs/A64FX_Microarchitecture_Manual_en_1.3.pdf</a></p>
+
+
+
+<a name="282383244"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282383244" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282383244">(May 15 2022 at 01:58)</a>:</h4>
+<p>E.g., it has 128 floating point registers, vs 168 in Intel Skylake-X.</p>
+
+
+
+<a name="282383341"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282383341" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282383341">(May 15 2022 at 02:00)</a>:</h4>
+<p>"Commit stack entry" of 128, which if I'm reading correctly, should be compared with Skylake's ROB of 224.</p>
+
+
+
+<a name="282383356"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282383356" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282383356">(May 15 2022 at 02:00)</a>:</h4>
+<p>Both can decode 4 instructions/cycle.</p>
+
+
+
+<a name="282383496"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282383496" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282383496">(May 15 2022 at 02:04)</a>:</h4>
+<p>I.e., it looks slower than Skylake on paper, but compare that with chips like the A53 and A55, which are only dual-issue (half the A64FX's 4, which basically matches Skylake).</p>
+
+
+
+<a name="282666559"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multithreaded%20copyto%21%20and%20permutedims%21/near/282666559" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mark Kittisopikul <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multithreaded.20copyto.21.20and.20permutedims.21.html#282666559">(May 17 2022 at 16:20)</a>:</h4>
+<p>I'm just catching up here. Thank you for the great tips.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

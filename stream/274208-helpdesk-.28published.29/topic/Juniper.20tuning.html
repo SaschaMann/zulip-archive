@@ -1,0 +1,116 @@
+<html>
+<head><meta charset="utf-8"><title>Juniper tuning · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Juniper.20tuning.html">Juniper tuning</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="240747196"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Juniper%20tuning/near/240747196" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Juniper.20tuning.html#240747196">(May 30 2021 at 09:25)</a>:</h4>
+<p>I’m toying around with <a href="https://github.com/search?q=Juniper.jl&amp;type=Repositories">Juniper.jl</a> and I wonder if there exist and guideline for how to tune it if convergence is too slow.  Problem has about 900 binary variables.</p>
+<p>Is it e.g. possible to find advice for what is a good strategy if all constraints are linear (and presumably it is very easy to find feasible solutions) and it is just the objective which is non-linear. </p>
+<p>Furthermore, the non-linearity of the objective does not seem to matter much; Even if I change to a linear objective Juniper seems to choke (while Cbc solves it near instantly). </p>
+<p>Here is a (perhaps too) simplified mwe for the latter. In case it is not clear from the example I'm not very experienced with mathematical programming so I'm fully aware that I might have formulated the problem in a stupid way.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">createmodel</span><span class="p">()</span>
+    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">Juniper</span><span class="o">.</span><span class="n">Optimizer</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="kt">Dict</span><span class="p">{</span><span class="kt">Symbol</span><span class="p">,</span><span class="kt">Any</span><span class="p">}()</span>
+    <span class="n">params</span><span class="p">[</span><span class="ss">:nl_solver</span><span class="p">]</span> <span class="o">=</span> <span class="n">with_optimizer</span><span class="p">(</span><span class="n">Ipopt</span><span class="o">.</span><span class="n">Optimizer</span><span class="p">,</span> <span class="n">print_level</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">params</span><span class="p">[</span><span class="ss">:mip_solver</span><span class="p">]</span> <span class="o">=</span> <span class="n">with_optimizer</span><span class="p">(</span><span class="n">Cbc</span><span class="o">.</span><span class="n">Optimizer</span><span class="p">,</span> <span class="n">logLevel</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Model</span><span class="p">(</span><span class="n">with_optimizer</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">params</span><span class="p">))</span>
+<span class="k">end</span>
+
+<span class="k">function</span> <span class="n">mwe</span><span class="p">(</span><span class="n">psize</span><span class="p">;</span> <span class="n">model</span><span class="o">=</span><span class="n">createmodel</span><span class="p">(),</span> <span class="n">rng</span> <span class="o">=</span> <span class="n">Random</span><span class="o">.</span><span class="n">MersenneTwister</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+    <span class="c"># psize x psize choice variables</span>
+    <span class="n">assign</span> <span class="o">=</span> <span class="nd">@variable</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">assign</span><span class="p">[</span><span class="n">i</span><span class="o">=</span><span class="mi">1</span><span class="o">:</span><span class="n">psize</span><span class="p">,</span><span class="n">j</span><span class="o">=</span><span class="mi">1</span><span class="o">:</span><span class="n">psize</span><span class="p">],</span> <span class="n">Bin</span><span class="p">;</span> <span class="n">start</span> <span class="o">=</span> <span class="n">repeat</span><span class="p">(</span><span class="n">diagm</span><span class="p">(</span><span class="n">ones</span><span class="p">(</span><span class="n">psize</span><span class="p">)),</span> <span class="n">psize</span><span class="p">)[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">])</span>
+
+    <span class="c"># Constraint to select excactly one in each row and column</span>
+    <span class="nd">@constraint</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="p">[</span><span class="n">j</span><span class="o">=</span><span class="n">collect</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="n">psize</span><span class="p">)],</span> <span class="n">sum</span><span class="p">(</span><span class="n">assign</span><span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="n">psize</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="nd">@constraint</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="p">[</span><span class="n">i</span><span class="o">=</span><span class="n">collect</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="n">psize</span><span class="p">)],</span> <span class="n">sum</span><span class="p">(</span><span class="n">assign</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="n">psize</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">costmat</span> <span class="o">=</span> <span class="n">abs</span><span class="o">.</span><span class="p">(</span><span class="n">randn</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">psize</span><span class="p">))</span>
+    <span class="n">cost</span> <span class="o">=</span> <span class="nd">@expression</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">cost</span><span class="p">[</span><span class="n">i</span><span class="o">=</span><span class="mi">1</span><span class="o">:</span><span class="n">psize</span><span class="p">,</span><span class="n">j</span><span class="o">=</span><span class="mi">1</span><span class="o">:</span><span class="n">psize</span><span class="p">],</span> <span class="n">assign</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">costmat</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span>
+
+    <span class="c"># Minimize the maximum cost, real objective does not have this in it at all though</span>
+    <span class="n">maxcost</span> <span class="o">=</span> <span class="nd">@variable</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">maxcost</span><span class="p">)</span>
+    <span class="nd">@constraint</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="p">[</span><span class="n">i</span><span class="o">=</span><span class="mi">1</span><span class="o">:</span><span class="n">length</span><span class="p">(</span><span class="n">cost</span><span class="p">)],</span> <span class="n">maxcost</span> <span class="o">&gt;=</span> <span class="n">cost</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+    <span class="nd">@objective</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Min</span><span class="p">,</span> <span class="n">maxcost</span><span class="p">)</span>
+
+    <span class="n">optimize!</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+
+    <span class="nd">@show</span> <span class="n">JuMP</span><span class="o">.</span><span class="n">termination_status</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="nd">@show</span> <span class="n">JuMP</span><span class="o">.</span><span class="n">objective_value</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">JuMP</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="p">(</span><span class="n">assign</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="n">mwe</span><span class="p">(</span><span class="mi">30</span><span class="p">)</span> <span class="c"># Very slow convergence</span>
+
+<span class="n">mwe</span><span class="p">(</span><span class="mi">30</span><span class="p">;</span> <span class="n">model</span><span class="o">=</span><span class="n">JuMP</span><span class="o">.</span><span class="n">Model</span><span class="p">(</span><span class="n">JuMP</span><span class="o">.</span><span class="n">with_optimizer</span><span class="p">(</span><span class="n">Cbc</span><span class="o">.</span><span class="n">Optimizer</span><span class="p">)))</span> <span class="c"># Pretty much instant</span>
+</code></pre></div>
+
+
+
+<a name="240747387"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Juniper%20tuning/near/240747387" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Ole Kröger <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Juniper.20tuning.html#240747387">(May 30 2021 at 09:30)</a>:</h4>
+<p>Hey <span class="user-mention" data-user-id="300483">@DrChainsaw</span> thanks for using Juniper <span aria-label="wink" class="emoji emoji-1f609" role="img" title="wink">:wink:</span><br>
+Juniper works best, when the problem is non-linear and non-convex. Cbc can do a lot of special stuff for this linear problem. Nevertheless the first result using the feasibility pump should be good. I'll have a look as well.</p>
+
+
+
+<a name="240747661"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Juniper%20tuning/near/240747661" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Juniper.20tuning.html#240747661">(May 30 2021 at 09:38)</a>:</h4>
+<p><span class="user-mention" data-user-id="274912">@Ole Kröger</span>  Thanks for making it!</p>
+<p>I can make the non-linear mwe version as well, but it will be a bit more involved. I was thinking that making a linear version of the problem should not make it harder, but there is ofc the risk that it is hard for a different reason. </p>
+<p>Real problem shall maximize the harmonic mean of something like <code>log(a .* assigned ./ (b .* assigned + eps))</code> in case this helps.</p>
+
+
+
+<a name="240748079"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Juniper%20tuning/near/240748079" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Ole Kröger <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Juniper.20tuning.html#240748079">(May 30 2021 at 09:52)</a>:</h4>
+<p>The non linear solver Ipopt can't do all the great stuff a linear solver can do. And 900 variables is unfortunately already quite a bit for a non-convex MINLP solver</p>
+
+
+
+<a name="240748819"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Juniper%20tuning/near/240748819" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Juniper.20tuning.html#240748819">(May 30 2021 at 10:14)</a>:</h4>
+<blockquote>
+<p>The non linear solver Ipopt can't do all the great stuff a linear solver can do</p>
+</blockquote>
+<p>Yes, this much I have gathered :)</p>
+<p>The linear mwe was more or less me trying to break down the problem to see if I could find the pain points. E.g. if Cbc can't solve the linear mwe then there would be little hope for Juniper to solve the non-linear version and I would need to think of another way to formulate the problem. </p>
+<p>I'm not expecting Juniper to solve it as fast as Cbc due to the very reasons you mentioned. More hoping that there would exist some guideline when constraints are linear/simple (e.g. use more strong branching). It was a shot in the dark given how little I know about how to tackle MINLPs.</p>
+<p>Eitherway, I'm just basically toying around and if there is no simple guide here I'll just keep playing with it a bit while reading up on the different strategies while the program runs to see if I get an idea. That is also part of the fun.</p>
+<p>Fwiw, I do get pretty good solutions if I set the time out. Perhaps I'll add a genetic algorithm to play with the Juniper strategies <img alt=":troll:" class="emoji" src="https://uploads.zulipusercontent.net/e6ff66d298aadec033da2842b9d22acd7cabaab7/68747470733a2f2f7a756c69702d617661746172732e73332e616d617a6f6e6177732e636f6d2f373137382f656d6f6a692f696d616765732f31353235322e706e67" title="troll"></p>
+
+
+
+<a name="240748909"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Juniper%20tuning/near/240748909" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Ole Kröger <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Juniper.20tuning.html#240748909">(May 30 2021 at 10:16)</a>:</h4>
+<p>Understand, unfortunately I don't have an answer for that <span aria-label="smiley" class="emoji emoji-1f603" role="img" title="smiley">:smiley:</span> You might want to play around with running in parallel and longer strong branching. Have you actually let Juniper run til the end? If so: How long does it take?</p>
+
+
+
+<a name="240749546"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Juniper%20tuning/near/240749546" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Juniper.20tuning.html#240749546">(May 30 2021 at 10:34)</a>:</h4>
+<p>I have left it running for a couple of days and the "symptom" is that neither incumbent nor BestBound seems to budge from their initial values. Increasing strong branching seems to give a better solution (i.e a better incumbent which stays for the reminder of the optimization) so that is what I'm playing with now.</p>
+
+
+
+<a name="240749715"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Juniper%20tuning/near/240749715" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Juniper.20tuning.html#240749715">(May 30 2021 at 10:40)</a>:</h4>
+<p>Ha! I just did what seemed like a trivial change to the non-linear version and it termined in just a few minutes!!</p>
+<p>Something like <code>log(a .* assigned ./ (sum(f(assigned)) + eps))</code> =&gt; <code>log(a ./ (sum(assigned .* f(assigned) + eps))</code> (not exactly this, I have verified that they are equivalent) but basically moving a variable from nominator to the denominator.</p>
+
+
+
+<a name="240760773"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Juniper%20tuning/near/240760773" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Ole Kröger <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Juniper.20tuning.html#240760773">(May 30 2021 at 15:32)</a>:</h4>
+<p>Oh damn I missed your message. Great that you have figured it out though <span aria-label="thumbs up" class="emoji emoji-1f44d" role="img" title="thumbs up">:thumbs_up:</span></p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

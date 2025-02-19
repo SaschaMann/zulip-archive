@@ -1,0 +1,74 @@
+[
+    {
+        "content": "<p>If I run</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">SnoopCompile</span><span class=\"w\"></span>\n<span class=\"nd\">@snoopl</span><span class=\"w\"> </span><span class=\"s\">\"func_names.csv\"</span><span class=\"w\"> </span><span class=\"s\">\"llvm_timings.yaml\"</span><span class=\"w\"> </span><span class=\"k\">begin</span><span class=\"w\"></span>\n<span class=\"w\">   </span><span class=\"n\">my_code</span><span class=\"p\">()</span><span class=\"w\"></span>\n<span class=\"k\">end</span><span class=\"w\"></span>\n<span class=\"n\">times</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">info</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">SnoopCompile</span><span class=\"o\">.</span><span class=\"n\">read_snoopl</span><span class=\"p\">(</span><span class=\"s\">\"func_names.csv\"</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"s\">\"llvm_timings.yaml\"</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"n\">sum</span><span class=\"p\">(</span><span class=\"n\">first</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">times</span><span class=\"p\">)</span><span class=\"w\"></span>\n</code></pre></div>\n<p>Is <code>sum(first, times)</code> going to return approximately the total time spent by LLVM optimizing the function call?</p>",
+        "id": 287147077,
+        "sender_full_name": "Fredrik Bagge Carlson",
+        "timestamp": 1655963300
+    },
+    {
+        "content": "<p>When I snoop on inference using <code>@snoopi_deep</code>, I get that about half of the compilation time is in inference. With the approach above, I get a time corresponding roughly to the other half, indicating that (if the approach is reasonable) the compilation time is roughly 50/50 inferece/LLVM</p>",
+        "id": 287147111,
+        "sender_full_name": "Fredrik Bagge Carlson",
+        "timestamp": 1655963390
+    },
+    {
+        "content": "<p>You mean LLVM compiling binary code? I heard Valentin Churavy say that it’s about 30% LLVM time</p>",
+        "id": 287148920,
+        "sender_full_name": "Rik Huijzer",
+        "timestamp": 1655965567
+    },
+    {
+        "content": "<p>Yeah, I'm after the percentage of total compilation time that is taken up by LLVM, since I will not attempt to reduce this any further. LLVM really dislikes some things, e.g., very large functions, so the LLVM time can be greater in some situations than others</p>",
+        "id": 287149864,
+        "sender_full_name": "Fredrik Bagge Carlson",
+        "timestamp": 1655966210
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"431304\">Rik Huijzer</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Snoop.20on.20LLVM/near/287148920\">said</a>:</p>\n<blockquote>\n<p>You mean LLVM compiling binary code? I heard Valentin Churavy say that it’s about 30% LLVM time</p>\n</blockquote>\n<p>I think that's a rule of thumb, because I've also seen breakdowns like what <span class=\"user-mention\" data-user-id=\"272599\">@Fredrik Bagge Carlson</span> mentioned. Large functions definitely appear to be a culprit.</p>",
+        "id": 287193641,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1655992528
+    },
+    {
+        "content": "<p>either way, LLVM time is a big chunk and there's no really easy way for us to speed that up</p>",
+        "id": 287226427,
+        "sender_full_name": "Sukera",
+        "timestamp": 1656007021
+    },
+    {
+        "content": "<p>Mechanisms for finer-grained application of optlevels could help. e.g. exclude \"glue code\" but keep optimizing hot loops, broadcasts etc. The current module-level setting is too coarse.</p>",
+        "id": 287226647,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1656007133
+    },
+    {
+        "content": "<p>Maybe julia could add some benchmarks to the llvm benchmark tracker </p>\n<p><a href=\"https://www.npopov.com/2020/05/10/Make-LLVM-fast-again.html\">https://www.npopov.com/2020/05/10/Make-LLVM-fast-again.html</a><br>\n<a href=\"http://llvm-compile-time-tracker.com/index.php\">http://llvm-compile-time-tracker.com/index.php</a></p>",
+        "id": 287228667,
+        "sender_full_name": "jar",
+        "timestamp": 1656008107
+    },
+    {
+        "content": "<p>Compile with <code>-DENABLE_TIMINGS</code> or uncomment:<br>\n<a href=\"https://github.com/JuliaLang/julia/blob/4873773d37e06d01ad13a0d55df684789ddd29ad/src/options.h#L87\">https://github.com/JuliaLang/julia/blob/4873773d37e06d01ad13a0d55df684789ddd29ad/src/options.h#L87</a></p>",
+        "id": 287235217,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1656011459
+    },
+    {
+        "content": "<p>That will give you a breakdown of where time was spent whenever a Julia process exits.</p>",
+        "id": 287235282,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1656011513
+    },
+    {
+        "content": "<p><code>JULIA_LLVM_ARGS=\"-time-passes\" julia</code></p>",
+        "id": 287235343,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1656011535
+    },
+    {
+        "content": "<p>will give you a breakdown of where LLVM spent its time.</p>",
+        "id": 287235347,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1656011541
+    }
+]

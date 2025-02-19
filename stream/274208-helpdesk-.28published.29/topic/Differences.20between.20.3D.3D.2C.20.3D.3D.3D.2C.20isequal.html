@@ -1,0 +1,194 @@
+<html>
+<head><meta charset="utf-8"><title>Differences between ==, ===, isequal · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Differences.20between.20.3D.3D.2C.20.3D.3D.3D.2C.20isequal.html">Differences between ==, ===, isequal</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="224676390"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Differences%20between%20%3D%3D%2C%20%3D%3D%3D%2C%20isequal/near/224676390" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Differences.20between.20.3D.3D.2C.20.3D.3D.3D.2C.20isequal.html#224676390">(Feb 01 2021 at 01:12)</a>:</h4>
+<p>Can you please elaborate on the differences between <code>==</code>, <code>===</code> and <code>isequal</code>? If you had to explain the differences to a newcomer, how would you do it? Can you also give some advise for developers who wish to implement "equality" for their own types?</p>
+
+
+
+<a name="224677236"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Differences%20between%20%3D%3D%2C%20%3D%3D%3D%2C%20isequal/near/224677236" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Differences.20between.20.3D.3D.2C.20.3D.3D.3D.2C.20isequal.html#224677236">(Feb 01 2021 at 01:31)</a>:</h4>
+<p>I would say something along the lines of</p>
+<blockquote>
+<p>There are various notions of equality that are useful for various circumstances. Sometimes we want to be able to distinguish between <code>1.0</code> and <code>1</code> for instance. Sometimes, we think 'yes, these two objects represent the same concept' but other times we want to be able to say 'well, even if they're closely related, they're nor <em>literally</em> identically the same'</p>
+<p>This is where <code>==</code> versus <code>===</code> comes in. <code>==</code> is sometimes called 'equality' whereas <code>===</code> means 'egality' (from German, egal)</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="mi">1</span> <span class="o">==</span> <span class="mf">1.0</span>
+<span class="kc">true</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="mi">1</span> <span class="o">===</span> <span class="mf">1.0</span>
+<span class="kc">false</span>
+</code></pre></div>
+<p>The difference between <code>==</code> and isequal` is a bit more subtle, but they're usually the same, except for with Floating point numbers where they behave a bit different for legacy compatability reasons</p>
+</blockquote>
+
+
+
+<a name="224677403"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Differences%20between%20%3D%3D%2C%20%3D%3D%3D%2C%20isequal/near/224677403" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Benoit Pasquier <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Differences.20between.20.3D.3D.2C.20.3D.3D.3D.2C.20isequal.html#224677403">(Feb 01 2021 at 01:35)</a>:</h4>
+<p>Maybe extend the example to <code>1</code>, <code>1.0</code>, and <code>NaN</code>? As in</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">vals</span> <span class="o">=</span> <span class="kt">Any</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="nb">NaN</span><span class="p">]</span>
+<span class="mi">3</span><span class="o">-</span><span class="n">element</span> <span class="kt">Array</span><span class="p">{</span><span class="kt">Any</span><span class="p">,</span><span class="mi">1</span><span class="p">}</span><span class="o">:</span>
+   <span class="mi">1</span>
+   <span class="mf">1.0</span>
+ <span class="nb">NaN</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="p">[</span><span class="n">isequal</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="kp">in</span> <span class="n">vals</span><span class="p">,</span> <span class="n">y</span> <span class="kp">in</span> <span class="n">vals</span><span class="p">]</span>
+<span class="mi">3</span><span class="n">×3</span> <span class="kt">Array</span><span class="p">{</span><span class="kt">Bool</span><span class="p">,</span><span class="mi">2</span><span class="p">}</span><span class="o">:</span>
+ <span class="mi">1</span>  <span class="mi">1</span>  <span class="mi">0</span>
+ <span class="mi">1</span>  <span class="mi">1</span>  <span class="mi">0</span>
+ <span class="mi">0</span>  <span class="mi">0</span>  <span class="mi">1</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="p">[</span><span class="n">x</span> <span class="o">==</span> <span class="n">y</span> <span class="k">for</span> <span class="n">x</span> <span class="kp">in</span> <span class="n">vals</span><span class="p">,</span> <span class="n">y</span> <span class="kp">in</span> <span class="n">vals</span><span class="p">]</span>
+<span class="mi">3</span><span class="n">×3</span> <span class="kt">Array</span><span class="p">{</span><span class="kt">Bool</span><span class="p">,</span><span class="mi">2</span><span class="p">}</span><span class="o">:</span>
+ <span class="mi">1</span>  <span class="mi">1</span>  <span class="mi">0</span>
+ <span class="mi">1</span>  <span class="mi">1</span>  <span class="mi">0</span>
+ <span class="mi">0</span>  <span class="mi">0</span>  <span class="mi">0</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="p">[</span><span class="n">x</span> <span class="o">===</span> <span class="n">y</span> <span class="k">for</span> <span class="n">x</span> <span class="kp">in</span> <span class="n">vals</span><span class="p">,</span> <span class="n">y</span> <span class="kp">in</span> <span class="n">vals</span><span class="p">]</span>
+<span class="mi">3</span><span class="n">×3</span> <span class="kt">Array</span><span class="p">{</span><span class="kt">Bool</span><span class="p">,</span><span class="mi">2</span><span class="p">}</span><span class="o">:</span>
+ <span class="mi">1</span>  <span class="mi">0</span>  <span class="mi">0</span>
+ <span class="mi">0</span>  <span class="mi">1</span>  <span class="mi">0</span>
+ <span class="mi">0</span>  <span class="mi">0</span>  <span class="mi">1</span>
+</code></pre></div>
+
+
+
+<a name="224677548"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Differences%20between%20%3D%3D%2C%20%3D%3D%3D%2C%20isequal/near/224677548" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Differences.20between.20.3D.3D.2C.20.3D.3D.3D.2C.20isequal.html#224677548">(Feb 01 2021 at 01:39)</a>:</h4>
+<p>Two nans helps a bit actually:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">vals</span> <span class="o">=</span> <span class="kt">Any</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="nb">NaN</span><span class="p">,</span> <span class="nb">NaN</span><span class="p">]</span>
+<span class="mi">4</span><span class="o">-</span><span class="n">element</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">Any</span><span class="p">}</span><span class="o">:</span>
+   <span class="mi">1</span>
+   <span class="mf">1.0</span>
+ <span class="nb">NaN</span>
+ <span class="nb">NaN</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="p">[</span><span class="n">isequal</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="kp">in</span> <span class="n">vals</span><span class="p">,</span> <span class="n">y</span> <span class="kp">in</span> <span class="n">vals</span><span class="p">]</span>
+<span class="mi">4</span><span class="n">×4</span> <span class="kt">Matrix</span><span class="p">{</span><span class="kt">Bool</span><span class="p">}</span><span class="o">:</span>
+ <span class="mi">1</span>  <span class="mi">1</span>  <span class="mi">0</span>  <span class="mi">0</span>
+ <span class="mi">1</span>  <span class="mi">1</span>  <span class="mi">0</span>  <span class="mi">0</span>
+ <span class="mi">0</span>  <span class="mi">0</span>  <span class="mi">1</span>  <span class="mi">1</span>
+ <span class="mi">0</span>  <span class="mi">0</span>  <span class="mi">1</span>  <span class="mi">1</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="p">[</span><span class="n">x</span> <span class="o">==</span> <span class="n">y</span> <span class="k">for</span> <span class="n">x</span> <span class="kp">in</span> <span class="n">vals</span><span class="p">,</span> <span class="n">y</span> <span class="kp">in</span> <span class="n">vals</span><span class="p">]</span>
+<span class="mi">4</span><span class="n">×4</span> <span class="kt">Matrix</span><span class="p">{</span><span class="kt">Bool</span><span class="p">}</span><span class="o">:</span>
+ <span class="mi">1</span>  <span class="mi">1</span>  <span class="mi">0</span>  <span class="mi">0</span>
+ <span class="mi">1</span>  <span class="mi">1</span>  <span class="mi">0</span>  <span class="mi">0</span>
+ <span class="mi">0</span>  <span class="mi">0</span>  <span class="mi">0</span>  <span class="mi">0</span>
+ <span class="mi">0</span>  <span class="mi">0</span>  <span class="mi">0</span>  <span class="mi">0</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="p">[</span><span class="n">x</span> <span class="o">===</span> <span class="n">y</span> <span class="k">for</span> <span class="n">x</span> <span class="kp">in</span> <span class="n">vals</span><span class="p">,</span> <span class="n">y</span> <span class="kp">in</span> <span class="n">vals</span><span class="p">]</span>
+<span class="mi">4</span><span class="n">×4</span> <span class="kt">Matrix</span><span class="p">{</span><span class="kt">Bool</span><span class="p">}</span><span class="o">:</span>
+ <span class="mi">1</span>  <span class="mi">0</span>  <span class="mi">0</span>  <span class="mi">0</span>
+ <span class="mi">0</span>  <span class="mi">1</span>  <span class="mi">0</span>  <span class="mi">0</span>
+ <span class="mi">0</span>  <span class="mi">0</span>  <span class="mi">1</span>  <span class="mi">1</span>
+ <span class="mi">0</span>  <span class="mi">0</span>  <span class="mi">1</span>  <span class="mi">1</span>
+</code></pre></div>
+
+
+
+<a name="224677687"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Differences%20between%20%3D%3D%2C%20%3D%3D%3D%2C%20isequal/near/224677687" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Benoit Pasquier <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Differences.20between.20.3D.3D.2C.20.3D.3D.3D.2C.20isequal.html#224677687">(Feb 01 2021 at 01:42)</a>:</h4>
+<p>I'm not sure I see why <span aria-label="sweat smile" class="emoji emoji-1f605" role="img" title="sweat smile">:sweat_smile:</span></p>
+
+
+
+<a name="224677728"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Differences%20between%20%3D%3D%2C%20%3D%3D%3D%2C%20isequal/near/224677728" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Benoit Pasquier <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Differences.20between.20.3D.3D.2C.20.3D.3D.3D.2C.20isequal.html#224677728">(Feb 01 2021 at 01:44)</a>:</h4>
+<p>Oh I <del>know</del> <em>think I get it</em>, what about this:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">vals</span> <span class="o">=</span> <span class="kt">Any</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="nb">NaN</span><span class="p">,</span> <span class="mi">0</span><span class="o">/</span><span class="mi">0</span><span class="p">]</span>
+<span class="mi">4</span><span class="o">-</span><span class="n">element</span> <span class="kt">Array</span><span class="p">{</span><span class="kt">Any</span><span class="p">,</span><span class="mi">1</span><span class="p">}</span><span class="o">:</span>
+   <span class="mi">1</span>
+   <span class="mf">1.0</span>
+ <span class="nb">NaN</span>
+ <span class="nb">NaN</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="p">[</span><span class="n">isequal</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="kp">in</span> <span class="n">vals</span><span class="p">,</span> <span class="n">y</span> <span class="kp">in</span> <span class="n">vals</span><span class="p">]</span>
+<span class="mi">4</span><span class="n">×4</span> <span class="kt">Array</span><span class="p">{</span><span class="kt">Bool</span><span class="p">,</span><span class="mi">2</span><span class="p">}</span><span class="o">:</span>
+ <span class="mi">1</span>  <span class="mi">1</span>  <span class="mi">0</span>  <span class="mi">0</span>
+ <span class="mi">1</span>  <span class="mi">1</span>  <span class="mi">0</span>  <span class="mi">0</span>
+ <span class="mi">0</span>  <span class="mi">0</span>  <span class="mi">1</span>  <span class="mi">1</span>
+ <span class="mi">0</span>  <span class="mi">0</span>  <span class="mi">1</span>  <span class="mi">1</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="p">[</span><span class="n">x</span> <span class="o">==</span> <span class="n">y</span> <span class="k">for</span> <span class="n">x</span> <span class="kp">in</span> <span class="n">vals</span><span class="p">,</span> <span class="n">y</span> <span class="kp">in</span> <span class="n">vals</span><span class="p">]</span>
+<span class="mi">4</span><span class="n">×4</span> <span class="kt">Array</span><span class="p">{</span><span class="kt">Bool</span><span class="p">,</span><span class="mi">2</span><span class="p">}</span><span class="o">:</span>
+ <span class="mi">1</span>  <span class="mi">1</span>  <span class="mi">0</span>  <span class="mi">0</span>
+ <span class="mi">1</span>  <span class="mi">1</span>  <span class="mi">0</span>  <span class="mi">0</span>
+ <span class="mi">0</span>  <span class="mi">0</span>  <span class="mi">0</span>  <span class="mi">0</span>
+ <span class="mi">0</span>  <span class="mi">0</span>  <span class="mi">0</span>  <span class="mi">0</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="p">[</span><span class="n">x</span> <span class="o">===</span> <span class="n">y</span> <span class="k">for</span> <span class="n">x</span> <span class="kp">in</span> <span class="n">vals</span><span class="p">,</span> <span class="n">y</span> <span class="kp">in</span> <span class="n">vals</span><span class="p">]</span>
+<span class="mi">4</span><span class="n">×4</span> <span class="kt">Array</span><span class="p">{</span><span class="kt">Bool</span><span class="p">,</span><span class="mi">2</span><span class="p">}</span><span class="o">:</span>
+ <span class="mi">1</span>  <span class="mi">0</span>  <span class="mi">0</span>  <span class="mi">0</span>
+ <span class="mi">0</span>  <span class="mi">1</span>  <span class="mi">0</span>  <span class="mi">0</span>
+ <span class="mi">0</span>  <span class="mi">0</span>  <span class="mi">1</span>  <span class="mi">0</span>
+ <span class="mi">0</span>  <span class="mi">0</span>  <span class="mi">0</span>  <span class="mi">1</span>
+</code></pre></div>
+
+
+
+<a name="224677934"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Differences%20between%20%3D%3D%2C%20%3D%3D%3D%2C%20isequal/near/224677934" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Differences.20between.20.3D.3D.2C.20.3D.3D.3D.2C.20isequal.html#224677934">(Feb 01 2021 at 01:48)</a>:</h4>
+<p>Yeah, <code>isequal</code> treats all various <code>NaN</code> values (of which there are many!) the same.</p>
+
+
+
+<a name="224678084"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Differences%20between%20%3D%3D%2C%20%3D%3D%3D%2C%20isequal/near/224678084" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Benoit Pasquier <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Differences.20between.20.3D.3D.2C.20.3D.3D.3D.2C.20isequal.html#224678084">(Feb 01 2021 at 01:52)</a>:</h4>
+<p>BTW, are you sure the origin for egal is not french? (Could not find the flag emojis!)</p>
+
+
+
+<a name="224678241"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Differences%20between%20%3D%3D%2C%20%3D%3D%3D%2C%20isequal/near/224678241" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Differences.20between.20.3D.3D.2C.20.3D.3D.3D.2C.20isequal.html#224678241">(Feb 01 2021 at 01:56)</a>:</h4>
+<p>Ah I didn't realize this was also in french. Looks like it's a loan word in German from French!</p>
+
+
+
+<a name="224687648"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Differences%20between%20%3D%3D%2C%20%3D%3D%3D%2C%20isequal/near/224687648" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Benoit Pasquier <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Differences.20between.20.3D.3D.2C.20.3D.3D.3D.2C.20isequal.html#224687648">(Feb 01 2021 at 05:40)</a>:</h4>
+<p>I have no idea, I just asked because we also say "égal" in french, like in the french moto <a href="https://en.wikipedia.org/wiki/Libert%C3%A9,_%C3%A9galit%C3%A9,_fraternit%C3%A9">"Liberté, Égalité, Fraternité" </a></p>
+
+
+
+<a name="224697888"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Differences%20between%20%3D%3D%2C%20%3D%3D%3D%2C%20isequal/near/224697888" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Florian Große <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Differences.20between.20.3D.3D.2C.20.3D.3D.3D.2C.20isequal.html#224697888">(Feb 01 2021 at 08:40)</a>:</h4>
+<p>You should add a <code>missing</code>, too. <code>missing === missing</code> but not <code>missing == missing</code>, which is... <code>missing</code> ^^</p>
+
+
+
+<a name="224700613"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Differences%20between%20%3D%3D%2C%20%3D%3D%3D%2C%20isequal/near/224700613" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Differences.20between.20.3D.3D.2C.20.3D.3D.3D.2C.20isequal.html#224700613">(Feb 01 2021 at 09:11)</a>:</h4>
+<p>Yes it would be nice to add missing to the great code snippets above.</p>
+
+
+
+<a name="224709222"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Differences%20between%20%3D%3D%2C%20%3D%3D%3D%2C%20isequal/near/224709222" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Benoit Pasquier <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Differences.20between.20.3D.3D.2C.20.3D.3D.3D.2C.20isequal.html#224709222">(Feb 01 2021 at 10:45)</a>:</h4>
+<p>Oh wait, is it better to edit my post above (because it is published now?) or should I just reply?</p>
+
+
+
+<a name="224714210"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Differences%20between%20%3D%3D%2C%20%3D%3D%3D%2C%20isequal/near/224714210" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Abbott <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Differences.20between.20.3D.3D.2C.20.3D.3D.3D.2C.20isequal.html#224714210">(Feb 01 2021 at 11:41)</a>:</h4>
+<p>Maybe it's worth including minus zero? <code>vals = Any[0, 0.0, -0.0, NaN, 0/0, missing]</code>. Would actually be great to put this in the docs somewhere.</p>
+
+
+
+<a name="224819839"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Differences%20between%20%3D%3D%2C%20%3D%3D%3D%2C%20isequal/near/224819839" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rein Zustand <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Differences.20between.20.3D.3D.2C.20.3D.3D.3D.2C.20isequal.html#224819839">(Feb 02 2021 at 01:55)</a>:</h4>
+<p>Strange. Egality seems to be closer in meaning to equivalence. I'd inclined to think that <code>1</code> is equivalent to <code>1.0</code>, but not equal to <code>1.0</code>.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

@@ -1,0 +1,68 @@
+[
+    {
+        "content": "<p>I have a struct in which I'd like to create a \"parallel\" or \"auxiliary\" type, in order to make use of multiple dispatch, and I was wondering how this could be done... Here is a non-working example with the gist of what I'd like to do:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">abstract type</span> <span class=\"kt\">ShapeParameter</span> <span class=\"k\">end</span>\n<span class=\"k\">abstract type</span> <span class=\"kt\">SizeParameter</span> <span class=\"k\">end</span>\n<span class=\"k\">struct</span> <span class=\"kt\">Example</span>\n <span class=\"n\">x</span> <span class=\"o\">::</span> <span class=\"kt\">Real</span> <span class=\"o\">&lt;:</span> <span class=\"kt\">ShapeParameter</span>\n <span class=\"n\">y</span> <span class=\"o\">::</span> <span class=\"kt\">Real</span> <span class=\"o\">&lt;:</span> <span class=\"kt\">SizeParameter</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>Now, I can of course just do:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"kt\">ShapeParameter</span>\n <span class=\"n\">shape</span><span class=\"o\">::</span><span class=\"kt\">Real</span>\n<span class=\"k\">end</span>\n<span class=\"k\">struct</span> <span class=\"kt\">SizeParameter</span>\n <span class=\"n\">size</span><span class=\"o\">::</span><span class=\"kt\">Real</span>\n<span class=\"k\">end</span>\n<span class=\"k\">struct</span> <span class=\"kt\">Example</span>\n <span class=\"n\">x</span> <span class=\"o\">::</span><span class=\"kt\">ShapeParameter</span>\n <span class=\"n\">y</span> <span class=\"o\">::</span><span class=\"kt\">SizeParameter</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>But this solution has the down side that now I cannot just do <code>Example().x</code>.</p>\n<p>And since it's related. I was wondering if it would be possible to similarly create \"alternate\" types such as <code>PositiveReal</code>, <code>NegativeReal</code> and so on. Such that <code>1.0 &lt;: Real </code> is true and so is <code>1.0 &lt;: PositiveReal</code>.</p>",
+        "id": 269266964,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1643122149
+    },
+    {
+        "content": "<p>Would this work for you? Edit: this is wrong <span aria-label=\"cross mark\" class=\"emoji emoji-274c\" role=\"img\" title=\"cross mark\">:cross_mark:</span></p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"n\">ShapeParameter</span> <span class=\"o\">=</span> <span class=\"kt\">Real</span>\n<span class=\"go\">Real</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">SizeParameter</span> <span class=\"o\">=</span> <span class=\"kt\">Real</span>\n<span class=\"go\">Real</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"k\">struct</span> <span class=\"kt\">Example</span>\n         <span class=\"n\">x</span> <span class=\"o\">::</span> <span class=\"n\">ShapeParameter</span>\n         <span class=\"n\">y</span> <span class=\"o\">::</span> <span class=\"n\">SizeParameter</span>\n       <span class=\"k\">end</span>\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">ex</span> <span class=\"o\">=</span> <span class=\"n\">Example</span><span class=\"p\">(</span><span class=\"mf\">4.5</span><span class=\"p\">,</span> <span class=\"mf\">3.14</span><span class=\"p\">)</span>\n<span class=\"go\">Example(4.5, 3.14)</span>\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">r</span><span class=\"o\">::</span><span class=\"kt\">Real</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"s\">\"real arg\"</span>\n<span class=\"go\">f (generic function with 1 method)</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"o\">::</span><span class=\"kt\">ShapeParameter</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"s\">\"shape arg\"</span>\n<span class=\"go\">f (generic function with 1 method)</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"o\">.</span><span class=\"n\">x</span><span class=\"p\">)</span>\n<span class=\"go\">\"shape arg\"</span>\n</code></pre></div>",
+        "id": 269269764,
+        "sender_full_name": "Sundar R",
+        "timestamp": 1643123290
+    },
+    {
+        "content": "<p>You can also use the solution in your post, and fix </p>\n<blockquote>\n<p>But this solution has the down side that now I cannot just do <code>Example().x</code></p>\n</blockquote>\n<p>by defining <code>getproperty</code> and <code>setproperty!</code> methods for the <code>Example</code> type that pass the operations through to the underlying <code>Real</code> value</p>",
+        "id": 269270489,
+        "sender_full_name": "Sundar R",
+        "timestamp": 1643123569
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"423970\">Sundar R</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Creating.20parallel.20types.20in.20order.20to.20dispatch/near/269269764\">said</a>:</p>\n<blockquote>\n<p>Would this work for you? </p>\n<p><div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"n\">ShapeParameter</span> <span class=\"o\">=</span> <span class=\"kt\">Real</span>\n<span class=\"go\">Real</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">SizeParameter</span> <span class=\"o\">=</span> <span class=\"kt\">Real</span>\n<span class=\"go\">Real</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"k\">struct</span> <span class=\"kt\">Example</span>\n         <span class=\"n\">x</span> <span class=\"o\">::</span> <span class=\"n\">ShapeParameter</span>\n         <span class=\"n\">y</span> <span class=\"o\">::</span> <span class=\"n\">SizeParameter</span>\n       <span class=\"k\">end</span>\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">ex</span> <span class=\"o\">=</span> <span class=\"n\">Example</span><span class=\"p\">(</span><span class=\"mf\">4.5</span><span class=\"p\">,</span> <span class=\"mf\">3.14</span><span class=\"p\">)</span>\n<span class=\"go\">Example(4.5, 3.14)</span>\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">r</span><span class=\"o\">::</span><span class=\"kt\">Real</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"s\">\"real arg\"</span>\n<span class=\"go\">f (generic function with 1 method)</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"o\">::</span><span class=\"kt\">ShapeParameter</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"s\">\"shape arg\"</span>\n<span class=\"go\">f (generic function with 1 method)</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"o\">.</span><span class=\"n\">x</span><span class=\"p\">)</span>\n<span class=\"go\">\"shape arg\"</span>\n</code></pre></div><br>\n</p>\n</blockquote>\n<p><span class=\"user-mention\" data-user-id=\"423970\">@Sundar R</span> , your example didn't work :(</p>",
+        "id": 269271846,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1643124111
+    },
+    {
+        "content": "<p>I mean, it's actually just calling the function that was more recently defined.</p>",
+        "id": 269271940,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1643124135
+    },
+    {
+        "content": "<p>Can you expand on the solution with  <code>getproperty</code>?</p>",
+        "id": 269272285,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1643124277
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"358317\">Davi Sales Barreira</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Creating.20parallel.20types.20in.20order.20to.20dispatch/near/269272285\">said</a>:</p>\n<blockquote>\n<p>Can you expand on the solution with  <code>getproperty</code>?</p>\n</blockquote>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"k\">import</span> <span class=\"n\">Base</span><span class=\"o\">:</span> <span class=\"n\">getproperty</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"k\">function</span> <span class=\"n\">getproperty</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"o\">::</span><span class=\"kt\">Example</span><span class=\"p\">,</span> <span class=\"n\">sym</span><span class=\"o\">::</span><span class=\"kt\">Symbol</span><span class=\"p\">)</span>\n         <span class=\"k\">if</span> <span class=\"n\">sym</span> <span class=\"o\">==</span> <span class=\"ss\">:x</span>\n           <span class=\"n\">getfield</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"p\">,</span> <span class=\"ss\">:x</span><span class=\"p\">)</span><span class=\"o\">.</span><span class=\"n\">shape</span>\n         <span class=\"k\">elseif</span> <span class=\"n\">sym</span> <span class=\"o\">==</span> <span class=\"ss\">:y</span>\n           <span class=\"n\">getfield</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"p\">,</span> <span class=\"ss\">:y</span><span class=\"p\">)</span><span class=\"o\">.</span><span class=\"n\">size</span>\n         <span class=\"k\">else</span>\n           <span class=\"n\">getfield</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"p\">,</span> <span class=\"n\">sym</span><span class=\"p\">)</span>\n         <span class=\"k\">end</span>\n       <span class=\"k\">end</span>\n<span class=\"go\">getproperty (generic function with 47 methods)</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">ex</span> <span class=\"o\">=</span> <span class=\"n\">Example</span><span class=\"p\">(</span><span class=\"n\">ShapeParameter</span><span class=\"p\">(</span><span class=\"mf\">4.5</span><span class=\"p\">),</span> <span class=\"n\">SizeParameter</span><span class=\"p\">(</span><span class=\"mf\">3.14</span><span class=\"p\">))</span>\n<span class=\"go\">Example(ShapeParameter(4.5), SizeParameter(3.14))</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">ex</span><span class=\"o\">.</span><span class=\"n\">x</span>\n<span class=\"go\">4.5</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">ex</span><span class=\"o\">.</span><span class=\"n\">y</span>\n<span class=\"go\">3.14</span>\n</code></pre></div>",
+        "id": 269273551,
+        "sender_full_name": "Sundar R",
+        "timestamp": 1643124778
+    },
+    {
+        "content": "<p>Thanks!</p>",
+        "id": 269275259,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1643125438
+    },
+    {
+        "content": "<p>That's kind of a problematic solution too though, now that I think about it. Any time you access the fields, we're throwing away the type information, so in most circumstances this would be similar to them being just <code>Real</code> types (for the purpose of dispatch).</p>",
+        "id": 269277040,
+        "sender_full_name": "Sundar R",
+        "timestamp": 1643126078
+    },
+    {
+        "content": "<p>It actually worked for my case.</p>",
+        "id": 269282268,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1643128071
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"358317\">Davi Sales Barreira</span> has marked this topic as resolved.</p>",
+        "id": 269283666,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1643128610
+    }
+]

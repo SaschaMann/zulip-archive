@@ -1,0 +1,84 @@
+<html>
+<head><meta charset="utf-8"><title>Show custom type - all the bells and whistles · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Show.20custom.20type.20-.20all.20the.20bells.20and.20whistles.html">Show custom type - all the bells and whistles</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="252639570"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Show%20custom%20type%20-%20all%20the%20bells%20and%20whistles/near/252639570" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kevin Bonham <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Show.20custom.20type.20-.20all.20the.20bells.20and.20whistles.html#252639570">(Sep 09 2021 at 14:52)</a>:</h4>
+<p>I've definitely asked variants of all of these questions before, but every time it comes up, I get confused again. Is there anywhere I can read a comprehensive guide to dealing with the way my custom type is displayed? I've read around the manual (eg <a href="https://docs.julialang.org/en/v1/base/io-network/#Base.show-Tuple{IO,%20Any,%20Any}">here</a> and <a href="https://docs.julialang.org/en/v1/base/io-network/#Base.repr-Tuple{MIME,%20Any}">here</a>), and at one point I tried to read through the issue a couple of versions ago where the representation of vectors was changed, but I remain confused about:</p>
+<ol>
+<li>What are the different MIME types? Which ones make sense to support?</li>
+<li>What do I need to consider for <a href="https://docs.julialang.org/en/v1/base/io-network/#Base.IOContext-Tuple{IO,%20Pair}"><code>IOContext</code></a>? Eg. I think I'll want do deal with <code>:compact</code> and <code>:limit</code>, in particular, but how would I know?</li>
+<li>What's the difference between what happens when a type is displayed at the REPL, when I call <code>print(thing)</code>, when I call <code>show(thing)</code>, when I call <code>@show thing</code>, or when I write <code>thing</code> to a file? Eg</li>
+</ol>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span> <span class="n">a</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="go">3-element Vector{Float64}:</span>
+<span class="go"> 0.20666407638083917</span>
+<span class="go"> 0.0861516328854468</span>
+<span class="go"> 0.5337028655172353</span>
+
+<span class="gp">julia&gt;</span> <span class="n">print</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+<span class="go">[0.20666407638083917, 0.0861516328854468, 0.5337028655172353]</span>
+<span class="gp">julia&gt;</span> <span class="n">show</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+<span class="go">[0.20666407638083917, 0.0861516328854468, 0.5337028655172353]</span>
+<span class="gp">julia&gt;</span> <span class="nd">@show</span> <span class="n">a</span>
+<span class="go">a = [0.20666407638083917, 0.0861516328854468, 0.5337028655172353]</span>
+<span class="go">3-element Vector{Float64}:</span>
+<span class="go"> 0.20666407638083917</span>
+<span class="go"> 0.0861516328854468</span>
+<span class="go"> 0.5337028655172353</span>
+
+<span class="gp">julia&gt;</span> <span class="n">path</span><span class="p">,</span> <span class="n">io</span> <span class="o">=</span> <span class="n">mktemp</span><span class="p">()</span>
+<span class="go">("/tmp/jl_Fxk9CS", IOStream(&lt;fd 24&gt;))</span>
+
+<span class="gp">julia&gt;</span> <span class="n">write</span><span class="p">(</span><span class="n">io</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
+<span class="go">24</span>
+
+<span class="gp">julia&gt;</span> <span class="n">close</span><span class="p">(</span><span class="n">io</span><span class="p">)</span>
+
+<span class="gp">shell&gt;</span> cat $path
+<span class="go">�(���s�? p�^N�?F�^X^T�?</span>
+
+<span class="gp">julia&gt;</span> <span class="n">path</span><span class="p">,</span> <span class="n">io</span> <span class="o">=</span> <span class="n">mktemp</span><span class="p">()</span>
+<span class="go">("/tmp/jl_Onx4qM", IOStream(&lt;fd 22&gt;))</span>
+
+<span class="gp">julia&gt;</span> <span class="n">print</span><span class="p">(</span><span class="n">io</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
+
+<span class="gp">julia&gt;</span> <span class="n">close</span><span class="p">(</span><span class="n">io</span><span class="p">)</span>
+
+<span class="gp">shell&gt;</span> cat $path
+<span class="go">[0.20666407638083917, 0.0861516328854468, 0.5337028655172353]</span>
+</code></pre></div>
+<ol start="4">
+<li>How do I write unit tests for the display?</li>
+</ol>
+
+
+
+<a name="252646160"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Show%20custom%20type%20-%20all%20the%20bells%20and%20whistles/near/252646160" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Show.20custom.20type.20-.20all.20the.20bells.20and.20whistles.html#252646160">(Sep 09 2021 at 15:33)</a>:</h4>
+<ol>
+<li>
+<p>There are lots, see for example <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types">https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types</a>). Which ones you want to support, well, I guess it is up to you. A <code>text/plain</code> is essentially required though. And if your object can display pretty in HTML for example, then why not support that too.</p>
+</li>
+<li>
+<p>I believe <code>IOContext</code> is only used for <code>text/plain</code>, and then I am only aware of <code>:compact</code>, <code>:limit</code>, and <code>:color</code>.</p>
+</li>
+<li>
+<p><code>write</code> writes a binary representation (hence the garbage). <code>print</code> defaults to <code>show</code>, <code>@show</code> calls <code>show</code> (through <code>repr</code>).</p>
+</li>
+<li>
+<p>Non <code>text/</code> mimes are difficult to test I guess, but otherwise e.g. <code>sprint</code> (<code>sprint(show, MIME"text/plain"(), a)</code>)</p>
+</li>
+</ol>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

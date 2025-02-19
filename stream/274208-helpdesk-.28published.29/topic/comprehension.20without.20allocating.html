@@ -1,0 +1,105 @@
+<html>
+<head><meta charset="utf-8"><title>comprehension without allocating · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/comprehension.20without.20allocating.html">comprehension without allocating</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="320963071"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/comprehension%20without%20allocating/near/320963071" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/comprehension.20without.20allocating.html#320963071">(Jan 12 2023 at 15:16)</a>:</h4>
+<p>A comprehension by default creates an vector.<br>
+Sometimes though I use comprehension as an one-line mutating procedure.<br>
+e.g.:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">collect</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="p">)</span><span class="w"></span>
+
+<span class="c"># my one-liner mutating comprehension</span><span class="w"></span>
+<span class="n">deletespec!</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">v</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="n">deleteat!</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">v</span><span class="p">];</span><span class="w"></span>
+</code></pre></div>
+<p>Clearly here, I am not interested in the result.<br>
+I just want the mutating operation to happen.</p>
+<p>Calling it will return a vector, which means something got allocated, that I didn't really need</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="n">deletespec!</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">])</span><span class="w"></span>
+<span class="go">[[2, 4, 6, 7, 8, 9, 10, 11, 12, 13  …  91, 92, 93, 94, 95, 96, 97, 98, 99, 100], [2, 4, 6, 7, 8, 9, 10, 11, 12, 13  …  91, 92, 93, 94, 95, 96, 97, 98, 99, 100], [2, 4, 6, 7, 8, 9, 10, 11, 12, 13  …  91, 92, 93, 94, 95, 96, 97, 98, 99, 100]]</span>
+</code></pre></div>
+<p>Is there a way to produce comprehensions that return nothing, i.e. allocate nothing ?<br>
+Should I even worry about this performance-wise ?</p>
+<p><em>PS I know what I am doing to delete multiple indices is wrong and there are better ways to do that, but please don't focus on this.</em></p>
+
+
+
+<a name="320963073"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/comprehension%20without%20allocating/near/320963073" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/comprehension.20without.20allocating.html#320963073">(Jan 12 2023 at 15:16)</a>:</h4>
+<p>A comprehension by default creates an vector.<br>
+Sometimes though I use comprehension as an one-line mutating procedure.<br>
+e.g.:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">collect</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="p">)</span><span class="w"></span>
+
+<span class="c"># my one-liner mutating comprehension</span><span class="w"></span>
+<span class="n">deletespec!</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">v</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="n">deleteat!</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">v</span><span class="p">];</span><span class="w"></span>
+</code></pre></div>
+<p>Clearly here, I am not interested in the result.<br>
+I just want the mutating operation to happen.</p>
+<p>Calling it will return a vector, which means something got allocated, that I didn't really need</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="n">deletespec!</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">])</span><span class="w"></span>
+<span class="go">[[2, 4, 6, 7, 8, 9, 10, 11, 12, 13  …  91, 92, 93, 94, 95, 96, 97, 98, 99, 100], [2, 4, 6, 7, 8, 9, 10, 11, 12, 13  …  91, 92, 93, 94, 95, 96, 97, 98, 99, 100], [2, 4, 6, 7, 8, 9, 10, 11, 12, 13  …  91, 92, 93, 94, 95, 96, 97, 98, 99, 100]]</span>
+</code></pre></div>
+<p>Is there a way to produce comprehensions that return nothing, i.e. allocate nothing ?<br>
+Should I even worry about this performance-wise ?</p>
+<p><em>PS I know what I am doing to delete multiple indices is wrong and there are better ways to do that, but please don't focus on this.</em></p>
+
+
+
+<a name="320963530"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/comprehension%20without%20allocating/near/320963530" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/comprehension.20without.20allocating.html#320963530">(Jan 12 2023 at 15:18)</a>:</h4>
+<p>Would a generator work here?</p>
+
+
+
+<a name="320966858"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/comprehension%20without%20allocating/near/320966858" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/comprehension.20without.20allocating.html#320966858">(Jan 12 2023 at 15:31)</a>:</h4>
+<p>you mean writing <code>(deleteat!(a, x) for x in v)</code> instead of <code>[deleteat!(a, x) for x in v]</code>. It would work but again it feels like there is some effort going somewhere (e.g. constructing the generator) which is unneeded.</p>
+
+
+
+<a name="320967170"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/comprehension%20without%20allocating/near/320967170" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/comprehension.20without.20allocating.html#320967170">(Jan 12 2023 at 15:32)</a>:</h4>
+<p>wait no, it wouldn't work.</p>
+
+
+
+<a name="320967250"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/comprehension%20without%20allocating/near/320967250" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/comprehension.20without.20allocating.html#320967250">(Jan 12 2023 at 15:33)</a>:</h4>
+<p>the mutation will happen only when I start iterating the elements of the generator.</p>
+
+
+
+<a name="320973382"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/comprehension%20without%20allocating/near/320973382" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/comprehension.20without.20allocating.html#320973382">(Jan 12 2023 at 15:59)</a>:</h4>
+<p>Why not use <code>foreach</code>?</p>
+
+
+
+<a name="320975743"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/comprehension%20without%20allocating/near/320975743" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/comprehension.20without.20allocating.html#320975743">(Jan 12 2023 at 16:09)</a>:</h4>
+<p>Yes, this is a good suggestion.. However nested <code>foreach</code> will get ugly. Comprehensions are easier to follow in that regard..</p>
+
+
+
+<a name="321011667"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/comprehension%20without%20allocating/near/321011667" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gunnar Farnebäck <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/comprehension.20without.20allocating.html#321011667">(Jan 12 2023 at 18:58)</a>:</h4>
+<p>Nested <code>foreach</code> using the <code>do</code> construction shouldn't be that ugly, or am I missing something?</p>
+
+
+
+<a name="321020214"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/comprehension%20without%20allocating/near/321020214" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/comprehension.20without.20allocating.html#321020214">(Jan 12 2023 at 19:43)</a>:</h4>
+<p>Nested list comprehensions would also get pretty ugly pretty fast</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

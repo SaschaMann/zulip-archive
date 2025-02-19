@@ -1,0 +1,32 @@
+[
+    {
+        "content": "<p>What's the best way of testing a mutating function? Say I've got <code>function mutate!(X, args); (...); return nothing; end</code> which works differently for different argument types, then I do:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"nd\">@testset</span><span class=\"w\"> </span><span class=\"s\">\"Test my mutating function\"</span><span class=\"w\"> </span><span class=\"k\">begin</span>\n<span class=\"w\">    </span><span class=\"n\">X_test</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"p\">;</span><span class=\"w\"> </span><span class=\"mi\">3</span><span class=\"w\"> </span><span class=\"mi\">4</span><span class=\"p\">]</span>\n<span class=\"w\">    </span><span class=\"n\">mutate!</span><span class=\"p\">(</span><span class=\"n\">X</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">first_test_argument</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"nd\">@test</span><span class=\"w\"> </span><span class=\"n\">X_test</span><span class=\"w\"> </span><span class=\"o\">==</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"p\">;</span><span class=\"w\"> </span><span class=\"mi\">3</span><span class=\"w\"> </span><span class=\"mi\">5</span><span class=\"p\">]</span>\n<span class=\"w\">    </span><span class=\"n\">X_test</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"p\">;</span><span class=\"w\"> </span><span class=\"mi\">3</span><span class=\"w\"> </span><span class=\"mi\">4</span><span class=\"p\">]</span>\n<span class=\"w\">    </span><span class=\"n\">mutate!</span><span class=\"p\">(</span><span class=\"n\">X</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">second_test_argument</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"nd\">@test</span><span class=\"w\"> </span><span class=\"n\">X_test</span><span class=\"w\"> </span><span class=\"o\">==</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"w\"> </span><span class=\"mi\">4</span><span class=\"p\">;</span><span class=\"w\"> </span><span class=\"mi\">9</span><span class=\"w\"> </span><span class=\"mi\">16</span><span class=\"p\">]</span>\n<span class=\"w\">    </span><span class=\"p\">(</span><span class=\"o\">...</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>which seems fairly boiler-platy with the repeated creation of <code>X_test</code>, is there a better way to write this?</p>",
+        "id": 471214003,
+        "sender_full_name": "Nils",
+        "timestamp": 1726652075
+    },
+    {
+        "content": "<p>For now I'm doing </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">X₀</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"p\">;</span><span class=\"w\"> </span><span class=\"mi\">3</span><span class=\"w\"> </span><span class=\"mi\">4</span><span class=\"p\">]</span>\n\n<span class=\"n\">X_test</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">copy</span><span class=\"p\">(</span><span class=\"n\">X₀</span><span class=\"p\">);</span><span class=\"w\"> </span><span class=\"n\">mutate!</span><span class=\"p\">(</span><span class=\"n\">X_test</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">first_test_argument</span><span class=\"p\">)</span>\n<span class=\"nd\">@test</span><span class=\"w\"> </span><span class=\"n\">X_test</span><span class=\"w\"> </span><span class=\"o\">==</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"o\">...</span><span class=\"p\">)</span>\n\n<span class=\"n\">X_test</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">copy</span><span class=\"p\">(</span><span class=\"n\">X₀</span><span class=\"p\">);</span><span class=\"w\"> </span><span class=\"n\">mutate!</span><span class=\"p\">(</span><span class=\"n\">X_test</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">second_test_argument</span><span class=\"p\">)</span>\n<span class=\"p\">(</span><span class=\"o\">...</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 471215199,
+        "sender_full_name": "Nils",
+        "timestamp": 1726652442
+    },
+    {
+        "content": "<p>If it makes sense for your mutating function to also return the mutated argument you can just do</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"nd\">@test</span><span class=\"w\"> </span><span class=\"n\">mutate!</span><span class=\"p\">(</span><span class=\"n\">copy</span><span class=\"p\">(</span><span class=\"n\">X</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">test_argument</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">==</span><span class=\"w\"> </span><span class=\"n\">expected</span>\n</code></pre></div>",
+        "id": 471471110,
+        "sender_full_name": "Gunnar Farnebäck",
+        "timestamp": 1726747559
+    },
+    {
+        "content": "<p>It currently doesn't, although maybe there's no harm in letting it return the argument...</p>",
+        "id": 471481014,
+        "sender_full_name": "Nils",
+        "timestamp": 1726750769
+    },
+    {
+        "content": "<p>You have lots of precedents in Base functions, e.g. <code>empty!</code>, <code>filter!</code> and <code>push!</code>. I've generally found it to be a good idea in my code, unless the return value is needed for something else, like it is for <code>pop!</code>.</p>",
+        "id": 471662218,
+        "sender_full_name": "Gunnar Farnebäck",
+        "timestamp": 1726821197
+    }
+]

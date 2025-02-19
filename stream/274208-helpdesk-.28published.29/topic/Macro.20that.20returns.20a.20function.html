@@ -1,0 +1,128 @@
+<html>
+<head><meta charset="utf-8"><title>Macro that returns a function · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Macro.20that.20returns.20a.20function.html">Macro that returns a function</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="282652815"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Macro%20that%20returns%20a%20function/near/282652815" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Macro.20that.20returns.20a.20function.html#282652815">(May 17 2022 at 14:57)</a>:</h4>
+<p>Say I have a package <code>MyPackage</code> that contains a macro <code>@newfunction</code> that returns a function. The macro works perfectly fine, but the functions it returns are defined in the namespace of <code>MyPackage</code>. Is there a way to export the function to the namespace of the caller? The caller might be code running in the REPL or a different package that uses <code>MyPackage</code>.</p>
+
+
+
+<a name="282653283"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Macro%20that%20returns%20a%20function/near/282653283" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Macro.20that.20returns.20a.20function.html#282653283">(May 17 2022 at 15:00)</a>:</h4>
+<p>Of course one could do <code>myfunction = @newfunction args</code>. What I'm wondering is if there is a way to do <code>@newfunction myfunction args</code>, AND have <code>myfunction</code> exported to the namespace of the caller.</p>
+
+
+
+<a name="282653727"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Macro%20that%20returns%20a%20function/near/282653727" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Macro.20that.20returns.20a.20function.html#282653727">(May 17 2022 at 15:02)</a>:</h4>
+<p>You just have to <code>esc</code> the name of the function in the macro body</p>
+
+
+
+<a name="282653968"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Macro%20that%20returns%20a%20function/near/282653968" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Macro.20that.20returns.20a.20function.html#282653968">(May 17 2022 at 15:03)</a>:</h4>
+<p>e.g.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">macro</span><span class="w"> </span><span class="n">foo</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">escname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">esc</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="o">:</span><span class="p">(</span><span class="o">$</span><span class="n">escname</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="282654512"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Macro%20that%20returns%20a%20function/near/282654512" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Macro.20that.20returns.20a.20function.html#282654512">(May 17 2022 at 15:07)</a>:</h4>
+<p>Yeah, this works! Thank you.</p>
+
+
+
+<a name="282655174"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Macro%20that%20returns%20a%20function/near/282655174" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Macro.20that.20returns.20a.20function.html#282655174">(May 17 2022 at 15:11)</a>:</h4>
+<p>I think I understand hygiene a little bit better now.</p>
+
+
+
+<a name="282655952"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Macro%20that%20returns%20a%20function/near/282655952" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Macro.20that.20returns.20a.20function.html#282655952">(May 17 2022 at 15:15)</a>:</h4>
+<p>Yeah it’s a kinda tricky concept at first but it’s not so complicated. Julia handles it a little different from most lisps in that it’s hygienic by fault instead of by opting in.</p>
+
+
+
+<a name="282656167"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Macro%20that%20returns%20a%20function/near/282656167" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Macro.20that.20returns.20a.20function.html#282656167">(May 17 2022 at 15:16)</a>:</h4>
+<p>Though I often end up just <code>esc</code>ing the entire returned expression and then manually opting into the hygiene where I choose because I find that easier to think about</p>
+
+
+
+<a name="282656796"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Macro%20that%20returns%20a%20function/near/282656796" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Macro.20that.20returns.20a.20function.html#282656796">(May 17 2022 at 15:21)</a>:</h4>
+<p>This is the first non-trivial macro I write (in Julia or any language). At least for me, this is one instance where the documentation only starts to make sense <em>after</em> I've tried writing something and failing.</p>
+<p>In this case, I didn't associate my problem with hygiene. After seeing your solution, I re-read that section in the manual and sure enough, it says that escaped expressions are evaluated in the context of the caller. That sentence didn't make sense to me before, it certainly does now <span aria-label="grinning" class="emoji emoji-1f600" role="img" title="grinning">:grinning:</span></p>
+
+
+
+<a name="282656882"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Macro%20that%20returns%20a%20function/near/282656882" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Macro.20that.20returns.20a.20function.html#282656882">(May 17 2022 at 15:21)</a>:</h4>
+<p>so like to adapt the above example, I would often write something more like </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">macro</span><span class="w"> </span><span class="n">foo</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="nd">@gensym</span><span class="w"> </span><span class="n">x</span><span class="w"></span>
+<span class="w">    </span><span class="o">:</span><span class="p">(</span><span class="o">$</span><span class="n">name</span><span class="p">(</span><span class="o">$</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">$</span><span class="n">one</span><span class="p">(</span><span class="o">$</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="o">$</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">esc</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+<p>here, everything is escaped so all symbols are expanded in the callers namespace, but I manually interpolated <strong>my</strong> <code>one</code> function into the expression to make sure it gets used rather than the caller’s <code>one</code> (in case they made that symbol mean something different) and I manually mangled the symbol <code>x</code></p>
+
+
+
+<a name="282657389"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Macro%20that%20returns%20a%20function/near/282657389" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Macro.20that.20returns.20a.20function.html#282657389">(May 17 2022 at 15:24)</a>:</h4>
+<p>Either style has pitfalls, but I don’t like the look of <code>$(esc(x))</code>all over my code, so I often gravitate towards the second style.</p>
+
+
+
+<a name="282657755"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Macro%20that%20returns%20a%20function/near/282657755" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Macro.20that.20returns.20a.20function.html#282657755">(May 17 2022 at 15:26)</a>:</h4>
+<p>I think it looks very clean, and certainly more readable than having <code>esc</code> all over the place.</p>
+
+
+
+<a name="282665914"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Macro%20that%20returns%20a%20function/near/282665914" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mark Kittisopikul <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Macro.20that.20returns.20a.20function.html#282665914">(May 17 2022 at 16:16)</a>:</h4>
+<p>I would also consider using the <code>@generated</code> macro here.</p>
+
+
+
+<a name="282666150"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Macro%20that%20returns%20a%20function/near/282666150" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Macro.20that.20returns.20a.20function.html#282666150">(May 17 2022 at 16:17)</a>:</h4>
+<p>Why?</p>
+
+
+
+<a name="282667144"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Macro%20that%20returns%20a%20function/near/282667144" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mark Kittisopikul <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Macro.20that.20returns.20a.20function.html#282667144">(May 17 2022 at 16:24)</a>:</h4>
+<p>I may be misunderstanding the question, but isn't <code>@generated</code> essentially a macro that returns a function?</p>
+
+
+
+<a name="282668162"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Macro%20that%20returns%20a%20function/near/282668162" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Macro.20that.20returns.20a.20function.html#282668162">(May 17 2022 at 16:30)</a>:</h4>
+<p>Sorta. It’s a way to create a custom function where the function body is programmatically generated based on the input types.</p>
+<p>It’s a pretty heavy piece of machinery though and not always necessary</p>
+
+
+
+<a name="282668405"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Macro%20that%20returns%20a%20function/near/282668405" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Macro.20that.20returns.20a.20function.html#282668405">(May 17 2022 at 16:32)</a>:</h4>
+<p>I don't think it's necessary in my case, since the input types are not really important.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

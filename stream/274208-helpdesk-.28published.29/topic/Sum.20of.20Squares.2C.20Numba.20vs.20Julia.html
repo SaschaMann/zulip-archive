@@ -1,0 +1,695 @@
+<html>
+<head><meta charset="utf-8"><title>Sum of Squares, Numba vs Julia · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html">Sum of Squares, Numba vs Julia</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="254776780"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254776780" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mark Kittisopikul <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254776780">(Sep 24 2021 at 21:39)</a>:</h4>
+<p>I'm trying to beat Numba and failing:</p>
+<div class="codehilite" data-code-language="Python"><pre><span></span><code><span class="n">In</span> <span class="p">[</span><span class="mi">55</span><span class="p">]:</span> <span class="nd">@numba</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fastmath</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">parallel</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="o">...</span><span class="p">:</span> <span class="k">def</span> <span class="nf">sum_squares</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+    <span class="o">...</span><span class="p">:</span>     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">a</span><span class="p">))</span>
+    <span class="o">...</span><span class="p">:</span>
+
+<span class="n">In</span> <span class="p">[</span><span class="mi">58</span><span class="p">]:</span> <span class="o">%</span><span class="n">timeit</span> <span class="n">sum_squares</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+<span class="mi">874</span> <span class="n">µs</span> <span class="err">±</span> <span class="mf">19.6</span> <span class="n">µs</span> <span class="n">per</span> <span class="n">loop</span> <span class="p">(</span><span class="n">mean</span> <span class="err">±</span> <span class="n">std</span><span class="o">.</span> <span class="n">dev</span><span class="o">.</span> <span class="n">of</span> <span class="mi">7</span> <span class="n">runs</span><span class="p">,</span> <span class="mi">1000</span> <span class="n">loops</span> <span class="n">each</span><span class="p">)</span>
+</code></pre></div>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span> <span class="n">A</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="mi">2048</span><span class="p">,</span> <span class="mi">2408</span><span class="p">);</span>
+
+<span class="gp">julia&gt;</span> <span class="n">sum_squares</span><span class="p">(</span><span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">ThreadsX</span><span class="o">.</span><span class="n">mapreduce</span><span class="p">(</span><span class="n">x</span><span class="o">-&gt;</span><span class="n">x</span><span class="o">^</span><span class="mi">2</span><span class="p">,</span> <span class="o">+</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
+<span class="go">sum_squares (generic function with 1 method)</span>
+
+<span class="gp">julia&gt;</span> <span class="nd">@btime</span> <span class="n">sum_squares</span><span class="p">(</span><span class="o">$</span><span class="n">A</span><span class="p">)</span>
+<span class="go">  982.900 μs (2328 allocations: 159.38 KiB)</span>
+<span class="go">1.6443015832629544e6</span>
+</code></pre></div>
+
+
+
+<a name="254778571"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254778571" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254778571">(Sep 24 2021 at 21:55)</a>:</h4>
+<p>I'm getting about the same.  Also tried <code>A |&gt; Map(x -&gt; x^2) |&gt; sum</code> with Transducers and got slightly worse.  I often find the performance of threading in Julia frustratingly fiddly, especially for the additive cost.  Not sure how to fix this.  <span class="user-mention" data-user-id="297129">@Takafumi Arakaki (tkf)</span> might have some insight.</p>
+
+
+
+<a name="254789628"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254789628" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254789628">(Sep 24 2021 at 23:57)</a>:</h4>
+<p>My insight is that it's best to try conjuring <span class="user-mention" data-user-id="284680">@chriselrod</span> for this kind of close-to-the-metal thing :)</p>
+
+
+
+<a name="254789791"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254789791" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254789791">(Sep 24 2021 at 23:59)</a>:</h4>
+<p>I'm curious how it scales.  In my experience the additive cost with the threading libraries usually sucks, but they'll scale pretty well</p>
+
+
+
+<a name="254790106"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254790106" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254790106">(Sep 25 2021 at 00:02)</a>:</h4>
+<p><span class="user-mention" data-user-id="269582">@Mark Kittisopikul</span> , how big is the array in Python? I noticed you wrote <code>rand(2048, 2408)</code> in the julia code</p>
+
+
+
+<a name="254790143"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254790143" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254790143">(Sep 25 2021 at 00:03)</a>:</h4>
+<p>I tried, that, it's still really slow regardless, it's only like 5/4 or so</p>
+
+
+
+<a name="254790184"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254790184" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254790184">(Sep 25 2021 at 00:03)</a>:</h4>
+<p>Here is what I see with <a href="https://github.com/search?q=LoopVectorization.jl&amp;type=Repositories">LoopVectorization.jl</a></p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">using</span> <span class="n">LoopVectorization</span><span class="p">,</span> <span class="n">ThreadsX</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">sum_squares</span><span class="p">(</span><span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">ThreadsX</span><span class="o">.</span><span class="n">mapreduce</span><span class="p">(</span><span class="n">x</span><span class="o">-&gt;</span><span class="n">x</span><span class="o">^</span><span class="mi">2</span><span class="p">,</span> <span class="o">+</span><span class="p">,</span> <span class="n">A</span><span class="p">);</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="k">function</span> <span class="n">sum_squares_turbo</span><span class="p">(</span><span class="n">A</span><span class="o">::</span><span class="kt">Matrix</span><span class="p">{</span><span class="kt">T</span><span class="p">})</span> <span class="k">where</span> <span class="p">{</span><span class="kt">T</span><span class="p">}</span>
+           <span class="n">out</span> <span class="o">=</span> <span class="n">zero</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+           <span class="nd">@tturbo</span> <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="n">eachindex</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+               <span class="n">out</span> <span class="o">+=</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">^</span><span class="mi">2</span>
+           <span class="k">end</span>
+           <span class="n">out</span>
+       <span class="k">end</span><span class="p">;</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="k">let</span> <span class="n">A</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="mi">2048</span><span class="p">,</span> <span class="mi">2048</span><span class="p">)</span>
+           <span class="nd">@btime</span> <span class="n">sum_squares</span><span class="p">(</span><span class="o">$</span><span class="n">A</span><span class="p">)</span>
+           <span class="nd">@btime</span> <span class="n">sum_squares_turbo</span><span class="p">(</span><span class="o">$</span><span class="n">A</span><span class="p">)</span>
+       <span class="k">end</span><span class="p">;</span>
+  <span class="mf">804.960</span> <span class="n">μs</span> <span class="p">(</span><span class="mi">669</span> <span class="n">allocations</span><span class="o">:</span> <span class="mf">42.56</span> <span class="n">KiB</span><span class="p">)</span>
+  <span class="mf">747.194</span> <span class="n">μs</span> <span class="p">(</span><span class="mi">0</span> <span class="n">allocations</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="k">let</span> <span class="n">A</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="mi">2048</span><span class="p">,</span> <span class="mi">2408</span><span class="p">)</span>
+           <span class="nd">@btime</span> <span class="n">sum_squares</span><span class="p">(</span><span class="o">$</span><span class="n">A</span><span class="p">)</span>
+           <span class="nd">@btime</span> <span class="n">sum_squares_turbo</span><span class="p">(</span><span class="o">$</span><span class="n">A</span><span class="p">)</span>
+       <span class="k">end</span><span class="p">;</span>
+  <span class="mf">966.097</span> <span class="n">μs</span> <span class="p">(</span><span class="mi">672</span> <span class="n">allocations</span><span class="o">:</span> <span class="mf">42.66</span> <span class="n">KiB</span><span class="p">)</span>
+  <span class="mf">913.550</span> <span class="n">μs</span> <span class="p">(</span><span class="mi">0</span> <span class="n">allocations</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="254790317"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254790317" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254790317">(Sep 25 2021 at 00:05)</a>:</h4>
+<p>Theres some profit from using good vecotorization here and lower overhead in the multithreading, but this operation is almost totally dominated by memory bandwidth I believe, so it can only be so fast.</p>
+
+
+
+<a name="254790363"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254790363" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254790363">(Sep 25 2021 at 00:06)</a>:</h4>
+<p>It's worrying that performance is only worse by a factor of 2 or 3 if you do it sequentially</p>
+
+
+
+<a name="254790443"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254790443" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254790443">(Sep 25 2021 at 00:06)</a>:</h4>
+<p>I think Julia multi-threading still needs a lot of work.  It seems fast for very large oprations, but it still seems to really suck for relatively small arrays</p>
+
+
+
+<a name="254790445"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254790445" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254790445">(Sep 25 2021 at 00:06)</a>:</h4>
+<p>I beleive that's because it's dominated by memory bandwidth, not a problem with julia's threading</p>
+
+
+
+<a name="254790505"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254790505" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254790505">(Sep 25 2021 at 00:07)</a>:</h4>
+<p>Is it possible that the Julia and python benchmarks work a little differently?  I think I basically know what happens when bnechmarks run on non-parallel code, but I don't know if there are any weird caveats with multi-threading</p>
+
+
+
+<a name="254790671"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254790671" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254790671">(Sep 25 2021 at 00:09)</a>:</h4>
+<p>Actually, now that I look at the OP carefully, the difference to Numba is actually "only" about 100 μs. This kind of overhead is actually not super crazy if you have many cores at the moment, unfortunately.</p>
+
+
+
+<a name="254790759"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254790759" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254790759">(Sep 25 2021 at 00:10)</a>:</h4>
+<p>(I)Python's <code>timeit</code> disables GC</p>
+
+
+
+<a name="254790896"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254790896" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254790896">(Sep 25 2021 at 00:12)</a>:</h4>
+<p>I would really appreciate if someone could come along and explain to me:</p>
+<ul>
+<li>Is Julia multi-threading really slow to start up?  If not, please explain.</li>
+<li>If yes, why?  Can this be fixed?</li>
+<li>Is there some benefit being gained from the slow start?</li>
+</ul>
+
+
+
+<a name="254791066"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254791066" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254791066">(Sep 25 2021 at 00:14)</a>:</h4>
+<p>The fact that there's not much difference from LoopVectorization's <code>@tturbo</code> makes me think the overhead here is not the problem</p>
+
+
+
+<a name="254791072"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254791072" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254791072">(Sep 25 2021 at 00:14)</a>:</h4>
+<p>LV has super low overhead threading</p>
+
+
+
+<a name="254791284"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254791284" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254791284">(Sep 25 2021 at 00:17)</a>:</h4>
+<p>I agree it's memory-bound, but if it's completely a hardware property, I think you'd see more similar timing in Python.</p>
+
+
+
+<a name="254791371"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254791371" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254791371">(Sep 25 2021 at 00:18)</a>:</h4>
+<p>Or maybe it's just a difference in benchmarking tools as <span class="user-mention" data-user-id="269446">@Expanding Man</span> said</p>
+
+
+
+<a name="254791399"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254791399" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254791399">(Sep 25 2021 at 00:19)</a>:</h4>
+<p>Actually, I'm now puzzled why Numba is fast for <em>that</em> code. Does Numba do map-reduce fusion to avoid allocating <code>np.square(a)</code>?</p>
+
+
+
+<a name="254791438"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254791438" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254791438">(Sep 25 2021 at 00:19)</a>:</h4>
+<p>Doesn't it have all sorts of insane numpy-specific JIT optimizations?</p>
+
+
+
+<a name="254791507"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254791507" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254791507">(Sep 25 2021 at 00:20)</a>:</h4>
+<p>Yeah. I’m sure they’re fusing operations there</p>
+
+
+
+<a name="254791560"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254791560" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254791560">(Sep 25 2021 at 00:21)</a>:</h4>
+<p>I definitely recall one of the problems with numba being that you can never really know what it's doing, because they had to be so aggressive in optimizing innocent looking calls that it's  basically re-writing all your code for you.</p>
+
+
+
+<a name="254791647"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254791647" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254791647">(Sep 25 2021 at 00:22)</a>:</h4>
+<p>And then you'll have something it can't optimize and it uses regular python code and <em>surprise!</em> your code now takes 100 ms</p>
+
+
+
+<a name="254791651"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254791651" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254791651">(Sep 25 2021 at 00:22)</a>:</h4>
+<p>Actually, just enabling SIMD (<code>simd = true</code>) helps a lot here:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">A</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="mi">2048</span><span class="p">,</span> <span class="mi">2408</span><span class="p">);</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">sum_squares</span><span class="p">(</span><span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">ThreadsX</span><span class="o">.</span><span class="n">mapreduce</span><span class="p">(</span><span class="n">x</span><span class="o">-&gt;</span><span class="n">x</span><span class="o">^</span><span class="mi">2</span><span class="p">,</span> <span class="o">+</span><span class="p">,</span> <span class="n">A</span><span class="p">);</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@btime</span> <span class="n">sum_squares</span><span class="p">(</span><span class="o">$</span><span class="n">A</span><span class="p">)</span>
+  <span class="mf">1.350</span> <span class="n">ms</span> <span class="p">(</span><span class="mi">416</span> <span class="n">allocations</span><span class="o">:</span> <span class="mf">26.41</span> <span class="n">KiB</span><span class="p">)</span>
+<span class="mf">1.643906959681204e6</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">sum_squares</span><span class="p">(</span><span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">ThreadsX</span><span class="o">.</span><span class="n">mapreduce</span><span class="p">(</span><span class="n">x</span><span class="o">-&gt;</span><span class="n">x</span><span class="o">^</span><span class="mi">2</span><span class="p">,</span> <span class="o">+</span><span class="p">,</span> <span class="n">A</span><span class="p">;</span> <span class="n">simd</span> <span class="o">=</span> <span class="nb">true</span><span class="p">);</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@btime</span> <span class="n">sum_squares</span><span class="p">(</span><span class="o">$</span><span class="n">A</span><span class="p">)</span>
+  <span class="mf">586.626</span> <span class="n">μs</span> <span class="p">(</span><span class="mi">415</span> <span class="n">allocations</span><span class="o">:</span> <span class="mf">26.36</span> <span class="n">KiB</span><span class="p">)</span>
+<span class="mf">1.6439069596812006e6</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">Threads</span><span class="o">.</span><span class="n">nthreads</span><span class="p">()</span>
+<span class="mi">4</span>
+</code></pre></div>
+
+
+
+<a name="254791812"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254791812" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254791812">(Sep 25 2021 at 00:24)</a>:</h4>
+<p>Well, that basically solves it then, I pretty much guarantee you numba is doing simd</p>
+
+
+
+<a name="254792294"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254792294" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254792294">(Sep 25 2021 at 00:31)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269446">Expanding Man</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia/near/254791647">said</a>:</p>
+<blockquote>
+<p>And then you'll have something it can't optimize and it uses regular python code and <em>surprise!</em> your code now takes 100 ms</p>
+</blockquote>
+<p>This is true for any optimizing compiler including Julia. I think Julia experts don't feel "you can never really know what it's doing" mainly since it has great introspection tools and maybe also the language design is more transparent to this. It's conceivable that Numba has or will have nice tools for diving into code gen.</p>
+
+
+
+<a name="254792544"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254792544" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254792544">(Sep 25 2021 at 00:34)</a>:</h4>
+<p>It's a lot less extreme in the Julia case though.  "Normal" Julia code doesn't run slower than everything else by a factor of 50.  "Normal" python code is ungodly slow.  I guess I'm thinking more about things that I have more experience here like trying to use anonymous functions to solve diff eq and stuff like that, but seems like the same kind of thing was happening with numba.</p>
+
+
+
+<a name="254792801"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254792801" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254792801">(Sep 25 2021 at 00:37)</a>:</h4>
+<p>FWIW, this is what I get</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span> <span class="k">using</span> <span class="n">LoopVectorization</span><span class="p">,</span> <span class="n">ThreadsX</span>
+
+<span class="gp">julia&gt;</span> <span class="n">A</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="mi">2048</span><span class="p">,</span> <span class="mi">2408</span><span class="p">);</span>
+
+<span class="gp">julia&gt;</span> <span class="n">sum_squares</span><span class="p">(</span><span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">ThreadsX</span><span class="o">.</span><span class="n">mapreduce</span><span class="p">(</span><span class="n">x</span><span class="o">-&gt;</span><span class="n">x</span><span class="o">^</span><span class="mi">2</span><span class="p">,</span> <span class="o">+</span><span class="p">,</span> <span class="n">A</span><span class="p">;</span> <span class="n">simd</span> <span class="o">=</span> <span class="nb">true</span><span class="p">);</span>
+
+<span class="gp">julia&gt;</span> <span class="k">function</span> <span class="n">sum_squares_turbo</span><span class="p">(</span><span class="n">A</span><span class="o">::</span><span class="kt">Matrix</span><span class="p">{</span><span class="kt">T</span><span class="p">})</span> <span class="k">where</span> <span class="p">{</span><span class="kt">T</span><span class="p">}</span>
+                  <span class="n">out</span> <span class="o">=</span> <span class="n">zero</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+                  <span class="nd">@tturbo</span> <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="n">eachindex</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+                      <span class="n">out</span> <span class="o">+=</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">^</span><span class="mi">2</span>
+                  <span class="k">end</span>
+                  <span class="n">out</span>
+              <span class="k">end</span><span class="p">;</span>
+
+<span class="gp">julia&gt;</span> <span class="nd">@btime</span> <span class="n">sum_squares</span><span class="p">(</span><span class="o">$</span><span class="n">A</span><span class="p">)</span>
+<span class="go">  314.468 μs (5455 allocations: 346.11 KiB)</span>
+<span class="go">1.6439709895118927e6</span>
+
+<span class="gp">julia&gt;</span> <span class="nd">@btime</span> <span class="n">sum_squares_turbo</span><span class="p">(</span><span class="o">$</span><span class="n">A</span><span class="p">)</span>
+<span class="go">  167.646 μs (0 allocations: 0 bytes)</span>
+<span class="go">1.6439709895118927e6</span>
+</code></pre></div>
+
+
+
+<a name="254792883"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254792883" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254792883">(Sep 25 2021 at 00:38)</a>:</h4>
+<p><code>nthreads</code>?</p>
+
+
+
+<a name="254792885"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254792885" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254792885">(Sep 25 2021 at 00:38)</a>:</h4>
+<p>In terms of memory bound:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span> <span class="n">sizeof</span><span class="p">(</span><span class="n">A</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">20</span><span class="p">)</span>
+<span class="go">37.625</span>
+</code></pre></div>
+<p><code>A</code> is 37.625 MiB. Thus, my computer has to stream <code>A</code> through RAM. This should be entirely hardware limited.</p>
+
+
+
+<a name="254792899"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254792899" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254792899">(Sep 25 2021 at 00:38)</a>:</h4>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span> <span class="n">Threads</span><span class="o">.</span><span class="n">nthreads</span><span class="p">()</span>
+<span class="go">36</span>
+
+<span class="gp">julia&gt;</span> <span class="n">LoopVectorization</span><span class="o">.</span><span class="n">num_cores</span><span class="p">()</span>
+<span class="go">static(18)</span>
+</code></pre></div>
+
+
+
+<a name="254792941"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254792941" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254792941">(Sep 25 2021 at 00:39)</a>:</h4>
+<p>lol the benefits of having a huge EPYC machine or whatever it is you're running <span aria-label="laughing" class="emoji emoji-1f606" role="img" title="laughing">:laughing:</span></p>
+
+
+
+<a name="254793467"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254793467" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254793467">(Sep 25 2021 at 00:46)</a>:</h4>
+<p>While we're at it, <span class="user-mention" data-user-id="297129">@Takafumi Arakaki (tkf)</span> , any idea why this is so slow?  I would have thought this should be almost exactly the same thing as <code>ThreadsX</code> is doing, no?</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">◖◗</span> <span class="nd">@btime</span> <span class="o">$</span><span class="n">A</span> <span class="o">|&gt;</span> <span class="n">Map</span><span class="p">(</span><span class="n">x</span> <span class="o">-&gt;</span> <span class="n">x</span><span class="o">^</span><span class="mi">2</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">sum</span>
+  <span class="mf">3.461</span> <span class="n">ms</span> <span class="p">(</span><span class="mi">0</span> <span class="n">allocations</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">)</span>
+<span class="mf">1.6446086881129586e6</span>
+</code></pre></div>
+
+
+
+<a name="254793918"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254793918" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254793918">(Sep 25 2021 at 00:53)</a>:</h4>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span> <span class="n">LoopVectorization</span><span class="o">.</span><span class="n">num_cores</span><span class="p">()</span>
+<span class="go">static(18)</span>
+
+<span class="gp">julia&gt;</span> <span class="n">versioninfo</span><span class="p">()</span>
+<span class="go">Julia Version 1.8.0-DEV.607</span>
+<span class="go">Commit 523d851be2* (2021-09-23 22:21 UTC)</span>
+<span class="go">Platform Info:</span>
+<span class="go">  OS: Linux (x86_64-generic-linux)</span>
+<span class="go">  CPU: Intel(R) Core(TM) i9-10980XE CPU @ 3.00GHz</span>
+<span class="go">  WORD_SIZE: 64</span>
+<span class="go">  LIBM: libopenlibm</span>
+<span class="go">  LLVM: libLLVM-12.0.1 (ORCJIT, cascadelake)</span>
+<span class="go">Environment:</span>
+<span class="go">  JULIA_NUM_THREADS = 36</span>
+</code></pre></div>
+<p>Probably the most relevant feature is that it has 4 memory channels.</p>
+<p>IIRC, my RAM is clocked at 3.6 GHz (I should spend some time to see if I can get it higher).<br>
+DDR4 can do 8 bytes/channel/clock, and I have 4 channels, so the bandwidth should be</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span> <span class="mf">3.6</span> <span class="o">*</span> <span class="mi">8</span> <span class="o">*</span> <span class="mi">4</span>
+<span class="go">115.2</span>
+</code></pre></div>
+<p>I.e., 115.2 GiB/s. So, dividing the number of <code>GiB</code> in <code>A</code> by the <code>GiB</code> gives us</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span> <span class="p">(</span><span class="n">sizeof</span><span class="p">(</span><span class="n">A</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">30</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="mf">3.6</span> <span class="o">*</span> <span class="mi">8</span> <span class="o">*</span> <span class="mi">4</span><span class="p">)</span> <span class="c"># seconds</span>
+<span class="go">0.0003189510769314236</span>
+
+<span class="gp">julia&gt;</span> <span class="mf">1e6</span><span class="n">ans</span> <span class="c"># microseconds</span>
+<span class="go">318.95107693142364</span>
+</code></pre></div>
+<p>So streaming that much memory should take 319 microseconds.</p>
+
+
+
+<a name="254793938"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254793938" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254793938">(Sep 25 2021 at 00:54)</a>:</h4>
+<p>I think that's simply because it's single-threaded and also it doesn't enable SIMD</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@btime</span> <span class="o">$</span><span class="n">A</span> <span class="o">|&gt;</span> <span class="n">Map</span><span class="p">(</span><span class="n">x</span> <span class="o">-&gt;</span> <span class="n">x</span><span class="o">^</span><span class="mi">2</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">sum</span>
+  <span class="mf">5.230</span> <span class="n">ms</span> <span class="p">(</span><span class="mi">0</span> <span class="n">allocations</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">)</span>
+<span class="mf">1.6439112758022486e6</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@btime</span> <span class="n">sum</span><span class="p">(</span><span class="o">$</span><span class="n">A</span> <span class="o">|&gt;</span> <span class="n">Map</span><span class="p">(</span><span class="n">x</span> <span class="o">-&gt;</span> <span class="n">x</span><span class="o">^</span><span class="mi">2</span><span class="p">);</span> <span class="n">simd</span> <span class="o">=</span> <span class="nb">true</span><span class="p">)</span>
+  <span class="mf">3.202</span> <span class="n">ms</span> <span class="p">(</span><span class="mi">0</span> <span class="n">allocations</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">)</span>
+<span class="mf">1.6439112758022742e6</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@btime</span> <span class="n">ThreadsX</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">$</span><span class="n">A</span> <span class="o">|&gt;</span> <span class="n">Map</span><span class="p">(</span><span class="n">x</span> <span class="o">-&gt;</span> <span class="n">x</span><span class="o">^</span><span class="mi">2</span><span class="p">),</span> <span class="n">simd</span> <span class="o">=</span> <span class="nb">true</span><span class="p">)</span>
+  <span class="mf">643.555</span> <span class="n">μs</span> <span class="p">(</span><span class="mi">413</span> <span class="n">allocations</span><span class="o">:</span> <span class="mf">26.30</span> <span class="n">KiB</span><span class="p">)</span>
+<span class="mf">1.6439112758022815e6</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">Threads</span><span class="o">.</span><span class="n">nthreads</span><span class="p">()</span>
+<span class="mi">4</span>
+</code></pre></div>
+<p>It's a bit puzzling that the speedup is somewhat superlinear though. Maybe some part of the array sits in L3 (but it's not 30 MB )?</p>
+
+
+
+<a name="254794055"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254794055" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254794055">(Sep 25 2021 at 00:55)</a>:</h4>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span> <span class="n">sizeof</span><span class="p">(</span><span class="n">A</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">CPUSummary</span><span class="o">.</span><span class="n">num_l2cache</span><span class="p">()</span><span class="o">*</span><span class="n">CPUSummary</span><span class="o">.</span><span class="n">cache_size</span><span class="p">(</span><span class="kt">Val</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span> <span class="o">+</span> <span class="n">CPUSummary</span><span class="o">.</span><span class="n">num_l3cache</span><span class="p">()</span><span class="o">*</span><span class="n">CPUSummary</span><span class="o">.</span><span class="n">cache_size</span><span class="p">(</span><span class="kt">Val</span><span class="p">(</span><span class="mi">3</span><span class="p">)))</span>
+<span class="go">0.8801169590643275</span>
+</code></pre></div>
+<p>So I guess <code>A</code> actually fits in my CPU's cache, hence why I can get much better performance than the 320 microseconds theoretical peak based on memory bandwidth.</p>
+
+
+
+<a name="254794058"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254794058" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254794058">(Sep 25 2021 at 00:55)</a>:</h4>
+<p>I now wonder why <span class="user-mention" data-user-id="269150">@Mason Protter</span> didn't see the difference, even with non-SIMD <code>ThreadsX.mapreduce</code>.</p>
+<p>I also see the boost from LoopVectorization:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@btime</span> <span class="n">sum_squares_turbo</span><span class="p">(</span><span class="o">$</span><span class="n">A</span><span class="p">)</span>
+  <span class="mf">163.249</span> <span class="n">μs</span> <span class="p">(</span><span class="mi">0</span> <span class="n">allocations</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">)</span>
+<span class="mf">1.6439112758022822e6</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@btime</span> <span class="n">sum_squares</span><span class="p">(</span><span class="o">$</span><span class="n">A</span><span class="p">)</span>
+  <span class="mf">644.125</span> <span class="n">μs</span> <span class="p">(</span><span class="mi">415</span> <span class="n">allocations</span><span class="o">:</span> <span class="mf">26.36</span> <span class="n">KiB</span><span class="p">)</span>
+<span class="mf">1.6439112758022815e6</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">versioninfo</span><span class="p">()</span>
+<span class="n">Julia</span> <span class="n">Version</span> <span class="mf">1.8.0</span><span class="o">-</span><span class="n">DEV</span><span class="mf">.590</span>
+<span class="n">Commit</span> <span class="mi">2</span><span class="n">c9e051c46</span> <span class="p">(</span><span class="mi">2021</span><span class="o">-</span><span class="mi">09</span><span class="o">-</span><span class="mi">23</span> <span class="mi">21</span><span class="o">:</span><span class="mi">35</span> <span class="n">UTC</span><span class="p">)</span>
+<span class="n">Platform</span> <span class="n">Info</span><span class="o">:</span>
+  <span class="n">OS</span><span class="o">:</span> <span class="n">Linux</span> <span class="p">(</span><span class="n">x86_64</span><span class="o">-</span><span class="n">linux</span><span class="o">-</span><span class="n">gnu</span><span class="p">)</span>
+  <span class="n">CPU</span><span class="o">:</span> <span class="n">AMD</span> <span class="n">EPYC</span> <span class="mi">7502</span> <span class="mi">32</span><span class="o">-</span><span class="n">Core</span> <span class="n">Processor</span>
+  <span class="n">WORD_SIZE</span><span class="o">:</span> <span class="mi">64</span>
+  <span class="n">LIBM</span><span class="o">:</span> <span class="n">libopenlibm</span>
+  <span class="n">LLVM</span><span class="o">:</span> <span class="n">libLLVM</span><span class="o">-</span><span class="mf">12.0.1</span> <span class="p">(</span><span class="n">ORCJIT</span><span class="p">,</span> <span class="n">znver2</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">Threads</span><span class="o">.</span><span class="n">nthreads</span><span class="p">()</span>
+<span class="mi">4</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">LoopVectorization</span><span class="o">.</span><span class="n">num_cores</span><span class="p">()</span>
+<span class="n">static</span><span class="p">(</span><span class="mi">64</span><span class="p">)</span>
+
+<span class="n">shell</span><span class="o">&gt;</span> <span class="n">nproc</span>
+<span class="mi">128</span>
+</code></pre></div>
+
+
+
+<a name="254794268"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254794268" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254794268">(Sep 25 2021 at 00:58)</a>:</h4>
+<p>Maybe LoopVectorization is making some bad optimizations for my system</p>
+
+
+
+<a name="254794298"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254794298" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254794298">(Sep 25 2021 at 00:59)</a>:</h4>
+<p>LoopVectorization really doesn't like znver1...</p>
+
+
+
+<a name="254794323"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254794323" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254794323">(Sep 25 2021 at 01:00)</a>:</h4>
+<p>If you're willing to debug, maybe we can find out why.<br>
+But, --</p>
+
+
+
+<a name="254794434"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254794434" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254794434">(Sep 25 2021 at 01:00)</a>:</h4>
+<p>tkf's EPYC machine and my Intel machine both have enough cache to hold <code>A</code> without touching RAM.</p>
+
+
+
+<a name="254794453"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254794453" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254794453">(Sep 25 2021 at 01:00)</a>:</h4>
+<p>So it could also be that this is the issue. (i.e., we see a huge speedup only because it fits in cache, and otherwise we wouldn't)</p>
+
+
+
+<a name="254794475"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254794475" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254794475">(Sep 25 2021 at 01:01)</a>:</h4>
+<p>Ah, yes, there was a race condition in my question and chriselrod's answer</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">sizeof</span><span class="p">(</span><span class="n">A</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">CPUSummary</span><span class="o">.</span><span class="n">num_l2cache</span><span class="p">()</span><span class="o">*</span><span class="n">CPUSummary</span><span class="o">.</span><span class="n">cache_size</span><span class="p">(</span><span class="kt">Val</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span> <span class="o">+</span> <span class="n">CPUSummary</span><span class="o">.</span><span class="n">num_l3cache</span><span class="p">()</span><span class="o">*</span><span class="n">CPUSummary</span><span class="o">.</span><span class="n">cache_size</span><span class="p">(</span><span class="kt">Val</span><span class="p">(</span><span class="mi">3</span><span class="p">)))</span>
+<span class="mf">0.1306423611111111</span>
+</code></pre></div>
+
+
+
+<a name="254794483"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254794483" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254794483">(Sep 25 2021 at 01:01)</a>:</h4>
+<p>In terms of flops, 58 GFLOPS wouldn't be a bad number to hit with a single core:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span> <span class="mf">2e-9</span><span class="n">length</span><span class="p">(</span><span class="n">A</span><span class="p">)</span> <span class="o">/</span> <span class="mf">167.646e-6</span>
+<span class="go">58.83330350858356</span>
+</code></pre></div>
+<p>(but it is pretty bad for 18 or 64 cores)</p>
+
+
+
+<a name="254794688"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254794688" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254794688">(Sep 25 2021 at 01:04)</a>:</h4>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span> <span class="n">B</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="mi">2048</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2408</span><span class="o">*</span><span class="mi">2</span><span class="p">);</span>
+
+<span class="gp">julia&gt;</span> <span class="n">sizeof</span><span class="p">(</span><span class="n">B</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">CPUSummary</span><span class="o">.</span><span class="n">num_l2cache</span><span class="p">()</span><span class="o">*</span><span class="n">CPUSummary</span><span class="o">.</span><span class="n">cache_size</span><span class="p">(</span><span class="kt">Val</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span> <span class="o">+</span> <span class="n">CPUSummary</span><span class="o">.</span><span class="n">num_l3cache</span><span class="p">()</span><span class="o">*</span><span class="n">CPUSummary</span><span class="o">.</span><span class="n">cache_size</span><span class="p">(</span><span class="kt">Val</span><span class="p">(</span><span class="mi">3</span><span class="p">)))</span>
+<span class="go">3.52046783625731</span>
+
+<span class="gp">julia&gt;</span> <span class="nd">@btime</span> <span class="n">sum_squares_turbo</span><span class="p">(</span><span class="o">$</span><span class="n">B</span><span class="p">)</span>
+<span class="go">  1.657 ms (0 allocations: 0 bytes)</span>
+<span class="go">6.575621490774e6</span>
+
+<span class="gp">julia&gt;</span> <span class="nd">@btime</span> <span class="n">sum_squares</span><span class="p">(</span><span class="o">$</span><span class="n">B</span><span class="p">)</span>
+<span class="go">  1.905 ms (5478 allocations: 346.83 KiB)</span>
+<span class="go">6.575621490774e6</span>
+
+<span class="gp">julia&gt;</span> <span class="mf">2e-9</span><span class="n">length</span><span class="p">(</span><span class="n">B</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1.676e-3</span>
+<span class="go">23.539780429594273</span>
+</code></pre></div>
+<p>Making <code>B</code> 4x larger than <code>A</code> so that it is now too large for my cache makes it take 10x longer.<br>
+I get half the GFLOPS from LV and performance is closer.</p>
+<p>Most likely explanation: tkf and my machine are fast enough that overhead makes a huge difference.<br>
+LV only takes less than 170 microseconds for each of us.</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span> <span class="nd">@benchmark</span> <span class="n">fetch</span><span class="p">(</span><span class="n">Threads</span><span class="o">.</span><span class="nd">@spawn</span> <span class="mi">1</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+<span class="go">BenchmarkTools.Trial: 10000 samples with 5 evaluations.</span>
+<span class="go"> Range (min … max):   2.022 μs … 68.784 μs  ┊ GC (min … max): 0.00% … 0.00%</span>
+<span class="go"> Time  (median):     59.636 μs              ┊ GC (median):    0.00%</span>
+<span class="go"> Time  (mean ± σ):   55.873 μs ± 13.982 μs  ┊ GC (mean ± σ):  0.00% ± 0.00%</span>
+
+<span class="go">  ▂▁▁ ▁▂▁▂▁▁ ▁                                     ▄▆████▇▇▅▄ ▂</span>
+<span class="go">  ███▇██████████▇▇▇▆▅▅▅▆▄▆▄▄▄▅▂▄▅▅▆▄▅▅▄▅▄▄▅▅▅▅▅▄▄▄▇██████████ █</span>
+<span class="go">  2.02 μs      Histogram: log(frequency) by time      65.8 μs &lt;</span>
+
+<span class="go"> Memory estimate: 473 bytes, allocs estimate: 4.</span>
+</code></pre></div>
+<p>Hence, the overhead of base threading makes a huge difference for us, but not for slower (fewer core) machines.</p>
+
+
+
+<a name="254794928"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254794928" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254794928">(Sep 25 2021 at 01:08)</a>:</h4>
+<p>Oh wait, if I use transducers <code>Map</code> it's not multi-threaded by default?  I guess I need to read the docs? <span aria-label="sweat smile" class="emoji emoji-1f605" role="img" title="sweat smile">:sweat_smile:</span></p>
+
+
+
+<a name="254795074"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254795074" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254795074">(Sep 25 2021 at 01:10)</a>:</h4>
+<p>Tacking on 150 microseconds of overhead makes a huge difference when LV takes 170 microseconds (for <code>A</code>), but much less difference when LV takes 1700 microseconds (for <code>B</code>).</p>
+<p>I think LV handles scaling with many threads better than base's threading, hence <span class="user-mention" data-user-id="297129">@Takafumi Arakaki (tkf)</span> gets 400+ microseconds of overhead.</p>
+<p>With only 12 threads, maybe <span class="user-mention" data-user-id="269150">@Mason Protter</span> 's threading overhead is around 50 microseconds, while LV's baseline time is much slower, combining to make only a small proportional difference.</p>
+
+
+
+<a name="254795575"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254795575" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254795575">(Sep 25 2021 at 01:19)</a>:</h4>
+<p><span class="user-mention" data-user-id="269446">@Expanding Man</span> Yeah, your right. You'd need to combine it with <a href="https://github.com/search?q=ThreadsX.jl&amp;type=Repositories">ThreadsX.jl</a> or <a href="https://github.com/search?q=Folds.jl&amp;type=Repositories">Folds.jl</a> (or use <code>foldxt</code> explicitly).</p>
+<p>Long answer: <code>Map</code> does not care how it's executed and so it all depends on how you reduce it. <code>sum</code> (or rather it's internal <code>foldl</code>) is by default sequential. You'd need to opt-in parallelism since I can't analyze <code>`Map(f)</code> to see if it is safe to do it. You can opt-in parallelism it by choosing the variants of the "last function you apply" like <code>sum</code>, <code>collect</code>, <code>Set</code>, etc. I guess it's imaginable to make it parallel by default, but <a href="https://github.com/search?q=Transducers.jl&amp;type=Repositories">Transducers.jl</a> started as a sequential computing package.</p>
+
+
+
+<a name="254795705"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254795705" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254795705">(Sep 25 2021 at 01:21)</a>:</h4>
+<p>That's really cool.  I was recently discussing on slack how I love transducers but I tend to avoid it because it's such basic functionality (not necessarily basic implementation) that I expect it from base so I hesitate to add it as a dependency.  I should stop doing this.</p>
+
+
+
+<a name="254796591"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254796591" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254796591">(Sep 25 2021 at 01:34)</a>:</h4>
+<p>Well, I'd love to have tailwind for shoving transducers into Base <span aria-label="laughing" class="emoji emoji-1f606" role="img" title="laughing">:laughing:</span></p>
+
+
+
+<a name="254796865"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254796865" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254796865">(Sep 25 2021 at 01:39)</a>:</h4>
+<p><span class="user-mention" data-user-id="284680">@chriselrod</span>  Hmm... Isn't it (also?) simply because LV generates better code than the Julia compiler? I see improvements with one thread and small array:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">function</span> <span class="n">sum_squares_turbo</span><span class="p">(</span><span class="n">A</span><span class="o">::</span><span class="kt">Array</span><span class="p">{</span><span class="kt">T</span><span class="p">})</span> <span class="k">where</span> <span class="p">{</span><span class="kt">T</span><span class="p">}</span>
+           <span class="n">out</span> <span class="o">=</span> <span class="n">zero</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+           <span class="nd">@tturbo</span> <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="n">eachindex</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+               <span class="n">out</span> <span class="o">+=</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">^</span><span class="mi">2</span>
+           <span class="k">end</span>
+           <span class="n">out</span>
+       <span class="k">end</span><span class="p">;</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">sum_squares</span><span class="p">(</span><span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">ThreadsX</span><span class="o">.</span><span class="n">mapreduce</span><span class="p">(</span><span class="n">x</span><span class="o">-&gt;</span><span class="n">x</span><span class="o">^</span><span class="mi">2</span><span class="p">,</span> <span class="o">+</span><span class="p">,</span> <span class="n">A</span><span class="p">;</span> <span class="n">simd</span> <span class="o">=</span> <span class="nb">true</span><span class="p">,</span> <span class="n">basesize</span> <span class="o">=</span> <span class="n">typemax</span><span class="p">(</span><span class="kt">Int</span><span class="p">));</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">sum_squares_foldl</span><span class="p">(</span><span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">foldxl</span><span class="p">(</span><span class="o">+</span><span class="p">,</span> <span class="n">A</span> <span class="o">|&gt;</span> <span class="n">Map</span><span class="p">(</span><span class="n">x</span><span class="o">-&gt;</span><span class="n">x</span><span class="o">^</span><span class="mi">2</span><span class="p">);</span> <span class="n">simd</span> <span class="o">=</span> <span class="nb">true</span><span class="p">);</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">xs</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="mi">2048</span><span class="p">);</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@btime</span> <span class="n">sum_squares_turbo</span><span class="p">(</span><span class="o">$</span><span class="n">xs</span><span class="p">);</span>
+  <span class="mf">104.054</span> <span class="n">ns</span> <span class="p">(</span><span class="mi">0</span> <span class="n">allocations</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@btime</span> <span class="n">sum_squares</span><span class="p">(</span><span class="o">$</span><span class="n">xs</span><span class="p">);</span>  <span class="c"># base case + some surrounding overhead</span>
+  <span class="mf">275.578</span> <span class="n">ns</span> <span class="p">(</span><span class="mi">2</span> <span class="n">allocations</span><span class="o">:</span> <span class="mi">32</span> <span class="n">bytes</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@btime</span> <span class="n">sum_squares_foldl</span><span class="p">(</span><span class="o">$</span><span class="n">xs</span><span class="p">);</span>  <span class="c"># base case, without overhead</span>
+  <span class="mf">199.763</span> <span class="n">ns</span> <span class="p">(</span><span class="mi">0</span> <span class="n">allocations</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="254797069"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254797069" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254797069">(Sep 25 2021 at 01:42)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="297129">Takafumi Arakaki (tkf)</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia/near/254796591">said</a>:</p>
+<blockquote>
+<p>Well, I'd love to have tailwind for shoving transducers into Base <span aria-label="laughing" class="emoji emoji-1f606" role="img" title="laughing">:laughing:</span></p>
+</blockquote>
+<p>Transducers in Base would be super awesome.  In particular my complaints in my aforementioned discussion on slack was about how <code>Base.Iterators</code> is really weird because it's very basic functionality that's shoved into another module.  A really cool thing about the idea of transducers in base (though perhaps this is a frivolous reason to want it) is that it can naturally fit without interfering with the existing namespace.</p>
+
+
+
+<a name="254798222"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254798222" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254798222">(Sep 25 2021 at 02:00)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="297129">Takafumi Arakaki (tkf)</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia/near/254796865">said</a>:</p>
+<blockquote>
+<p><span class="user-mention silent" data-user-id="284680">chriselrod</span>  Hmm... Isn't it (also?) simply because LV generates better code than the Julia compiler? I see improvements with one thread and small array:</p>
+</blockquote>
+<p>I figured the arrays being memory bound would mean this doesn't matter.<br>
+You'll notice the difference go away if you make the arrays much larger.</p>
+<p>If you're curious, LV is unrolling by 8 while LLVM unrolls by 4. If you have up to 2 loads per cycle and 2 fmas per cycle, the CPU ideally wouldn't be bottlenecked by memory if it is all in the L1 cache. With a latency of 4 cycles per fma and 2 fma issued/cycle, you'd need 8 in flight at a time without dependency chain conflicts. Hence LV will unroll it by 8.<br>
+A dot product on the other hand, which requires 2 loads per fma, it'll only unroll by 4 because the loads limit it to at best 1 fma/cycle.</p>
+
+
+
+<a name="254798458"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254798458" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254798458">(Sep 25 2021 at 02:03)</a>:</h4>
+<p>The theoretical peak flops of a single core of my CPU is 124.8 GFLOPS. The multithreaded benchmark was making less than half that using 18 cores, meaning the cores themselves were probably idle most of the time rather than hitting the limit on fmas issued/cycle.</p>
+
+
+
+<a name="254798970"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254798970" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254798970">(Sep 25 2021 at 02:11)</a>:</h4>
+<p>Ah, you are right. There's still some difference if it fits in L2 but if it hits L3 there's no difference</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">xs</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="mi">2</span><span class="o">^</span><span class="mi">15</span><span class="p">);</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">sizeof</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span> <span class="o">/</span> <span class="n">CPUSummary</span><span class="o">.</span><span class="n">cache_size</span><span class="p">(</span><span class="kt">Val</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+<span class="mf">8.0</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">xs</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="mi">2</span><span class="o">^</span><span class="mi">15</span><span class="p">);</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@btime</span> <span class="n">sum_squares_turbo</span><span class="p">(</span><span class="o">$</span><span class="n">xs</span><span class="p">);</span>
+  <span class="mf">2.463</span> <span class="n">μs</span> <span class="p">(</span><span class="mi">0</span> <span class="n">allocations</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@btime</span> <span class="n">sum_squares_foldl</span><span class="p">(</span><span class="o">$</span><span class="n">xs</span><span class="p">);</span>
+  <span class="mf">3.081</span> <span class="n">μs</span> <span class="p">(</span><span class="mi">0</span> <span class="n">allocations</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">xs</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="mi">2</span><span class="o">^</span><span class="mi">19</span><span class="p">);</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">sizeof</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span> <span class="o">/</span> <span class="n">CPUSummary</span><span class="o">.</span><span class="n">cache_size</span><span class="p">(</span><span class="kt">Val</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+<span class="mf">8.0</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@btime</span> <span class="n">sum_squares_turbo</span><span class="p">(</span><span class="o">$</span><span class="n">xs</span><span class="p">);</span>
+  <span class="mf">57.410</span> <span class="n">μs</span> <span class="p">(</span><span class="mi">0</span> <span class="n">allocations</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@btime</span> <span class="n">sum_squares_foldl</span><span class="p">(</span><span class="o">$</span><span class="n">xs</span><span class="p">);</span>
+  <span class="mf">57.509</span> <span class="n">μs</span> <span class="p">(</span><span class="mi">0</span> <span class="n">allocations</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="254812824"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254812824" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mark Kittisopikul <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254812824">(Sep 25 2021 at 06:07)</a>:</h4>
+<p>Thanks for sorting this out guys. I learned a lot from reading over the conversation.</p>
+
+
+
+<a name="254813530"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254813530" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mark Kittisopikul <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254813530">(Sep 25 2021 at 06:20)</a>:</h4>
+<p>In case it is help to you, here's is what Numba is doing in terms of LLVM and asm:<br>
+<a href="/user_uploads/7178/Nl3n_UHcM0jtJ6jB6OcSXYz6/sum_squares_numba_llvm.txt">sum_squares_numba_llvm.txt</a> <br>
+<a href="/user_uploads/7178/nXnfVEu-0vOE-YGwllpgWGmK/sum_squares_numba_x86_64_asm.txt">sum_squares_numba_x86_64_asm.txt</a></p>
+
+
+
+<a name="254813870"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254813870" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254813870">(Sep 25 2021 at 06:26)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269150">Mason Protter</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia/near/254790106">said</a>:</p>
+<blockquote>
+<p><span class="user-mention silent" data-user-id="269582">Mark Kittisopikul</span> , how big is the array in Python? I noticed you wrote <code>rand(2048, 2408)</code> in the julia code</p>
+</blockquote>
+<p><span class="user-mention" data-user-id="269582">@Mark Kittisopikul</span> can you confirm that the array you benchmarked in Numba is the same size as the array in Julia?</p>
+
+
+
+<a name="254813879"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254813879" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mark Kittisopikul <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254813879">(Sep 25 2021 at 06:26)</a>:</h4>
+<p>Yes. Same size.</p>
+
+
+
+<a name="254813894"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254813894" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254813894">(Sep 25 2021 at 06:27)</a>:</h4>
+<p>Okay. The 2408 seemed like it was a typo</p>
+
+
+
+<a name="254813908"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254813908" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254813908">(Sep 25 2021 at 06:27)</a>:</h4>
+<p>That’s quite strange</p>
+
+
+
+<a name="254813964"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254813964" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mark Kittisopikul <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254813964">(Sep 25 2021 at 06:28)</a>:</h4>
+<p>Oh, hmm, maybe</p>
+
+
+
+<a name="254871267"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254871267" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mark Kittisopikul <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254871267">(Sep 25 2021 at 21:19)</a>:</h4>
+<p>Looking over the history, I think you were absolutely correct, <span class="user-mention" data-user-id="269150">@Mason Protter</span> . I screwed up the inputs between the two languages in the end of my testing. Originally, my test suite was completely starting from pyjulia and using <code>Main.eval</code> from Python to conduct my tests, but I simplified to a pure Julia example for this post, and that is when I made the typo.</p>
+
+
+
+<a name="254871347"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254871347" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254871347">(Sep 25 2021 at 21:20)</a>:</h4>
+<p>So is there a performance difference between the Julia and Numba versions?</p>
+
+
+
+<a name="254873270"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Sum%20of%20Squares%2C%20Numba%20vs%20Julia/near/254873270" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mark Kittisopikul <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia.html#254873270">(Sep 25 2021 at 21:52)</a>:</h4>
+<p>In short, no. The longer version is that it depends how one measures it.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

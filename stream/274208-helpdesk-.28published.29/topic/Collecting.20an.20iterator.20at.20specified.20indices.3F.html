@@ -1,0 +1,430 @@
+<html>
+<head><meta charset="utf-8"><title>Collecting an iterator at specified indices? · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html">Collecting an iterator at specified indices?</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="419830837"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/419830837" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#419830837">(Feb 05 2024 at 12:42)</a>:</h4>
+<p>Suppose we are given an iterator <code>iter</code> and a list of linear indices <code>inds</code>. How to collect <code>iter</code> at <code>inds</code>? Is there a helper function in Base for that?</p>
+
+
+
+<a name="419833917"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/419833917" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#419833917">(Feb 05 2024 at 13:00)</a>:</h4>
+<p>I wrote the following helper function assuming that <code>inds</code> is indexable and sorted:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">collectat</span><span class="p">(</span><span class="n">iter</span><span class="p">,</span><span class="w"> </span><span class="n">inds</span><span class="p">)</span>
+<span class="w">  </span><span class="n">ind</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">inds</span><span class="p">[</span><span class="k">begin</span><span class="p">]</span>
+<span class="w">  </span><span class="n">itr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Iterators</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">iter</span><span class="p">,</span><span class="w"> </span><span class="n">ind</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">  </span><span class="n">vec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="n">first</span><span class="p">(</span><span class="n">itr</span><span class="p">)]</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="n">new</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">inds</span><span class="p">[(</span><span class="k">begin</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">:</span><span class="k">end</span><span class="p">]</span>
+<span class="w">    </span><span class="n">itr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Iterators</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">itr</span><span class="p">,</span><span class="w"> </span><span class="n">new</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">ind</span><span class="p">)</span>
+<span class="w">    </span><span class="n">push!</span><span class="p">(</span><span class="n">vec</span><span class="p">,</span><span class="w"> </span><span class="n">first</span><span class="p">(</span><span class="n">itr</span><span class="p">))</span>
+<span class="w">    </span><span class="n">ind</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">new</span>
+<span class="w">  </span><span class="k">end</span>
+<span class="w">  </span><span class="n">vec</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>Do you have improvement suggestions?</p>
+
+
+
+<a name="419836608"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/419836608" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#419836608">(Feb 05 2024 at 13:14)</a>:</h4>
+<p>The function above is super slow though with large collections. Any workaround?</p>
+
+
+
+<a name="419836801"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/419836801" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#419836801">(Feb 05 2024 at 13:15)</a>:</h4>
+<p>The underlying issue is that I have a large collection that requires more memory than available RAM. However, I only need to materialize at specific indices efficiently.</p>
+
+
+
+<a name="419839052"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/419839052" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#419839052">(Feb 05 2024 at 13:27)</a>:</h4>
+<p>Another solution is:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">collectat</span><span class="p">(</span><span class="n">iter</span><span class="p">,</span><span class="w"> </span><span class="n">inds</span><span class="p">)</span>
+<span class="w">  </span><span class="n">vec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Vector</span><span class="p">{</span><span class="kt">eltype</span><span class="p">(</span><span class="kt">iter</span><span class="p">)}()</span>
+<span class="w">  </span><span class="n">set</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Set</span><span class="p">(</span><span class="n">inds</span><span class="p">)</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">enumerate</span><span class="p">(</span><span class="n">iter</span><span class="p">)</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">set</span>
+<span class="w">      </span><span class="n">push!</span><span class="p">(</span><span class="n">vec</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">)</span>
+<span class="w">    </span><span class="k">end</span>
+<span class="w">  </span><span class="k">end</span>
+<span class="w">  </span><span class="n">vec</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="419839055"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/419839055" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#419839055">(Feb 05 2024 at 13:27)</a>:</h4>
+<p>Does <code>inds</code> have a known size?</p>
+
+
+
+<a name="419839087"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/419839087" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#419839087">(Feb 05 2024 at 13:27)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269150">Mason Protter</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F/near/419839055">said</a>:</p>
+<blockquote>
+<p>Does <code>inds</code> have a known size?</p>
+</blockquote>
+<p>yes, it does</p>
+
+
+
+<a name="419840942"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/419840942" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#419840942">(Feb 05 2024 at 13:37)</a>:</h4>
+<p>My first intinct is to write something like</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">BangBang</span><span class="o">:</span><span class="w"> </span><span class="n">setindex!!</span>
+<span class="k">using</span><span class="w"> </span><span class="n">MicroCollections</span><span class="o">:</span><span class="w"> </span><span class="n">UndefArray</span>
+
+<span class="c"># easy case where we can just take a view of `A`</span>
+<span class="n">collectat</span><span class="p">(</span><span class="n">A</span><span class="o">::</span><span class="kt">AbstractArray</span><span class="p">,</span><span class="w"> </span><span class="n">inds</span><span class="o">::</span><span class="kt">AbstractArray</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">collect</span><span class="p">(</span><span class="n">view</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="n">inds</span><span class="p">))</span>
+
+<span class="c"># Harder case where `iter` is some general iterator</span>
+<span class="k">function</span><span class="w"> </span><span class="n">collectat</span><span class="p">(</span><span class="n">iter</span><span class="p">,</span><span class="w"> </span><span class="n">inds</span><span class="p">)</span>
+<span class="w">    </span><span class="n">arr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UndefArray</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">inds</span><span class="p">)</span><span class="o">...</span><span class="p">)</span>
+<span class="w">    </span><span class="n">iter_next</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">iterate</span><span class="p">(</span><span class="n">iter</span><span class="p">)</span>
+<span class="w">    </span><span class="n">inds_ind</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">firstindex</span><span class="p">(</span><span class="n">inds</span><span class="p">)</span>
+<span class="w">    </span><span class="n">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">    </span><span class="k">while</span><span class="w"> </span><span class="o">!</span><span class="n">isnothing</span><span class="p">(</span><span class="n">iter_next</span><span class="p">)</span>
+<span class="w">        </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">iter_next</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">inds</span><span class="p">[</span><span class="n">inds_ind</span><span class="p">]</span>
+<span class="w">            </span><span class="n">arr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">setindex!!</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">inds_ind</span><span class="p">)</span>
+<span class="w">            </span><span class="n">inds_ind</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">        </span><span class="k">end</span>
+<span class="w">        </span><span class="n">count</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">    </span><span class="k">end</span>
+<span class="w">    </span><span class="n">arr</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="419841383"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/419841383" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#419841383">(Feb 05 2024 at 13:39)</a>:</h4>
+<p>Thank you <span class="user-mention" data-user-id="269150">@Mason Protter</span> , will take a look at it as soon as possible. Running some experiments at the moment to see if this bottleneck is solved.</p>
+
+
+
+<a name="419842047"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/419842047" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#419842047">(Feb 05 2024 at 13:43)</a>:</h4>
+<p>sorry I made some typos above</p>
+
+
+
+<a name="419842062"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/419842062" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#419842062">(Feb 05 2024 at 13:43)</a>:</h4>
+<p>Needs a few fixes</p>
+
+
+
+<a name="419842170"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/419842170" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#419842170">(Feb 05 2024 at 13:43)</a>:</h4>
+<p>Thanks for the help. I am investigating the runs so far and will look into it more carefully soon.</p>
+
+
+
+<a name="419846914"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/419846914" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#419846914">(Feb 05 2024 at 14:07)</a>:</h4>
+<p>Hm, yeah the things I've been trying are all pretty slow.</p>
+
+
+
+<a name="419847089"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/419847089" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#419847089">(Feb 05 2024 at 14:08)</a>:</h4>
+<p>This does seem to work:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">collectat</span><span class="p">(</span><span class="n">iter</span><span class="p">,</span><span class="w"> </span><span class="n">inds</span><span class="p">)</span>
+<span class="w">    </span><span class="n">arr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Array</span><span class="p">{</span><span class="kt">eltype</span><span class="p">(</span><span class="kt">iter</span><span class="p">)}(</span><span class="nb">undef</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">inds</span><span class="p">)</span><span class="o">...</span><span class="p">)</span>
+<span class="w">    </span><span class="n">iter_next</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">iterate</span><span class="p">(</span><span class="n">iter</span><span class="p">)</span>
+<span class="w">    </span><span class="n">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">    </span><span class="n">ind</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">firstindex</span><span class="p">(</span><span class="n">inds</span><span class="p">)</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">∈</span><span class="w"> </span><span class="n">iter</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">inds</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span>
+<span class="w">            </span><span class="n">arr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">setindex!!</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">ind</span><span class="p">)</span>
+<span class="w">            </span><span class="n">ind</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">        </span><span class="k">end</span>
+<span class="w">        </span><span class="n">count</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">ind</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">lastindex</span><span class="p">(</span><span class="n">inds</span><span class="p">)</span>
+<span class="w">            </span><span class="k">break</span>
+<span class="w">        </span><span class="k">end</span>
+<span class="w">    </span><span class="k">end</span>
+<span class="w">    </span><span class="n">arr</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>but the perf is not good</p>
+
+
+
+<a name="419847144"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/419847144" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#419847144">(Feb 05 2024 at 14:08)</a>:</h4>
+<p>I think maybe one should just write a custom iterator?</p>
+
+
+
+<a name="419847543"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/419847543" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#419847543">(Feb 05 2024 at 14:10)</a>:</h4>
+<p>i.e. something like</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="kt">IterView</span><span class="p">{</span><span class="kt">T</span><span class="p">,</span><span class="w"> </span><span class="kt">Iter</span><span class="p">,</span><span class="w"> </span><span class="kt">Inds</span><span class="p">}</span>
+<span class="w">    </span><span class="n">iter</span><span class="o">::</span><span class="kt">Iter</span>
+<span class="w">    </span><span class="n">inds</span><span class="o">::</span><span class="kt">Inds</span>
+<span class="k">end</span>
+<span class="n">IterView</span><span class="p">(</span><span class="n">itr</span><span class="o">::</span><span class="kt">A</span><span class="p">,</span><span class="w"> </span><span class="n">inds</span><span class="o">::</span><span class="kt">I</span><span class="p">)</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="p">{</span><span class="kt">A</span><span class="p">,</span><span class="w"> </span><span class="kt">I</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">IterView</span><span class="p">{</span><span class="kt">eltype</span><span class="p">(</span><span class="kt">A</span><span class="p">),</span><span class="w"> </span><span class="kt">A</span><span class="p">,</span><span class="w"> </span><span class="kt">I</span><span class="p">}(</span><span class="n">itr</span><span class="p">,</span><span class="w"> </span><span class="n">inds</span><span class="p">)</span>
+</code></pre></div>
+<p>and then a custom <code>iterate</code> method</p>
+
+
+
+<a name="419847601"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/419847601" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#419847601">(Feb 05 2024 at 14:10)</a>:</h4>
+<p>but it'd be annoying to write and I'm not sure it'd be faster</p>
+
+
+
+<a name="419849070"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/419849070" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#419849070">(Feb 05 2024 at 14:17)</a>:</h4>
+<p>I did a workaround in the script to avoid the construction of large iterators, but will continue to push the limits here, and come back to the collectat soon.</p>
+
+
+
+<a name="419861825"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/419861825" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> aplavin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#419861825">(Feb 05 2024 at 15:12)</a>:</h4>
+<p>Won't something like <code>map(last, Iterators.filter(((i, v),) -&gt; i in ind, enumerate(iter)))</code> work? Basically, a one-line version of your second solution <span class="user-mention" data-user-id="273172">@Júlio Hoffimann</span>.</p>
+
+
+
+<a name="419869098"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/419869098" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Andy Dienes <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#419869098">(Feb 05 2024 at 15:43)</a>:</h4>
+<p>that will still materialize each item right? just not all at the same time</p>
+
+
+
+<a name="419869820"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/419869820" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Andy Dienes <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#419869820">(Feb 05 2024 at 15:46)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">foo</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="mi">10000000</span><span class="p">);</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">idxs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">7</span><span class="p">];</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">itr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">foo</span><span class="p">()</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">_</span><span class="w"> </span><span class="o">∈</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="p">);</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="nd">@allocated</span><span class="w"> </span><span class="n">collectat</span><span class="p">(</span><span class="n">itr</span><span class="p">,</span><span class="w"> </span><span class="n">idxs</span><span class="p">)</span>
+<span class="mi">641436824</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="nd">@allocated</span><span class="w"> </span><span class="n">map</span><span class="p">(</span><span class="n">last</span><span class="p">,</span><span class="w"> </span><span class="n">Iterators</span><span class="o">.</span><span class="n">filter</span><span class="p">(((</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">),)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">∈</span><span class="w"> </span><span class="n">idxs</span><span class="p">,</span><span class="w"> </span><span class="n">enumerate</span><span class="p">(</span><span class="n">itr</span><span class="p">)))</span>
+<span class="mi">8003540800</span>
+</code></pre></div>
+
+
+
+<a name="419892494"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/419892494" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> aplavin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#419892494">(Feb 05 2024 at 17:30)</a>:</h4>
+<p>Of course, iterators are fundamentally sequential, so the only way to get to the Nth element is to iterate over the first N-1. For random access, see arrays :)</p>
+
+
+
+<a name="419893455"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/419893455" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#419893455">(Feb 05 2024 at 17:35)</a>:</h4>
+<p>The problem is that your version goes through all elements of <code>itr</code>, whereas mine stops once you've consumed all the indices</p>
+
+
+
+<a name="419893598"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/419893598" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#419893598">(Feb 05 2024 at 17:36)</a>:</h4>
+<p>which can be very consequential:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="c">#+begin_src julia</span>
+<span class="k">using</span><span class="w"> </span><span class="n">BangBang</span><span class="p">,</span><span class="w"> </span><span class="n">MicroCollections</span>
+
+<span class="n">idxs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">7</span><span class="p">];</span>
+<span class="n">itr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">rand</span><span class="p">(</span><span class="mi">10000000</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">_</span><span class="w"> </span><span class="o">∈</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="p">);</span>
+
+<span class="k">function</span><span class="w"> </span><span class="n">collectat</span><span class="p">(</span><span class="n">iter</span><span class="p">,</span><span class="w"> </span><span class="n">inds</span><span class="p">)</span>
+<span class="w">    </span><span class="n">arr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UndefArray</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">inds</span><span class="p">)</span><span class="o">...</span><span class="p">)</span>
+<span class="w">    </span><span class="n">iter_next</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">iterate</span><span class="p">(</span><span class="n">iter</span><span class="p">)</span>
+<span class="w">    </span><span class="n">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">    </span><span class="n">ind</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">firstindex</span><span class="p">(</span><span class="n">inds</span><span class="p">)</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">∈</span><span class="w"> </span><span class="n">iter</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">inds</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span>
+<span class="w">            </span><span class="n">arr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">setindex!!</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">ind</span><span class="p">)</span>
+<span class="w">            </span><span class="n">ind</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">        </span><span class="k">end</span>
+<span class="w">        </span><span class="n">count</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">ind</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">lastindex</span><span class="p">(</span><span class="n">inds</span><span class="p">)</span>
+<span class="w">            </span><span class="k">break</span>
+<span class="w">        </span><span class="k">end</span>
+<span class="w">    </span><span class="k">end</span>
+<span class="w">    </span><span class="n">arr</span>
+<span class="k">end</span>
+
+<span class="n">collectat_itr</span><span class="p">(</span><span class="n">itr</span><span class="p">,</span><span class="w"> </span><span class="n">idxs</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">map</span><span class="p">(</span><span class="n">last</span><span class="p">,</span><span class="w"> </span><span class="n">Iterators</span><span class="o">.</span><span class="n">filter</span><span class="p">(((</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">),)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">∈</span><span class="w"> </span><span class="n">idxs</span><span class="p">,</span><span class="w"> </span><span class="n">enumerate</span><span class="p">(</span><span class="n">itr</span><span class="p">)))</span>
+
+<span class="nd">@btime</span><span class="w"> </span><span class="n">collectat</span><span class="p">(</span><span class="o">$</span><span class="n">itr</span><span class="p">,</span><span class="w"> </span><span class="o">$</span><span class="n">idxs</span><span class="p">)</span>
+<span class="nd">@btime</span><span class="w"> </span><span class="n">collectat_itr</span><span class="p">(</span><span class="o">$</span><span class="n">itr</span><span class="p">,</span><span class="w"> </span><span class="o">$</span><span class="n">idxs</span><span class="p">);</span>
+<span class="c">#+end_src</span>
+<span class="c">#+RESULTS:</span>
+<span class="o">:</span><span class="w">   </span><span class="mf">95.072</span><span class="w"> </span><span class="n">ms</span><span class="w"> </span><span class="p">(</span><span class="mi">17</span><span class="w"> </span><span class="n">allocations</span><span class="o">:</span><span class="w"> </span><span class="mf">610.35</span><span class="w"> </span><span class="n">MiB</span><span class="p">)</span>
+<span class="o">:</span><span class="w">   </span><span class="mf">1.181</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="p">(</span><span class="mi">307</span><span class="w"> </span><span class="n">allocations</span><span class="o">:</span><span class="w"> </span><span class="mf">7.45</span><span class="w"> </span><span class="n">GiB</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="419894837"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/419894837" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> aplavin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#419894837">(Feb 05 2024 at 17:43)</a>:</h4>
+<p>That's not a fundamental issue – just add <code>Iterators.takewhile</code> for optimization! Still composes nicely out of basic building blocks:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">DataPipes</span><span class="w">  </span><span class="c"># @p to make piping nice</span>
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">collectat_itr</span><span class="p">(</span><span class="n">itr</span><span class="p">,</span><span class="w"> </span><span class="n">idxs</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nd">@p</span><span class="w"> </span><span class="k">let</span>
+<span class="w">    </span><span class="n">itr</span>
+<span class="w">    </span><span class="n">enumerate</span><span class="p">()</span>
+<span class="w">    </span><span class="n">Iterators</span><span class="o">.</span><span class="n">takewhile</span><span class="p">(</span><span class="n">first</span><span class="p">(</span><span class="n">_</span><span class="p">)</span><span class="w"> </span><span class="o">≤</span><span class="w"> </span><span class="n">last</span><span class="p">(</span><span class="n">idxs</span><span class="p">))</span>
+<span class="w">    </span><span class="n">Iterators</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">first</span><span class="p">(</span><span class="n">_</span><span class="p">)</span><span class="w"> </span><span class="o">∈</span><span class="w"> </span><span class="n">idxs</span><span class="p">)</span>
+<span class="w">    </span><span class="n">map</span><span class="p">(</span><span class="n">last</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="nd">@btime</span><span class="w"> </span><span class="n">collectat_itr</span><span class="p">(</span><span class="o">$</span><span class="n">itr</span><span class="p">,</span><span class="w"> </span><span class="o">$</span><span class="n">idxs</span><span class="p">);</span>
+<span class="w">  </span><span class="mf">72.524</span><span class="w"> </span><span class="n">ms</span><span class="w"> </span><span class="p">(</span><span class="mi">26</span><span class="w"> </span><span class="n">allocations</span><span class="o">:</span><span class="w"> </span><span class="mf">610.35</span><span class="w"> </span><span class="n">MiB</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="419896165"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/419896165" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#419896165">(Feb 05 2024 at 17:50)</a>:</h4>
+<p>yeah that's pretty good</p>
+
+
+
+<a name="419899721"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/419899721" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#419899721">(Feb 05 2024 at 18:10)</a>:</h4>
+<p>I think if we want to talk about decomposing into modular building blocks though, Transducers is still my favourite:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="c">#+begin_src julia</span>
+<span class="k">using</span><span class="w"> </span><span class="n">Transducers</span>
+<span class="n">SelectAt</span><span class="p">(</span><span class="n">idxs</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">enumerate</span><span class="w"> </span><span class="o">⨟</span><span class="w"> </span><span class="n">TakeWhile</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">first</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">≤</span><span class="w"> </span><span class="n">last</span><span class="p">(</span><span class="n">idxs</span><span class="p">))</span><span class="w"> </span><span class="o">⨟</span><span class="w"> </span><span class="n">Filter</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">first</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">∈</span><span class="w"> </span><span class="n">idxs</span><span class="p">)</span><span class="w"> </span><span class="o">⨟</span><span class="w"> </span><span class="n">Map</span><span class="p">(</span><span class="n">last</span><span class="p">)</span>
+
+<span class="nd">@btime</span><span class="w"> </span><span class="n">collectat</span><span class="p">(</span><span class="o">$</span><span class="n">itr</span><span class="p">,</span><span class="w"> </span><span class="o">$</span><span class="n">idxs</span><span class="p">)</span>
+<span class="nd">@btime</span><span class="w"> </span><span class="n">collectat_itr2</span><span class="p">(</span><span class="o">$</span><span class="n">itr</span><span class="p">,</span><span class="w"> </span><span class="o">$</span><span class="n">idxs</span><span class="p">);</span>
+<span class="nd">@btime</span><span class="w"> </span><span class="n">itr</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">SelectAt</span><span class="p">(</span><span class="o">$</span><span class="n">idxs</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">collect</span><span class="p">;</span>
+<span class="nd">@btime</span><span class="w"> </span><span class="n">itr</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">SelectAt</span><span class="p">(</span><span class="o">$</span><span class="n">idxs</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">tcollect</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="p">;</span><span class="n">basesize</span><span class="o">=</span><span class="mi">2</span><span class="p">);</span>
+<span class="c">#+end_src</span>
+
+<span class="c">#+RESULTS:</span>
+<span class="o">:</span><span class="w">   </span><span class="mf">93.922</span><span class="w"> </span><span class="n">ms</span><span class="w"> </span><span class="p">(</span><span class="mi">17</span><span class="w"> </span><span class="n">allocations</span><span class="o">:</span><span class="w"> </span><span class="mf">610.35</span><span class="w"> </span><span class="n">MiB</span><span class="p">)</span>
+<span class="o">:</span><span class="w">   </span><span class="mf">93.933</span><span class="w"> </span><span class="n">ms</span><span class="w"> </span><span class="p">(</span><span class="mi">26</span><span class="w"> </span><span class="n">allocations</span><span class="o">:</span><span class="w"> </span><span class="mf">610.35</span><span class="w"> </span><span class="n">MiB</span><span class="p">)</span>
+<span class="o">:</span><span class="w">   </span><span class="mf">94.020</span><span class="w"> </span><span class="n">ms</span><span class="w"> </span><span class="p">(</span><span class="mi">24</span><span class="w"> </span><span class="n">allocations</span><span class="o">:</span><span class="w"> </span><span class="mf">610.35</span><span class="w"> </span><span class="n">MiB</span><span class="p">)</span>
+<span class="o">:</span><span class="w">   </span><span class="mf">61.983</span><span class="w"> </span><span class="n">ms</span><span class="w"> </span><span class="p">(</span><span class="mi">222</span><span class="w"> </span><span class="n">allocations</span><span class="o">:</span><span class="w"> </span><span class="mf">915.54</span><span class="w"> </span><span class="n">MiB</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="420025169"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/420025169" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#420025169">(Feb 06 2024 at 11:18)</a>:</h4>
+<p>Thank you all for the inputs, experimenting with them here.</p>
+
+
+
+<a name="420031238"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/420031238" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#420031238">(Feb 06 2024 at 11:57)</a>:</h4>
+<p><span class="user-mention" data-user-id="269150">@Mason Protter</span> I really like the <a href="https://juliahub.com/ui/Packages/General/Transducers">Transducers.jl</a> solution and we already have it as a dependency. What is the <code>⨟</code> symbol? Couldn't find it in the docs. Would it be a lazy version of <code>|&gt;</code>?</p>
+
+
+
+<a name="420032062"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/420032062" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#420032062">(Feb 06 2024 at 12:02)</a>:</h4>
+<p>Huh it's weird it's not in the docs. Here's the docstring, I'll try and get it in the docs website too though:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">help</span><span class="o">?&gt;</span><span class="w"> </span><span class="o">⨟</span>
+<span class="s">"⨟"</span><span class="w"> </span><span class="n">can</span><span class="w"> </span><span class="n">be</span><span class="w"> </span><span class="n">typed</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">\</span><span class="n">bbsemi</span><span class="o">&lt;</span><span class="n">tab</span><span class="o">&gt;</span>
+
+<span class="n">search</span><span class="o">:</span><span class="w"> </span><span class="o">⨟</span>
+
+<span class="w">  </span><span class="n">g</span><span class="w"> </span><span class="o">⨟</span><span class="w"> </span><span class="n">f</span>
+<span class="w">  </span><span class="n">opcompose</span><span class="p">(</span><span class="n">g</span><span class="p">,</span><span class="w"> </span><span class="n">f</span><span class="p">)</span>
+
+
+<span class="w">  </span><span class="n">The</span><span class="w"> </span><span class="n">opposite</span><span class="w"> </span><span class="n">composition</span><span class="w"> </span><span class="n">operator</span><span class="w"> </span><span class="n">defined</span><span class="w"> </span><span class="n">as</span>
+
+<span class="w">  </span><span class="n">g</span><span class="w"> </span><span class="o">⨟</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="o">∘</span><span class="w"> </span><span class="n">g</span>
+<span class="w">  </span><span class="o">⨟</span><span class="p">(</span><span class="n">f</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">f</span>
+<span class="w">  </span><span class="o">⨟</span><span class="p">(</span><span class="n">fs</span><span class="o">...</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">∘</span><span class="p">(</span><span class="n">reverse</span><span class="p">(</span><span class="n">fs</span><span class="p">)</span><span class="o">...</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="420032628"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/420032628" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#420032628">(Feb 06 2024 at 12:05)</a>:</h4>
+<p>Mhm, I guess it's because it's actually a re-export from <a href="https://juliahub.com/ui/Packages/General/CompositionsBase">CompositionsBase.jl</a></p>
+
+
+
+<a name="420049484"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/420049484" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#420049484">(Feb 06 2024 at 13:41)</a>:</h4>
+<p><span class="user-mention" data-user-id="269150">@Mason Protter</span> I had to adjust the definition to handle empty <code>inds</code>:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">Transducers</span>
+
+<span class="s">"""</span>
+<span class="s">    collectat(iter, inds)</span>
+
+<span class="s">Collect iterator `iter` at indices `inds` without materialization.</span>
+<span class="s">"""</span>
+<span class="k">function</span><span class="w"> </span><span class="n">collectat</span><span class="p">(</span><span class="n">iter</span><span class="p">,</span><span class="w"> </span><span class="n">inds</span><span class="p">)</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="n">isempty</span><span class="p">(</span><span class="n">inds</span><span class="p">)</span>
+<span class="w">    </span><span class="n">eltype</span><span class="p">(</span><span class="n">iter</span><span class="p">)[]</span>
+<span class="w">  </span><span class="k">else</span>
+<span class="w">    </span><span class="n">selectat</span><span class="p">(</span><span class="n">inds</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">enumerate</span><span class="w"> </span><span class="o">⨟</span><span class="w"> </span><span class="n">TakeWhile</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">first</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">≤</span><span class="w"> </span><span class="n">last</span><span class="p">(</span><span class="n">inds</span><span class="p">))</span><span class="w"> </span><span class="o">⨟</span><span class="w"> </span><span class="n">Filter</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">first</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">∈</span><span class="w"> </span><span class="n">inds</span><span class="p">)</span><span class="w"> </span><span class="o">⨟</span><span class="w"> </span><span class="n">Map</span><span class="p">(</span><span class="n">last</span><span class="p">)</span>
+<span class="w">    </span><span class="n">iter</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">selectat</span><span class="p">(</span><span class="n">inds</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">tcollect</span>
+<span class="w">  </span><span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="420051646"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/420051646" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#420051646">(Feb 06 2024 at 13:52)</a>:</h4>
+<p>Okay got a docstring in Transducers itself now:<a href="https://juliafolds2.github.io/Transducers.jl/dev/reference/manual/#CompositionsBase.:%E2%A8%9F">https://juliafolds2.github.io/Transducers.jl/dev/reference/manual/#CompositionsBase.:%E2%A8%9F</a></p>
+
+
+
+<a name="420051796"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/420051796" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#420051796">(Feb 06 2024 at 13:53)</a>:</h4>
+<p>Some history on the topic if you're interested: <a href="https://github.com/JuliaFolds/Transducers.jl/issues/67">https://github.com/JuliaFolds/Transducers.jl/issues/67</a></p>
+
+
+
+<a name="420055783"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/420055783" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#420055783">(Feb 06 2024 at 14:13)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="273172">Júlio Hoffimann</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F/near/420049484">said</a>:</p>
+<blockquote>
+<p><span class="user-mention silent" data-user-id="269150">Mason Protter</span> I had to adjust the definition to handle empty <code>inds</code>:</p>
+</blockquote>
+<p>You could also do</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">SelectAt</span><span class="p">(</span><span class="n">idxs</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">enumerate</span>
+<span class="w">                  </span><span class="o">⨟</span><span class="w"> </span><span class="n">TakeWhile</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="o">!</span><span class="n">isempty</span><span class="p">(</span><span class="n">idxs</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">first</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">≤</span><span class="w"> </span><span class="n">last</span><span class="p">(</span><span class="n">idxs</span><span class="p">))</span>
+<span class="w">                  </span><span class="o">⨟</span><span class="w"> </span><span class="n">Filter</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">first</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">∈</span><span class="w"> </span><span class="n">idxs</span><span class="p">)</span>
+<span class="w">                  </span><span class="o">⨟</span><span class="w"> </span><span class="n">Map</span><span class="p">(</span><span class="n">last</span><span class="p">))</span>
+</code></pre></div>
+
+
+
+<a name="420154937"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/420154937" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#420154937">(Feb 06 2024 at 23:44)</a>:</h4>
+<p><span class="user-mention" data-user-id="269150">@Mason Protter</span> is this a good application for <a href="https://juliahub.com/ui/Packages/General/OhMyThreads">OhMyThreads.jl</a>? We are considering moving some code from <a href="https://juliahub.com/ui/Packages/General/Transducers">Transducers.jl</a> to the new package</p>
+
+
+
+<a name="420155651"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/420155651" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#420155651">(Feb 06 2024 at 23:51)</a>:</h4>
+<p>Not really, no. OhMyThreads doesn't handle general iterators or early termination like Transducers does</p>
+
+
+
+<a name="420156762"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Collecting%20an%20iterator%20at%20specified%20indices%3F/near/420156762" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Collecting.20an.20iterator.20at.20specified.20indices.3F.html#420156762">(Feb 07 2024 at 00:02)</a>:</h4>
+<p>OhMyThreads isn't me giving up on Transducers, it was more just that I knew that the design of OhMyThreads can cover a big chunk of use-cases with very little code, and be relatively low maintenance and easy for people to pick up and contribute to</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

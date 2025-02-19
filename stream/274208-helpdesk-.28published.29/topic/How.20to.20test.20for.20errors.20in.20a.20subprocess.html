@@ -1,0 +1,53 @@
+<html>
+<head><meta charset="utf-8"><title>How to test for errors in a subprocess · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20test.20for.20errors.20in.20a.20subprocess.html">How to test for errors in a subprocess</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="297932636"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20test%20for%20errors%20in%20a%20subprocess/near/297932636" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Simon Christ <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20test.20for.20errors.20in.20a.20subprocess.html#297932636">(Sep 09 2022 at 09:15)</a>:</h4>
+<p>I'd like to write something along the lines of</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">Test</span><span class="w"></span>
+<span class="nd">@test_throws</span><span class="w"> </span><span class="kt">DomainError</span><span class="w"> </span><span class="n">run</span><span class="p">(</span><span class="sb">`julia -e 'sqrt(-1)'`</span><span class="p">)</span><span class="w"></span>
+</code></pre></div>
+<p>Is that possible somehow?</p>
+
+
+
+<a name="297932698"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20test%20for%20errors%20in%20a%20subprocess/near/297932698" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20test.20for.20errors.20in.20a.20subprocess.html#297932698">(Sep 09 2022 at 09:15)</a>:</h4>
+<p>no, because the <code>DomainError</code> doesn't make it to the spawning process</p>
+
+
+
+<a name="297932757"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20test%20for%20errors%20in%20a%20subprocess/near/297932757" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20test.20for.20errors.20in.20a.20subprocess.html#297932757">(Sep 09 2022 at 09:15)</a>:</h4>
+<p>it's handled by the spawned process, the only thing <code>run</code> ends up seeing is the exit code of the process</p>
+
+
+
+<a name="297932875"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20test%20for%20errors%20in%20a%20subprocess/near/297932875" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20test.20for.20errors.20in.20a.20subprocess.html#297932875">(Sep 09 2022 at 09:16)</a>:</h4>
+<p>when dealing with subprocesses, you're limited to what they're communicating outside, either via various output streams, an exit code or explicit communication</p>
+
+
+
+<a name="297932951"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20test%20for%20errors%20in%20a%20subprocess/near/297932951" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20test.20for.20errors.20in.20a.20subprocess.html#297932951">(Sep 09 2022 at 09:17)</a>:</h4>
+<p>what you can do is search for <code>DomainError</code> in the stdout/stderr of the spawned process, but that's not reliable due to other output possibly creating a false positive</p>
+
+
+
+<a name="297933216"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20test%20for%20errors%20in%20a%20subprocess/near/297933216" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Simon Christ <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20test.20for.20errors.20in.20a.20subprocess.html#297933216">(Sep 09 2022 at 09:19)</a>:</h4>
+<p>Thanks! I feared it would be like that..</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

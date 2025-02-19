@@ -1,0 +1,269 @@
+<html>
+<head><meta charset="utf-8"><title>✔ Iterating over pairs in a functional programming way · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html">✔ Iterating over pairs in a functional programming way</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="366908253"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/366908253" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Davi Sales Barreira <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#366908253">(Jun 16 2023 at 17:48)</a>:</h4>
+<p>Suppose I have a struct <code>Line</code> that takes two values. I want to write a function <code>p(x)</code> that tkes <code> [x_1,...,x_n]</code> and returns a vector of <br>
+<code>[Line(x_1,x_2), Line(x_2,x_3)...]</code>.</p>
+<p>I know I can simply write <code>p(x) = map(Line, x[1:end-1], x[2:end])</code>, but I was looking for a functional programming way of doing this... Something in the lines of <code>map((x,y)-&gt;Line(x,y) zip(head(x), tail(x))</code>... But this <code>head</code> and <code>tail</code> functions do not seem to be shipped on Julia. Also, it would be neat to have a general function for iterating over such pairs, triples, and so on.</p>
+<p>I thought of using a foldl, but this does not work properly, as it returns something like Line(1,Line (2, Line(3,4))).</p>
+<p>Another point is that the functiion should work for any Vector type, hence, it should not use stuff like [2:end], where one assumes that the vector has at least two values...</p>
+<p>I imagine that p(x) should be something similar to a fold in the sense of having an init. For a singleton vector could perhaps return Line(init, x[1]), and for an empty vector it could return Line(init,init).</p>
+<p>Any ideas?</p>
+
+
+
+<a name="366909825"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/366909825" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#366909825">(Jun 16 2023 at 17:55)</a>:</h4>
+<p>It sounds like you just want to define a couple methods with that linear function to implement the iteration interface?</p>
+
+
+
+<a name="366909972"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/366909972" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#366909972">(Jun 16 2023 at 17:56)</a>:</h4>
+<p><code>Base.iterate</code> and its 2 methods for your type, that is.</p>
+
+
+
+<a name="366910332"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/366910332" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#366910332">(Jun 16 2023 at 17:58)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="358317">Davi Sales Barreira</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Iterating.20over.20pairs.20in.20a.20functional.20programming.20way/near/366908253">said</a>:</p>
+<blockquote>
+<p>Suppose I have a struct <code>Line</code> that takes two values. I want to write a function <code>p(x)</code> that tkes <code> [x_1,...,x_n]</code> and returns a vector of <br>
+<code>[Line(x_1,x_2), Line(x_2,x_3)...]</code>.</p>
+<p>I know I can simply write <code>p(x) = map(Line, x[1:end-1], x[2:end])</code>, but I was looking for a functional programming way of doing this... </p>
+</blockquote>
+<p>What about that is not functional?</p>
+
+
+
+<a name="366911509"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/366911509" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#366911509">(Jun 16 2023 at 18:02)</a>:</h4>
+<p>I took it to mean lazily compute the values, and then I immediately thought iteration interface. <span class="user-mention" data-user-id="358317">@Davi Sales Barreira</span> if you check out the Interfaces section of the Manual, it lays out the iteration interface, and proceeds with an example similar (lazily computing the squares of a scalar) to what (I believe) you are looking for.</p>
+
+
+
+<a name="366911715"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/366911715" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#366911715">(Jun 16 2023 at 18:03)</a>:</h4>
+<p>Doing this with iterators instead of slicing could work, but it sounds hard to do it in a way that wouldn't be silently incorrect with stateful iterators</p>
+
+
+
+<a name="366911749"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/366911749" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Davi Sales Barreira <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#366911749">(Jun 16 2023 at 18:03)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269150">Mason Protter</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Iterating.20over.20pairs.20in.20a.20functional.20programming.20way/near/366910332">said</a>:</p>
+<blockquote>
+<p><span class="user-mention silent" data-user-id="358317">Davi Sales Barreira</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Iterating.20over.20pairs.20in.20a.20functional.20programming.20way/near/366908253">said</a>:</p>
+<blockquote>
+<p>Suppose I have a struct <code>Line</code> that takes two values. I want to write a function <code>p(x)</code> that tkes <code> [x_1,...,x_n]</code> and returns a vector of <br>
+<code>[Line(x_1,x_2), Line(x_2,x_3)...]</code>.</p>
+<p>I know I can simply write <code>p(x) = map(Line, x[1:end-1], x[2:end])</code>, but I was looking for a functional programming way of doing this... </p>
+</blockquote>
+<p>What about that is not functional?</p>
+</blockquote>
+<p>I mean, it assumes the vector to be at least of size 2, hence it fails for the other cases.</p>
+
+
+
+<a name="366911825"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/366911825" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#366911825">(Jun 16 2023 at 18:03)</a>:</h4>
+<p>I guess I don't understand what that has to do with functional programming</p>
+
+
+
+<a name="366911860"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/366911860" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#366911860">(Jun 16 2023 at 18:03)</a>:</h4>
+<p>Neither do I</p>
+
+
+
+<a name="366912101"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/366912101" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Davi Sales Barreira <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#366912101">(Jun 16 2023 at 18:04)</a>:</h4>
+<p>Here is what I came up with:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">getlast</span><span class="p">(</span><span class="n">x</span><span class="o">::</span><span class="kt">Nothing</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">nothing</span>
+<span class="n">getlast</span><span class="p">(</span><span class="n">x</span><span class="o">::</span><span class="kt">Tuple</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">[</span><span class="k">end</span><span class="p">]</span>
+
+<span class="n">safecollect</span><span class="p">(</span><span class="n">x</span><span class="o">::</span><span class="kt">Nothing</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">nothing</span>
+<span class="n">safecollect</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">collect</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+<span class="n">tail</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">safecollect</span><span class="p">(</span><span class="n">getlast</span><span class="p">(</span><span class="n">Iterators</span><span class="o">.</span><span class="n">peel</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
+<span class="n">head</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">safecollect</span><span class="p">(</span><span class="n">getlast</span><span class="p">(</span><span class="n">Iterators</span><span class="o">.</span><span class="n">peel</span><span class="p">(</span><span class="n">Iterators</span><span class="o">.</span><span class="n">reverse</span><span class="p">(</span><span class="n">x</span><span class="p">))))</span>
+<span class="n">map</span><span class="p">(</span><span class="n">x</span><span class="o">-&gt;</span><span class="n">Line</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span><span class="w"> </span><span class="n">zip</span><span class="p">(</span><span class="n">head</span><span class="p">(</span><span class="n">x</span><span class="p">),</span><span class="w"> </span><span class="n">tail</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
+</code></pre></div>
+
+
+
+<a name="366912320"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/366912320" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Davi Sales Barreira <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#366912320">(Jun 16 2023 at 18:05)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269150">Mason Protter</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Iterating.20over.20pairs.20in.20a.20functional.20programming.20way/near/366911825">said</a>:</p>
+<blockquote>
+<p>I guess I don't understand what that has to do with functional programming</p>
+</blockquote>
+<p>Sorry, I'm not very proficience on functional programming... When I say this, I mostly mean something that would be directly implementable in Haskell.</p>
+
+
+
+<a name="366912844"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/366912844" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Davi Sales Barreira <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#366912844">(Jun 16 2023 at 18:07)</a>:</h4>
+<p>Makes sense?</p>
+
+
+
+<a name="366913093"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/366913093" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#366913093">(Jun 16 2023 at 18:08)</a>:</h4>
+<p>Ok, so do you mean that you want state to be hidden away with monads?</p>
+
+
+
+<a name="366913198"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/366913198" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#366913198">(Jun 16 2023 at 18:09)</a>:</h4>
+<p>Iterators may mutate the state, and it is explicitly passed as an argument.</p>
+
+
+
+<a name="366913263"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/366913263" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#366913263">(Jun 16 2023 at 18:09)</a>:</h4>
+<p>I'm not sure how to program like haskell in Julia though, sorry.</p>
+
+
+
+<a name="366914889"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/366914889" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#366914889">(Jun 16 2023 at 18:17)</a>:</h4>
+<p>Also, take a look at <code>Base.front</code> and <code>Base.tail</code> (not exported for some reason)</p>
+
+
+
+<a name="366915305"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/366915305" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#366915305">(Jun 16 2023 at 18:20)</a>:</h4>
+<p>Is returning an empty list an acceptable fallback instead of some <code>init</code> value?</p>
+
+
+
+<a name="366915346"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/366915346" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#366915346">(Jun 16 2023 at 18:20)</a>:</h4>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">Transducers</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="k">struct</span> <span class="kt">Line</span><span class="p">{</span><span class="kt">T</span><span class="p">}</span>
+<span class="w">           </span><span class="n">x</span><span class="o">::</span><span class="kt">T</span>
+<span class="w">           </span><span class="n">y</span><span class="o">::</span><span class="kt">T</span>
+<span class="w">       </span><span class="k">end</span><span class="p">;</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="p">[</span><span class="ss">:x1</span><span class="p">,</span><span class="w"> </span><span class="ss">:x2</span><span class="p">,</span><span class="w"> </span><span class="ss">:x3</span><span class="p">]</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">Consecutive</span><span class="p">(</span><span class="mi">2</span><span class="p">;</span><span class="w"> </span><span class="n">step</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">MapSplat</span><span class="p">(</span><span class="n">Line</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">collect</span>
+<span class="go">2-element Vector{Line{Symbol}}:</span>
+<span class="go"> Line{Symbol}(:x1, :x2)</span>
+<span class="go"> Line{Symbol}(:x2, :x3)</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="p">[</span><span class="ss">:x1</span><span class="p">,]</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">Consecutive</span><span class="p">(</span><span class="mi">2</span><span class="p">;</span><span class="w"> </span><span class="n">step</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">MapSplat</span><span class="p">(</span><span class="n">Line</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">collect</span>
+<span class="go">Any[]</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="p">[]</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">Consecutive</span><span class="p">(</span><span class="mi">2</span><span class="p">;</span><span class="w"> </span><span class="n">step</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">MapSplat</span><span class="p">(</span><span class="n">Line</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">collect</span>
+<span class="go">Any[]</span>
+</code></pre></div>
+
+
+
+<a name="366915863"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/366915863" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Davi Sales Barreira <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#366915863">(Jun 16 2023 at 18:22)</a>:</h4>
+<p>Very interesting. I've been trying to understand how transduscers work. I'll take a look at the package again. Thanks</p>
+
+
+
+<a name="366916615"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/366916615" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#366916615">(Jun 16 2023 at 18:26)</a>:</h4>
+<p>If you feel a need for a haskell version of everything I guess you could look at <a href="https://github.com/hypirion/haskell-transducers">https://github.com/hypirion/haskell-transducers</a></p>
+
+
+
+<a name="366916727"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/366916727" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#366916727">(Jun 16 2023 at 18:27)</a>:</h4>
+<p>No idea if this thing is well implemented or not though</p>
+
+
+
+<a name="366917251"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/366917251" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#366917251">(Jun 16 2023 at 18:29)</a>:</h4>
+<p>Personally, I think Transducers are a much more elegant and natural functional programming approach to data traversal than anything I've seen come out of Haskell land</p>
+
+
+
+<a name="366939092"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/366939092" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Davi Sales Barreira <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#366939092">(Jun 16 2023 at 20:21)</a>:</h4>
+<p>Ok, I'm reading <a href="https://github.com/search?q=Transducers.jl&amp;type=Repositories">Transducers.jl</a> documentation, and it's amazing. I was wondering if fthere is a formalization of it in terms of category theory,</p>
+
+
+
+<a name="366940246"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/366940246" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#366940246">(Jun 16 2023 at 20:27)</a>:</h4>
+<p><span class="user-mention" data-user-id="358317">@Davi Sales Barreira</span> I am not sure, but also check out libraries that work with transducers, like <a href="https://github.com/search?q=Folds.jl&amp;type=Repositories">Folds.jl</a> and <a href="https://github.com/search?q=FLoops.jl&amp;type=Repositories">FLoops.jl</a></p>
+<p>(also note that these projects live in the JuliaFolds organization, but the original maintainer went missing. Upgraded versions are forming in the JuliaFolds2 organization)</p>
+
+
+
+<a name="366942711"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/366942711" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#366942711">(Jun 16 2023 at 20:42)</a>:</h4>
+<blockquote>
+<p>I was wondering if fthere is a formalization of it in terms of category theory</p>
+</blockquote>
+<p>The core idea is not new, it's just the concept of lenses which are described in category theoretic terms here: <a href="https://ncatlab.org/nlab/show/lens+%28in+computer+science%29">https://ncatlab.org/nlab/show/lens+%28in+computer+science%29</a></p>
+
+
+
+<a name="366942833"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/366942833" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#366942833">(Jun 16 2023 at 20:43)</a>:</h4>
+<p>but the details of various things are important, such as how transducers handle early termination, state, initialization, etc.</p>
+
+
+
+<a name="366942977"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/366942977" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#366942977">(Jun 16 2023 at 20:44)</a>:</h4>
+<p><a href="https://hypirion.com/musings/haskell-transducers">https://hypirion.com/musings/haskell-transducers</a><br>
+<a href="https://hypirion.com/musings/transducers-to-conduits-and-back">https://hypirion.com/musings/transducers-to-conduits-and-back</a></p>
+
+
+
+<a name="367148410"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/367148410" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Davi Sales Barreira <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#367148410">(Jun 17 2023 at 11:53)</a>:</h4>
+<p>You mean <span class="user-mention" data-user-id="297129">@Takafumi Arakaki (tkf)</span> is not contributing anymore??? I've followed lots of his sutff. Any idea on what happened?</p>
+
+
+
+<a name="367150843"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/367150843" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#367150843">(Jun 17 2023 at 12:02)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="358317">Davi Sales Barreira</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Iterating.20over.20pairs.20in.20a.20functional.20programming.20way/near/367148410">said</a>:</p>
+<blockquote>
+<p>You mean <span class="user-mention silent" data-user-id="297129">Takafumi Arakaki (tkf)</span> is not contributing anymore??? I've followed lots of his sutff. Any idea on what happened?</p>
+</blockquote>
+<p>Since October, and unfortunately, nobody knows why.</p>
+
+
+
+<a name="367154025"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/367154025" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Davi Sales Barreira <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#367154025">(Jun 17 2023 at 12:14)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="374994">Michael Fiano</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Iterating.20over.20pairs.20in.20a.20functional.20programming.20way/near/367150843">said</a>:</p>
+<blockquote>
+<p><span class="user-mention silent" data-user-id="358317">Davi Sales Barreira</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Iterating.20over.20pairs.20in.20a.20functional.20programming.20way/near/367148410">said</a>:</p>
+<blockquote>
+<p>You mean <span class="user-mention silent" data-user-id="297129">Takafumi Arakaki (tkf)</span> is not contributing anymore??? I've followed lots of his sutff. Any idea on what happened?</p>
+</blockquote>
+<p>Since October, and unfortunately, nobody knows why.</p>
+</blockquote>
+<p>That is truly unfortunate.</p>
+
+
+
+<a name="425285777"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Iterating%20over%20pairs%20in%20a%20functional%20programming%20way/near/425285777" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Iterating.20over.20pairs.20in.20a.20functional.20programming.20way.html#425285777">(Mar 07 2024 at 11:48)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="358317">Davi Sales Barreira</span> has marked this topic as resolved.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

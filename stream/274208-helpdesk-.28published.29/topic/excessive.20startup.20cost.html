@@ -1,0 +1,217 @@
+<html>
+<head><meta charset="utf-8"><title>excessive startup cost · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html">excessive startup cost</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="286793040"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/excessive%20startup%20cost/near/286793040" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html#286793040">(Jun 20 2022 at 13:15)</a>:</h4>
+<p>I have been using julia for the past 5 years, and I keep running into problems where my codebase suddenly takes an extremely excessive amount of time to start up. I have started multiple projects where at one point or another this issue cropped up, and even had to abandon one - rewriting it in another language.</p>
+<p>How is one supposed to debug this? What am I doing wrong? Which heuristics are getting derailed? If it is type instability, can we make the default behavior to just give up after failing to infer for too long?</p>
+<p>For a silly example, this is a work-in-progress package : <a href="https://github.com/quantumghent/PEPSKit.jl/tree/djeezus">https://github.com/quantumghent/PEPSKit.jl/tree/djeezus</a> (you really need that branch)</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">PEPSKit</span><span class="p">,</span><span class="n">TensorKit</span><span class="w"></span>
+<span class="n">peps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">InfinitePEPS</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">);</span><span class="w"></span>
+<span class="n">leading_boundary</span><span class="p">(</span><span class="n">peps</span><span class="p">,</span><span class="n">CTMRG</span><span class="p">(</span><span class="n">truncdim</span><span class="p">(</span><span class="mi">5</span><span class="p">),</span><span class="mf">1e-12</span><span class="p">))</span><span class="w"></span>
+</code></pre></div>
+<p>takes an absolutely unusable amount of time to run</p>
+
+
+
+<a name="286793310"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/excessive%20startup%20cost/near/286793310" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html#286793310">(Jun 20 2022 at 13:17)</a>:</h4>
+<p>Do you know about <a href="https://github.com/timholy/SnoopCompile.jl">https://github.com/timholy/SnoopCompile.jl</a> ?</p>
+
+
+
+<a name="286793721"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/excessive%20startup%20cost/near/286793721" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html#286793721">(Jun 20 2022 at 13:20)</a>:</h4>
+<p>Also seems like that branch can't even be added by itself:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="p">(</span><span class="n">jl_vbpKOh</span><span class="p">)</span><span class="w"> </span><span class="n">pkg</span><span class="o">&gt;</span><span class="w"> </span><span class="n">add</span><span class="w"> </span><span class="n">https</span><span class="o">://</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">quantumghent</span><span class="o">/</span><span class="n">PEPSKit</span><span class="o">.</span><span class="n">jl</span><span class="c">#djeezus</span><span class="w"></span>
+<span class="w">    </span><span class="n">Updating</span><span class="w"> </span><span class="n">git</span><span class="o">-</span><span class="n">repo</span><span class="w"> </span><span class="sb">`https://github.com/quantumghent/PEPSKit.jl`</span><span class="w"></span>
+<span class="w">   </span><span class="n">Resolving</span><span class="w"> </span><span class="n">package</span><span class="w"> </span><span class="n">versions</span><span class="o">...</span><span class="w"></span>
+<span class="n">ERROR</span><span class="o">:</span><span class="w"> </span><span class="n">Unsatisfiable</span><span class="w"> </span><span class="n">requirements</span><span class="w"> </span><span class="n">detected</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">package</span><span class="w"> </span><span class="n">MPSKit</span><span class="w"> </span><span class="p">[</span><span class="n">bb1c41ca</span><span class="p">]</span><span class="o">:</span><span class="w"></span>
+<span class="w"> </span><span class="n">MPSKit</span><span class="w"> </span><span class="p">[</span><span class="n">bb1c41ca</span><span class="p">]</span><span class="w"> </span><span class="n">log</span><span class="o">:</span><span class="w"></span>
+<span class="w"> </span><span class="n">├─possible</span><span class="w"> </span><span class="n">versions</span><span class="w"> </span><span class="n">are</span><span class="o">:</span><span class="w"> </span><span class="mf">0.1.0</span><span class="o">-</span><span class="mf">0.7.0</span><span class="w"> </span><span class="n">or</span><span class="w"> </span><span class="n">uninstalled</span><span class="w"></span>
+<span class="w"> </span><span class="n">├─restricted</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">versions</span><span class="w"> </span><span class="mf">0.7</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="n">PEPSKit</span><span class="w"> </span><span class="p">[</span><span class="mf">52969e89</span><span class="p">],</span><span class="w"> </span><span class="n">leaving</span><span class="w"> </span><span class="n">only</span><span class="w"> </span><span class="n">versions</span><span class="w"> </span><span class="mf">0.7.0</span><span class="w"></span>
+<span class="w"> </span><span class="n">│</span><span class="w"> </span><span class="n">└─PEPSKit</span><span class="w"> </span><span class="p">[</span><span class="mf">52969e89</span><span class="p">]</span><span class="w"> </span><span class="n">log</span><span class="o">:</span><span class="w"></span>
+<span class="w"> </span><span class="n">│</span><span class="w">   </span><span class="n">├─possible</span><span class="w"> </span><span class="n">versions</span><span class="w"> </span><span class="n">are</span><span class="o">:</span><span class="w"> </span><span class="mf">0.1.0</span><span class="w"> </span><span class="n">or</span><span class="w"> </span><span class="n">uninstalled</span><span class="w"></span>
+<span class="w"> </span><span class="n">│</span><span class="w">   </span><span class="n">└─PEPSKit</span><span class="w"> </span><span class="p">[</span><span class="mf">52969e89</span><span class="p">]</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">fixed</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">version</span><span class="w"> </span><span class="mf">0.1.0</span><span class="w"></span>
+<span class="w"> </span><span class="n">└─restricted</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="n">julia</span><span class="w"> </span><span class="n">compatibility</span><span class="w"> </span><span class="n">requirements</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">versions</span><span class="o">:</span><span class="w"> </span><span class="mf">0.1.0</span><span class="o">-</span><span class="mf">0.4.0</span><span class="w"> </span><span class="n">or</span><span class="w"> </span><span class="n">uninstalled</span><span class="w"> </span><span class="n">—</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">versions</span><span class="w"> </span><span class="n">left</span><span class="w"></span>
+</code></pre></div>
+<p>Is there a circular dependency between your packages?</p>
+
+
+
+<a name="286793855"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/excessive%20startup%20cost/near/286793855" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html#286793855">(Jun 20 2022 at 13:21)</a>:</h4>
+<p>ah, my julia version is too new</p>
+
+
+
+<a name="286795526"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/excessive%20startup%20cost/near/286795526" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html#286795526">(Jun 20 2022 at 13:36)</a>:</h4>
+<p>I have tried snoopcompile in the past, but nothing obvious showed. For example, I did not see particularly many method invalidations. That said, the package changed a lot apparently, I will try it again</p>
+<p>I can change the package (or remove the mpskit dependency) if you want to get it to run</p>
+
+
+
+<a name="286795901"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/excessive%20startup%20cost/near/286795901" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html#286795901">(Jun 20 2022 at 13:38)</a>:</h4>
+<p>I was just trying to see where the time of your example was actually spent</p>
+
+
+
+<a name="286795955"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/excessive%20startup%20cost/near/286795955" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html#286795955">(Jun 20 2022 at 13:39)</a>:</h4>
+<p>(I'm now running snoopi_deep on it)</p>
+
+
+
+<a name="286796001"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/excessive%20startup%20cost/near/286796001" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html#286796001">(Jun 20 2022 at 13:39)</a>:</h4>
+<p>is it package loading or runtime? If it's package loading, SnoopCompile can catch that. If it's runtime, you'll have to optimize your algorithms. If it's compile time, you can try to use precompile statements to reduce latency after package loading (though snoop compile can help finding the right invocations for that)</p>
+
+
+
+<a name="286796165"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/excessive%20startup%20cost/near/286796165" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html#286796165">(Jun 20 2022 at 13:40)</a>:</h4>
+<p>so the first thing I usually do when trying to optimize performance is figuring out _where_ the time is spent in the first place - I usually start with runtime, since that's where people most often write suboptimal code</p>
+
+
+
+<a name="286796220"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/excessive%20startup%20cost/near/286796220" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html#286796220">(Jun 20 2022 at 13:41)</a>:</h4>
+<p>Loading is near instantaneous, runtime is always good, compile time takes very long. In the past it has often been a single type instability (for example due to captured variables in closures) which takes the compile time from 30 seconds to 10 minutes.</p>
+
+
+
+<a name="286796429"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/excessive%20startup%20cost/near/286796429" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html#286796429">(Jun 20 2022 at 13:42)</a>:</h4>
+<p>where does <code>leading_boundary</code> come from? I can't seem to find it in either PEPSKit or TensorKit</p>
+
+
+
+<a name="286796483"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/excessive%20startup%20cost/near/286796483" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html#286796483">(Jun 20 2022 at 13:43)</a>:</h4>
+<p>have you run <a href="https://github.com/search?q=JET.jl&amp;type=Repositories">JET.jl</a> on your code, to find those type instabilities more easily?</p>
+
+
+
+<a name="286796745"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/excessive%20startup%20cost/near/286796745" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html#286796745">(Jun 20 2022 at 13:45)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="306754">Sukera</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost/near/286796429">said</a>:</p>
+<blockquote>
+<p>where does <code>leading_boundary</code> come from? I can't seem to find it in either PEPSKit or TensorKit</p>
+</blockquote>
+<p>It's defined in MPSKit, extended in PEPSKit for the particular case that is being called (in src/algorithms)</p>
+
+
+
+<a name="286796888"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/excessive%20startup%20cost/near/286796888" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html#286796888">(Jun 20 2022 at 13:46)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="306754">Sukera</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost/near/286796483">said</a>:</p>
+<blockquote>
+<p>have you run <a href="https://github.com/search?q=JET.jl&amp;type=Repositories">JET.jl</a> on your code, to find those type instabilities more easily?</p>
+</blockquote>
+<p>haven't tried JET yet. I tried it in the past, and then julia segfaulted</p>
+
+
+
+<a name="286797186"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/excessive%20startup%20cost/near/286797186" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html#286797186">(Jun 20 2022 at 13:48)</a>:</h4>
+<p>snoopcompile results are in InferenceTimingNode: 0.304494/237.488271 on Core.Compiler.Timings.ROOT() with 4 direct children</p>
+
+
+
+<a name="286797659"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/excessive%20startup%20cost/near/286797659" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html#286797659">(Jun 20 2022 at 13:51)</a>:</h4>
+<p>yep, sounds like A LOT of specialization is happening for what you're doing</p>
+
+
+
+<a name="286797696"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/excessive%20startup%20cost/near/286797696" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html#286797696">(Jun 20 2022 at 13:52)</a>:</h4>
+<p>you may want to look into what exactly is eating up all that time</p>
+
+
+
+<a name="286797813"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/excessive%20startup%20cost/near/286797813" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html#286797813">(Jun 20 2022 at 13:52)</a>:</h4>
+<p>but precompile statements will certainly help. it'll mostly shift the time to package install time, but people usually feel better about it being spent there <span aria-label="shrug" class="emoji emoji-1f937" role="img" title="shrug">:shrug:</span></p>
+
+
+
+<a name="286798211"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/excessive%20startup%20cost/near/286798211" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html#286798211">(Jun 20 2022 at 13:55)</a>:</h4>
+<p>in your specific case, introducing some function barriers may just help enough already</p>
+
+
+
+<a name="286798294"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/excessive%20startup%20cost/near/286798294" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html#286798294">(Jun 20 2022 at 13:56)</a>:</h4>
+<p>not everything in your big <code>left_move</code> function for example relies on <code>PType</code>, right?</p>
+
+
+
+<a name="286798325"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/excessive%20startup%20cost/near/286798325" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html#286798325">(Jun 20 2022 at 13:56)</a>:</h4>
+<p>like the inner hot loops for example</p>
+
+
+
+<a name="286798440"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/excessive%20startup%20cost/near/286798440" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html#286798440">(Jun 20 2022 at 13:57)</a>:</h4>
+<p>not a perfect fit from the example in the docs/your code, but I think <a href="https://docs.julialang.org/en/v1/manual/performance-tips/#kernel-functions">https://docs.julialang.org/en/v1/manual/performance-tips/#kernel-functions</a> may apply</p>
+
+
+
+<a name="286804167"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/excessive%20startup%20cost/near/286804167" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html#286804167">(Jun 20 2022 at 14:37)</a>:</h4>
+<p>I still think there's an issue here. The code I showed does not run - it's work in progress - and takes forever to start running. Yet if I now simply complete the algorithm (implement a few extra methods, not change the code) to make it run successfully, then the actual startup cost goes from 200+ seconds to like 30 second.</p>
+<p>I will try to further reduce startup time with function barriers (because left_move is indeed rather clunky), but I will also try to construct a minimal example to illustrate this long-startuptime behavior.</p>
+
+
+
+<a name="286808652"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/excessive%20startup%20cost/near/286808652" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html#286808652">(Jun 20 2022 at 15:11)</a>:</h4>
+<p>very interesting</p>
+
+
+
+<a name="286808729"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/excessive%20startup%20cost/near/286808729" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html#286808729">(Jun 20 2022 at 15:12)</a>:</h4>
+<p>when you say you had to implement extra methods to make it work, what were those methods for?</p>
+
+
+
+<a name="286808791"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/excessive%20startup%20cost/near/286808791" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html#286808791">(Jun 20 2022 at 15:12)</a>:</h4>
+<p>is it possible you hit some fallback from one of your dependencies, which could have resulted in undue specialization?</p>
+
+
+
+<a name="286827401"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/excessive%20startup%20cost/near/286827401" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rik Huijzer <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html#286827401">(Jun 20 2022 at 18:35)</a>:</h4>
+<p>For finding compilation time, you can also use the normal profiler with StatProfileHTML. That works great too and is easier to use IMO</p>
+
+
+
+<a name="286827519"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/excessive%20startup%20cost/near/286827519" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rik Huijzer <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html#286827519">(Jun 20 2022 at 18:37)</a>:</h4>
+<p>Adding precompile directives can help but not for overspecialisations like is the case here? Then you would need to run precompile directives in a loop</p>
+
+
+
+<a name="286827770"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/excessive%20startup%20cost/near/286827770" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rik Huijzer <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/excessive.20startup.20cost.html#286827770">(Jun 20 2022 at 18:38)</a>:</h4>
+<p>Maarten make sure you’re running the newest Julia version possible. The compiler has gotten a lot better especially in Julia 1.8</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

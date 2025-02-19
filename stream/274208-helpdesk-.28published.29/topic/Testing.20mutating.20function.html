@@ -1,0 +1,64 @@
+<html>
+<head><meta charset="utf-8"><title>Testing mutating function · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Testing.20mutating.20function.html">Testing mutating function</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="471214003"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Testing%20mutating%20function/near/471214003" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Testing.20mutating.20function.html#471214003">(Sep 18 2024 at 09:34)</a>:</h4>
+<p>What's the best way of testing a mutating function? Say I've got <code>function mutate!(X, args); (...); return nothing; end</code> which works differently for different argument types, then I do:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="nd">@testset</span><span class="w"> </span><span class="s">"Test my mutating function"</span><span class="w"> </span><span class="k">begin</span>
+<span class="w">    </span><span class="n">X_test</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="mi">4</span><span class="p">]</span>
+<span class="w">    </span><span class="n">mutate!</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="n">first_test_argument</span><span class="p">)</span>
+<span class="w">    </span><span class="nd">@test</span><span class="w"> </span><span class="n">X_test</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="mi">5</span><span class="p">]</span>
+<span class="w">    </span><span class="n">X_test</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="mi">4</span><span class="p">]</span>
+<span class="w">    </span><span class="n">mutate!</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="n">second_test_argument</span><span class="p">)</span>
+<span class="w">    </span><span class="nd">@test</span><span class="w"> </span><span class="n">X_test</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="w"> </span><span class="mi">4</span><span class="p">;</span><span class="w"> </span><span class="mi">9</span><span class="w"> </span><span class="mi">16</span><span class="p">]</span>
+<span class="w">    </span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>which seems fairly boiler-platy with the repeated creation of <code>X_test</code>, is there a better way to write this?</p>
+
+
+
+<a name="471215199"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Testing%20mutating%20function/near/471215199" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Testing.20mutating.20function.html#471215199">(Sep 18 2024 at 09:40)</a>:</h4>
+<p>For now I'm doing </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">X₀</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="mi">4</span><span class="p">]</span>
+
+<span class="n">X_test</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">copy</span><span class="p">(</span><span class="n">X₀</span><span class="p">);</span><span class="w"> </span><span class="n">mutate!</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span><span class="w"> </span><span class="n">first_test_argument</span><span class="p">)</span>
+<span class="nd">@test</span><span class="w"> </span><span class="n">X_test</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="n">X_test</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">copy</span><span class="p">(</span><span class="n">X₀</span><span class="p">);</span><span class="w"> </span><span class="n">mutate!</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span><span class="w"> </span><span class="n">second_test_argument</span><span class="p">)</span>
+<span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="471471110"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Testing%20mutating%20function/near/471471110" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gunnar Farnebäck <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Testing.20mutating.20function.html#471471110">(Sep 19 2024 at 12:05)</a>:</h4>
+<p>If it makes sense for your mutating function to also return the mutated argument you can just do</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="nd">@test</span><span class="w"> </span><span class="n">mutate!</span><span class="p">(</span><span class="n">copy</span><span class="p">(</span><span class="n">X</span><span class="p">),</span><span class="w"> </span><span class="n">test_argument</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">expected</span>
+</code></pre></div>
+
+
+
+<a name="471481014"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Testing%20mutating%20function/near/471481014" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Testing.20mutating.20function.html#471481014">(Sep 19 2024 at 12:59)</a>:</h4>
+<p>It currently doesn't, although maybe there's no harm in letting it return the argument...</p>
+
+
+
+<a name="471662218"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Testing%20mutating%20function/near/471662218" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gunnar Farnebäck <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Testing.20mutating.20function.html#471662218">(Sep 20 2024 at 08:33)</a>:</h4>
+<p>You have lots of precedents in Base functions, e.g. <code>empty!</code>, <code>filter!</code> and <code>push!</code>. I've generally found it to be a good idea in my code, unless the return value is needed for something else, like it is for <code>pop!</code>.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

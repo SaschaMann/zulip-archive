@@ -1,0 +1,111 @@
+<html>
+<head><meta charset="utf-8"><title>✔ PosDefException: matrix is not positive definite; Chole... · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20PosDefException.3A.20matrix.20is.20not.20positive.20definite.3B.20Chole.2E.2E.2E.html">✔ PosDefException: matrix is not positive definite; Chole...</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="247707663"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20PosDefException%3A%20matrix%20is%20not%20positive%20definite%3B%20Chole.../near/247707663" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20PosDefException.3A.20matrix.20is.20not.20positive.20definite.3B.20Chole.2E.2E.2E.html#247707663">(Jul 30 2021 at 13:29)</a>:</h4>
+<p>Hello Julians: </p>
+<p>Full Title: PosDefException - matrix is not positive definite; Cholesky factorization failed</p>
+<p>Session: <a href="https://github.com/search?q=Pluto.jl&amp;type=Repositories">Pluto.jl</a><br>
+Julia Version: 1.6.3<br>
+Browser: Firefox</p>
+<p>I am encountering the issue above when <br>
+I am building a logistic regression model <br>
+using the GLM package. </p>
+<p>I was able to catch a reply from @tim.holy <br>
+that covered some functions that could <br>
+potentially address this issue <a href="https://github.com/timholy/PositiveFactorizations.jl/blob/master/src/cholesky.jl">HERE</a></p>
+<p>I am not sure what to consider when <br>
+attempting to apply the different <br>
+<a href="https://github.com/search?q=PositiveFactorizations.jl&amp;type=Repositories">PositiveFactorizations.jl</a> functions. </p>
+<p>My DataFrame has the structure/content</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">Teams</span> <span class="o">=</span> <span class="p">[</span><span class="s">"Jazz"</span><span class="p">,</span> <span class="s">"Heat"</span><span class="p">,</span> <span class="s">"Hawks"</span><span class="p">]</span>
+<span class="n">Rank</span> <span class="o">=</span> <span class="p">[</span><span class="s">"1st"</span><span class="p">,</span> <span class="s">"2nd"</span><span class="p">,</span> <span class="s">"3rd"</span><span class="p">]</span>
+<span class="n">Outcome</span> <span class="o">=</span> <span class="p">[</span><span class="s">"Win"</span><span class="p">,</span> <span class="s">"Loss"</span><span class="p">]</span>
+
+<span class="n">Season</span> <span class="o">=</span> <span class="n">DataFrame</span><span class="p">(</span><span class="n">Id</span> <span class="o">=</span> <span class="mi">1</span><span class="o">:</span><span class="mi">50</span><span class="p">,</span> <span class="n">Gate</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="mi">50</span><span class="o">:</span><span class="mi">15</span><span class="o">:</span><span class="mi">3000</span><span class="p">,</span> <span class="mi">50</span><span class="p">),</span>
+                                  <span class="n">Top3</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="n">Teams</span><span class="p">,</span> <span class="mi">50</span><span class="p">),</span>
+                                   <span class="n">Position</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="n">Rank</span><span class="p">,</span> <span class="mi">50</span><span class="p">),</span>
+                                   <span class="n">Column</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="n">Outcome</span> <span class="o">.==</span><span class="s">"Win"</span><span class="p">,</span> <span class="mi">50</span><span class="p">))</span>
+</code></pre></div>
+<p>I performed the _onehot function from:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">begin</span>
+<span class="k">function</span> <span class="n">_onehot</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="n">symb</span><span class="p">)</span>
+        <span class="n">copy</span> <span class="o">=</span> <span class="n">df</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="k">in</span> <span class="n">unique</span><span class="p">(</span><span class="n">copy</span><span class="p">[</span><span class="o">!</span><span class="p">,</span><span class="n">symb</span><span class="p">])</span>
+            <span class="n">copy</span><span class="p">[</span><span class="o">!</span><span class="p">,</span><span class="kt">Symbol</span><span class="p">(</span><span class="n">c</span><span class="p">)]</span> <span class="o">=</span> <span class="n">copy</span><span class="p">[</span><span class="o">!</span><span class="p">,</span><span class="n">symb</span><span class="p">]</span> <span class="o">.==</span> <span class="n">c</span>
+        <span class="k">end</span>
+        <span class="k">return</span><span class="p">(</span><span class="n">copy</span><span class="p">)</span>
+    <span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>Then when I attempted perform the logistic regression build<br>
+via: </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">fm</span> <span class="o">=</span> <span class="nd">@formula</span><span class="p">(</span><span class="n">Column</span><span class="o">~</span> <span class="n">Top3</span> <span class="o">+</span> <span class="n">Position</span> <span class="o">+</span> <span class="n">Gate</span> <span class="o">+</span> <span class="n">Jazz</span> <span class="o">+</span> <span class="n">Heat</span> <span class="o">+</span> <span class="n">Hawks</span> <span class="o">+</span> <span class="mi">1</span><span class="n">st</span> <span class="o">+</span> <span class="mi">2</span><span class="n">nd</span> <span class="o">+</span> <span class="mi">3</span><span class="n">rd</span><span class="o">+</span>
+                         <span class="n">Win</span> <span class="o">+</span> <span class="n">Loss</span><span class="p">)</span>
+<span class="n">logit</span> <span class="o">=</span> <span class="n">glm</span><span class="p">(</span><span class="n">fm</span><span class="p">,</span> <span class="n">train</span><span class="p">,</span> <span class="n">Binomial</span><span class="p">(),</span> <span class="n">Probit</span><span class="p">())</span>
+</code></pre></div>
+<p>I am returning the error in the subject line.  Is there a way to <br>
+manipulate this data frame so that the encoded columns are <br>
+processed during the LogReg model build?</p>
+
+
+
+<a name="247708308"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20PosDefException%3A%20matrix%20is%20not%20positive%20definite%3B%20Chole.../near/247708308" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20PosDefException.3A.20matrix.20is.20not.20positive.20definite.3B.20Chole.2E.2E.2E.html#247708308">(Jul 30 2021 at 13:34)</a>:</h4>
+<p>###########Considerations############ </p>
+<ol>
+<li>
+<p>I am following a tutorial by Kabir, from machinelearningplus, <br>
+created October 2020, for Logistic Regressions with Julia.</p>
+</li>
+<li>
+<p>I understand that adding the encoded columns could <br>
+lead to multicollinearity (exploratory variable confounding)<br>
+issues BUT in the tutorial, the author was able to generate<br>
+an output. PERHAPS the design is not agreeable with you...</p>
+</li>
+<li>
+<p>I have attempted to run the GLM LogReg model WITHOUT<br>
+encoding but am having an index mapping issue where</p>
+</li>
+</ol>
+<p>I am returning:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="p">(</span><span class="n">Intercept</span><span class="p">)</span>
+<span class="n">Top3</span><span class="o">:</span> <span class="n">Jazz</span>
+<span class="n">Top3</span><span class="o">:</span> <span class="n">Heat</span>
+<span class="n">Position</span><span class="o">:</span> <span class="mi">2</span><span class="n">nd</span>
+<span class="n">Position</span><span class="o">:</span><span class="mi">3</span><span class="n">rd</span>
+<span class="n">Gate</span>
+</code></pre></div>
+<p>You will notice that 'Top3' is missing 'Hawks' (at index 3)<br>
+and that 'Position' is missing '1st' (at index 1). </p>
+<p>Am I missing something(s) here?</p>
+
+
+
+<a name="247740357"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20PosDefException%3A%20matrix%20is%20not%20positive%20definite%3B%20Chole.../near/247740357" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20PosDefException.3A.20matrix.20is.20not.20positive.20definite.3B.20Chole.2E.2E.2E.html#247740357">(Jul 30 2021 at 17:47)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="390081">QuBit</span></p>
+<p>Solution: <br>
+Do not fall for the <a href="http://home.cc.umanitoba.ca/~godwinrt/3040/overheads/lecture17.pdf">'Dummy Variable Trap'</a></p>
+<p>Approaches (while build LogReg Model): </p>
+<ol>
+<li>Drop one of the groups (for one of your categorical attributes)</li>
+<li>Drop the intercept </li>
+</ol>
+<p>Tip: <br>
+Question online sources if they do not account<br>
+for 'Multi-collinearity' during regression builds.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

@@ -1,0 +1,126 @@
+<html>
+<head><meta charset="utf-8"><title>Use socket file to transfer data · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Use.20socket.20file.20to.20transfer.20data.html">Use socket file to transfer data</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="328393829"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Use%20socket%20file%20to%20transfer%20data/near/328393829" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Use.20socket.20file.20to.20transfer.20data.html#328393829">(Feb 17 2023 at 06:35)</a>:</h4>
+<p>I'm trying to work out how to exchange data between two (separate) Julia instances, and I was thinking a socket file + <code>serialize</code>/<code>deserialize</code> may be a nice solution. However, I can't quite work out how to get it to work. This is what I've got so far:</p>
+<p><strong>Julia 1</strong></p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">Sockets</span>
+<span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Sockets</span><span class="o">.</span><span class="n">listen</span><span class="p">(</span><span class="s">"/run/user/1000/jltest.sock"</span><span class="p">)</span><span class="w"> </span><span class="c"># =&gt; PipeServer</span>
+</code></pre></div>
+<p><strong>Julia 2</strong></p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">Sockets</span>
+<span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Sockets</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">"/run/user/1000/jltest.sock"</span><span class="p">)</span><span class="w"> </span><span class="c"># =&gt; PipeEndpoint</span>
+</code></pre></div>
+<p>With "Julia 2" I can run <code>write(s, "testing")</code>, however I can't work out how to receive anything in "Julia 1". Furthermore, is there any way I might be able to make this bidirectional?</p>
+
+
+
+<a name="328398242"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Use%20socket%20file%20to%20transfer%20data/near/328398242" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Use.20socket.20file.20to.20transfer.20data.html#328398242">(Feb 17 2023 at 07:13)</a>:</h4>
+<p>as with any server/client, you first have to <code>accept</code> a connection on the server side</p>
+
+
+
+<a name="328398377"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Use%20socket%20file%20to%20transfer%20data/near/328398377" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Use.20socket.20file.20to.20transfer.20data.html#328398377">(Feb 17 2023 at 07:14)</a>:</h4>
+<p><strong>JL1</strong></p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">listen</span><span class="p">(</span><span class="s">"/run/user/1000/jltest.sock"</span><span class="p">)</span>
+<span class="n">Sockets</span><span class="o">.</span><span class="n">PipeServer</span><span class="p">(</span><span class="kt">RawFD</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="w"> </span><span class="n">active</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">s</span>
+<span class="n">Sockets</span><span class="o">.</span><span class="n">PipeServer</span><span class="p">(</span><span class="kt">RawFD</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="w"> </span><span class="n">active</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">con</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">accept</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="n">Base</span><span class="o">.</span><span class="n">PipeEndpoint</span><span class="p">(</span><span class="kt">RawFD</span><span class="p">(</span><span class="mi">21</span><span class="p">)</span><span class="w"> </span><span class="n">open</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">bytes</span><span class="w"> </span><span class="n">waiting</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">readline</span><span class="p">(</span><span class="n">con</span><span class="p">)</span>
+<span class="s">"hello!"</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">println</span><span class="p">(</span><span class="n">con</span><span class="p">,</span><span class="w"> </span><span class="s">"This is JL1"</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>JL2</strong></p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">connect</span><span class="p">(</span><span class="s">"/run/user/1000/jltest.sock"</span><span class="p">)</span>
+<span class="n">Base</span><span class="o">.</span><span class="n">PipeEndpoint</span><span class="p">(</span><span class="kt">RawFD</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="w"> </span><span class="n">open</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">bytes</span><span class="w"> </span><span class="n">waiting</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">println</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="w"> </span><span class="s">"hello!"</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">readline</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="s">"This is JL1"</span>
+</code></pre></div>
+
+
+
+<a name="328398434"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Use%20socket%20file%20to%20transfer%20data/near/328398434" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Use.20socket.20file.20to.20transfer.20data.html#328398434">(Feb 17 2023 at 07:15)</a>:</h4>
+<p>I use <a href="https://github.com/search?q=RemoteREPL.jl&amp;type=Repositories">RemoteREPL.jl</a> for this. Despite’s the name, you dont need a REPL active. Its pretty nice, might be worth checking if it fits your needs</p>
+
+
+
+<a name="328398566"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Use%20socket%20file%20to%20transfer%20data/near/328398566" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Use.20socket.20file.20to.20transfer.20data.html#328398566">(Feb 17 2023 at 07:16)</a>:</h4>
+<p>As this opens a Unix Domain Socket (or a Named Socket on windows), this is already bidirectional - it's a pipe after all</p>
+
+
+
+<a name="328398642"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Use%20socket%20file%20to%20transfer%20data/near/328398642" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Use.20socket.20file.20to.20transfer.20data.html#328398642">(Feb 17 2023 at 07:17)</a>:</h4>
+<p>Does RemoteREPL actually support sending stuff between the instances?</p>
+
+
+
+<a name="328398675"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Use%20socket%20file%20to%20transfer%20data/near/328398675" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Use.20socket.20file.20to.20transfer.20data.html#328398675">(Feb 17 2023 at 07:17)</a>:</h4>
+<p>Yup</p>
+
+
+
+<a name="328398816"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Use%20socket%20file%20to%20transfer%20data/near/328398816" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Use.20socket.20file.20to.20transfer.20data.html#328398816">(Feb 17 2023 at 07:18)</a>:</h4>
+<p>I used it to move a multi gigabyte array of named tuples today actually</p>
+
+
+
+<a name="328399322"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Use%20socket%20file%20to%20transfer%20data/near/328399322" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Use.20socket.20file.20to.20transfer.20data.html#328399322">(Feb 17 2023 at 07:23)</a>:</h4>
+<p>Ah lovely, I might need to give RemoteREPL a look then.</p>
+
+
+
+<a name="328399435"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Use%20socket%20file%20to%20transfer%20data/near/328399435" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Use.20socket.20file.20to.20transfer.20data.html#328399435">(Feb 17 2023 at 07:24)</a>:</h4>
+<blockquote>
+<p>Transfer variables between processes with <code>@remote</code></p>
+</blockquote>
+<p><span aria-label="heart eyes" class="emoji emoji-1f60d" role="img" title="heart eyes">:heart_eyes:</span> this looks like exactly what I was working towards</p>
+
+
+
+<a name="328399661"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Use%20socket%20file%20to%20transfer%20data/near/328399661" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Use.20socket.20file.20to.20transfer.20data.html#328399661">(Feb 17 2023 at 07:25)</a>:</h4>
+<p>Ah, would be nice if it supported using socket files, oh well, I can probably pick and spare a port.</p>
+
+
+
+<a name="328520589"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Use%20socket%20file%20to%20transfer%20data/near/328520589" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Use.20socket.20file.20to.20transfer.20data.html#328520589">(Feb 17 2023 at 17:07)</a>:</h4>
+<p>Yeah. That’d be a nice feature addition to the package.</p>
+
+
+
+<a name="328520997"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Use%20socket%20file%20to%20transfer%20data/near/328520997" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Use.20socket.20file.20to.20transfer.20data.html#328520997">(Feb 17 2023 at 17:09)</a>:</h4>
+<p>Looks like there’s already an issue for it: <a href="https://github.com/c42f/RemoteREPL.jl/issues/31">https://github.com/c42f/RemoteREPL.jl/issues/31</a></p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

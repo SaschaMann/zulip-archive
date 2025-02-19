@@ -1,0 +1,116 @@
+[
+    {
+        "content": "<p>The following code fails with segmentation faults</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">import</span> <span class=\"n\">PyCall</span>\n\n<span class=\"n\">so</span> <span class=\"o\">=</span> <span class=\"n\">PyCall</span><span class=\"o\">.</span><span class=\"n\">pyimport</span><span class=\"p\">(</span><span class=\"s\">\"scipy.optimize\"</span><span class=\"p\">)</span>\n\n<span class=\"k\">function</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n    <span class=\"p\">(</span><span class=\"n\">x</span> <span class=\"o\">-</span> <span class=\"mi\">2</span><span class=\"p\">)</span> <span class=\"o\">*</span> <span class=\"n\">x</span> <span class=\"o\">*</span> <span class=\"p\">(</span><span class=\"n\">x</span> <span class=\"o\">+</span> <span class=\"mi\">2</span><span class=\"p\">)</span><span class=\"o\">^</span><span class=\"mi\">2</span>\n<span class=\"k\">end</span>\n\n<span class=\"k\">function</span> <span class=\"n\">do_optimize</span><span class=\"p\">(</span><span class=\"n\">fn</span><span class=\"p\">)</span>\n    <span class=\"n\">result</span> <span class=\"o\">=</span> <span class=\"n\">so</span><span class=\"o\">.</span><span class=\"n\">minimize_scalar</span><span class=\"p\">(</span><span class=\"n\">fn</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n\n<span class=\"k\">let</span>\n    <span class=\"n\">out</span> <span class=\"o\">=</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Any</span><span class=\"p\">}(</span><span class=\"nb\">undef</span><span class=\"p\">,</span> <span class=\"mi\">20</span><span class=\"p\">)</span>\n    <span class=\"n\">Threads</span><span class=\"o\">.</span><span class=\"nd\">@threads</span> <span class=\"k\">for</span> <span class=\"n\">i</span> <span class=\"k\">in</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">20</span>\n        <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"n\">i</span><span class=\"p\">)</span>\n        <span class=\"n\">out</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span> <span class=\"o\">=</span> <span class=\"n\">do_optimize</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">)</span>\n    <span class=\"k\">end</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>What should be the proper way to do this? If it is not possible, do I have to use multi-processing with <code>Distributed</code> instead?</p>\n<p>I have also found an unresolved question (<a href=\"https://discourse.julialang.org/t/using-pycall-from-threads/32742\">https://discourse.julialang.org/t/using-pycall-from-threads/32742</a>) from the internet.</p>",
+        "id": 241491971,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1622783434
+    },
+    {
+        "content": "<p>Python doesn't have mulithreading, so none of it's datastructures are threadsafe</p>",
+        "id": 241492094,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1622783595
+    },
+    {
+        "content": "<p>Spinning up multiple julia instances won't help I think, instead, you need to have multiple <em>python</em> instances that you're sending data to</p>",
+        "id": 241492159,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1622783650
+    },
+    {
+        "content": "<p>I see. Looks like the only way to do it is to use Python's own <code>multiprocessing</code> module, which technically spawn independent processes (with identical setups)?</p>",
+        "id": 241492239,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1622783766
+    },
+    {
+        "content": "<p>yep</p>",
+        "id": 241492242,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1622783775
+    },
+    {
+        "content": "<p>PyCall might have it's own way to spawn multiple pythons but I don't know</p>",
+        "id": 241492258,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1622783813
+    },
+    {
+        "content": "<p>Thank you! I will investigate whether PyCall can spawn multiple Pythons.</p>",
+        "id": 241492315,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1622783884
+    },
+    {
+        "content": "<p>I tried Python's <code>multiprocessing</code>, and still got segmentation fault, and caused my laptop to slow down. I managed to recover by <code>pkill julia</code> in a non-X terminal (ctrl-alt-F6).</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">import</span> <span class=\"n\">PyCall</span>\n\n<span class=\"n\">so</span> <span class=\"o\">=</span> <span class=\"n\">PyCall</span><span class=\"o\">.</span><span class=\"n\">pyimport</span><span class=\"p\">(</span><span class=\"s\">\"scipy.optimize\"</span><span class=\"p\">)</span>\n<span class=\"n\">mp</span> <span class=\"o\">=</span> <span class=\"n\">PyCall</span><span class=\"o\">.</span><span class=\"n\">pyimport</span><span class=\"p\">(</span><span class=\"s\">\"multiprocessing\"</span><span class=\"p\">)</span>\n\n<span class=\"k\">function</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n    <span class=\"p\">(</span><span class=\"n\">x</span> <span class=\"o\">-</span> <span class=\"mi\">2</span><span class=\"p\">)</span> <span class=\"o\">*</span> <span class=\"n\">x</span> <span class=\"o\">*</span> <span class=\"p\">(</span><span class=\"n\">x</span> <span class=\"o\">+</span> <span class=\"mi\">2</span><span class=\"p\">)</span><span class=\"o\">^</span><span class=\"mi\">2</span>\n<span class=\"k\">end</span>\n\n<span class=\"k\">function</span> <span class=\"n\">do_optimize</span><span class=\"p\">(</span><span class=\"n\">fn</span><span class=\"p\">)</span>\n    <span class=\"n\">result</span> <span class=\"o\">=</span> <span class=\"n\">so</span><span class=\"o\">.</span><span class=\"n\">minimize_scalar</span><span class=\"p\">(</span><span class=\"n\">fn</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n\n<span class=\"k\">let</span>\n    <span class=\"n\">procs</span> <span class=\"o\">=</span> <span class=\"p\">[]</span>\n    <span class=\"k\">for</span> <span class=\"n\">x</span> <span class=\"k\">in</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">20</span>\n        <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n        <span class=\"n\">proc</span> <span class=\"o\">=</span> <span class=\"n\">mp</span><span class=\"o\">.</span><span class=\"n\">Process</span><span class=\"p\">(</span><span class=\"n\">target</span><span class=\"o\">=</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"n\">args</span><span class=\"o\">=</span><span class=\"p\">())</span>\n        <span class=\"n\">proc</span><span class=\"o\">.</span><span class=\"n\">start</span><span class=\"p\">()</span>\n        <span class=\"n\">push!</span><span class=\"p\">(</span><span class=\"n\">procs</span><span class=\"p\">,</span> <span class=\"n\">proc</span><span class=\"p\">)</span>\n    <span class=\"k\">end</span>\n    <span class=\"k\">for</span> <span class=\"n\">p</span> <span class=\"k\">in</span> <span class=\"n\">procs</span>\n        <span class=\"n\">p</span><span class=\"o\">.</span><span class=\"n\">join</span><span class=\"p\">()</span>\n    <span class=\"k\">end</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>My hypothesis is that the <code>proc</code> object gets duplicated indefinitely when passed over to Julia?</p>",
+        "id": 241493385,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1622785389
+    },
+    {
+        "content": "<p>^ I didn't even use the <code>do_optimize</code> function.</p>",
+        "id": 241493451,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1622785465
+    },
+    {
+        "content": "<p>EDIT: I forgot to add -t2 to the julia argument. The code below failed with segmentation fault as well!<br>\n<del>This solution works:</del></p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">import</span> <span class=\"n\">PyCall</span>\n\n<span class=\"n\">so</span> <span class=\"o\">=</span> <span class=\"n\">PyCall</span><span class=\"o\">.</span><span class=\"n\">pyimport</span><span class=\"p\">(</span><span class=\"s\">\"scipy.optimize\"</span><span class=\"p\">)</span>\n\n<span class=\"k\">function</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n    <span class=\"p\">(</span><span class=\"n\">x</span> <span class=\"o\">-</span> <span class=\"mi\">2</span><span class=\"p\">)</span> <span class=\"o\">*</span> <span class=\"n\">x</span> <span class=\"o\">*</span> <span class=\"p\">(</span><span class=\"n\">x</span> <span class=\"o\">+</span> <span class=\"mi\">2</span><span class=\"p\">)</span><span class=\"o\">^</span><span class=\"mi\">2</span>\n<span class=\"k\">end</span>\n\n<span class=\"k\">let</span>\n    <span class=\"n\">out</span> <span class=\"o\">=</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Any</span><span class=\"p\">}(</span><span class=\"nb\">undef</span><span class=\"p\">,</span> <span class=\"mi\">20</span><span class=\"p\">)</span>\n    <span class=\"n\">Threads</span><span class=\"o\">.</span><span class=\"nd\">@threads</span> <span class=\"k\">for</span> <span class=\"n\">i</span> <span class=\"k\">in</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">20</span>\n        <span class=\"k\">function</span> <span class=\"n\">do_optimize</span><span class=\"p\">(</span><span class=\"n\">fn</span><span class=\"p\">)</span>\n            <span class=\"n\">result</span> <span class=\"o\">=</span> <span class=\"n\">so</span><span class=\"o\">.</span><span class=\"n\">minimize_scalar</span><span class=\"p\">(</span><span class=\"n\">fn</span><span class=\"p\">)</span>\n        <span class=\"k\">end</span>\n\n        <span class=\"n\">out</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span> <span class=\"o\">=</span> <span class=\"n\">do_optimize</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">)</span>\n    <span class=\"k\">end</span>\n    <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"n\">out</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>Not sure why.</p>",
+        "id": 241496792,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1622789393
+    },
+    {
+        "content": "<p>EDIT: I forgot to add -t2 to the <code>julia</code> argument. The code below failed with segmentation fault as well!<br>\n<del>This also works:</del></p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">import</span> <span class=\"n\">PyCall</span>\n\n<span class=\"n\">so</span> <span class=\"o\">=</span> <span class=\"n\">PyCall</span><span class=\"o\">.</span><span class=\"n\">pyimport</span><span class=\"p\">(</span><span class=\"s\">\"scipy.optimize\"</span><span class=\"p\">)</span>\n\n<span class=\"k\">function</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n    <span class=\"p\">(</span><span class=\"n\">x</span> <span class=\"o\">-</span> <span class=\"mi\">2</span><span class=\"p\">)</span> <span class=\"o\">*</span> <span class=\"n\">x</span> <span class=\"o\">*</span> <span class=\"p\">(</span><span class=\"n\">x</span> <span class=\"o\">+</span> <span class=\"mi\">2</span><span class=\"p\">)</span><span class=\"o\">^</span><span class=\"mi\">2</span>\n<span class=\"k\">end</span>\n\n<span class=\"k\">function</span> <span class=\"n\">do_optimize</span><span class=\"p\">(</span><span class=\"n\">fn</span><span class=\"p\">)</span>\n    <span class=\"n\">result</span> <span class=\"o\">=</span> <span class=\"n\">so</span><span class=\"o\">.</span><span class=\"n\">minimize_scalar</span><span class=\"p\">(</span><span class=\"n\">fn</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n\n<span class=\"k\">let</span>\n    <span class=\"n\">out</span> <span class=\"o\">=</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Any</span><span class=\"p\">}(</span><span class=\"nb\">undef</span><span class=\"p\">,</span> <span class=\"mi\">20</span><span class=\"p\">)</span>\n    <span class=\"n\">Threads</span><span class=\"o\">.</span><span class=\"nd\">@threads</span> <span class=\"k\">for</span> <span class=\"n\">i</span> <span class=\"k\">in</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">20</span>\n        <span class=\"n\">_do_optimize</span> <span class=\"o\">=</span> <span class=\"n\">do_optimize</span>\n\n        <span class=\"n\">out</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span> <span class=\"o\">=</span> <span class=\"n\">_do_optimize</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">)</span>\n    <span class=\"k\">end</span>\n    <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"n\">out</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 241496989,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1622789582
+    },
+    {
+        "content": "<p>I have tested that using Python multiprocessing, running a Python script that calls Julia functions also result in segfault. Looks like my only viable path is to either go full Julia or stay full Python. Too bad that the only Python function I need is the LBFGSB code from scipy.optimize.</p>",
+        "id": 241519314,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1622804314
+    },
+    {
+        "content": "<p>why don't you use a native lbfgs implementation?</p>",
+        "id": 241525074,
+        "sender_full_name": "Maarten",
+        "timestamp": 1622808147
+    },
+    {
+        "content": "<p>LBFGS isn't bounded. It has to use a generic <code>Optim.Fminbox</code> and so is less efficient than LBFGSB I think. See <a href=\"https://discourse.julialang.org/t/optim-jl-vs-scipy-optimize-once-again/61661/35\">https://discourse.julialang.org/t/optim-jl-vs-scipy-optimize-once-again/61661/35</a></p>",
+        "id": 241526036,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1622808696
+    },
+    {
+        "content": "<p>cool, I didn't know about lbfgs-B :)</p>",
+        "id": 241526840,
+        "sender_full_name": "Maarten",
+        "timestamp": 1622809147
+    },
+    {
+        "content": "<p>@distributed with pycall should work</p>",
+        "id": 242965400,
+        "sender_full_name": "Paulito Palmes",
+        "timestamp": 1623895964
+    },
+    {
+        "content": "<p>just add @everywhere stubs in loading packages and function defs</p>",
+        "id": 242965486,
+        "sender_full_name": "Paulito Palmes",
+        "timestamp": 1623896102
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"306337\">@Paulito Palmes</span> yes I confirm that <code>@distributed</code> with PyCall works. Though by now I have already used <a href=\"https://github.com/search?q=LBFGSB.jl&amp;type=Repositories\">LBFGSB.jl</a>.</p>",
+        "id": 242995804,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1623924060
+    },
+    {
+        "content": "<p>Using <a href=\"https://github.com/search?q=LBFGSB.jl&amp;type=Repositories\">LBFGSB.jl</a> results in fewer allocations that using Scipy's LBFGSB.</p>",
+        "id": 242999054,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1623926190
+    }
+]

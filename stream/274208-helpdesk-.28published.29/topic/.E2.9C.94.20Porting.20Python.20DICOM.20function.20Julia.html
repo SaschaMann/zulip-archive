@@ -1,0 +1,255 @@
+<html>
+<head><meta charset="utf-8"><title>✔ Porting Python DICOM function Julia · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Porting.20Python.20DICOM.20function.20Julia.html">✔ Porting Python DICOM function Julia</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="269203727"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Porting%20Python%20DICOM%20function%20Julia/near/269203727" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Porting.20Python.20DICOM.20function.20Julia.html#269203727">(Jan 25 2022 at 03:07)</a>:</h4>
+<p>Is anyone here proficient with medical image processing that could help me debug what might be going on with this DICOM loading function that I am porting from Python to Julia? I am seeing strange behavior where the 3D DICOM images are loading in Julia in almost the exact same way, but the slices seem to be off by some factor. I am not sure where to go from here</p>
+<p>Python function:</p>
+<div class="codehilite" data-code-language="Python"><pre><span></span><code><span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">os.path</span>
+<span class="kn">import</span> <span class="nn">pydicom</span>
+
+<span class="k">def</span> <span class="nf">dcm_reader</span><span class="p">(</span><span class="n">dcm_path</span><span class="p">):</span>
+    <span class="n">dcm_files</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">dirpathpythonames</span><span class="p">,</span> <span class="n">filenames</span><span class="p">)</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">dcm_path</span><span class="p">,</span><span class="n">topdown</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">filenames</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">filename</span> <span class="o">==</span> <span class="s1">'DIRFILE'</span><span class="p">:</span>
+                    <span class="n">dcm_file</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dirpath</span><span class="p">,</span> <span class="n">filename</span><span class="p">))</span>
+                    <span class="n">pydicom</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">dcm_file</span><span class="p">,</span> <span class="n">stop_before_pixels</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+                    <span class="n">dcm_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dcm_file</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+    <span class="n">read_RefDs</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">while</span> <span class="n">read_RefDs</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dcm_files</span><span class="p">)):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">RefDs</span> <span class="o">=</span> <span class="n">pydicom</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">dcm_files</span><span class="p">[</span><span class="n">index</span><span class="p">],</span> <span class="n">stop_before_pixels</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+                <span class="n">read_RefDs</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">break</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+    <span class="n">slice_thick_ori</span> <span class="o">=</span> <span class="n">RefDs</span><span class="o">.</span><span class="n">SliceThickness</span>
+
+    <span class="n">ConstPixelDims</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">RefDs</span><span class="o">.</span><span class="n">Rows</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">RefDs</span><span class="o">.</span><span class="n">Columns</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">dcm_files</span><span class="p">))</span>
+    <span class="n">dcm_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">ConstPixelDims</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">ConstPixelDims</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="nb">len</span><span class="p">(</span><span class="n">dcm_files</span><span class="p">)],</span>\
+                          <span class="n">dtype</span><span class="o">=</span><span class="n">RefDs</span><span class="o">.</span><span class="n">pixel_array</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+    <span class="n">instances</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">filenameDCM</span> <span class="ow">in</span> <span class="n">dcm_files</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ds</span> <span class="o">=</span> <span class="n">pydicom</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">filenameDCM</span><span class="p">,</span> <span class="n">stop_before_pixels</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+            <span class="n">instances</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">InstanceNumber</span><span class="p">))</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+    <span class="n">instances</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+
+    <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">filenameDCM</span> <span class="ow">in</span> <span class="n">dcm_files</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ds</span> <span class="o">=</span> <span class="n">pydicom</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">filenameDCM</span><span class="p">)</span>
+            <span class="n">dcm_array</span><span class="p">[:,:,</span><span class="n">instances</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">InstanceNumber</span><span class="p">)]</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">pixel_array</span>
+            <span class="k">if</span> <span class="n">ds</span><span class="o">.</span><span class="n">InstanceNumber</span> <span class="ow">in</span> <span class="n">instances</span><span class="p">[:</span><span class="mi">2</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">ds</span><span class="o">.</span><span class="n">InstanceNumber</span> <span class="o">==</span> <span class="n">instances</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                    <span class="n">loc_1</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">SliceLocation</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">loc_2</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">SliceLocation</span>
+            <span class="n">index</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">RefDs</span><span class="o">.</span><span class="n">SliceThickness</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">loc_1</span> <span class="o">-</span> <span class="n">loc_2</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+
+    <span class="n">dcm_array</span> <span class="o">=</span> <span class="n">dcm_array</span> <span class="o">*</span> <span class="n">RefDs</span><span class="o">.</span><span class="n">RescaleSlope</span> <span class="o">+</span> <span class="n">RefDs</span><span class="o">.</span><span class="n">RescaleIntercept</span>
+    <span class="k">return</span> <span class="n">RefDs</span><span class="p">,</span> <span class="n">dcm_array</span><span class="p">,</span> <span class="n">slice_thick_ori</span>
+</code></pre></div>
+<p>Julia function:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span> <span class="n">DICOM</span>
+
+<span class="k">function</span> <span class="n">dcm_reader</span><span class="p">(</span><span class="n">dcm_path</span><span class="p">)</span>
+    <span class="n">dcm_files</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">dirpath</span><span class="p">,</span> <span class="n">dirnames</span><span class="p">,</span> <span class="n">filenames</span><span class="p">)</span> <span class="k">in</span> <span class="n">walkdir</span><span class="p">(</span><span class="n">dcm_path</span><span class="p">,</span> <span class="n">topdown</span><span class="o">=</span><span class="nb">false</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">filename</span> <span class="k">in</span> <span class="n">filenames</span>
+            <span class="k">try</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">filename</span> <span class="o">==</span> <span class="s">"DIRFILE"</span><span class="p">)</span> <span class="o">==</span> <span class="nb">false</span>
+                    <span class="n">dcm_file</span> <span class="o">=</span> <span class="n">string</span><span class="p">(</span><span class="n">dirpath</span><span class="p">,</span> <span class="s">"/"</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+                    <span class="n">dcm_parse</span><span class="p">(</span><span class="n">dcm_file</span><span class="p">)</span>
+                    <span class="n">push!</span><span class="p">(</span><span class="n">dcm_files</span><span class="p">,</span> <span class="n">dcm_file</span><span class="p">)</span>
+                <span class="k">end</span>
+            <span class="k">catch</span>
+                <span class="nb">nothing</span>
+            <span class="k">end</span>
+        <span class="k">end</span>
+    <span class="k">end</span>
+
+    <span class="n">read_RefDs</span> <span class="o">=</span> <span class="nb">true</span>
+    <span class="k">local</span> <span class="n">RefDs</span>
+    <span class="k">while</span> <span class="n">read_RefDs</span>
+        <span class="k">for</span> <span class="n">index</span> <span class="k">in</span> <span class="n">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">length</span><span class="p">(</span><span class="n">dcm_files</span><span class="p">))</span>
+            <span class="k">try</span>
+                <span class="n">RefDs</span> <span class="o">=</span> <span class="n">dcm_parse</span><span class="p">(</span><span class="n">dcm_files</span><span class="p">[</span><span class="n">index</span><span class="p">])</span>
+                <span class="n">read_RefDs</span> <span class="o">=</span> <span class="nb">false</span>
+                <span class="k">break</span>
+            <span class="k">catch</span>
+                <span class="nb">nothing</span>
+            <span class="k">end</span>
+        <span class="k">end</span>
+    <span class="k">end</span>
+
+    <span class="n">header</span> <span class="o">=</span> <span class="n">RefDs</span><span class="o">.</span><span class="n">meta</span>
+    <span class="n">slice_thick_ori</span> <span class="o">=</span> <span class="n">header</span><span class="p">[(</span><span class="mh">0x0018</span><span class="p">,</span> <span class="mh">0x0050</span><span class="p">)]</span>
+    <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span> <span class="o">=</span> <span class="kt">Int</span><span class="p">(</span><span class="n">header</span><span class="p">[(</span><span class="mh">0x0028</span><span class="p">,</span> <span class="mh">0x0010</span><span class="p">)]),</span> <span class="kt">Int</span><span class="p">(</span><span class="n">header</span><span class="p">[(</span><span class="mh">0x0028</span><span class="p">,</span> <span class="mh">0x0011</span><span class="p">)])</span>
+
+    <span class="n">ConstPixelDims</span> <span class="o">=</span> <span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">length</span><span class="p">(</span><span class="n">dcm_files</span><span class="p">))</span>
+    <span class="n">dcm_array</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="n">ConstPixelDims</span><span class="o">...</span><span class="p">)</span>
+
+    <span class="n">instances</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">filenameDCM</span> <span class="k">in</span> <span class="n">dcm_files</span>
+        <span class="k">try</span>
+            <span class="n">ds</span> <span class="o">=</span> <span class="n">dcm_parse</span><span class="p">(</span><span class="n">filenameDCM</span><span class="p">)</span>
+            <span class="n">head</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">meta</span>
+            <span class="n">InstanceNumber</span> <span class="o">=</span> <span class="n">head</span><span class="p">[(</span><span class="mh">0x0020</span><span class="p">,</span> <span class="mh">0x0013</span><span class="p">)]</span>
+            <span class="n">push!</span><span class="p">(</span><span class="n">instances</span><span class="p">,</span> <span class="n">InstanceNumber</span><span class="p">)</span>
+        <span class="k">catch</span>
+            <span class="nb">nothing</span>
+        <span class="k">end</span>
+    <span class="k">end</span>
+
+    <span class="n">sort</span><span class="p">(</span><span class="n">instances</span><span class="p">)</span>
+
+    <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">filenameDCM</span> <span class="k">in</span> <span class="n">dcm_files</span>
+        <span class="k">try</span>
+            <span class="n">ds</span> <span class="o">=</span> <span class="n">dcm_parse</span><span class="p">(</span><span class="n">filenameDCM</span><span class="p">)</span>
+            <span class="n">head</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">meta</span>
+            <span class="n">InstanceNumber</span> <span class="o">=</span> <span class="n">head</span><span class="p">[(</span><span class="mh">0x0020</span><span class="p">,</span> <span class="mh">0x0013</span><span class="p">)]</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="n">findall</span><span class="p">(</span><span class="n">x</span> <span class="o">-&gt;</span> <span class="n">x</span><span class="o">==</span><span class="n">InstanceNumber</span><span class="p">,</span> <span class="n">instances</span><span class="p">)</span>
+            <span class="n">pixel_array</span> <span class="o">=</span> <span class="n">head</span><span class="p">[(</span><span class="mh">0x7fe0</span><span class="p">,</span> <span class="mh">0x0010</span><span class="p">)]</span>
+            <span class="n">dcm_array</span><span class="p">[</span><span class="o">:</span><span class="p">,</span> <span class="o">:</span><span class="p">,</span> <span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">pixel_array</span>
+            <span class="k">if</span> <span class="n">InstanceNumber</span> <span class="k">in</span> <span class="n">instances</span><span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">3</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">InstanceNumber</span> <span class="o">==</span> <span class="n">instances</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="n">SliceLocation</span> <span class="o">=</span> <span class="n">head</span><span class="p">[(</span><span class="mh">0x0020</span><span class="p">,</span> <span class="mh">0x1041</span><span class="p">)]</span>
+                    <span class="n">loc_1</span> <span class="o">=</span> <span class="n">SliceLocation</span>
+                <span class="k">else</span>
+                    <span class="n">SliceLocation</span> <span class="o">=</span> <span class="n">head</span><span class="p">[(</span><span class="mh">0x0020</span><span class="p">,</span> <span class="mh">0x1041</span><span class="p">)]</span>
+                    <span class="n">loc_2</span> <span class="o">=</span> <span class="n">SliceLocation</span>
+                <span class="k">end</span>
+            <span class="k">end</span>
+            <span class="n">index</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">catch</span>
+            <span class="nb">nothing</span>
+        <span class="k">end</span>
+    <span class="k">end</span>
+
+    <span class="k">try</span>
+        <span class="n">SliceThickness</span> <span class="o">=</span> <span class="n">head</span><span class="p">[(</span><span class="mh">0x0018</span><span class="p">,</span> <span class="mh">0x0050</span><span class="p">)]</span>
+        <span class="n">SliceThickness</span> <span class="o">=</span> <span class="n">abs</span><span class="p">(</span><span class="n">loc_1</span> <span class="o">-</span> <span class="n">loc_2</span><span class="p">)</span>
+    <span class="k">catch</span>
+        <span class="nb">nothing</span>
+    <span class="k">end</span>
+
+    <span class="n">RescaleSlope</span> <span class="o">=</span> <span class="n">header</span><span class="p">[(</span><span class="mh">0x0028</span><span class="p">,</span> <span class="mh">0x1053</span><span class="p">)]</span>
+    <span class="n">RescaleIntercept</span> <span class="o">=</span> <span class="n">header</span><span class="p">[(</span><span class="mh">0x0028</span><span class="p">,</span> <span class="mh">0x1052</span><span class="p">)]</span>
+    <span class="n">dcm_array</span> <span class="o">=</span> <span class="n">dcm_array</span> <span class="o">.*</span> <span class="n">RescaleSlope</span> <span class="o">.+</span> <span class="n">RescaleIntercept</span>
+    <span class="k">return</span> <span class="n">RefDs</span><span class="o">.</span><span class="n">meta</span><span class="p">,</span> <span class="n">dcm_array</span><span class="p">,</span> <span class="n">slice_thick_ori</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="269203889"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Porting%20Python%20DICOM%20function%20Julia/near/269203889" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Porting.20Python.20DICOM.20function.20Julia.html#269203889">(Jan 25 2022 at 03:09)</a>:</h4>
+<p>This produces nearly identical 3D arrays with a slight difference in the slice number it seems like?</p>
+<p>Python:</p>
+<div class="codehilite" data-code-language="Python"><pre><span></span><code><span class="n">dcm_array</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+<span class="c1"># returns : 1275.0</span>
+
+<span class="n">dcm_array</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+<span class="c1"># returns: -2048.0</span>
+</code></pre></div>
+<p>Julia:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">maximum</span><span class="p">(</span><span class="n">dcm_array</span><span class="p">)</span>
+<span class="c"># returns: 1275.0</span>
+
+<span class="n">minimum</span><span class="p">(</span><span class="n">dcm_array</span><span class="p">)</span>
+<span class="c"># returns: -2048.0</span>
+</code></pre></div>
+
+
+
+<a name="269204159"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Porting%20Python%20DICOM%20function%20Julia/near/269204159" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Porting.20Python.20DICOM.20function.20Julia.html#269204159">(Jan 25 2022 at 03:13)</a>:</h4>
+<p>These slices correspond to one another when comparing the Python array vs the Julia array (so it seems like it's off by a factor of 3):<br>
+<a href="/user_uploads/7178/UG4UgUfgBpHl3WtFJHLDgrYs/image.png">image.png</a> <br>
+<a href="/user_uploads/7178/knppp5CNW1JOC7_05xvaoqkd/image.png">image.png</a> </p>
+<div class="message_inline_image"><a href="/user_uploads/7178/UG4UgUfgBpHl3WtFJHLDgrYs/image.png" title="image.png"><img src="/user_uploads/7178/UG4UgUfgBpHl3WtFJHLDgrYs/image.png"></a></div><div class="message_inline_image"><a href="/user_uploads/7178/knppp5CNW1JOC7_05xvaoqkd/image.png" title="image.png"><img src="/user_uploads/7178/knppp5CNW1JOC7_05xvaoqkd/image.png"></a></div><p>But, within the same arrays, these two slices also correspond to one another (so now it seems like it's off by a factor of 5):<br>
+<a href="/user_uploads/7178/2iIaA_L9ArHaiXla65nJkclJ/image.png">image.png</a> <br>
+<a href="/user_uploads/7178/e_z1hOAJH3rcCXMC44VyK5Dn/image.png">image.png</a></p>
+<div class="message_inline_image"><a href="/user_uploads/7178/2iIaA_L9ArHaiXla65nJkclJ/image.png" title="image.png"><img src="/user_uploads/7178/2iIaA_L9ArHaiXla65nJkclJ/image.png"></a></div><div class="message_inline_image"><a href="/user_uploads/7178/e_z1hOAJH3rcCXMC44VyK5Dn/image.png" title="image.png"><img src="/user_uploads/7178/e_z1hOAJH3rcCXMC44VyK5Dn/image.png"></a></div>
+
+
+
+<a name="269207515"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Porting%20Python%20DICOM%20function%20Julia/near/269207515" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Zachary P Christensen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Porting.20Python.20DICOM.20function.20Julia.html#269207515">(Jan 25 2022 at 04:06)</a>:</h4>
+<p>Maybe take a look at <a href="https://github.com/JuliaNeuroscience/NIfTI.jl/blob/master/examples/dicom2nifti.jl">https://github.com/JuliaNeuroscience/NIfTI.jl/blob/master/examples/dicom2nifti.jl</a></p>
+
+
+
+<a name="269209613"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Porting%20Python%20DICOM%20function%20Julia/near/269209613" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Porting.20Python.20DICOM.20function.20Julia.html#269209613">(Jan 25 2022 at 04:51)</a>:</h4>
+<p>I have gone through that before and used it for many of my other projects, so thanks for putting that out there btw! For this specifically, I need the DICOMs to load in a way that is identical to the way the python function loads it because there are a ton of downstream functions that expect this. I am more confused about why this simple port of the python function is producing such surprising results? Do you know if <code>dcm_parse</code> from <a href="https://github.com/search?q=DICOM.jl&amp;type=Repositories">DICOM.jl</a> loads the pixels differently than pydicom does?</p>
+
+
+
+<a name="269209675"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Porting%20Python%20DICOM%20function%20Julia/near/269209675" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Porting.20Python.20DICOM.20function.20Julia.html#269209675">(Jan 25 2022 at 04:53)</a>:</h4>
+<p>I can't think of what else would be responsible for this shift, other than some underlying difference in <a href="https://github.com/search?q=DICOM.jl&amp;type=Repositories">DICOM.jl</a> vs pydicom, because the rest of the function seems so straightforward.</p>
+
+
+
+<a name="269210304"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Porting%20Python%20DICOM%20function%20Julia/near/269210304" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Zachary P Christensen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Porting.20Python.20DICOM.20function.20Julia.html#269210304">(Jan 25 2022 at 05:06)</a>:</h4>
+<p>Is there any possibility that walking the directory is different?</p>
+
+
+
+<a name="269275712"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Porting%20Python%20DICOM%20function%20Julia/near/269275712" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Porting.20Python.20DICOM.20function.20Julia.html#269275712">(Jan 25 2022 at 15:46)</a>:</h4>
+<p>I can check, but I don't think that was the problem because the files that are output in a downstream function make sense. It might have something to with how I am using <code>InstanceNumber</code> in the Julia code to order the slices compared to the Python code. I will investigate those two possibilities today</p>
+
+
+
+<a name="269277992"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Porting%20Python%20DICOM%20function%20Julia/near/269277992" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Zachary P Christensen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Porting.20Python.20DICOM.20function.20Julia.html#269277992">(Jan 25 2022 at 16:00)</a>:</h4>
+<p>I'm pretty terrible at converting Python code so it's hard for me to diagnose some of this. although that does seem like the most likely place for things getting mixed up.</p>
+
+
+
+<a name="269318394"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Porting%20Python%20DICOM%20function%20Julia/near/269318394" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Porting.20Python.20DICOM.20function.20Julia.html#269318394">(Jan 25 2022 at 20:23)</a>:</h4>
+<p>Wow it was actually super simple.. In one of the lines I had <code>sort(instances)</code> when I needed <code>sort!(instances)</code></p>
+
+
+
+<a name="269329400"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Porting%20Python%20DICOM%20function%20Julia/near/269329400" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Porting.20Python.20DICOM.20function.20Julia.html#269329400">(Jan 25 2022 at 21:45)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="352971">Dale Black</span> has marked this topic as resolved.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

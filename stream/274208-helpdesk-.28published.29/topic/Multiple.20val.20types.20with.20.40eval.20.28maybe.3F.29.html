@@ -1,0 +1,85 @@
+<html>
+<head><meta charset="utf-8"><title>Multiple val types with @eval (maybe?) · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multiple.20val.20types.20with.20.40eval.20.28maybe.3F.29.html">Multiple val types with @eval (maybe?)</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="239774550"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multiple%20val%20types%20with%20%40eval%20%28maybe%3F%29/near/239774550" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kevin Bonham <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multiple.20val.20types.20with.20.40eval.20.28maybe.3F.29.html#239774550">(May 21 2021 at 16:04)</a>:</h4>
+<p>I'm trying to use a Val type to make some data cleaning operations a bit easier. Here's what I have so far:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="kt">ObsType</span><span class="p">{</span><span class="kt">x</span><span class="p">}</span> <span class="k">end</span>
+
+<span class="n">ObsType</span><span class="p">(</span><span class="n">s</span><span class="o">::</span><span class="kt">Symbol</span><span class="p">)</span> <span class="o">=</span> <span class="kt">ObsType</span><span class="p">{</span><span class="kt">s</span><span class="p">}()</span>
+<span class="n">ObsType</span><span class="p">(</span><span class="n">s</span><span class="o">::</span><span class="kt">AbstractString</span><span class="p">)</span> <span class="o">=</span> <span class="n">ObsType</span><span class="p">(</span><span class="kt">Symbol</span><span class="p">(</span><span class="n">s</span><span class="p">))</span>
+
+<span class="n">_fix_val</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="o">::</span><span class="kt">ObsType</span><span class="p">)</span> <span class="o">=</span> <span class="n">val</span>
+<span class="n">_fix_val</span><span class="p">(</span><span class="n">val</span><span class="o">::</span><span class="kt">AbstractFloat</span><span class="p">,</span> <span class="o">::</span><span class="kt">ObsType</span><span class="p">{</span><span class="ss">:timepoint</span><span class="p">})</span> <span class="o">=</span> <span class="n">floor</span><span class="p">(</span><span class="kt">Int</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+<span class="n">_fix_val</span><span class="p">(</span><span class="n">val</span><span class="o">::</span><span class="kt">AbstractString</span><span class="p">,</span> <span class="o">::</span><span class="kt">ObsType</span><span class="p">{</span><span class="ss">:timepoint</span><span class="p">})</span> <span class="o">=</span> <span class="n">parse</span><span class="p">(</span><span class="kt">Int</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+</code></pre></div>
+<p>This works great, and allows me to do stuff like <code>df[!, col] = _fix_val.(df.col, ObsType{col})</code>, regardless of what <code>col</code> is. Cool.</p>
+<p>But now I have several "date-like" column names that I'd like to treat all in the same way.  I was thinking I could maybe do this:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="c"># I need this tuple for other purposes, so I thought I could re-use it</span>
+<span class="k">const</span> <span class="n">_date_priority</span> <span class="o">=</span> <span class="p">(</span><span class="ss">:collectionDate</span><span class="p">,</span>
+                        <span class="ss">:CollectionDate</span><span class="p">,</span>
+                        <span class="ss">:assessmentDate</span><span class="p">,</span>
+                        <span class="ss">:scanDate</span><span class="p">,</span>
+                        <span class="ss">:Date</span><span class="p">,</span>
+                        <span class="ss">:momDate</span><span class="p">)</span>
+
+<span class="k">function</span> <span class="n">_parse_date</span><span class="p">(</span><span class="n">datestring</span><span class="p">)</span>
+    <span class="n">occursin</span><span class="p">(</span><span class="s">"/"</span><span class="p">,</span> <span class="n">datestring</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="k">return</span> <span class="n">Date</span><span class="p">(</span><span class="n">datestring</span><span class="p">,</span> <span class="n">Dates</span><span class="o">.</span><span class="n">DateFormat</span><span class="p">(</span><span class="s">"m/d/y"</span><span class="p">))</span>
+    <span class="n">throw</span><span class="p">(</span><span class="kt">ArgumentError</span><span class="p">(</span><span class="s">"Invalid date string: </span><span class="si">$datestring</span><span class="s">"</span><span class="p">))</span>
+<span class="k">end</span>
+
+<span class="k">for</span> <span class="n">d</span> <span class="k">in</span> <span class="n">_date_priority</span>
+    <span class="nd">@show</span> <span class="n">d</span>
+    <span class="nd">@eval</span> <span class="n">_fix_val</span><span class="p">(</span><span class="n">val</span><span class="o">::</span><span class="kt">AbstractString</span><span class="p">,</span> <span class="o">::</span><span class="kt">ObsType</span><span class="p">{</span><span class="kt">d</span><span class="p">})</span> <span class="o">=</span> <span class="n">_parse_date</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>but this gives me <code>UndefVarError: d not defined</code>. I also tried <code>$d</code>, but this gives me <code>UndefVarError: collectionDate not defined</code>. That's the extent of my debugging eval ability <span aria-label="sweat smile" class="emoji emoji-1f605" role="img" title="sweat smile">:sweat_smile:</span></p>
+
+
+
+<a name="239818637"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multiple%20val%20types%20with%20%40eval%20%28maybe%3F%29/near/239818637" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multiple.20val.20types.20with.20.40eval.20.28maybe.3F.29.html#239818637">(May 21 2021 at 22:05)</a>:</h4>
+<p>I think you need <code>$(QuoteNode(d))</code></p>
+
+
+
+<a name="239821003"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multiple%20val%20types%20with%20%40eval%20%28maybe%3F%29/near/239821003" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multiple.20val.20types.20with.20.40eval.20.28maybe.3F.29.html#239821003">(May 21 2021 at 22:31)</a>:</h4>
+<p>This is basically a quirk of <code>Expr</code> and <code>Symbol</code> inside <code>eval</code> or when returned from macros. You need <code>QuoteNode</code> to signal to julia that the <code>Symbol</code> is meant to be interpreted as a symbol rather than as a variable name.</p>
+
+
+
+<a name="239822225"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multiple%20val%20types%20with%20%40eval%20%28maybe%3F%29/near/239822225" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multiple.20val.20types.20with.20.40eval.20.28maybe.3F.29.html#239822225">(May 21 2021 at 22:46)</a>:</h4>
+<p>I tend to think it's more like a universal pain that comes with AST manipulation (and not just Julia's <code>Expr</code>). I imagine you'd need some kind of quote/unquote machinery when dealing with AST in general.</p>
+
+
+
+<a name="239823041"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multiple%20val%20types%20with%20%40eval%20%28maybe%3F%29/near/239823041" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multiple.20val.20types.20with.20.40eval.20.28maybe.3F.29.html#239823041">(May 21 2021 at 22:56)</a>:</h4>
+<p>Quasiquoting in particular never fails to give me a headache :P</p>
+
+
+
+<a name="239823412"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multiple%20val%20types%20with%20%40eval%20%28maybe%3F%29/near/239823412" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multiple.20val.20types.20with.20.40eval.20.28maybe.3F.29.html#239823412">(May 21 2021 at 23:00)</a>:</h4>
+<p>Yes of course. I just mean that it's a quirk of using elements of the AST in code. Not that we did something wrong with <code>Expr</code> and <code>Symbol</code></p>
+
+
+
+<a name="239824129"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Multiple%20val%20types%20with%20%40eval%20%28maybe%3F%29/near/239824129" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Multiple.20val.20types.20with.20.40eval.20.28maybe.3F.29.html#239824129">(May 21 2021 at 23:09)</a>:</h4>
+<p>Ah, yes, you mentioned "quirk ... inside <code>eval</code>." Totally agree <code>Expr</code> and <code>Symbol</code> are more quirky in eval.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

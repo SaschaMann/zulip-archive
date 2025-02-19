@@ -1,0 +1,56 @@
+[
+    {
+        "content": "<p>I figured out today that one can \"store data\" in type parameters, like in:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"kt\">Z</span><span class=\"p\">{</span><span class=\"kt\">T1</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">T2</span><span class=\"p\">}</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">T1</span><span class=\"w\"></span>\n<span class=\"k\">end</span><span class=\"w\"></span>\n</code></pre></div>\n<p>I don't even know if this is a good idea, but the language allows it. I was wondering how to instantiate objects of type <code>Z</code>. I figured I can do this, for example:</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">Z</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">Z</span><span class=\"p\">{</span><span class=\"kt\">typeof</span><span class=\"p\">(</span><span class=\"kt\">x</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"mi\">10</span><span class=\"p\">}(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"go\">Z</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">Z</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"go\">Z{Int64, 10}(1)</span>\n</code></pre></div>\n<p>Is there a better way to define the <code>Z</code> constructor? For example, avoiding the ugly <code>typeof(x)</code>?</p>",
+        "id": 317281729,
+        "sender_full_name": "mbaz",
+        "timestamp": 1671677857
+    },
+    {
+        "content": "<p>You could write </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">Z</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">T</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">where</span><span class=\"w\"> </span><span class=\"kt\">T</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">Z</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">10</span><span class=\"p\">}(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 317282700,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1671678684
+    },
+    {
+        "content": "<p>If the data is ‘static data’ which you expect to be type stable and you want your programs to specialize on it, then yes this is a very useful pattern.</p>",
+        "id": 317282842,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1671678803
+    },
+    {
+        "content": "<p>For instance, if you inspect a NamedTuple, you’ll find that it stores the ‘names’ this way</p>",
+        "id": 317282872,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1671678832
+    },
+    {
+        "content": "<p>Thanks, that was very useful!</p>",
+        "id": 317376517,
+        "sender_full_name": "mbaz",
+        "timestamp": 1671718807
+    },
+    {
+        "content": "<p>I do this in <a href=\"https://github.com/search?q=AVRDevices.jl&amp;type=Repositories\">AVRDevices.jl</a> - it's incredibly useful if you know that something is a constant in your code for any given object and you need it often when working with that object</p>",
+        "id": 317413641,
+        "sender_full_name": "Sukera",
+        "timestamp": 1671729342
+    },
+    {
+        "content": "<p>Yep; that's where I thought this could be useful. I just had never written structs with parameters that were not related to the types of its fields.</p>",
+        "id": 317415819,
+        "sender_full_name": "mbaz",
+        "timestamp": 1671730018
+    },
+    {
+        "content": "<p>A perhaps familiar exsmple: The Array type stores the dimension as the second type parameter.</p>",
+        "id": 317420582,
+        "sender_full_name": "Fredrik Bagge Carlson",
+        "timestamp": 1671731456
+    },
+    {
+        "content": "<p>Indeed -- but somehow it never clicked for me that the dimension parameter is actually arbitrary; I still considered it to be somehow dependent on the type, if that makes sense.</p>\n<p>I think part of my problem (beyond obtuseness) is that the documentation almost always associates type parameters to field types, although to be fair it does mention the case of arrays, and it sort of hints at this functionality in the discussion on value types.</p>",
+        "id": 317424721,
+        "sender_full_name": "mbaz",
+        "timestamp": 1671732805
+    }
+]

@@ -1,0 +1,66 @@
+<html>
+<head><meta charset="utf-8"><title>FLoops and reductions over vectors · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/FLoops.20and.20reductions.20over.20vectors.html">FLoops and reductions over vectors</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="314331512"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/FLoops%20and%20reductions%20over%20vectors/near/314331512" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel VandenHeuvel <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/FLoops.20and.20reductions.20over.20vectors.html#314331512">(Dec 06 2022 at 21:40)</a>:</h4>
+<p>Is it possible to build reductions over individual vector elements with <a href="https://github.com/search?q=FLoops.jl&amp;type=Repositories">FLoops.jl</a> (or any other package? I only know of FLoops for now)? I'm trying to get a solution to a question I asked some time ago, <a href="https://discourse.julialang.org/t/problem-converting-serial-code-to-parallel-code-with-floops/87610">https://discourse.julialang.org/t/problem-converting-serial-code-to-parallel-code-with-floops/87610</a>, and this seems to be the issue with it. The actual example I'm interested in is for parallelising some finite volume code <a href="https://github.com/DanielVandH/FiniteVolumeMethod.jl/blob/main/src/fvm.jl#L793-L902">https://github.com/DanielVandH/FiniteVolumeMethod.jl/blob/main/src/fvm.jl#L793-L902</a>.</p>
+
+
+
+<a name="314337712"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/FLoops%20and%20reductions%20over%20vectors/near/314337712" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/FLoops.20and.20reductions.20over.20vectors.html#314337712">(Dec 06 2022 at 22:22)</a>:</h4>
+<blockquote>
+<p>Is it possible to build reductions over individual vector elements</p>
+</blockquote>
+<p>Can you give a minimal example of what this means?</p>
+
+
+
+<a name="314338423"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/FLoops%20and%20reductions%20over%20vectors/near/314338423" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel VandenHeuvel <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/FLoops.20and.20reductions.20over.20vectors.html#314338423">(Dec 06 2022 at 22:26)</a>:</h4>
+<p>Well, actually I'm not 100% sure what I mean there other than that I wanted to use <code>FLoops.@reduce</code> for this, applying it to expressions like <code>du[j] += 100</code> so that <code>@reduce du[j] += 100</code> works.</p>
+<p>In the linked discourse post, I have the code:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">FLoops</span><span class="p">,</span><span class="w"> </span><span class="n">Random</span><span class="w"></span>
+<span class="k">function</span><span class="w"> </span><span class="n">update_u!</span><span class="p">(</span><span class="n">du</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">q</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">k</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="n">length</span><span class="p">(</span><span class="n">u</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">k</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">7</span><span class="p">)</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="n">length</span><span class="p">(</span><span class="n">u</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">]</span><span class="w"></span>
+<span class="w">    </span><span class="n">q</span><span class="w"> </span><span class="o">.=</span><span class="w"> </span><span class="p">[</span><span class="n">u</span><span class="p">[</span><span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span><span class="w"> </span><span class="n">u</span><span class="p">[</span><span class="n">v</span><span class="p">[</span><span class="mi">3</span><span class="p">]]]</span><span class="w"></span>
+<span class="w">    </span><span class="n">du</span><span class="p">[</span><span class="n">v</span><span class="p">[</span><span class="n">j</span><span class="p">]]</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">q</span><span class="o">'</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">q</span><span class="w"></span>
+<span class="w">    </span><span class="n">du</span><span class="p">[</span><span class="n">v</span><span class="p">[(</span><span class="n">j</span><span class="o">%</span><span class="mi">3</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">]]</span><span class="w"> </span><span class="o">-=</span><span class="w"> </span><span class="n">sin</span><span class="o">.</span><span class="p">(</span><span class="n">q</span><span class="p">)</span><span class="o">'</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">sin</span><span class="o">.</span><span class="p">(</span><span class="n">q</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="nb">nothing</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+<span class="k">function</span><span class="w"> </span><span class="n">do_parallel</span><span class="p">(</span><span class="n">du</span><span class="o">::</span><span class="kt">AbstractVector</span><span class="p">{</span><span class="kt">T</span><span class="p">},</span><span class="w"> </span><span class="n">u</span><span class="p">,</span><span class="w"> </span><span class="n">elements</span><span class="p">)</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="p">{</span><span class="kt">T</span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">q</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="p">(</span><span class="n">elements</span><span class="p">),</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="nd">@floop</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">∈</span><span class="w"> </span><span class="n">elements</span><span class="w"></span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">3</span><span class="w"></span>
+<span class="w">            </span><span class="nd">@views</span><span class="w"> </span><span class="n">update_u!</span><span class="p">(</span><span class="n">du</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">q</span><span class="p">[</span><span class="o">:</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">],</span><span class="w"> </span><span class="n">j</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">end</span><span class="w"></span>
+<span class="w">    </span><span class="k">end</span><span class="w"></span>
+<span class="w">    </span><span class="nb">nothing</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+<p>This somewhat captures what I want. <code>@reduce</code> would (I believe) avoid the data-race issues with updating <code>du</code>, but it doesn't seem to work on expressions like that.</p>
+
+
+
+<a name="314344221"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/FLoops%20and%20reductions%20over%20vectors/near/314344221" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/FLoops.20and.20reductions.20over.20vectors.html#314344221">(Dec 06 2022 at 23:07)</a>:</h4>
+<p>The floop macro is just a wrapper around the functional primitives, so if it's not working you should still be able to write it with Folds or Transducers</p>
+
+
+
+<a name="314345999"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/FLoops%20and%20reductions%20over%20vectors/near/314345999" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel VandenHeuvel <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/FLoops.20and.20reductions.20over.20vectors.html#314345999">(Dec 06 2022 at 23:21)</a>:</h4>
+<p>I'll look into those packages. I had previously considered those but couldn't follow the documentation. Thanks</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

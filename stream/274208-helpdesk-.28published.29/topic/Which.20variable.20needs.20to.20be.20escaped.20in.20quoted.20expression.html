@@ -1,0 +1,108 @@
+<html>
+<head><meta charset="utf-8"><title>Which variable needs to be escaped in quoted expression · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Which.20variable.20needs.20to.20be.20escaped.20in.20quoted.20expression.html">Which variable needs to be escaped in quoted expression</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="226717842"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Which%20variable%20needs%20to%20be%20escaped%20in%20quoted%20expression/near/226717842" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Simon Schoelly <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Which.20variable.20needs.20to.20be.20escaped.20in.20quoted.20expression.html#226717842">(Feb 17 2021 at 20:10)</a>:</h4>
+<p>I have an generated function like this:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="nd">@generated</span> <span class="k">function</span> <span class="n">f2</span><span class="p">(</span><span class="n">n</span><span class="o">:</span><span class="kt">Int</span><span class="p">,</span> <span class="o">::</span><span class="kt">Type</span><span class="p">{</span><span class="n">E_VALS</span><span class="p">})</span> <span class="n">where</span> <span class="n">E_VALS</span>
+           <span class="n">args</span> <span class="o">=</span> <span class="p">[]</span>
+           <span class="k">for</span> <span class="n">T</span> <span class="kp">in</span> <span class="n">fieldtypes</span><span class="p">(</span><span class="n">E_VALS</span><span class="p">)</span>
+              <span class="n">push!</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="o">:</span><span class="p">(</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Vector</span><span class="p">{</span><span class="o">$</span><span class="n">T</span><span class="p">}}(</span><span class="n">n</span><span class="p">)))</span>
+           <span class="k">end</span>
+           <span class="k">return</span> <span class="kt">Expr</span><span class="p">(</span><span class="o">:</span><span class="n">call</span><span class="p">,</span> <span class="o">:</span><span class="n">tuple</span><span class="p">,</span> <span class="n">args</span><span class="o">...</span><span class="p">)</span>
+       <span class="k">end</span>
+</code></pre></div>
+<p>For some reason this function will not work if I do not escape <code>T</code> nor if I escape <code>n</code>. Is there any difference in them? Putting <code>println</code> statements in there shows me that <code>n</code> is actually a <code>DataType</code> which is a bit weird. I called the method with <code>f2(10, Tuple{Int, Char})</code></p>
+
+
+
+<a name="226722209"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Which%20variable%20needs%20to%20be%20escaped%20in%20quoted%20expression/near/226722209" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Felix Kastner <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Which.20variable.20needs.20to.20be.20escaped.20in.20quoted.20expression.html#226722209">(Feb 17 2021 at 20:42)</a>:</h4>
+<p>Are you missing a colon after n?</p>
+
+
+
+<a name="226724129"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Which%20variable%20needs%20to%20be%20escaped%20in%20quoted%20expression/near/226724129" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Which.20variable.20needs.20to.20be.20escaped.20in.20quoted.20expression.html#226724129">(Feb 17 2021 at 20:56)</a>:</h4>
+<p>You shouldn't have to escape anything in a generated function.</p>
+
+
+
+<a name="226724648"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Which%20variable%20needs%20to%20be%20escaped%20in%20quoted%20expression/near/226724648" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Which.20variable.20needs.20to.20be.20escaped.20in.20quoted.20expression.html#226724648">(Feb 17 2021 at 21:00)</a>:</h4>
+<p>What is the code <code>Vector{Vector{T}}(n)</code> meant to do? That's undefined.</p>
+
+
+
+<a name="226725121"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Which%20variable%20needs%20to%20be%20escaped%20in%20quoted%20expression/near/226725121" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Which.20variable.20needs.20to.20be.20escaped.20in.20quoted.20expression.html#226725121">(Feb 17 2021 at 21:03)</a>:</h4>
+<blockquote>
+<p>Putting <code>println</code> statements in there shows me that <code>n</code> is actually a <code>DataType</code> which is a bit weird</p>
+</blockquote>
+<p>All function arguments are types inside a generated function body.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@generated</span> <span class="k">function</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+           <span class="n">Core</span><span class="o">.</span><span class="n">println</span><span class="p">(</span><span class="s">"Inside the generated function body, x = </span><span class="si">$x</span><span class="s">"</span><span class="p">)</span>
+           <span class="o">:</span><span class="p">(</span><span class="n">println</span><span class="p">(</span><span class="s">"at runtime, x = </span><span class="si">$x</span><span class="s">"</span><span class="p">))</span>
+       <span class="k">end</span>
+<span class="n">f</span> <span class="p">(</span><span class="n">generic</span> <span class="k">function</span> <span class="n">with</span> <span class="mi">1</span> <span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">Inside</span> <span class="n">the</span> <span class="n">generated</span> <span class="k">function</span> <span class="n">body</span><span class="p">,</span> <span class="n">x</span> <span class="o">=</span> <span class="kt">Int64</span>
+<span class="n">at</span> <span class="n">runtime</span><span class="p">,</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">at</span> <span class="n">runtime</span><span class="p">,</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">at</span> <span class="n">runtime</span><span class="p">,</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">2</span>
+</code></pre></div>
+
+
+
+<a name="226732058"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Which%20variable%20needs%20to%20be%20escaped%20in%20quoted%20expression/near/226732058" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Simon Schoelly <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Which.20variable.20needs.20to.20be.20escaped.20in.20quoted.20expression.html#226732058">(Feb 17 2021 at 21:55)</a>:</h4>
+<p>Apparently I made at least two mistakes when I copied this function here, the function actually is:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="nd">@generated</span> <span class="k">function</span> <span class="n">f2</span><span class="p">(</span><span class="n">n</span><span class="o">::</span><span class="kt">Int</span><span class="p">,</span> <span class="o">::</span><span class="kt">Type</span><span class="p">{</span><span class="n">E_VALS</span><span class="p">})</span> <span class="n">where</span> <span class="n">E_VALS</span>
+                              <span class="n">args</span> <span class="o">=</span> <span class="p">[]</span>
+                              <span class="k">for</span> <span class="n">T</span> <span class="kp">in</span> <span class="n">fieldtypes</span><span class="p">(</span><span class="n">E_VALS</span><span class="p">)</span>
+                                 <span class="n">push!</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="o">:</span><span class="p">(</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Vector</span><span class="p">{</span><span class="o">$</span><span class="n">T</span><span class="p">}}(</span><span class="n">undef</span><span class="p">,</span> <span class="n">n</span><span class="p">)))</span>
+                              <span class="k">end</span>
+                              <span class="k">return</span> <span class="kt">Expr</span><span class="p">(</span><span class="o">:</span><span class="n">call</span><span class="p">,</span> <span class="o">:</span><span class="n">tuple</span><span class="p">,</span> <span class="n">args</span><span class="o">...</span><span class="p">)</span>
+                        <span class="k">end</span>
+</code></pre></div>
+<p>so if I remove the dollar sign from <code>T</code> and try to run it, I get an error message</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">f2</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="kt">Tuple</span><span class="p">{</span><span class="kt">Int</span><span class="p">,</span> <span class="n">String</span><span class="p">})</span>
+<span class="n">ERROR</span><span class="o">:</span> <span class="kt">UndefVarError</span><span class="o">:</span> <span class="n">T</span> <span class="n">not</span> <span class="n">defined</span>
+<span class="n">Stacktrace</span><span class="o">:</span>
+ <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">macro</span> <span class="n">expansion</span>
+   <span class="err">@</span> <span class="o">./</span><span class="n">REPL</span><span class="p">[</span><span class="mi">45</span><span class="p">]</span><span class="o">:</span><span class="mi">0</span> <span class="p">[</span><span class="n">inlined</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="n">f2</span><span class="p">(</span><span class="n">n</span><span class="o">::</span><span class="kt">Int64</span><span class="p">,</span> <span class="c">#unused#::Type{Tuple{Int64, String}})</span>
+   <span class="err">@</span> <span class="n">Main</span> <span class="o">./</span><span class="n">REPL</span><span class="p">[</span><span class="mi">45</span><span class="p">]</span><span class="o">:</span><span class="mi">1</span>
+ <span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="n">top</span><span class="o">-</span><span class="n">level</span> <span class="n">scope</span>
+   <span class="err">@</span> <span class="n">REPL</span><span class="p">[</span><span class="mi">46</span><span class="p">]</span><span class="o">:</span><span class="mi">1</span>
+</code></pre></div>
+
+
+
+<a name="226733441"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Which%20variable%20needs%20to%20be%20escaped%20in%20quoted%20expression/near/226733441" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Which.20variable.20needs.20to.20be.20escaped.20in.20quoted.20expression.html#226733441">(Feb 17 2021 at 22:03)</a>:</h4>
+<p>Ah, I see yes. You need to interpolate (different from escape) <code>T</code> because it’s defined inside the generator.</p>
+
+
+
+<a name="226733563"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Which%20variable%20needs%20to%20be%20escaped%20in%20quoted%20expression/near/226733563" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Which.20variable.20needs.20to.20be.20escaped.20in.20quoted.20expression.html#226733563">(Feb 17 2021 at 22:03)</a>:</h4>
+<p>Only the function arguments can stay as symbols in the returned expression.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

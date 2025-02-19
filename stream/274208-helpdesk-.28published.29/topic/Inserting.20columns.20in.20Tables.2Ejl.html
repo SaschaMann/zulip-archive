@@ -1,0 +1,224 @@
+<html>
+<head><meta charset="utf-8"><title>Inserting columns in Tables.jl · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inserting.20columns.20in.20Tables.2Ejl.html">Inserting columns in Tables.jl</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="419885602"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inserting%20columns%20in%20Tables.jl/near/419885602" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Davi Sales Barreira <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inserting.20columns.20in.20Tables.2Ejl.html#419885602">(Feb 05 2024 at 16:53)</a>:</h4>
+<p>Friends, I'm trying to adapt some code I have in order to work using <a href="https://juliahub.com/ui/Packages/General/Tables">Tables.jl</a>. I'm having some trouble figuring out how one can add columns to a table in <a href="https://juliahub.com/ui/Packages/General/Tables">Tables.jl</a>. I couldn't find it in the documentation...</p>
+
+
+
+<a name="419896338"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inserting%20columns%20in%20Tables.jl/near/419896338" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> aplavin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inserting.20columns.20in.20Tables.2Ejl.html#419896338">(Feb 05 2024 at 17:51)</a>:</h4>
+<p>Don't think there is general mechanism to do that.<br>
+The <a href="https://juliahub.com/ui/Packages/General/Tables">Tables.jl</a> interface is great for IO and interop/conversions, but actual data manipulations are often most convenient when focusing on specific types.</p>
+
+
+
+<a name="419896822"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inserting%20columns%20in%20Tables.jl/near/419896822" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> aplavin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inserting.20columns.20in.20Tables.2Ejl.html#419896822">(Feb 05 2024 at 17:54)</a>:</h4>
+<p>Would be nice if more tables supported <code>@insert tbl.col = ...</code>, this mechanism is perfectly extensible. For now, columntable (namedtuple-of-vectors), StructArrays, and DictArrays do that.<br>
+And to be perfectly general for tables without property access to columns, <code>@insert Tables.columns(tbl).col = ...</code> could be added as well.</p>
+
+
+
+<a name="419920713"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inserting%20columns%20in%20Tables.jl/near/419920713" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inserting.20columns.20in.20Tables.2Ejl.html#419920713">(Feb 05 2024 at 20:16)</a>:</h4>
+<blockquote>
+<p>if more tables supported</p>
+</blockquote>
+<p>This just goes in Accessors extensions, we don't need to bother Bogumil about it, right?</p>
+
+
+
+<a name="419938517"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inserting%20columns%20in%20Tables.jl/near/419938517" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> aplavin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inserting.20columns.20in.20Tables.2Ejl.html#419938517">(Feb 05 2024 at 22:20)</a>:</h4>
+<p>I don't think the Tables package itself should (or could) be involved in <code>@insert tbl.col = ...</code> interface implementation. So, we don't need to bother Bogumil or other maintainers of <a href="https://juliahub.com/ui/Packages/General/Table">Tablesjl</a> in general :)</p>
+<p>Implementation for adding columns is fundamentally different for different table types. It should live either in Accessors extensions, or in the package defining the table type. The latter is more natural, the glue code is more likely to change due to changes in the table type than due to changes in Accessors.<br>
+StructArrays support lives in Accessors: I added it, and put there just because review responses are much faster for Accessors – so it was faster and easier than to put into StructArrays. DictArrays support Accessors natively, without any extensions.</p>
+
+
+
+<a name="422490079"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inserting%20columns%20in%20Tables.jl/near/422490079" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> aplavin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inserting.20columns.20in.20Tables.2Ejl.html#422490079">(Feb 20 2024 at 19:46)</a>:</h4>
+<p>I found this direction interesting to experiment with, and added more Tables support to AccessorsExtra. It can modify <code>Tables.columns(tbl)</code> for supported types efficiently, and can modify <code>rowtable(tbl)</code> and <code>columntable(tbl)</code> for any table type (that supports <code>Table.materializer</code>). The latter is as efficient as the manual sequence of <code>columntable + add namedtuple entry + materialize back</code>, which is basically free for typical columnar tables.</p>
+<p>Examples:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">Tables</span><span class="p">,</span><span class="w"> </span><span class="n">AccessorsExtra</span><span class="p">,</span><span class="w"> </span><span class="n">StructArrays</span><span class="p">,</span><span class="w"> </span><span class="n">TypedTables</span>
+
+<span class="c"># create a few tables of different types;</span>
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">tbl_r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[(</span><span class="n">a</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">b</span><span class="o">=</span><span class="mi">2</span><span class="p">),(</span><span class="n">a</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span><span class="n">b</span><span class="o">=</span><span class="mi">4</span><span class="p">)]</span>
+<span class="mi">2</span><span class="o">-</span><span class="n">element</span><span class="w"> </span><span class="kt">Vector</span><span class="p">{</span><span class="nd">@NamedTuple</span><span class="p">{</span><span class="kt">a</span><span class="o">::</span><span class="kt">Int64</span><span class="p">,</span><span class="w"> </span><span class="kt">b</span><span class="o">::</span><span class="kt">Int64</span><span class="p">}}</span><span class="o">:</span>
+<span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
+<span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">tbl_sa</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">StructArray</span><span class="p">(</span><span class="n">tbl_r</span><span class="p">)</span>
+<span class="mi">2</span><span class="o">-</span><span class="n">element</span><span class="w"> </span><span class="n">StructArray</span><span class="p">(</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Int64</span><span class="p">},</span><span class="w"> </span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Int64</span><span class="p">})</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="n">eltype</span><span class="w"> </span><span class="nd">@NamedTuple</span><span class="p">{</span><span class="kt">a</span><span class="o">::</span><span class="kt">Int64</span><span class="p">,</span><span class="w"> </span><span class="kt">b</span><span class="o">::</span><span class="kt">Int64</span><span class="p">}</span><span class="o">:</span>
+<span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
+<span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">tbl_tt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Table</span><span class="p">(</span><span class="n">tbl_r</span><span class="p">)</span>
+<span class="n">Table</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="n">columns</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="n">rows</span><span class="o">:</span>
+<span class="w">     </span><span class="n">a</span><span class="w">  </span><span class="n">b</span>
+<span class="w">   </span><span class="n">┌─────</span>
+<span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">│</span><span class="w"> </span><span class="mi">1</span><span class="w">  </span><span class="mi">2</span>
+<span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="n">│</span><span class="w"> </span><span class="mi">3</span><span class="w">  </span><span class="mi">4</span>
+
+<span class="c"># explicitly supported types: add a new column by modifying columns()</span>
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="nd">@insert</span><span class="w"> </span><span class="n">Tables</span><span class="o">.</span><span class="n">columns</span><span class="p">(</span><span class="n">tbl_r</span><span class="p">)</span><span class="o">.</span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s">"5"</span><span class="p">,</span><span class="w"> </span><span class="s">"6"</span><span class="p">]</span>
+<span class="mi">2</span><span class="o">-</span><span class="n">element</span><span class="w"> </span><span class="kt">Vector</span><span class="p">{</span><span class="nd">@NamedTuple</span><span class="p">{</span><span class="kt">a</span><span class="o">::</span><span class="kt">Int64</span><span class="p">,</span><span class="w"> </span><span class="kt">b</span><span class="o">::</span><span class="kt">Int64</span><span class="p">,</span><span class="w"> </span><span class="kt">c</span><span class="o">::</span><span class="kt">String</span><span class="p">}}</span><span class="o">:</span>
+<span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"5"</span><span class="p">)</span>
+<span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"6"</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="nd">@insert</span><span class="w"> </span><span class="n">Tables</span><span class="o">.</span><span class="n">columns</span><span class="p">(</span><span class="n">tbl_sa</span><span class="p">)</span><span class="o">.</span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s">"5"</span><span class="p">,</span><span class="w"> </span><span class="s">"6"</span><span class="p">]</span>
+<span class="mi">2</span><span class="o">-</span><span class="n">element</span><span class="w"> </span><span class="n">StructArray</span><span class="p">(</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Int64</span><span class="p">},</span><span class="w"> </span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Int64</span><span class="p">},</span><span class="w"> </span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">String</span><span class="p">})</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="n">eltype</span><span class="w"> </span><span class="nd">@NamedTuple</span><span class="p">{</span><span class="kt">a</span><span class="o">::</span><span class="kt">Int64</span><span class="p">,</span><span class="w"> </span><span class="kt">b</span><span class="o">::</span><span class="kt">Int64</span><span class="p">,</span><span class="w"> </span><span class="kt">c</span><span class="o">::</span><span class="kt">String</span><span class="p">}</span><span class="o">:</span>
+<span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"5"</span><span class="p">)</span>
+<span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"6"</span><span class="p">)</span>
+
+<span class="c"># any type, no special support needed: add column by modifying columntable()</span>
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="nd">@insert</span><span class="w"> </span><span class="n">Tables</span><span class="o">.</span><span class="n">columntable</span><span class="p">(</span><span class="n">tbl_tt</span><span class="p">)</span><span class="o">.</span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s">"5"</span><span class="p">,</span><span class="w"> </span><span class="s">"6"</span><span class="p">]</span>
+<span class="n">Table</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="n">columns</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="n">rows</span><span class="o">:</span>
+<span class="w">     </span><span class="n">a</span><span class="w">  </span><span class="n">b</span><span class="w">  </span><span class="n">c</span>
+<span class="w">   </span><span class="n">┌────────</span>
+<span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">│</span><span class="w"> </span><span class="mi">1</span><span class="w">  </span><span class="mi">2</span><span class="w">  </span><span class="mi">5</span>
+<span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="n">│</span><span class="w"> </span><span class="mi">3</span><span class="w">  </span><span class="mi">4</span><span class="w">  </span><span class="mi">6</span>
+
+<span class="c"># or add a row by modifying rowtable()</span>
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="nd">@insert</span><span class="w"> </span><span class="n">last</span><span class="p">(</span><span class="n">Tables</span><span class="o">.</span><span class="n">rowtable</span><span class="p">(</span><span class="n">tbl_tt</span><span class="p">))</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
+<span class="n">Table</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="n">columns</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="n">rows</span><span class="o">:</span>
+<span class="w">     </span><span class="n">a</span><span class="w">  </span><span class="n">b</span>
+<span class="w">   </span><span class="n">┌─────</span>
+<span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">│</span><span class="w"> </span><span class="mi">1</span><span class="w">  </span><span class="mi">2</span>
+<span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="n">│</span><span class="w"> </span><span class="mi">3</span><span class="w">  </span><span class="mi">4</span>
+<span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="n">│</span><span class="w"> </span><span class="mi">5</span><span class="w">  </span><span class="mi">6</span>
+
+<span class="c"># deletion also works, of course:</span>
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="nd">@delete</span><span class="w"> </span><span class="n">last</span><span class="p">(</span><span class="n">Tables</span><span class="o">.</span><span class="n">rowtable</span><span class="p">(</span><span class="n">tbl_tt</span><span class="p">))</span>
+<span class="n">Table</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="n">columns</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">row</span><span class="o">:</span>
+<span class="w">     </span><span class="n">a</span><span class="w">  </span><span class="n">b</span>
+<span class="w">   </span><span class="n">┌─────</span>
+<span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">│</span><span class="w"> </span><span class="mi">1</span><span class="w">  </span><span class="mi">2</span>
+</code></pre></div>
+
+
+
+<a name="422490391"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inserting%20columns%20in%20Tables.jl/near/422490391" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> aplavin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inserting.20columns.20in.20Tables.2Ejl.html#422490391">(Feb 20 2024 at 19:48)</a>:</h4>
+<p>If this happens to be actually useful, can be upstreamed to Accessors directly. And specific table types can add more efficient overloads for <code>modify(rowtable)</code>.<br>
+I personally just use StructArrays almost all the time, but it was fun to make these generalizations :)</p>
+
+
+
+<a name="422492786"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inserting%20columns%20in%20Tables.jl/near/422492786" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inserting.20columns.20in.20Tables.2Ejl.html#422492786">(Feb 20 2024 at 20:05)</a>:</h4>
+<p>This looks good. It supports DataFrames too, right?</p>
+
+
+
+<a name="422496742"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inserting%20columns%20in%20Tables.jl/near/422496742" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> aplavin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inserting.20columns.20in.20Tables.2Ejl.html#422496742">(Feb 20 2024 at 20:35)</a>:</h4>
+<p>Seems like that, yeah:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">tbl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[(</span><span class="n">a</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">b</span><span class="o">=</span><span class="mi">2</span><span class="p">),(</span><span class="n">a</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span><span class="n">b</span><span class="o">=</span><span class="mi">4</span><span class="p">)]</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">df</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DataFrame</span><span class="p">(</span><span class="n">tbl</span><span class="p">)</span>
+<span class="mi">2</span><span class="o">×</span><span class="mi">2</span><span class="w"> </span><span class="n">DataFrame</span>
+<span class="w"> </span><span class="n">Row</span><span class="w"> </span><span class="n">│</span><span class="w"> </span><span class="n">a</span><span class="w">      </span><span class="n">b</span>
+<span class="w">     </span><span class="n">│</span><span class="w"> </span><span class="kt">Int64</span><span class="w">  </span><span class="kt">Int64</span>
+<span class="n">─────┼──────────────</span>
+<span class="w">   </span><span class="mi">1</span><span class="w"> </span><span class="n">│</span><span class="w">     </span><span class="mi">1</span><span class="w">      </span><span class="mi">2</span>
+<span class="w">   </span><span class="mi">2</span><span class="w"> </span><span class="n">│</span><span class="w">     </span><span class="mi">3</span><span class="w">      </span><span class="mi">4</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="nd">@delete</span><span class="w"> </span><span class="n">last</span><span class="p">(</span><span class="n">rowtable</span><span class="p">(</span><span class="n">df</span><span class="p">))</span>
+<span class="mi">1</span><span class="o">×</span><span class="mi">2</span><span class="w"> </span><span class="n">DataFrame</span>
+<span class="w"> </span><span class="n">Row</span><span class="w"> </span><span class="n">│</span><span class="w"> </span><span class="n">a</span><span class="w">      </span><span class="n">b</span>
+<span class="w">     </span><span class="n">│</span><span class="w"> </span><span class="kt">Int64</span><span class="w">  </span><span class="kt">Int64</span>
+<span class="n">─────┼──────────────</span>
+<span class="w">   </span><span class="mi">1</span><span class="w"> </span><span class="n">│</span><span class="w">     </span><span class="mi">1</span><span class="w">      </span><span class="mi">2</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="nd">@insert</span><span class="w"> </span><span class="n">columntable</span><span class="p">(</span><span class="n">df</span><span class="p">)</span><span class="o">.</span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s">"5"</span><span class="p">,</span><span class="w"> </span><span class="s">"6"</span><span class="p">]</span>
+<span class="mi">2</span><span class="o">×</span><span class="mi">3</span><span class="w"> </span><span class="n">DataFrame</span>
+<span class="w"> </span><span class="n">Row</span><span class="w"> </span><span class="n">│</span><span class="w"> </span><span class="n">a</span><span class="w">      </span><span class="n">b</span><span class="w">      </span><span class="n">c</span>
+<span class="w">     </span><span class="n">│</span><span class="w"> </span><span class="kt">Int64</span><span class="w">  </span><span class="kt">Int64</span><span class="w">  </span><span class="kt">String</span>
+<span class="n">─────┼──────────────────────</span>
+<span class="w">   </span><span class="mi">1</span><span class="w"> </span><span class="n">│</span><span class="w">     </span><span class="mi">1</span><span class="w">      </span><span class="mi">2</span><span class="w">  </span><span class="mi">5</span>
+<span class="w">   </span><span class="mi">2</span><span class="w"> </span><span class="n">│</span><span class="w">     </span><span class="mi">3</span><span class="w">      </span><span class="mi">4</span><span class="w">  </span><span class="mi">6</span>
+</code></pre></div>
+<p>As I said, any table that supports <code>Tables.materializer</code>.</p>
+
+
+
+<a name="469140389"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inserting%20columns%20in%20Tables.jl/near/469140389" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Peter Deffebach <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inserting.20columns.20in.20Tables.2Ejl.html#469140389">(Sep 10 2024 at 16:04)</a>:</h4>
+<p>I wrote a lightweight package here: <a href="https://github.com/pdeffebach/ColumnFrames.jl">https://github.com/pdeffebach/ColumnFrames.jl</a></p>
+<p>which defines a table type and implements the Tables interface along with the Named Tuple interface (the two overlap, I overloaded some tables stuff for convenience). It adds a few functions related to mutability though. Its essentially a mutable named tuple where all the columns are vectors of the same length. I never finished writing tests or publishing it, though</p>
+
+
+
+<a name="469154524"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inserting%20columns%20in%20Tables.jl/near/469154524" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Adam non-jedi Beckmeyer <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inserting.20columns.20in.20Tables.2Ejl.html#469154524">(Sep 10 2024 at 16:55)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="284809">Peter Deffebach</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Inserting.20columns.20in.20Tables.2Ejl/near/469140389">said</a>:</p>
+<blockquote>
+<p>which defines a table type and implements the Tables interface along with the Named Tuple interface (the two overlap, I overloaded some tables stuff for convenience). It adds a few functions related to mutability though. Its essentially a mutable named tuple where all the columns are vectors of the same length. I never finished writing tests or publishing it, though</p>
+</blockquote>
+<p>For what it's worth, this sounds like basically what <a href="https://juliahub.com/ui/Packages/General/TypedTables">TypedTables.jl</a> already does except that it has an interface pretending the <code>Table</code> is a vector of named tuples rather than the other way around.</p>
+
+
+
+<a name="469160755"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inserting%20columns%20in%20Tables.jl/near/469160755" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Peter Deffebach <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inserting.20columns.20in.20Tables.2Ejl.html#469160755">(Sep 10 2024 at 17:20)</a>:</h4>
+<p>Oh yeah, the other important thing is that the column types aren't encoded in the type. That's like the key feature lol. So this way you can have 1000s of columns and not worry about compilation issues.</p>
+
+
+
+<a name="469208265"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inserting%20columns%20in%20Tables.jl/near/469208265" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Adam non-jedi Beckmeyer <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inserting.20columns.20in.20Tables.2Ejl.html#469208265">(Sep 10 2024 at 20:41)</a>:</h4>
+<p>Ah. That's equivalent to the <code>FlexTable</code> type from TypedTables I believe.</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="n">ft</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FlexTable</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s">"Alice"</span><span class="p">,</span><span class="w"> </span><span class="s">"Bob"</span><span class="p">,</span><span class="w"> </span><span class="s">"Charlie"</span><span class="p">],</span><span class="w"> </span><span class="n">age</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mi">25</span><span class="p">,</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span><span class="w"> </span><span class="mi">37</span><span class="p">])</span>
+<span class="go">FlexTable with 2 columns and 3 rows:</span>
+<span class="go">     name     age</span>
+<span class="go">   ┌─────────────</span>
+<span class="go"> 1 │ Alice    25</span>
+<span class="go"> 2 │ Bob      42</span>
+<span class="go"> 3 │ Charlie  37</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">ft</span><span class="o">.</span><span class="n">sex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="ss">:F</span><span class="p">,</span><span class="w"> </span><span class="ss">:M</span><span class="p">,</span><span class="w"> </span><span class="ss">:M</span><span class="p">];</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">ft</span>
+<span class="go">FlexTable with 3 columns and 3 rows:</span>
+<span class="go">     name     age  sex</span>
+<span class="go">   ┌──────────────────</span>
+<span class="go"> 1 │ Alice    25   F</span>
+<span class="go"> 2 │ Bob      42   M</span>
+<span class="go"> 3 │ Charlie  37   M</span>
+</code></pre></div>
+
+
+
+<a name="469212813"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inserting%20columns%20in%20Tables.jl/near/469212813" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Peter Deffebach <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inserting.20columns.20in.20Tables.2Ejl.html#469212813">(Sep 10 2024 at 21:01)</a>:</h4>
+<p>Hmmm, it looks like FlexTable still has a NamedTuple on the inside,  so you could still potentially create a named tuple with 10,000 elements. Whereas my version was backed by a plain vector of vectors.</p>
+
+
+
+<a name="469220960"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inserting%20columns%20in%20Tables.jl/near/469220960" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> aplavin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inserting.20columns.20in.20Tables.2Ejl.html#469220960">(Sep 10 2024 at 21:52)</a>:</h4>
+<p>I made <a href="https://juliahub.com/ui/Packages/General/DictArrays">DictArrays.jl</a> some time ago, think "like structarrays, but with dictionaries instead of namedtuples". Supports Tables and collection interface, fast both for very wide tables and for functions like map and filter.<br>
+I ended up barely using them – never encounter tables with more than 100-200 columns, and for them it's still fine to wait for StructArrays compilation.</p>
+<p>Still, it's a direct demonstration that Tables + collection operations + Accessors for column modification are possible at once, and without sacrificing performance.</p>
+
+
+
+<a name="469225637"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Inserting%20columns%20in%20Tables.jl/near/469225637" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Peter Deffebach <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Inserting.20columns.20in.20Tables.2Ejl.html#469225637">(Sep 10 2024 at 22:28)</a>:</h4>
+<p>I'm currently working with  10,000 column dataset in Stata. The Julia toolchain just isn't there to do all the stuff I want. But yeah it's hard to see how something like these packages fits in. If you have 10,000 columns, you probably don't want something quick with a lightweight API. Just use dataframes</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

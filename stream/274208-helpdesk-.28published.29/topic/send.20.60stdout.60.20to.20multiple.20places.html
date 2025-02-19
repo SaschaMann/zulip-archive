@@ -1,0 +1,317 @@
+<html>
+<head><meta charset="utf-8"><title>send `stdout` to multiple places · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html">send `stdout` to multiple places</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="279615902"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/279615902" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#279615902">(Apr 20 2022 at 23:21)</a>:</h4>
+<p>So I want to intercept everything that's printed to stdout, and each time something is printed, I want to first put that output into a file, and then also continue printing to <code>stdout</code>. </p>
+<p>I know I can do</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s">"w+"</span><span class="p">)</span> <span class="k">do</span> <span class="n">io</span>
+    <span class="n">redirect_stdout</span><span class="p">(</span><span class="n">myio</span><span class="p">)</span> <span class="k">do</span>
+        <span class="n">f</span><span class="p">()</span> <span class="c"># some code I have no control over which prints</span>
+    <span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>but this will <strong>only</strong> log to the file. I want to send the output to the file concurrently with stuff also being printed in the usual way. Anyone have any ideas as to how I can do this?</p>
+
+
+
+<a name="279620821"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/279620821" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mosè Giordano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#279620821">(Apr 21 2022 at 00:23)</a>:</h4>
+<p>Not exactly what you're asking, but in <a href="https://github.com/search?q=BinaryBuilder.jl&amp;type=Repositories">BinaryBuilder.jl</a> we use <a href="https://github.com/JuliaPackaging/OutputCollectors.jl">https://github.com/JuliaPackaging/OutputCollectors.jl</a> to collect stdout and stderr from subprocesses and print to screen and log to file at the same time</p>
+
+
+
+<a name="279620950"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/279620950" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#279620950">(Apr 21 2022 at 00:25)</a>:</h4>
+<p>I wonder if logging can be used for this: <a href="https://julialogging.github.io/reference/loggingextras/#LoggingExtras.TeeLogger-Tuple{Vararg{Base.CoreLogging.AbstractLogger}}">https://julialogging.github.io/reference/loggingextras/#LoggingExtras.TeeLogger-Tuple{Vararg{Base.CoreLogging.AbstractLogger}}</a></p>
+
+
+
+<a name="279622532"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/279622532" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#279622532">(Apr 21 2022 at 00:49)</a>:</h4>
+<p>Perhaps there's a package with some <code>TeeIO</code> type, but if not <a href="https://discourse.julialang.org/t/write-to-file-and-stdout/35042/3">https://discourse.julialang.org/t/write-to-file-and-stdout/35042/3</a> looks pretty short.</p>
+
+
+
+<a name="279702285"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/279702285" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#279702285">(Apr 21 2022 at 16:11)</a>:</h4>
+<p>Ah thank you Brian, that’s nice because I’m trying to avoid dependencies where possible here.</p>
+
+
+
+<a name="279702411"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/279702411" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#279702411">(Apr 21 2022 at 16:12)</a>:</h4>
+<p>Is there any documentation out there on what the expected interface for an <code>IO</code> type is?</p>
+
+
+
+<a name="279704554"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/279704554" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#279704554">(Apr 21 2022 at 16:27)</a>:</h4>
+<p>I wrote <a href="https://github.com/search?q=TeeStreams.jl&amp;type=Repositories">TeeStreams.jl</a>, but doesn't work with <code>redirect_stdio</code> so you would need to pass the <code>io</code> to any write functions. Perhaps there is a way to fix that though, not sure.</p>
+
+
+
+<a name="279725020"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/279725020" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#279725020">(Apr 21 2022 at 19:03)</a>:</h4>
+<p>Hm yeah, rewriting the functions is not an option unfortunately</p>
+
+
+
+<a name="279736931"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/279736931" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#279736931">(Apr 21 2022 at 20:39)</a>:</h4>
+<p><span class="user-mention" data-user-id="272644">@Fredrik Ekre</span> okay, I was screwing around with the internals of Logging2 by <span class="user-mention" data-user-id="269205">@Chris Foster</span>  and I found a way to get <code>redirect_stdio</code> working on your <code>TeeStreams</code>. </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span> <span class="n">TeeStreams</span>
+<span class="k">using</span> <span class="n">Logging2</span><span class="o">:</span> <span class="n">LineBufferedIO</span>
+
+<span class="c"># adapted from Logging2.jl</span>
+<span class="k">function</span> <span class="p">(</span><span class="n">redirect_func</span><span class="o">::</span><span class="kt">Base</span><span class="o">.</span><span class="n">RedirectStdStream</span><span class="p">)(</span><span class="n">f</span><span class="o">::</span><span class="kt">Function</span><span class="p">,</span> <span class="n">io</span><span class="o">::</span><span class="kt">TeeStream</span><span class="p">)</span>
+    <span class="n">prev_stream</span><span class="p">,</span> <span class="n">stream_name</span> <span class="o">=</span>
+        <span class="n">redirect_func</span><span class="o">.</span><span class="n">unix_fd</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">?</span> <span class="p">(</span><span class="nb">stdin</span><span class="p">,</span> <span class="ss">:stdin</span><span class="p">)</span> <span class="o">:</span>
+        <span class="n">redirect_func</span><span class="o">.</span><span class="n">unix_fd</span> <span class="o">==</span> <span class="mi">1</span> <span class="o">?</span> <span class="p">(</span><span class="nb">stdout</span><span class="p">,</span> <span class="ss">:stdout</span><span class="p">)</span> <span class="o">:</span>
+        <span class="n">redirect_func</span><span class="o">.</span><span class="n">unix_fd</span> <span class="o">==</span> <span class="mi">2</span> <span class="o">?</span> <span class="p">(</span><span class="nb">stderr</span><span class="p">,</span> <span class="ss">:stderr</span><span class="p">)</span> <span class="o">:</span>
+        <span class="n">throw</span><span class="p">(</span><span class="kt">ArgumentError</span><span class="p">(</span><span class="s">"Not implemented to get old handle of fd except for stdio"</span><span class="p">))</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="nb">nothing</span>
+
+    <span class="n">output</span> <span class="o">=</span> <span class="n">LineBufferedIO</span><span class="p">(</span><span class="n">io</span><span class="p">)</span>
+    <span class="n">rd</span><span class="p">,</span> <span class="n">rw</span> <span class="o">=</span> <span class="n">redirect_func</span><span class="p">()</span>
+    <span class="k">try</span>
+        <span class="nd">@sync</span> <span class="k">begin</span>
+            <span class="k">try</span>
+                <span class="n">Threads</span><span class="o">.</span><span class="nd">@spawn</span> <span class="n">write</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">rd</span><span class="p">)</span> <span class="c"># loops while !eof(rd)</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="n">f</span><span class="p">()</span>
+            <span class="k">finally</span>
+                <span class="c"># To close the read side of the pipe, we must close *all*</span>
+                <span class="c"># writers. This includes `rw`, but *also* the dup'd fd</span>
+                <span class="c"># created behind the scenes by redirect_func(). (To close</span>
+                <span class="c"># that, must call redirect_func() here with the prev stream.)</span>
+                <span class="n">close</span><span class="p">(</span><span class="n">rw</span><span class="p">)</span>
+                <span class="n">redirect_func</span><span class="p">(</span><span class="n">prev_stream</span><span class="p">)</span>
+            <span class="k">end</span>
+        <span class="k">end</span>
+    <span class="k">finally</span>
+        <span class="n">close</span><span class="p">(</span><span class="n">rd</span><span class="p">)</span>
+        <span class="n">close</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+    <span class="k">end</span>
+    <span class="k">return</span> <span class="n">result</span>
+<span class="k">end</span>
+
+<span class="p">(</span><span class="n">f</span><span class="o">::</span><span class="kt">Base</span><span class="o">.</span><span class="n">RedirectStdStream</span><span class="p">)(</span><span class="n">io</span><span class="o">::</span><span class="kt">TeeStream</span><span class="p">)</span> <span class="o">=</span> <span class="n">f</span><span class="p">(()</span> <span class="o">-&gt;</span> <span class="nb">nothing</span><span class="p">,</span> <span class="n">io</span><span class="p">)</span>
+</code></pre></div>
+<p>Now</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">file</span> <span class="o">=</span> <span class="n">tempname</span><span class="p">()</span>
+<span class="s">"/var/folders/8j/wwv2d08x00v_5ss1g4dq6f2r0000gn/T/jl_3gEtIl"</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">open</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="s">"w+"</span><span class="p">)</span> <span class="k">do</span> <span class="n">io</span>
+           <span class="n">tio</span> <span class="o">=</span> <span class="n">TeeStream</span><span class="p">(</span><span class="n">io</span><span class="p">,</span> <span class="nb">stdout</span><span class="p">)</span>
+           <span class="n">redirect_stderr</span><span class="p">(</span><span class="n">tio</span><span class="p">)</span> <span class="k">do</span>
+               <span class="n">redirect_stdout</span><span class="p">(</span><span class="n">tio</span><span class="p">)</span> <span class="k">do</span>
+                   <span class="n">println</span><span class="p">(</span><span class="s">"hi"</span><span class="p">)</span>
+                   <span class="nd">@warn</span> <span class="s">"bye"</span>
+               <span class="k">end</span>
+           <span class="k">end</span>
+       <span class="k">end</span>
+<span class="n">hi</span>
+<span class="n">┌</span> <span class="n">Warning</span><span class="o">:</span> <span class="n">bye</span>
+<span class="n">└</span> <span class="err">@</span> <span class="n">Main</span> <span class="n">REPL</span><span class="p">[</span><span class="mi">21</span><span class="p">]</span><span class="o">:</span><span class="mi">6</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">read</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="kt">String</span><span class="p">)</span>
+<span class="s">"hi</span><span class="se">\n</span><span class="s">┌ Warning: bye</span><span class="se">\n</span><span class="s">└ @ Main REPL[21]:6</span><span class="se">\n</span><span class="s">"</span>
+</code></pre></div>
+
+
+
+<a name="279737037"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/279737037" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#279737037">(Apr 21 2022 at 20:40)</a>:</h4>
+<p>For some reason I couldn't get <code>redirect_stdio</code> to work and instead had to nest <code>redirect_stdout</code> with <code>redirect_stderr</code>, but it seems to work. </p>
+<p>I wonder if there's a way we can get this into TeeStreams?</p>
+
+
+
+<a name="279742072"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/279742072" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#279742072">(Apr 21 2022 at 21:24)</a>:</h4>
+<p>Nice. Why is <code>LineBufferedIO</code> needed?</p>
+
+
+
+<a name="279746236"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/279746236" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#279746236">(Apr 21 2022 at 22:11)</a>:</h4>
+<p>I couldn’t find any other io construct that worked unfortunately</p>
+
+
+
+<a name="279746283"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/279746283" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#279746283">(Apr 21 2022 at 22:11)</a>:</h4>
+<p>Maybe <span class="user-mention" data-user-id="269205">@Chris Foster</span> knows why?</p>
+
+
+
+<a name="279746310"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/279746310" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#279746310">(Apr 21 2022 at 22:11)</a>:</h4>
+<p>I guess it’s maybe a thread safety issue?</p>
+
+
+
+<a name="279746842"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/279746842" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#279746842">(Apr 21 2022 at 22:17)</a>:</h4>
+<p>Your example works for me without it though</p>
+
+
+
+<a name="279749228"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/279749228" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#279749228">(Apr 21 2022 at 22:41)</a>:</h4>
+<p>Really? It crashes for me</p>
+
+
+
+<a name="279749258"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/279749258" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#279749258">(Apr 21 2022 at 22:41)</a>:</h4>
+<p>What did you replace <code>LineBufferIO(io)</code> with? just <code>io</code>?</p>
+
+
+
+<a name="279751563"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/279751563" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#279751563">(Apr 21 2022 at 23:10)</a>:</h4>
+<p>Yea, and dropped the close of it.</p>
+
+
+
+<a name="279757024"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/279757024" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#279757024">(Apr 22 2022 at 00:18)</a>:</h4>
+<p>Yep, that would have been smart to drop</p>
+
+
+
+<a name="281403314"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/281403314" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> c42f <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#281403314">(May 06 2022 at 07:30)</a>:</h4>
+<p>Cool you found that code in <a href="https://github.com/search?q=Logging2.jl&amp;type=Repositories">Logging2.jl</a> and were able to reuse it <span aria-label="+1" class="emoji emoji-1f44d" role="img" title="+1">:+1:</span> That stuff I did with testing <code>redirect_func.unix_fd</code> is super ugly, but I think there's a missing abstraction in <code>Base</code> which forced me into it.  (I didn't figure out exactly what Base should be doing though.)  BTW, this will also fail on Julia 1.6 as Base appears to have had unintentional breaking changes in 1.7 (oh, I see <span class="user-mention silent" data-user-id="272644">Fredrik Ekre</span> noticed that and fixed it already :) )</p>
+
+
+
+<a name="281472033"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/281472033" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#281472033">(May 06 2022 at 17:47)</a>:</h4>
+<p>Yeah, I also encountered that code in base and didn't even understand it well enough to copy it the way you did. I had to copy your copy <span aria-label="laughing" class="emoji emoji-1f606" role="img" title="laughing">:laughing:</span></p>
+
+
+
+<a name="281472116"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/281472116" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#281472116">(May 06 2022 at 17:48)</a>:</h4>
+<p>It definitely feels like a missing abstraction that there's no clean way to implement <code>redirect</code> functions without resorting to this stuff</p>
+
+
+
+<a name="281900056"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/281900056" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#281900056">(May 10 2022 at 23:34)</a>:</h4>
+<p><span class="user-mention" data-user-id="269205">@Chris Foster</span> do you know what it would take with this to support color and other IOContext stuff in the redirects? I've looked through the Base code and I don't see what it's doing that yours doesn't in terms of color stuff</p>
+
+
+
+<a name="281900103"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/281900103" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#281900103">(May 10 2022 at 23:35)</a>:</h4>
+<p>E.g. this loses color info</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">Logging</span><span class="p">,</span><span class="w"> </span><span class="n">Logging2</span><span class="w"></span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">logger</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_logger</span><span class="p">();</span><span class="w"></span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">redirect_stdout</span><span class="p">(</span><span class="n">logger</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"></span>
+<span class="w">           </span><span class="n">printstyled</span><span class="p">(</span><span class="s">"Hello</span><span class="se">\n</span><span class="s">"</span><span class="p">;</span><span class="w"> </span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">:blue</span><span class="p">)</span><span class="w"></span>
+<span class="w">       </span><span class="k">end</span><span class="w"></span>
+<span class="p">[</span><span class="w"> </span><span class="n">Info</span><span class="o">:</span><span class="w"> </span><span class="n">Hello</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="281934919"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/281934919" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> c42f <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#281934919">(May 11 2022 at 08:49)</a>:</h4>
+<p>That might be tricky.</p>
+<p>For printstyled to work like that, we'd need to have <code>get(stdout, :color, nothing) == true</code> within the <code>redirect_stdout</code> block.  So ideally we'd have <code>stdout</code> be an <code>IOContext</code> or something to capture the settings of the original stdout.</p>
+<p>But the internal function <code>Logging2._redirect_to_logger</code> uses a <code>PipeEndpoint</code> to capture stdout in a reliable way. And I think it's necessary to use an operating system construct here (with an underlying file descriptor) for it to be possible to really capture stdout from the whole process, including from libc and not just from the Julia runtime.</p>
+
+
+
+<a name="281935126"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/281935126" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#281935126">(May 11 2022 at 08:51)</a>:</h4>
+<p><code>stdout</code> per se has no notion of color - that's always a property of where the resulting text is then displayed after all</p>
+
+
+
+<a name="281935200"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/281935200" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#281935200">(May 11 2022 at 08:52)</a>:</h4>
+<p>all ANSI color codes are a in-band code to whatever is interpreting the bytestream, having <code>stdout</code> switch which it is requires knowing where it will end up</p>
+
+
+
+<a name="282000824"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/282000824" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#282000824">(May 11 2022 at 17:33)</a>:</h4>
+<p>I was more thinking in the coxtext of <a href="https://github.com/search?q=TeeStreams.jl&amp;type=Repositories">TeeStreams.jl</a> but trying to adapt the question to logging parlance</p>
+
+
+
+<a name="282001539"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/282001539" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#282001539">(May 11 2022 at 17:39)</a>:</h4>
+<p>Basically, this works for embedding colors into a file:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">open</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="w"> </span><span class="s">"w+"</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">io</span><span class="w"></span>
+<span class="w">           </span><span class="n">io</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">IOContext</span><span class="p">(</span><span class="n">io</span><span class="p">,</span><span class="w"> </span><span class="ss">:color</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span><span class="w"></span>
+<span class="w">           </span><span class="n">redirect_stderr</span><span class="p">(</span><span class="n">io</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"></span>
+<span class="w">               </span><span class="n">redirect_stdout</span><span class="p">(</span><span class="n">io</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"></span>
+<span class="w">                   </span><span class="n">println</span><span class="p">(</span><span class="s">"hi"</span><span class="p">)</span><span class="w"></span>
+<span class="w">                   </span><span class="nd">@warn</span><span class="w"> </span><span class="s">"bye"</span><span class="w"></span>
+<span class="w">               </span><span class="k">end</span><span class="w"></span>
+<span class="w">           </span><span class="k">end</span><span class="w"></span>
+<span class="w">       </span><span class="k">end</span><span class="w"></span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">read</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="w"> </span><span class="kt">String</span><span class="p">)</span><span class="w"></span>
+<span class="s">"hi</span><span class="se">\n</span><span class="s">\e[33m\e[1m┌ \e[22m\e[39m\e[33m\e[1mWarning: \e[22m\e[39mbye</span><span class="se">\n</span><span class="s">\e[33m\e[1m└ \e[22m\e[39m\e[90m@ Main REPL[46]:6\e[39m</span><span class="se">\n</span><span class="s">"</span><span class="w"></span>
+</code></pre></div>
+<p>And I was trying to get <code>IOContext</code> to work with a <code>TeeStream</code> like this:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="nd">@eval</span><span class="w"> </span><span class="n">TeeStreams</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="p">(</span><span class="n">redirect_func</span><span class="o">::</span><span class="kt">Base</span><span class="o">.</span><span class="n">RedirectStdStream</span><span class="p">)(</span><span class="n">f</span><span class="o">::</span><span class="kt">Function</span><span class="p">,</span><span class="w"> </span><span class="n">io</span><span class="o">::</span><span class="kt">IOContext</span><span class="p">{</span><span class="o">&lt;:</span><span class="kt">TeeStream</span><span class="p">})</span><span class="w"></span>
+<span class="w">    </span><span class="n">prev_stream</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="w">        </span><span class="n">redirect_func</span><span class="o">.</span><span class="n">unix_fd</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="nb">stdout</span><span class="w"> </span><span class="o">:</span><span class="w"></span>
+<span class="w">        </span><span class="n">redirect_func</span><span class="o">.</span><span class="n">unix_fd</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="nb">stderr</span><span class="w"> </span><span class="o">:</span><span class="w"></span>
+<span class="w">        </span><span class="n">throw</span><span class="p">(</span><span class="kt">ArgumentError</span><span class="p">(</span><span class="s">"Can only redirect stdout and stderr to TeeStream."</span><span class="p">))</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">_redirect_internal</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="n">io</span><span class="p">,</span><span class="w"> </span><span class="n">redirect_func</span><span class="p">,</span><span class="w"> </span><span class="n">prev_stream</span><span class="p">)</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+<p>but the colors just get ignored:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">open</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="w"> </span><span class="s">"w+"</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">io</span><span class="w"></span>
+<span class="w">           </span><span class="n">tio</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">IOContext</span><span class="p">(</span><span class="n">TeeStream</span><span class="p">(</span><span class="n">io</span><span class="p">,</span><span class="w"> </span><span class="nb">stdout</span><span class="p">),</span><span class="w"> </span><span class="ss">:color</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span><span class="w"></span>
+<span class="w">           </span><span class="n">redirect_stderr</span><span class="p">(</span><span class="n">tio</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"></span>
+<span class="w">               </span><span class="n">redirect_stdout</span><span class="p">(</span><span class="n">tio</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"></span>
+<span class="w">                   </span><span class="n">println</span><span class="p">(</span><span class="s">"hi"</span><span class="p">)</span><span class="w"></span>
+<span class="w">                   </span><span class="nd">@warn</span><span class="w"> </span><span class="s">"bye"</span><span class="w"></span>
+<span class="w">               </span><span class="k">end</span><span class="w"></span>
+<span class="w">           </span><span class="k">end</span><span class="w"></span>
+<span class="w">       </span><span class="k">end</span><span class="w"></span>
+<span class="n">┌</span><span class="w"> </span><span class="n">Warning</span><span class="o">:</span><span class="w"> </span><span class="n">bye</span><span class="w"></span>
+<span class="n">└</span><span class="w"> </span><span class="err">@</span><span class="w"> </span><span class="n">Main</span><span class="w"> </span><span class="n">REPL</span><span class="p">[</span><span class="mi">52</span><span class="p">]</span><span class="o">:</span><span class="mi">6</span><span class="w"></span>
+<span class="n">hi</span><span class="w"></span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">read</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="w"> </span><span class="kt">String</span><span class="p">)</span><span class="w"></span>
+<span class="s">"hi┌ Warning: bye</span><span class="se">\n</span><span class="s">└ @ Main REPL[52]:6</span><span class="se">\n\n</span><span class="s">"</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="282001651"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/282001651" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#282001651">(May 11 2022 at 17:40)</a>:</h4>
+<p><code>TeeStream(IOContext(io, :color =&gt; true), stdout)</code> also didn't work</p>
+
+
+
+<a name="282075585"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/send%20%60stdout%60%20to%20multiple%20places/near/282075585" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> c42f <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/send.20.60stdout.60.20to.20multiple.20places.html#282075585">(May 12 2022 at 08:45)</a>:</h4>
+<p>Ah, I didn't realize that <code>IOContext</code> already works with <code>redirect_stdout</code>  (because <code>IOContext &lt;: AbstractPipe</code>... what??)</p>
+<p>In that case, you can probably get this to work.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

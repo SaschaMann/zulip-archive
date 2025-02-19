@@ -1,0 +1,108 @@
+<html>
+<head><meta charset="utf-8"><title>solve SDEProblem with same driving noise · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/solve.20SDEProblem.20with.20same.20driving.20noise.html">solve SDEProblem with same driving noise</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="233071575"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/solve%20SDEProblem%20with%20same%20driving%20noise/near/233071575" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Frank van der Meulen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/solve.20SDEProblem.20with.20same.20driving.20noise.html#233071575">(Apr 04 2021 at 10:26)</a>:</h4>
+<p>Using <code>DifferentialEquations.jl</code>, I would like to solve several SDEs with the <em>same</em> driving Wiener noise. I am surprised to see that <code>sol.u</code> and <code>sol2.u</code> are different.  Any suggestions how come?</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">f2</span><span class="p">(</span><span class="n">du</span><span class="p">,</span><span class="n">u</span><span class="p">,</span><span class="n">p</span><span class="p">,</span><span class="n">t</span><span class="p">)</span>
+  <span class="n">du</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+  <span class="n">du</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">u</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+<span class="k">end</span>
+
+<span class="k">function</span> <span class="n">g2</span><span class="p">(</span><span class="n">du</span><span class="p">,</span><span class="n">u</span><span class="p">,</span><span class="n">p</span><span class="p">,</span><span class="n">t</span><span class="p">)</span>
+  <span class="n">du</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.1</span>
+  <span class="n">du</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.1</span>
+<span class="k">end</span>
+
+<span class="n">tspan</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">)</span>
+<span class="n">u0</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]</span>
+<span class="n">p</span> <span class="o">=</span> <span class="p">[</span><span class="mf">3.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]</span>
+<span class="n">Z</span> <span class="o">=</span> <span class="n">WienerProcess</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span>
+
+<span class="n">prob</span> <span class="o">=</span> <span class="n">SDEProblem</span><span class="p">(</span><span class="n">f2</span><span class="p">,</span> <span class="n">g2</span><span class="p">,</span> <span class="n">u0</span><span class="p">,</span> <span class="n">tspan</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span>  <span class="n">noise</span><span class="o">=</span><span class="n">Z</span><span class="p">)</span>
+<span class="n">sol</span> <span class="o">=</span> <span class="n">solve</span><span class="p">(</span><span class="n">prob</span><span class="p">,</span> <span class="n">EM</span><span class="p">(</span><span class="kc">false</span><span class="p">),</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+
+<span class="n">prob2</span> <span class="o">=</span> <span class="n">SDEProblem</span><span class="p">(</span><span class="n">f2</span><span class="p">,</span> <span class="n">g2</span><span class="p">,</span> <span class="n">u0</span><span class="p">,</span> <span class="n">tspan</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="n">Z</span><span class="p">)</span>
+<span class="n">sol2</span> <span class="o">=</span> <span class="n">solve</span><span class="p">(</span><span class="n">prob2</span><span class="p">,</span> <span class="n">EM</span><span class="p">(</span><span class="kc">false</span><span class="p">),</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+
+<span class="n">sol</span><span class="o">.</span><span class="n">W</span> <span class="o">==</span> <span class="n">sol2</span><span class="o">.</span><span class="n">W</span> <span class="c"># true</span>
+<span class="n">sol</span><span class="o">.</span><span class="n">u</span> <span class="o">==</span> <span class="n">sol2</span><span class="o">.</span><span class="n">u</span> <span class="c"># false</span>
+<span class="n">sol</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="n">sol2</span><span class="o">.</span><span class="n">t</span> <span class="c"># true</span>
+</code></pre></div>
+
+
+
+<a name="233288532"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/solve%20SDEProblem%20with%20same%20driving%20noise/near/233288532" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Frank Schäfer <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/solve.20SDEProblem.20with.20same.20driving.20noise.html#233288532">(Apr 06 2021 at 09:10)</a>:</h4>
+<p>To reproduce the same noise values with a <code>NoiseProcess</code>,  you'll need to fix the seed:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span> <span class="n">StochasticDiffEq</span><span class="p">,</span> <span class="n">DiffEqNoiseProcess</span><span class="p">,</span> <span class="n">Random</span>
+<span class="k">function</span> <span class="n">f2</span><span class="p">(</span><span class="n">du</span><span class="p">,</span><span class="n">u</span><span class="p">,</span><span class="n">p</span><span class="p">,</span><span class="n">t</span><span class="p">)</span>
+  <span class="n">du</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="k">end</span>
+
+<span class="k">function</span> <span class="n">g2</span><span class="p">(</span><span class="n">du</span><span class="p">,</span><span class="n">u</span><span class="p">,</span><span class="n">p</span><span class="p">,</span><span class="n">t</span><span class="p">)</span>
+  <span class="n">du</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.1</span>
+<span class="k">end</span>
+
+<span class="n">tspan</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">)</span>
+<span class="n">u0</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]</span>
+<span class="n">p</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.98</span><span class="p">]</span>
+<span class="n">Z</span> <span class="o">=</span> <span class="n">WienerProcess</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">])</span>
+
+<span class="n">Random</span><span class="o">.</span><span class="n">seed!</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">prob</span> <span class="o">=</span> <span class="n">SDEProblem</span><span class="p">(</span><span class="n">f2</span><span class="p">,</span> <span class="n">g2</span><span class="p">,</span> <span class="n">u0</span><span class="p">,</span> <span class="n">tspan</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="n">Z</span><span class="p">)</span>
+<span class="n">sol</span> <span class="o">=</span> <span class="n">solve</span><span class="p">(</span><span class="n">prob</span><span class="p">,</span> <span class="n">EM</span><span class="p">(</span><span class="kc">false</span><span class="p">),</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">save_noise</span><span class="o">=</span><span class="kc">true</span><span class="p">)</span>
+<span class="n">Random</span><span class="o">.</span><span class="n">seed!</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">prob2</span> <span class="o">=</span> <span class="n">SDEProblem</span><span class="p">(</span><span class="n">f2</span><span class="p">,</span> <span class="n">g2</span><span class="p">,</span> <span class="n">u0</span><span class="p">,</span> <span class="n">tspan</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="n">Z</span><span class="p">)</span>
+<span class="n">sol2</span> <span class="o">=</span> <span class="n">solve</span><span class="p">(</span><span class="n">prob2</span><span class="p">,</span> <span class="n">EM</span><span class="p">(</span><span class="kc">false</span><span class="p">),</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">save_noise</span><span class="o">=</span><span class="kc">true</span><span class="p">)</span>
+
+<span class="n">sol</span><span class="o">.</span><span class="n">W</span><span class="o">.</span><span class="n">W</span> <span class="o">==</span> <span class="n">sol2</span><span class="o">.</span><span class="n">W</span><span class="o">.</span><span class="n">W</span> <span class="c"># true</span>
+<span class="n">sol</span><span class="o">.</span><span class="n">u</span> <span class="o">==</span> <span class="n">sol2</span><span class="o">.</span><span class="n">u</span> <span class="c"># true</span>
+<span class="n">sol</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="n">sol2</span><span class="o">.</span><span class="n">t</span> <span class="c"># true</span>
+
+<span class="k">using</span> <span class="n">Plots</span>
+
+<span class="n">plot</span><span class="p">(</span><span class="n">sol</span><span class="p">)</span>
+<span class="n">plot!</span><span class="p">(</span><span class="n">sol2</span><span class="p">)</span>
+</code></pre></div>
+<p>However, I am also a bit surprised that <code>sol.W.W</code> in your example shows true.. I think that this is actually not the case and a new independent driving noise is drawn. </p>
+<p>The correct way to re-use the noise values is to use <code>NoiseWrapper</code> from DiffEqNoiseProcess:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">Zrep</span> <span class="o">=</span> <span class="n">NoiseWrapper</span><span class="p">(</span><span class="n">sol</span><span class="o">.</span><span class="n">W</span><span class="p">)</span>
+<span class="n">prob2</span><span class="o">=</span> <span class="n">SDEProblem</span><span class="p">(</span><span class="n">f2</span><span class="p">,</span> <span class="n">g2</span><span class="p">,</span> <span class="n">u0</span><span class="p">,</span> <span class="n">tspan</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="n">Zrep</span><span class="p">)</span>
+<span class="n">sol2</span> <span class="o">=</span> <span class="n">solve</span><span class="p">(</span><span class="n">prob2</span><span class="p">,</span> <span class="n">EM</span><span class="p">(</span><span class="kc">false</span><span class="p">),</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">save_noise</span><span class="o">=</span><span class="kc">false</span><span class="p">)</span>
+
+<span class="n">plot</span><span class="p">(</span><span class="n">sol</span><span class="p">)</span>
+<span class="n">plot!</span><span class="p">(</span><span class="n">sol2</span><span class="p">)</span>
+</code></pre></div>
+<p>If a fixed grid with a non-adaptive solver should be used, then <code>NoiseGrid</code> might also be a good choice, see <a href="https://diffeq.sciml.ai/latest/features/noise_process/#NoiseGrid-2">https://diffeq.sciml.ai/latest/features/noise_process/#NoiseGrid-2</a>.</p>
+
+
+
+<a name="233294243"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/solve%20SDEProblem%20with%20same%20driving%20noise/near/233294243" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Frank van der Meulen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/solve.20SDEProblem.20with.20same.20driving.20noise.html#233294243">(Apr 06 2021 at 10:01)</a>:</h4>
+<p>Thanks. </p>
+<p>That is confusing: you pass the noise to the function call, so why would you ever need to fix the seed? No random numbers need to be generated. I can work around this now of course, but the logic is not clear to me. </p>
+<p>Looking at the "correct way" to do this,  without <code>save_noise=false</code> something would change? </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code>
+</code></pre></div>
+
+
+
+<a name="233307702"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/solve%20SDEProblem%20with%20same%20driving%20noise/near/233307702" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Frank Schäfer <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/solve.20SDEProblem.20with.20same.20driving.20noise.html#233307702">(Apr 06 2021 at 12:14)</a>:</h4>
+<p>I opened an issue regarding <code>sol.W == sol2.W # true</code> <a href="https://github.com/SciML/StochasticDiffEq.jl/issues/412">https://github.com/SciML/StochasticDiffEq.jl/issues/412</a>. In your example, I'd have expected that in <code>sol2</code> a  new, independent noise process is simulated. So it's weird that the same noise values are displayed. </p>
+<p>The random seed is just to fix the generation of the Wiener noise values (assuming that the noise values are fully regenerated). </p>
+<p>I wouldn't expect a difference with <code>save_noise=false</code>; except that the noise values might grow a little because of floating point errors, i.e., if you step not exactly to the values of the time grid, a noise value will be sampled using the bridge distribution close to the time points of the grid, and this new noise value -- which will be very similar to the noise value on the grid -- would probably be stored as well.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

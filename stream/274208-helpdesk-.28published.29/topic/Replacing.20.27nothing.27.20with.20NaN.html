@@ -1,0 +1,228 @@
+<html>
+<head><meta charset="utf-8"><title>Replacing &#x27;nothing&#x27; with NaN · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Replacing.20.27nothing.27.20with.20NaN.html">Replacing &#x27;nothing&#x27; with NaN</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="228214993"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Replacing%20%27nothing%27%20with%20NaN/near/228214993" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Replacing.20.27nothing.27.20with.20NaN.html#228214993">(Mar 01 2021 at 11:32)</a>:</h4>
+<p>Hello:</p>
+<p>I implemented tryparse broadcast and coalesce methods<br>
+on my dataframe. Now, the missing cells read 'nothing' so<br>
+that the column no longer has a datatype. </p>
+<p>I would like to convert the cells that read 'nothing' to 'NaN'</p>
+<p>How might I achieve this?</p>
+
+
+
+<a name="228226034"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Replacing%20%27nothing%27%20with%20NaN/near/228226034" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jeffrey Sarnoff <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Replacing.20.27nothing.27.20with.20NaN.html#228226034">(Mar 01 2021 at 13:04)</a>:</h4>
+<p>A very similar question came up on Slack last night.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span> <span class="n">DataFrames</span>
+<span class="n">a</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="nb">nothing</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">]</span>
+<span class="n">b</span> <span class="o">=</span> <span class="p">[</span><span class="nb">nothing</span><span class="p">,</span> <span class="mf">20.0</span><span class="p">,</span> <span class="mf">30.0</span><span class="p">]</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">DataFrame</span><span class="p">(</span><span class="n">a</span> <span class="o">=</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">b</span><span class="p">)</span>
+<span class="c"># ok, now df is your data frame with `nothings`</span>
+<span class="c"># and you want them to be NaNs</span>
+
+<span class="k">function</span> <span class="n">nan_all_nothings</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+  <span class="n">x</span><span class="p">[</span><span class="n">isnothing</span><span class="o">.</span><span class="p">(</span><span class="n">x</span><span class="p">)]</span> <span class="o">.=</span> <span class="nb">NaN</span>
+  <span class="k">return</span>
+<span class="k">end</span>
+
+<span class="n">nan_all_nothings</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">a</span><span class="p">)</span>
+<span class="n">nan_all_nothings</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">b</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">df</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">df</span>
+<span class="mi">3</span><span class="n">×2</span> <span class="n">DataFrame</span>
+ <span class="n">Row</span> <span class="n">│</span> <span class="n">a</span>       <span class="n">b</span>
+     <span class="n">│</span> <span class="kt">Union</span><span class="n">…</span>  <span class="kt">Union</span><span class="n">…</span>
+<span class="n">─────┼────────────────</span>
+   <span class="mi">1</span> <span class="n">│</span> <span class="mf">1.0</span>       <span class="nb">NaN</span>
+   <span class="mi">2</span> <span class="n">│</span> <span class="nb">NaN</span>     <span class="mf">20.0</span>
+   <span class="mi">3</span> <span class="n">│</span> <span class="mf">3.0</span>       <span class="mf">30.0</span>
+</code></pre></div>
+
+
+
+<a name="228258597"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Replacing%20%27nothing%27%20with%20NaN/near/228258597" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Replacing.20.27nothing.27.20with.20NaN.html#228258597">(Mar 01 2021 at 16:19)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="278539">Jeffrey Sarnoff</span> <a href="#narrow/stream/274208-helpdesk-(published)/topic/Replacing.20'nothing'.20with.20NaN/near/228226034">said</a>:</p>
+<blockquote>
+<p>A very similar question came up on Slack last night.</p>
+<p><div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span> <span class="n">DataFrames</span>
+<span class="n">a</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="nb">nothing</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">]</span>
+<span class="n">b</span> <span class="o">=</span> <span class="p">[</span><span class="nb">nothing</span><span class="p">,</span> <span class="mf">20.0</span><span class="p">,</span> <span class="mf">30.0</span><span class="p">]</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">DataFrame</span><span class="p">(</span><span class="n">a</span> <span class="o">=</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">b</span><span class="p">)</span>
+<span class="c"># ok, now df is your data frame with `nothings`</span>
+<span class="c"># and you want them to be NaNs</span>
+
+<span class="k">function</span> <span class="n">nan_all_nothings</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+  <span class="n">x</span><span class="p">[</span><span class="n">isnothing</span><span class="o">.</span><span class="p">(</span><span class="n">x</span><span class="p">)]</span> <span class="o">.=</span> <span class="nb">NaN</span>
+  <span class="k">return</span>
+<span class="k">end</span>
+
+<span class="n">nan_all_nothings</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">a</span><span class="p">)</span>
+<span class="n">nan_all_nothings</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">b</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">df</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">df</span>
+<span class="mi">3</span><span class="n">×2</span> <span class="n">DataFrame</span>
+ <span class="n">Row</span> <span class="n">│</span> <span class="n">a</span>       <span class="n">b</span>
+     <span class="n">│</span> <span class="kt">Union</span><span class="n">…</span>  <span class="kt">Union</span><span class="n">…</span>
+<span class="n">─────┼────────────────</span>
+   <span class="mi">1</span> <span class="n">│</span> <span class="mf">1.0</span>       <span class="nb">NaN</span>
+   <span class="mi">2</span> <span class="n">│</span> <span class="nb">NaN</span>     <span class="mf">20.0</span>
+   <span class="mi">3</span> <span class="n">│</span> <span class="mf">3.0</span>       <span class="mf">30.0</span>
+</code></pre></div><br>
+</p>
+</blockquote>
+<p>Good Day Jefrfrey, </p>
+<p>This worked! I would like to stream-line the <br>
+code for this by applying the function you <br>
+created for eachcol(df) I attempted:</p>
+<p>nan_for_nothings(df[!,7:11])</p>
+<p>But am getting an index error. Any additional<br>
+tips? </p>
+<p>Thanks again,</p>
+
+
+
+<a name="228268773"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Replacing%20%27nothing%27%20with%20NaN/near/228268773" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Replacing.20.27nothing.27.20with.20NaN.html#228268773">(Mar 01 2021 at 17:14)</a>:</h4>
+<p>I guess this is related to your other question around <code>NaN</code>s as well - when working with DataFrames that have missing observations you should really be using <code>missing</code> instead of <code>nothing</code> or <code>NaN</code>. That's what <code>missing</code> is for, and why <code>passmissing</code> and <code>skipmissing</code> exist</p>
+
+
+
+<a name="228277599"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Replacing%20%27nothing%27%20with%20NaN/near/228277599" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Replacing.20.27nothing.27.20with.20NaN.html#228277599">(Mar 01 2021 at 18:05)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269318">Nils</span> <a href="#narrow/stream/274208-helpdesk-(published)/topic/Replacing.20'nothing'.20with.20NaN/near/228268773">said</a>:</p>
+<blockquote>
+<p>I guess this is related to your other question around <code>NaN</code>s as well - when working with DataFrames that have missing observations you should really be using <code>missing</code> instead of <code>nothing</code> or <code>NaN</code>. That's what <code>missing</code> is for, and why <code>passmissing</code> and <code>skipmissing</code> exist</p>
+</blockquote>
+<p>Hi Nils, </p>
+<p>I was able to implement: </p>
+<p>for col in eachcol(ED4)<br>
+    replace!(col,NaN =&gt; 0)<br>
+end</p>
+<p>This approach helped to address the NaN<br>
+fill issue I was having when I applied the <br>
+describe method to the dataframe.</p>
+
+
+
+<a name="228297257"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Replacing%20%27nothing%27%20with%20NaN/near/228297257" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Replacing.20.27nothing.27.20with.20NaN.html#228297257">(Mar 01 2021 at 20:07)</a>:</h4>
+<p>Yes that works, but again <code>missing</code>s would be more natural - they can be used with <code>coalesce</code>, which is exactly built for this use case.</p>
+
+
+
+<a name="228300410"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Replacing%20%27nothing%27%20with%20NaN/near/228300410" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jeffrey Sarnoff <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Replacing.20.27nothing.27.20with.20NaN.html#228300410">(Mar 01 2021 at 20:28)</a>:</h4>
+<p><span class="user-mention" data-user-id="390081">@qu bit</span>  I agree with <span class="user-mention" data-user-id="269318">@Nils</span> , use <code>missing</code></p>
+<p><code>nothing_is_missing(x) = x[isnothing.(x)] .= missing</code></p>
+<p>The dataframe's columns of interest need to allow values of type <code>Missing</code>.  <br>
+Ask someone who knows .. manipulating DataFrames .</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">map</span><span class="p">(</span><span class="n">nothing_is_missing</span><span class="p">,</span> <span class="n">eachcol</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="o">!</span><span class="p">,</span> <span class="mi">7</span><span class="o">:</span><span class="mi">11</span><span class="p">]));</span>
+</code></pre></div>
+
+
+
+<a name="228308087"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Replacing%20%27nothing%27%20with%20NaN/near/228308087" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Replacing.20.27nothing.27.20with.20NaN.html#228308087">(Mar 01 2021 at 21:20)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="278539">Jeffrey Sarnoff</span> <a href="#narrow/stream/274208-helpdesk-(published)/topic/Replacing.20'nothing'.20with.20NaN/near/228300410">said</a>:</p>
+<blockquote>
+<p><span class="user-mention silent" data-user-id="390081">qu bit</span>  I agree with <span class="user-mention silent" data-user-id="269318">Nils</span> , use <code>missing</code></p>
+<p><code>nothing_is_missing(x) = x[isnothing.(x)] .= missing</code></p>
+<p>The dataframe's columns of interest need to allow values of type <code>Missing</code>.  <br>
+Ask someone who knows .. manipulating DataFrames .</p>
+<p><div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">map</span><span class="p">(</span><span class="n">nothing_is_missing</span><span class="p">,</span> <span class="n">eachcol</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="o">!</span><span class="p">,</span> <span class="mi">7</span><span class="o">:</span><span class="mi">11</span><span class="p">]));</span>
+</code></pre></div><br>
+</p>
+</blockquote>
+<p>Thank you Jeffrey. I attempted to apply your principle to converting <br>
+the same column set to Float64 using: </p>
+<p>map(convert(DataFrame{Float64,1}, eachcol(ED4[!, 7:11])))</p>
+<p>I am returning the following error as: <br>
+TypeError: in Type{...} expression, expected UnionAll, got Type{DataFrames.DataFrame}</p>
+<p>If I use a Array{Float64,1} ... the error message returns: <br>
+MethodError: Cannot <code>convert</code> an object of type DataFrames.DataFrameColumns{DataFrames.DataFrame} to an object of type Array{Float64,1</p>
+<p>Any suggestions about it?</p>
+
+
+
+<a name="228328464"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Replacing%20%27nothing%27%20with%20NaN/near/228328464" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jeffrey Sarnoff <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Replacing.20.27nothing.27.20with.20NaN.html#228328464">(Mar 01 2021 at 23:52)</a>:</h4>
+<p>The dataframe's columns of interest need to allow values of type Missing.<br>
+<strong>Ask someone who knows  manipulating DataFrames .</strong></p>
+
+
+
+<a name="228328789"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Replacing%20%27nothing%27%20with%20NaN/near/228328789" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Replacing.20.27nothing.27.20with.20NaN.html#228328789">(Mar 01 2021 at 23:55)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="278539">Jeffrey Sarnoff</span> <a href="#narrow/stream/274208-helpdesk-(published)/topic/Replacing.20'nothing'.20with.20NaN/near/228328464">said</a>:</p>
+<blockquote>
+<p>The dataframe's columns of interest need to allow values of type Missing.<br>
+<strong>Ask someone who knows  manipulating DataFrames .</strong></p>
+</blockquote>
+<p>Hi Jeffrey, </p>
+<p>Was able to solve it. There is a parameter in the CSV module and 'read'<br>
+method called missingstrings which I set to '---'. Problem and coding <br>
+averted!</p>
+
+
+
+<a name="228332095"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Replacing%20%27nothing%27%20with%20NaN/near/228332095" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jeffrey Sarnoff <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Replacing.20.27nothing.27.20with.20NaN.html#228332095">(Mar 02 2021 at 00:22)</a>:</h4>
+<p>great -- meanwhile you can improve this (if it help)</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">using</span> <span class="n">DataFrames</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">a</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="nb">nothing</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">];</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">b</span><span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="nb">nothing</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="nb">nothing</span><span class="p">];</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">c</span><span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="nb">nothing</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">];</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">df</span> <span class="o">=</span> <span class="n">DataFrame</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">c</span><span class="p">);</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">nothing_is_missing</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">map</span><span class="p">(</span><span class="n">y</span><span class="o">-&gt;</span><span class="p">(</span><span class="n">isnothing</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">?</span> <span class="n">missing</span> <span class="o">:</span> <span class="n">y</span><span class="p">),</span> <span class="n">x</span><span class="p">);</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">df2</span> <span class="o">=</span> <span class="n">similar</span><span class="p">(</span><span class="n">df</span><span class="p">);</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="k">for</span> <span class="n">colidx</span> <span class="kp">in</span> <span class="mi">1</span><span class="o">:</span><span class="n">size</span><span class="p">(</span><span class="n">df</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span>
+          <span class="n">df2</span><span class="p">[</span><span class="o">!</span><span class="p">,</span> <span class="n">colidx</span><span class="p">]</span> <span class="o">=</span> <span class="n">nothing_is_missing</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="o">!</span><span class="p">,</span> <span class="n">colidx</span><span class="p">])</span>
+       <span class="k">end</span><span class="p">;</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">df</span>
+<span class="mi">4</span><span class="n">×3</span> <span class="n">DataFrame</span>
+ <span class="n">Row</span> <span class="n">│</span> <span class="n">a</span>       <span class="n">b</span>       <span class="n">c</span>
+     <span class="n">│</span> <span class="kt">Union</span><span class="n">…</span>  <span class="kt">Union</span><span class="n">…</span>  <span class="kt">Union</span><span class="n">…</span>
+<span class="n">─────┼────────────────────────</span>
+   <span class="mi">1</span> <span class="n">│</span> <span class="mf">1.0</span>     <span class="mf">1.0</span>     <span class="mf">1.0</span>
+   <span class="mi">2</span> <span class="n">│</span>                 <span class="mf">2.0</span>
+   <span class="mi">3</span> <span class="n">│</span> <span class="mf">3.0</span>     <span class="mf">3.0</span>
+   <span class="mi">4</span> <span class="n">│</span> <span class="mf">4.0</span>             <span class="mf">4.0</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">df2</span>
+<span class="mi">4</span><span class="n">×3</span> <span class="n">DataFrame</span>
+ <span class="n">Row</span> <span class="n">│</span> <span class="n">a</span>          <span class="n">b</span>          <span class="n">c</span>
+     <span class="n">│</span> <span class="kt">Float64</span><span class="o">?</span>   <span class="kt">Float64</span><span class="o">?</span>   <span class="kt">Float64</span><span class="o">?</span>
+<span class="n">─────┼─────────────────────────────────</span>
+   <span class="mi">1</span> <span class="n">│</span>       <span class="mf">1.0</span>        <span class="mf">1.0</span>        <span class="mf">1.0</span>
+   <span class="mi">2</span> <span class="n">│</span> <span class="n">missing</span>    <span class="n">missing</span>          <span class="mf">2.0</span>
+   <span class="mi">3</span> <span class="n">│</span>       <span class="mf">3.0</span>        <span class="mf">3.0</span>  <span class="n">missing</span>
+   <span class="mi">4</span> <span class="n">│</span>       <span class="mf">4.0</span>  <span class="n">missing</span>          <span class="mf">4.0</span>
+</code></pre></div>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

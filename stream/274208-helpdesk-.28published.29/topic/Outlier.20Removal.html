@@ -1,0 +1,74 @@
+<html>
+<head><meta charset="utf-8"><title>Outlier Removal · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Outlier.20Removal.html">Outlier Removal</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="230351877"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Outlier%20Removal/near/230351877" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Outlier.20Removal.html#230351877">(Mar 15 2021 at 14:21)</a>:</h4>
+<p>Hello Everyone, </p>
+<p>using GLM, Lathe, MLBase</p>
+<p>I have a dataframe similar to: </p>
+<p>DF.A = [1,2,3,4,5,6,7,8]<br>
+DF.B = [2,45,53,42,51,34,900,55,36]</p>
+<p>I would like to remove the outliers from <br>
+the DF.B and am using (for 1st quartile): </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code>    <span class="n">first_percentile</span> <span class="o">=</span> <span class="n">percentile</span><span class="p">(</span><span class="n">DF</span><span class="o">.</span><span class="n">B</span><span class="p">,</span> <span class="mi">25</span><span class="p">)</span>
+    <span class="n">iqr_value</span> <span class="o">=</span> <span class="n">iqr</span><span class="p">(</span><span class="n">DF</span><span class="o">.</span><span class="n">B</span><span class="p">)</span>
+    <span class="n">FirstOut</span> <span class="o">=</span> <span class="n">DF</span><span class="p">[</span><span class="n">DF</span><span class="o">.</span><span class="n">B</span>  <span class="o">.&gt;</span> <span class="p">(</span><span class="n">first_percentile</span> <span class="o">-</span> <span class="mf">1.5</span><span class="o">*</span><span class="n">iqr_value</span><span class="p">),</span><span class="o">:</span><span class="p">]</span>
+</code></pre></div>
+<p>Similiarly I am using (for the 4th quartile):</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">fourth_percentile</span> <span class="o">=</span> <span class="n">percentile</span><span class="p">(</span><span class="n">DF</span><span class="o">.</span><span class="n">B</span><span class="p">,</span> <span class="mi">75</span><span class="p">)</span>
+    <span class="n">iqr_value</span> <span class="o">=</span> <span class="n">iqr</span><span class="p">(</span><span class="n">DF</span><span class="o">.</span><span class="n">B</span><span class="p">)</span>
+    <span class="n">FourthOut</span> <span class="o">=</span> <span class="n">DF</span><span class="p">[</span><span class="n">DF</span><span class="o">.</span><span class="n">B</span>  <span class="o">.&lt;</span> <span class="p">(</span><span class="n">fourth_percentile</span> <span class="o">+</span> <span class="mf">1.5</span><span class="o">*</span><span class="n">iqr_value</span><span class="p">),</span><span class="o">:</span><span class="p">]</span>
+</code></pre></div>
+<p>For both dataframes, these approaches have not removed the <br>
+outliers. Could someone explain how I could adjust my code to <br>
+produce a resultant dataframe without outliers in the specified<br>
+column (and associated rows). </p>
+<p>Thanks,</p>
+
+
+
+<a name="230813951"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Outlier%20Removal/near/230813951" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Outlier.20Removal.html#230813951">(Mar 18 2021 at 04:56)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="390081">qu bit</span> </p>
+<p>Apply the filter  &amp; percentile method to <br>
+remove outliers from the IQR as:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">begin</span>
+<span class="n">first_perc</span> <span class="o">=</span> <span class="n">percentile</span><span class="p">(</span><span class="n">DF</span><span class="o">.</span><span class="n">B</span><span class="p">,</span> <span class="mi">25</span><span class="p">)</span>
+<span class="n">last_perc</span> <span class="o">=</span> <span class="n">percentile</span><span class="p">(</span><span class="n">DF</span><span class="o">.</span><span class="n">B</span><span class="p">,</span><span class="mi">75</span><span class="p">)</span>
+<span class="n">IQR_value</span> <span class="o">=</span> <span class="n">iqr</span><span class="p">(</span><span class="n">DF</span><span class="o">.</span><span class="n">B</span><span class="p">)</span>
+<span class="n">DF_NO</span> <span class="o">=</span> <span class="n">filter</span><span class="p">(</span><span class="n">x</span> <span class="o">-&gt;</span> <span class="n">x</span><span class="o">.</span><span class="n">B</span> <span class="o">.&gt;</span> <span class="n">first_perc</span> <span class="o">-</span> <span class="mf">1.5</span><span class="o">*</span><span class="n">IQR_value</span> <span class="o">&amp;&amp;</span>
+             <span class="n">x</span><span class="o">.</span><span class="n">B</span> <span class="o">.&lt;</span> <span class="n">last_perc</span> <span class="o">+</span> <span class="mf">1.5</span><span class="o">*</span><span class="n">IQR_value</span>  <span class="p">,</span> <span class="n">DF</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>You can then check the :std using the describe() method<br>
+to see what improvement might have been made from the <br>
+process (es).</p>
+
+
+
+<a name="230815722"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Outlier%20Removal/near/230815722" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Bagge Carlson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Outlier.20Removal.html#230815722">(Mar 18 2021 at 05:30)</a>:</h4>
+<p>Have a look at<br>
+<a href="https://github.com/jbytecode/LinRegOutliers">https://github.com/jbytecode/LinRegOutliers</a></p>
+
+
+
+<a name="231729451"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Outlier%20Removal/near/231729451" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Outlier.20Removal.html#231729451">(Mar 25 2021 at 00:10)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="272599">Fredrik Bagge Carlson</span> </p>
+<p>Could you provide an example how this could <br>
+be applied to the question I posted? </p>
+<p>Thank you,</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

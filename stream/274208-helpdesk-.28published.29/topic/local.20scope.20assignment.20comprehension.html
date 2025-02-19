@@ -1,0 +1,71 @@
+<html>
+<head><meta charset="utf-8"><title>local scope assignment comprehension · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/local.20scope.20assignment.20comprehension.html">local scope assignment comprehension</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="278827265"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/local%20scope%20assignment%20comprehension/near/278827265" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/local.20scope.20assignment.20comprehension.html#278827265">(Apr 13 2022 at 13:19)</a>:</h4>
+<p>Something that has been haunting me for some time. I don't know if it's a gripe, a feature request or just lack of knowledge but:<br>
+There are cases where I want to do a complicated comprehension.<br>
+In these cases I just wish there was a way to make the expression more readable by having some local assignments.</p>
+<p>example time</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">mysuperlongandcomplicateddataretrieval</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">x</span><span class="o">+</span><span class="mi">1</span>
+<span class="n">v</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span>
+
+<span class="c"># so normally one would do:</span>
+<span class="n">com</span> <span class="o">=</span> <span class="p">[</span><span class="n">mysuperlongandcomplicateddataretrieval</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="o">?</span> <span class="n">mysuperlongandcomplicateddataretrieval</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">:</span> <span class="n">mysuperlongandcomplicateddataretrieval</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span> <span class="k">for</span> <span class="n">x</span> <span class="k">in</span> <span class="n">v</span><span class="p">]</span>
+
+<span class="c"># what I would like to do is:</span>
+<span class="n">com</span> <span class="o">=</span> <span class="p">[</span><span class="n">y</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="o">?</span> <span class="n">y</span> <span class="o">:</span> <span class="n">y</span><span class="o">-</span><span class="mi">1</span>  <span class="k">for</span> <span class="n">x</span> <span class="k">in</span> <span class="n">v</span> <span class="k">for</span> <span class="n">y</span><span class="o">=</span><span class="n">mysuperlongandcomplicateddataretrieval</span><span class="p">(</span><span class="n">x</span><span class="p">)]</span>
+</code></pre></div>
+<p>you are probably wondering "Dude, that works!" but please have some fantasy and imagine that my list has non iteratable elements!<br>
+Normally I default doing something like this:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="c"># iterate a single element list</span>
+<span class="n">com</span> <span class="o">=</span> <span class="p">[</span><span class="n">y</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="o">?</span> <span class="n">y</span> <span class="o">:</span> <span class="n">y</span><span class="o">-</span><span class="mi">1</span> <span class="k">for</span> <span class="n">x</span> <span class="k">in</span> <span class="n">v</span> <span class="k">for</span> <span class="n">y</span><span class="o">=</span><span class="p">[</span><span class="n">mysuperlongandcomplicateddataretrieval</span><span class="p">(</span><span class="n">x</span><span class="p">)]]</span>
+</code></pre></div>
+<p>But it feels kind of hacky. I don't want to iterate, I just want to make an assignment.</p>
+
+
+
+<a name="278827886"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/local%20scope%20assignment%20comprehension/near/278827886" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sebastian Pfitzner <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/local.20scope.20assignment.20comprehension.html#278827886">(Apr 13 2022 at 13:25)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">com</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="k">let</span> <span class="n">y</span> <span class="o">=</span> <span class="n">mysuperlongandcomplicateddataretrieval</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="o">?</span> <span class="n">y</span> <span class="o">:</span> <span class="n">y</span><span class="o">-</span><span class="mi">1</span>
+    <span class="k">end</span> <span class="k">for</span> <span class="n">x</span> <span class="k">in</span> <span class="n">v</span>
+<span class="p">]</span>
+</code></pre></div>
+
+
+
+<a name="278829755"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/local%20scope%20assignment%20comprehension/near/278829755" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/local.20scope.20assignment.20comprehension.html#278829755">(Apr 13 2022 at 13:41)</a>:</h4>
+<p>That's an interesting one but  would prefer if it was an oneliner.. which get me thinking; how come there is still not a <code>@let</code> or <code>@begin</code> macro. Then one could do:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">com</span> <span class="o">=</span> <span class="p">[</span><span class="nd">@let</span><span class="p">(</span><span class="n">y</span> <span class="o">=</span> <span class="n">mysuperlongandcomplicateddataretrieval</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">y</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="o">?</span> <span class="n">y</span> <span class="o">:</span> <span class="n">y</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="k">in</span> <span class="n">v</span><span class="p">]</span>
+</code></pre></div>
+<p>I guess this could lead to many parsing problems..</p>
+
+
+
+<a name="278830195"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/local%20scope%20assignment%20comprehension/near/278830195" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sebastian Pfitzner <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/local.20scope.20assignment.20comprehension.html#278830195">(Apr 13 2022 at 13:44)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="p">[</span><span class="k">let</span> <span class="n">y</span> <span class="o">=</span> <span class="n">mysuperlongandcomplicateddataretrieval</span><span class="p">(</span><span class="n">x</span><span class="p">);</span> <span class="n">y</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="o">?</span> <span class="n">y</span> <span class="o">:</span> <span class="n">y</span><span class="o">-</span><span class="mi">1</span><span class="p">;</span> <span class="k">end</span> <span class="k">for</span> <span class="n">x</span> <span class="k">in</span> <span class="n">v</span><span class="p">]</span>
+</code></pre></div>
+<p>then</p>
+
+
+
+<a name="278831069"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/local%20scope%20assignment%20comprehension/near/278831069" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/local.20scope.20assignment.20comprehension.html#278831069">(Apr 13 2022 at 13:51)</a>:</h4>
+<p>yes, I considered it but the <code>end</code> term in the middle of the comprehension can be confusing, which is why I though of a macro use case.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

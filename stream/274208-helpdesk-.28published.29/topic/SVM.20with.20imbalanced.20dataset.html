@@ -1,0 +1,45 @@
+<html>
+<head><meta charset="utf-8"><title>SVM with imbalanced dataset · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/SVM.20with.20imbalanced.20dataset.html">SVM with imbalanced dataset</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="327626965"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/SVM%20with%20imbalanced%20dataset/near/327626965" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/SVM.20with.20imbalanced.20dataset.html#327626965">(Feb 13 2023 at 19:21)</a>:</h4>
+<p>I am trying to use <a href="https://github.com/search?q=LIBSVM.jl&amp;type=Repositories">LIBSVM.jl</a> with an imbalanced dataset.</p>
+<p>Providing weights for each class doesn't seem to affect the result:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">CSV</span>
+<span class="k">using</span><span class="w"> </span><span class="n">DataFrames</span>
+<span class="k">using</span><span class="w"> </span><span class="n">LIBSVM</span>
+
+<span class="n">df</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CSV</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s">"svm.csv"</span><span class="p">,</span><span class="w"> </span><span class="n">DataFrame</span><span class="p">)</span>
+
+<span class="n">X</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">x1</span><span class="w"> </span><span class="n">df</span><span class="o">.</span><span class="n">x2</span><span class="w"> </span><span class="n">df</span><span class="o">.</span><span class="n">x3</span><span class="p">]</span><span class="o">'</span>
+<span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">df</span><span class="o">.</span><span class="n">y</span>
+<span class="n">w</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Dict</span><span class="p">(</span><span class="n">l</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">count</span><span class="p">(</span><span class="o">==</span><span class="p">(</span><span class="n">l</span><span class="p">),</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">l</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">unique</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
+<span class="n">svm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">svmtrain</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">weights</span><span class="o">=</span><span class="n">w</span><span class="p">)</span>
+
+<span class="n">x1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">range</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span><span class="mf">0.5</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">x2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">range</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span><span class="mf">0.5</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">x3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">range</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span><span class="mf">0.5</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">xs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="n">collect</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">Iterators</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span><span class="n">x2</span><span class="p">,</span><span class="n">x3</span><span class="p">)]</span>
+<span class="n">X̂</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reduce</span><span class="p">(</span><span class="n">hcat</span><span class="p">,</span><span class="w"> </span><span class="n">xs</span><span class="p">)</span>
+<span class="n">ŷ</span><span class="p">,</span><span class="w"> </span><span class="n">_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">svmpredict</span><span class="p">(</span><span class="n">svm</span><span class="p">,</span><span class="w"> </span><span class="n">X̂</span><span class="p">)</span>
+</code></pre></div>
+<p>Can you reproduce the issue? I've uploaded the dataset in this gist: <a href="https://gist.github.com/juliohm/a0c98c0d386d297e2105818652faa076">https://gist.github.com/juliohm/a0c98c0d386d297e2105818652faa076</a></p>
+
+
+
+<a name="327821338"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/SVM%20with%20imbalanced%20dataset/near/327821338" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/SVM.20with.20imbalanced.20dataset.html#327821338">(Feb 14 2023 at 16:39)</a>:</h4>
+<p>Cross-posted on Discourse: <a href="https://discourse.julialang.org/t/libsvm-jl-with-imbalanced-dataset/94635">https://discourse.julialang.org/t/libsvm-jl-with-imbalanced-dataset/94635</a></p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

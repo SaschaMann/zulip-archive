@@ -1,0 +1,969 @@
+<html>
+<head><meta charset="utf-8"><title>Zygote.jl gradient returning `nothing` · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html">Zygote.jl gradient returning `nothing`</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="481301686"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481301686" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481301686">(Nov 08 2024 at 12:11)</a>:</h4>
+<p>Is this a bug?</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">Zygote</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">y</span>
+<span class="n">f</span><span class="w"> </span><span class="p">(</span><span class="n">generic</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">gradient</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="p">(</span><span class="nb">nothing</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0</span><span class="p">)</span>
+</code></pre></div>
+<p>Shouldn't the result be <code>(0.0, 1.0)</code> instead?</p>
+
+
+
+<a name="481302616"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481302616" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481302616">(Nov 08 2024 at 12:17)</a>:</h4>
+<p>Reported here: <a href="https://github.com/FluxML/Zygote.jl/issues/1538">https://github.com/FluxML/Zygote.jl/issues/1538</a></p>
+
+
+
+<a name="481305173"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481305173" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481305173">(Nov 08 2024 at 12:32)</a>:</h4>
+<p>Zygote uses <code>nothing</code> as a "hard" zero</p>
+
+
+
+<a name="481305260"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481305260" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481305260">(Nov 08 2024 at 12:33)</a>:</h4>
+<p>i.e. a differential that's known at compile time to be zero is represented as <code>nothing</code>.</p>
+
+
+
+<a name="481305676"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481305676" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481305676">(Nov 08 2024 at 12:35)</a>:</h4>
+<p>That is somewhat unexpected mathematically speaking. Makes it difficult to write generic code. Is there a good practice to handle nothing in this context ?</p>
+
+
+
+<a name="481309125"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481309125" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481309125">(Nov 08 2024 at 12:54)</a>:</h4>
+<p>I guess you could do something like</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">denothing</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span>
+<span class="n">denothing</span><span class="p">(</span><span class="o">::</span><span class="kt">Nothing</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span>
+
+<span class="n">my_gradient</span><span class="p">(</span><span class="n">args</span><span class="o">...</span><span class="p">;</span><span class="w"> </span><span class="n">kwargs</span><span class="o">...</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">denothing</span><span class="o">.</span><span class="p">(</span><span class="n">gradient</span><span class="p">(</span><span class="n">args</span><span class="o">...</span><span class="p">;</span><span class="w"> </span><span class="n">kwargs</span><span class="o">...</span><span class="p">))</span>
+</code></pre></div>
+
+
+
+<a name="481309359"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481309359" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481309359">(Nov 08 2024 at 12:56)</a>:</h4>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="n">sum</span><span class="p">(</span><span class="n">my_gradient</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">))</span>
+<span class="go">1.0</span>
+</code></pre></div>
+
+
+
+<a name="481310326"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481310326" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481310326">(Nov 08 2024 at 13:01)</a>:</h4>
+<p>I wonder why this is not done automatically for end-users</p>
+
+
+
+<a name="481310392"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481310392" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481310392">(Nov 08 2024 at 13:02)</a>:</h4>
+<p>Shouldn't it be fixed in <a href="https://juliahub.com/ui/Packages/General/Zygote">Zygote.jl</a>?</p>
+
+
+
+<a name="481336533"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481336533" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Abbott <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481336533">(Nov 08 2024 at 15:25)</a>:</h4>
+<p>One reason for a special flag is that Zygote can avoid some work in the backward pass, as the gradient of any operations done before <code>f</code> is certain to be zero. Whereas with a runtime <code>0.0</code> it can't tell &amp; must do the work.</p>
+
+
+
+<a name="481336653"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481336653" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Abbott <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481336653">(Nov 08 2024 at 15:26)</a>:</h4>
+<p>The other is that for larger things like <code>x::Array</code>, allocating <code>zero(x)</code> is expensive.</p>
+
+
+
+<a name="481337143"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481337143" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Abbott <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481337143">(Nov 08 2024 at 15:28)</a>:</h4>
+<p>FWIW, the Enzyme's design is:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Enzyme</span><span class="o">.</span><span class="n">gradient</span><span class="p">(</span><span class="n">Reverse</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">sum</span><span class="p">(</span><span class="n">abs2</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">.*</span><span class="w"> </span><span class="n">y</span><span class="p">),</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mf">2.</span><span class="p">],</span><span class="w"> </span><span class="p">[</span><span class="mi">3</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="mf">5.</span><span class="p">])</span>
+<span class="p">([</span><span class="mf">100.0</span><span class="p">,</span><span class="w"> </span><span class="mf">200.0</span><span class="p">],</span><span class="w"> </span><span class="p">[</span><span class="mf">30.0</span><span class="w"> </span><span class="mf">40.0</span><span class="w"> </span><span class="mf">50.0</span><span class="p">])</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Enzyme</span><span class="o">.</span><span class="n">gradient</span><span class="p">(</span><span class="n">Reverse</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">sum</span><span class="p">(</span><span class="n">abs2</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">.*</span><span class="w"> </span><span class="n">x</span><span class="p">),</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mf">2.</span><span class="p">],</span><span class="w"> </span><span class="p">[</span><span class="mi">3</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="mf">5.</span><span class="p">])</span>
+<span class="p">([</span><span class="mf">4.0</span><span class="p">,</span><span class="w"> </span><span class="mf">32.0</span><span class="p">],</span><span class="w"> </span><span class="p">[</span><span class="mf">0.0</span><span class="w"> </span><span class="mf">0.0</span><span class="w"> </span><span class="mf">0.0</span><span class="p">])</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Enzyme</span><span class="o">.</span><span class="n">gradient</span><span class="p">(</span><span class="n">Reverse</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">sum</span><span class="p">(</span><span class="n">abs2</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">.*</span><span class="w"> </span><span class="n">y</span><span class="p">),</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mf">2.</span><span class="p">],</span><span class="w"> </span><span class="n">Const</span><span class="p">([</span><span class="mi">3</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="mf">5.</span><span class="p">]))</span>
+<span class="p">([</span><span class="mf">100.0</span><span class="p">,</span><span class="w"> </span><span class="mf">200.0</span><span class="p">],</span><span class="w"> </span><span class="nb">nothing</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="481337248"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481337248" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481337248">(Nov 08 2024 at 15:29)</a>:</h4>
+<p>It could have had a design like <code>ChainRulesCore.ZeroTangent()</code>, since that at least supports math ops</p>
+
+
+
+<a name="481337337"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481337337" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481337337">(Nov 08 2024 at 15:29)</a>:</h4>
+<p>but yeah, it's mostly just historical reasons and a ton of work to overhaul it</p>
+
+
+
+<a name="481339242"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481339242" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481339242">(Nov 08 2024 at 15:40)</a>:</h4>
+<blockquote>
+<p>FWIW, the Enzyme's design is:</p>
+</blockquote>
+<p>Enzyme's <code>gradient</code> is pretty unlike Zygote's gradient.</p>
+
+
+
+<a name="481339329"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481339329" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481339329">(Nov 08 2024 at 15:41)</a>:</h4>
+<p>I'd say the equivalent in Enzyme is instead</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="k">let</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Ref</span><span class="p">(</span><span class="mf">0.0</span><span class="p">),</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Ref</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
+<span class="w">           </span><span class="n">dx</span><span class="p">,</span><span class="w"> </span><span class="n">dy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_zero</span><span class="p">(</span><span class="n">x</span><span class="p">),</span><span class="w"> </span><span class="n">make_zero</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+<span class="w">           </span><span class="n">autodiff</span><span class="p">(</span><span class="n">Reverse</span><span class="p">,</span><span class="w"> </span><span class="n">Duplicated</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">dx</span><span class="p">),</span><span class="w"> </span><span class="n">Duplicated</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">dy</span><span class="p">))</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span>
+<span class="w">               </span><span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">[],</span><span class="w"> </span><span class="n">y</span><span class="p">[])</span>
+<span class="w">           </span><span class="k">end</span>
+<span class="w">           </span><span class="n">dx</span><span class="p">[],</span><span class="w"> </span><span class="n">dy</span><span class="p">[]</span>
+<span class="w">       </span><span class="k">end</span>
+<span class="go">(0.0, 1.0)</span>
+</code></pre></div>
+
+
+
+<a name="481340269"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481340269" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481340269">(Nov 08 2024 at 15:45)</a>:</h4>
+<p>I'm considering moving to <a href="https://juliahub.com/ui/Packages/General/Enzyme">Enzyme.jl</a> because of this design of <a href="https://juliahub.com/ui/Packages/General/Zygote">Zygote.jl</a>. It is pretty counter intuitive to have a mathematical gradient with those entries</p>
+
+
+
+<a name="481340435"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481340435" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481340435">(Nov 08 2024 at 15:46)</a>:</h4>
+<p>Does <a href="https://juliahub.com/ui/Packages/General/Enzyme">Enzyme.jl</a> support all platforms that Julia supports?</p>
+
+
+
+<a name="481340458"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481340458" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481340458">(Nov 08 2024 at 15:46)</a>:</h4>
+<p>I understand it is a wrapper package</p>
+
+
+
+<a name="481340591"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481340591" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481340591">(Nov 08 2024 at 15:47)</a>:</h4>
+<p>And another question: is <a href="https://juliahub.com/ui/Packages/General/Zygote">Zygote.jl</a> the recommended package for autodiff in native Julia or there is something new?</p>
+
+
+
+<a name="481345233"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481345233" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481345233">(Nov 08 2024 at 16:13)</a>:</h4>
+<p><a href="https://discourse.julialang.org/t/state-of-ad-in-2024/112601">https://discourse.julialang.org/t/state-of-ad-in-2024/112601</a></p>
+
+
+
+<a name="481346186"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481346186" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Abbott <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481346186">(Nov 08 2024 at 16:19)</a>:</h4>
+<p>Can you say what problem <code>nothing</code> causes, more narrowly than just being surprising?</p>
+
+
+
+<a name="481346527"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481346527" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481346527">(Nov 08 2024 at 16:21)</a>:</h4>
+<p>I think he wants to be able to do math with the result of <code>gradient</code>.</p>
+
+
+
+<a name="481346716"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481346716" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Abbott <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481346716">(Nov 08 2024 at 16:22)</a>:</h4>
+<p>For instance, I agree that the fact that <code>x + dx</code> won't always work is a bit sad. (I think + needs to be replaced with <code>Zygote.accum</code> which knows about <code>nothing</code>.) <a href="https://juliahub.com/ui/Packages/General/ChainRules">ChainRules.jl</a> took making this work as an axiom, and the result was massive complexity of <code>Tangent</code> which has all kinds of sharp edges. (Not to mention several kinds of zeros which nobody knows how to use correctly, and resulting type-instabilities.) So there are trade-offs, and <code>nothing</code> (plus NamedTuple for any struct) has the advantage of being very simple.</p>
+
+
+
+<a name="481350619"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481350619" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481350619">(Nov 08 2024 at 16:45)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="272550">Michael Abbott</span> <a href="#narrow/channel/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60/near/481346186">said</a>:</p>
+<blockquote>
+<p>Can you say what problem <code>nothing</code> causes, more narrowly than just being surprising?</p>
+</blockquote>
+<p>We are simply doing Newton-Rhapson iteration with automatic gradients. The problem with this <code>nothing</code> design is that it relies on all third-party packages handling it. Even if we workaround the situation in our own package, this solution doesn't compose well.</p>
+
+
+
+<a name="481350902"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481350902" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481350902">(Nov 08 2024 at 16:47)</a>:</h4>
+<p>Wouldn't Enzyme be a much better fit for stuff like Newton Rhapson because it supports mutation?</p>
+
+
+
+<a name="481350960"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481350960" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481350960">(Nov 08 2024 at 16:47)</a>:</h4>
+<p>We are doing Newton-Rhapson with 2 scalar values. There are no allocations.</p>
+
+
+
+<a name="481351200"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481351200" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481351200">(Nov 08 2024 at 16:49)</a>:</h4>
+<p>Ah. In that case, maybe just use ForwardDiff?</p>
+
+
+
+<a name="481351772"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481351772" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481351772">(Nov 08 2024 at 16:52)</a>:</h4>
+<p>Will take a look. I am assuming that <a href="https://juliahub.com/ui/Packages/General/ForwardDiff">ForwardDiff.jl</a> provides autodiff like <a href="https://juliahub.com/ui/Packages/General/Zygote">Zygote.jl</a> but without the  <code>nothing</code>.</p>
+
+
+
+<a name="481352648"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481352648" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481352648">(Nov 08 2024 at 16:57)</a>:</h4>
+<p>You really only want to reach for reverse mode AD like Zygote if you need the derivatives of functions from <code>N</code> dimensions to <code>M</code> dimensions where <code>N &gt;&gt; M</code></p>
+
+
+
+<a name="481352984"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481352984" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481352984">(Nov 08 2024 at 16:59)</a>:</h4>
+<p>And in terms of maturity, <a href="https://juliahub.com/ui/Packages/General/ForwardDiff">ForwardDiff.jl</a> is mature, actively maintained, etc?</p>
+
+
+
+<a name="481353057"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481353057" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481353057">(Nov 08 2024 at 17:00)</a>:</h4>
+<p>The classic use-case for reverse-mode is deep learning where <code>N</code> might be in the many thousands and <code>M = 1</code></p>
+
+
+
+<a name="481353151"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481353151" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481353151">(Nov 08 2024 at 17:00)</a>:</h4>
+<p>ForwardDiff is very mature.</p>
+
+
+
+<a name="481353244"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481353244" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481353244">(Nov 08 2024 at 17:01)</a>:</h4>
+<p>I'd say it's actively maintained, but I wouldn't say it's actively <em>developed</em> (on account of said maturity)</p>
+
+
+
+<a name="481353343"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481353343" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481353343">(Nov 08 2024 at 17:01)</a>:</h4>
+<p>I already like that it has a much smaller list of dependencies compared to <a href="https://juliahub.com/ui/Packages/General/Zygote">Zygote.jl</a></p>
+
+
+
+<a name="481353434"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481353434" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481353434">(Nov 08 2024 at 17:02)</a>:</h4>
+<p>forward mode AD is just fundamentally much much much simpler than reverse mode</p>
+
+
+
+<a name="481353570"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481353570" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481353570">(Nov 08 2024 at 17:03)</a>:</h4>
+<p>If you feel like trying out something bleeding edge instead, <a href="https://juliahub.com/ui/Packages/General/Diffractor">Diffractor.jl</a> actually has a pretty well working forwards mode nowadays (probably don't actually do this)</p>
+
+
+
+<a name="481354198"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481354198" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481354198">(Nov 08 2024 at 17:06)</a>:</h4>
+<p>As a general rule, you should avoid reverse mode like the plague unless you are absolutely sure you need it.</p>
+
+
+
+<a name="481355174"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481355174" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481355174">(Nov 08 2024 at 17:13)</a>:</h4>
+<p>Thank you. That is very helpful.</p>
+
+
+
+<a name="481356120"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481356120" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481356120">(Nov 08 2024 at 17:19)</a>:</h4>
+<p>Also, since it hasn't been mentioned yet, I highly recommend using <a href="https://juliahub.com/ui/Packages/General/DifferentiationInterface">DifferentiationInterface.jl</a> which makes it trivial to swap out AD back-ends and has no performance penalty in simple cases.</p>
+
+
+
+<a name="481356719"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481356719" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481356719">(Nov 08 2024 at 17:23)</a>:</h4>
+<p>It'd be nice if DI turned the <code>nothing</code>s into some sort of zero <code>&lt;:Number</code>.</p>
+
+
+
+<a name="481356838"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481356838" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481356838">(Nov 08 2024 at 17:24)</a>:</h4>
+<p>I think in this case we will go ahead with the <a href="https://juliahub.com/ui/Packages/General/ForwardDiff">ForwardDiff.jl</a> package directly. There are no plans to swap the backend given that it is ideal for the application at hand.</p>
+
+
+
+<a name="481364302"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481364302" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481364302">(Nov 08 2024 at 18:15)</a>:</h4>
+<p>For some reason <a href="https://juliahub.com/ui/Packages/General/ForwardDiff">ForwardDiff.jl</a> is generating slower code compared to <a href="https://juliahub.com/ui/Packages/General/Zygote">Zygote.jl</a>.</p>
+<p>Can you try to reproduce this benchmark on the <code>main</code> branch (Zygote) and on the <code>forwarddiff</code> branch?</p>
+<p><a href="https://github.com/JuliaEarth/CoordRefSystems.jl/tree/main/benchmark">https://github.com/JuliaEarth/CoordRefSystems.jl/tree/main/benchmark</a></p>
+<p>Do you also see a massive slow down in the last line of the output.csv? The last column has the speedup metric.</p>
+
+
+
+<a name="481364397"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481364397" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481364397">(Nov 08 2024 at 18:15)</a>:</h4>
+<p>For me the <a href="https://juliahub.com/ui/Packages/General/Zygote">Zygote.jl</a> result is 0.28 and the <a href="https://juliahub.com/ui/Packages/General/ForwardDiff">ForwardDiff.jl</a> result is 0.06 (larger is better).</p>
+
+
+
+<a name="481364786"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481364786" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481364786">(Nov 08 2024 at 18:18)</a>:</h4>
+<blockquote>
+<p>We are simply doing Newton-Rhapson iteration with automatic gradients.</p>
+</blockquote>
+<p>If it's scalar, then you don't want to be diffing through it anyways. BracketingNonlinearSolve or SimpleNonlinearSolve with Zygote/ForwardDiff overloads would just skip the implicit part.</p>
+<p>But I would almost guarantee for scalar that ForwardDiff will be faster here.</p>
+
+
+
+<a name="481365197"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481365197" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481365197">(Nov 08 2024 at 18:22)</a>:</h4>
+<p>With forward mode you want to essentially always do this trick: <a href="https://github.com/SciML/NonlinearSolve.jl/blob/master/lib/NonlinearSolveBase/ext/NonlinearSolveBaseForwardDiffExt.jl">https://github.com/SciML/NonlinearSolve.jl/blob/master/lib/NonlinearSolveBase/ext/NonlinearSolveBaseForwardDiffExt.jl</a></p>
+
+
+
+<a name="481366734"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481366734" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481366734">(Nov 08 2024 at 18:33)</a>:</h4>
+<p>Thank you <span class="user-mention" data-user-id="278119">@Christopher Rackauckas</span> . Can you please elaborate on that?</p>
+<p>The PR that replaces <a href="https://juliahub.com/ui/Packages/General/Zygote">Zygote.jl</a> by <a href="https://juliahub.com/ui/Packages/General/ForwardDiff">ForwardDiff.jl</a> has a small diff that you can read here: <a href="https://github.com/JuliaEarth/CoordRefSystems.jl/pull/199/files">https://github.com/JuliaEarth/CoordRefSystems.jl/pull/199/files</a></p>
+
+
+
+<a name="481366776"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481366776" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481366776">(Nov 08 2024 at 18:33)</a>:</h4>
+<p>What do we need to do differently to get the expected superior performance of forward diff?</p>
+
+
+
+<a name="481366905"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481366905" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481366905">(Nov 08 2024 at 18:34)</a>:</h4>
+<p>How are you solving the nonlinear system?</p>
+
+
+
+<a name="481367183"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481367183" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481367183">(Nov 08 2024 at 18:36)</a>:</h4>
+<p>The diff has the formulas. Basically given two functions <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>x</mi><mo>=</mo><msub><mi>f</mi><mi>x</mi></msub><mo stretchy="false">(</mo><mi>λ</mi><mo separator="true">,</mo><mi>ϕ</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">x = f_x(\lambda, \phi)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">x</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.10764em;">f</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.1076em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">x</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal">λ</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">ϕ</span><span class="mclose">)</span></span></span></span> and <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>y</mi><mo>=</mo><msub><mi>f</mi><mi>y</mi></msub><mo stretchy="false">(</mo><mi>λ</mi><mo separator="true">,</mo><mi>ϕ</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">y = f_y(\lambda, \phi)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.03588em;">y</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.0361em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.10764em;">f</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.1076em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.03588em;">y</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal">λ</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">ϕ</span><span class="mclose">)</span></span></span></span> and values <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>x</mi><mo>⋆</mo></mrow><annotation encoding="application/x-tex">x\star</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4653em;"></span><span class="mord mathnormal">x</span><span class="mord">⋆</span></span></span></span> and <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>y</mi><mo>⋆</mo></mrow><annotation encoding="application/x-tex">y\star</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6597em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.03588em;">y</span><span class="mord">⋆</span></span></span></span>, we perform newton iteration to find <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>⋆</mo></mrow><annotation encoding="application/x-tex">\lambda\star</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">λ</span><span class="mord">⋆</span></span></span></span> and <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>ϕ</mi><mo>⋆</mo></mrow><annotation encoding="application/x-tex">\phi\star</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">ϕ</span><span class="mord">⋆</span></span></span></span>.</p>
+
+
+
+<a name="481367229"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481367229" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481367229">(Nov 08 2024 at 18:37)</a>:</h4>
+<p>These two formulas as decoupled in the diff above as you can see.</p>
+
+
+
+<a name="481367257"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481367257" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481367257">(Nov 08 2024 at 18:37)</a>:</h4>
+<p>Yeah so if it's using SimpleNonlinearSolve it should automatically apply the implicit rule</p>
+
+
+
+<a name="481367281"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481367281" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481367281">(Nov 08 2024 at 18:37)</a>:</h4>
+<p>If you did it by hand then you'll need to copy that code / do a similar implicit function push through on the duals</p>
+
+
+
+<a name="481367382"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481367382" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481367382">(Nov 08 2024 at 18:38)</a>:</h4>
+<p>For scalar it's almost equivalent to not differentiating the first n steps of the newton method, re-applying the duals, and then applying it on the n+1th step</p>
+
+
+
+<a name="481367495"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481367495" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481367495">(Nov 08 2024 at 18:38)</a>:</h4>
+<p>I am not sure I am following. As an end-user of <a href="https://juliahub.com/ui/Packages/General/ForwardDiff">ForwardDiff.jl</a> it is not clear what I am doing wrong.</p>
+
+
+
+<a name="481367574"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481367574" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481367574">(Nov 08 2024 at 18:39)</a>:</h4>
+<p>Optimally handling implicit equations is not something automatic differentiation as a tool can do on its own. It requires that the solver library that you're using for the implicit system overloads the AD to avoid differentiation through the method</p>
+
+
+
+<a name="481367772"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481367772" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481367772">(Nov 08 2024 at 18:40)</a>:</h4>
+<p>So <a href="https://juliahub.com/ui/Packages/General/Zygote">Zygote.jl</a> is doing something more that guarantees better performance?</p>
+
+
+
+<a name="481367838"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481367838" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481367838">(Nov 08 2024 at 18:41)</a>:</h4>
+<p>The derivative of Newton-Rhapson w.r.t. <code>u0</code> is 0, since the solution is independent of the initial condition (or undefined if it moves to a different solution). So you need to not differentiate the solve and then only differentiate effectively the last step. If the implicit solve is the expensive part of the code, then  doing this trick turns O(n) expensive calls differentiating each step into exactly 1. That's hard to beat.</p>
+
+
+
+<a name="481367890"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481367890" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481367890">(Nov 08 2024 at 18:41)</a>:</h4>
+<p>It's not really up to the AD libraries. It's up to the solver libraries, i.e. whomever writes the Newton method (NonlinearSolve) to supply rules for ForwardDiff/Zygote/etc. to do this</p>
+
+
+
+<a name="481368058"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481368058" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481368058">(Nov 08 2024 at 18:42)</a>:</h4>
+<p>You mean that there is a small package that we could take as dependency that already defines newton-rhapson inversion with AD rules?</p>
+
+
+
+<a name="481368062"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481368062" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481368062">(Nov 08 2024 at 18:42)</a>:</h4>
+<p>Since an AD library cannot really know by looking at code that it should have this convergence property, i.e. that the solution is independent of the previous steps, not in code (since in the code, each step of newton depends on the previous step), but in the solution (since it converges to the same value regardless of where you start)</p>
+
+
+
+<a name="481368086"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481368086" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481368086">(Nov 08 2024 at 18:43)</a>:</h4>
+<p>Yes, <a href="https://juliahub.com/ui/Packages/General/SimpleNonlinearSolve">SimpleNonlinearSolve.jl</a></p>
+
+
+
+<a name="481368140"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481368140" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481368140">(Nov 08 2024 at 18:43)</a>:</h4>
+<p>It's a split out of NonlinearSolve that is focused only on very simple Newton Rhapson + the required AD rules.</p>
+
+
+
+<a name="481368232"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481368232" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481368232">(Nov 08 2024 at 18:44)</a>:</h4>
+<p>It looks like the list of dependencies is very large?</p>
+
+
+
+<a name="481368435"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481368435" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481368435">(Nov 08 2024 at 18:45)</a>:</h4>
+<p>Ideally, we would just retain the performance of <a href="https://juliahub.com/ui/Packages/General/Zygote">Zygote.jl</a>, but with <a href="https://juliahub.com/ui/Packages/General/ForwardDiff">ForwardDiff.jl</a></p>
+
+
+
+<a name="481368535"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481368535" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481368535">(Nov 08 2024 at 18:45)</a>:</h4>
+<p>Well with a scalar nonlinear solve you probably want to be using ITP instead of Newton for stability if you have bounds. In that case, BracketingNonlinearSolve would then be an even smaller dep.</p>
+
+
+
+<a name="481368887"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481368887" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481368887">(Nov 08 2024 at 18:48)</a>:</h4>
+<p>What exactly do you need different in the size? The import time is ~200ms and most of that is the precompilation load of the Newton method itself.</p>
+
+
+
+<a name="481368896"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481368896" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481368896">(Nov 08 2024 at 18:48)</a>:</h4>
+<p>It beggars belief that the code in the diff you pasted is much slower in forwarddiff than in zygote, though of course I don't know what functions you are running through it.  I think there is something else wrong.</p>
+
+
+
+<a name="481368948"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481368948" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481368948">(Nov 08 2024 at 18:48)</a>:</h4>
+<p>Most likely yes, Zygote shouldn't ever be faster in this kind of case.</p>
+
+
+
+<a name="481368980"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481368980" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481368980">(Nov 08 2024 at 18:49)</a>:</h4>
+<p>But even then, the next thing you'd want to do is do the implicit rule for either ForwardDiff or Zygote <span aria-label="shrug" class="emoji emoji-1f937" role="img" title="shrug">:shrug:</span></p>
+
+
+
+<a name="481369037"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481369037" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481369037">(Nov 08 2024 at 18:49)</a>:</h4>
+<p>Perhaps I didn't run the benchmark properly. Let me try to isolate the issue.</p>
+
+
+
+<a name="481369794"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481369794" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481369794">(Nov 08 2024 at 18:55)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">SimpleNonlinearSolve</span>
+<span class="n">f</span><span class="p">(</span><span class="n">u</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="o">::</span><span class="kt">Number</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">u</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">p</span>
+<span class="n">f</span><span class="p">(</span><span class="n">u</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="o">::</span><span class="kt">Vector</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">u</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">u0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0</span>
+<span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0</span>
+<span class="k">const</span><span class="w"> </span><span class="n">cprob</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NonlinearProblem</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="n">u0</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">)</span>
+<span class="n">sol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">solve</span><span class="p">(</span><span class="n">prob_int</span><span class="p">,</span><span class="w"> </span><span class="n">SimpleNewtonRaphson</span><span class="p">())</span>
+
+<span class="k">function</span><span class="w"> </span><span class="n">loss</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+<span class="w">    </span><span class="n">solve</span><span class="p">(</span><span class="n">remake</span><span class="p">(</span><span class="n">cprob</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="o">=</span><span class="n">p</span><span class="p">),</span><span class="n">SimpleNewtonRaphson</span><span class="p">())</span><span class="o">.</span><span class="n">u</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mf">4.0</span>
+<span class="k">end</span>
+
+<span class="k">using</span><span class="w"> </span><span class="n">ForwardDiff</span><span class="p">,</span><span class="w"> </span><span class="n">BenchmarkTools</span>
+<span class="nd">@btime</span><span class="w"> </span><span class="n">ForwardDiff</span><span class="o">.</span><span class="n">derivative</span><span class="p">(</span><span class="n">loss</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">)</span>
+</code></pre></div>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="mf">16.741</span><span class="w"> </span><span class="n">ns</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="n">allocation</span><span class="o">:</span><span class="w"> </span><span class="mi">16</span><span class="w"> </span><span class="n">bytes</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="481369941"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481369941" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481369941">(Nov 08 2024 at 18:56)</a>:</h4>
+<p>For a scalar problem you should be able to optimize most stuff out of it.</p>
+
+
+
+<a name="481370222"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481370222" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481370222">(Nov 08 2024 at 18:58)</a>:</h4>
+<p>Though a bracketing method is almost certainly going to be more robust</p>
+
+
+
+<a name="481370245"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481370245" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481370245">(Nov 08 2024 at 18:58)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">BracketingNonlinearSolve</span>
+<span class="n">f</span><span class="p">(</span><span class="n">u</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="o">::</span><span class="kt">Number</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">u</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">p</span>
+<span class="n">u0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0</span>
+<span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0</span>
+<span class="n">uspan</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span><span class="w"> </span><span class="mf">2.0</span><span class="p">)</span><span class="w"> </span><span class="c"># brackets</span>
+<span class="k">const</span><span class="w"> </span><span class="n">cprob_int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">IntervalNonlinearProblem</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="n">uspan</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">)</span>
+<span class="n">sol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">solve</span><span class="p">(</span><span class="n">prob_int</span><span class="p">)</span>
+
+<span class="k">function</span><span class="w"> </span><span class="n">loss</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+<span class="w">    </span><span class="n">solve</span><span class="p">(</span><span class="n">remake</span><span class="p">(</span><span class="n">cprob_int</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="o">=</span><span class="n">p</span><span class="p">))</span><span class="o">.</span><span class="n">u</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mf">4.0</span>
+<span class="k">end</span>
+
+<span class="k">using</span><span class="w"> </span><span class="n">ForwardDiff</span><span class="p">,</span><span class="w"> </span><span class="n">BenchmarkTools</span>
+<span class="nd">@btime</span><span class="w"> </span><span class="n">ForwardDiff</span><span class="o">.</span><span class="n">derivative</span><span class="p">(</span><span class="n">loss</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">);</span>
+</code></pre></div>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="mf">18.495</span><span class="w"> </span><span class="n">ns</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="n">allocation</span><span class="o">:</span><span class="w"> </span><span class="mi">16</span><span class="w"> </span><span class="n">bytes</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="481370450"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481370450" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481370450">(Nov 08 2024 at 18:59)</a>:</h4>
+<p>You can probably specialize on a lot of other properties too though. What kind of system is it? Is it polynomial? Rational polynomial?</p>
+
+
+
+<a name="481370627"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481370627" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481370627">(Nov 08 2024 at 19:00)</a>:</h4>
+<p>I am creating a MWE with the exact code that is slower. Will share here in a few minutes...</p>
+
+
+
+<a name="481372435"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481372435" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481372435">(Nov 08 2024 at 19:12)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">CoordRefSystems</span>
+<span class="k">using</span><span class="w"> </span><span class="n">BenchmarkTools</span>
+
+<span class="n">latlon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">LatLon</span><span class="p">(</span><span class="mi">45</span><span class="p">,</span><span class="w"> </span><span class="mi">90</span><span class="p">)</span>
+<span class="n">winkel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">convert</span><span class="p">(</span><span class="n">WinkelTripel</span><span class="p">,</span><span class="w"> </span><span class="n">latlon</span><span class="p">)</span>
+
+<span class="nd">@btime</span><span class="w"> </span><span class="n">convert</span><span class="p">(</span><span class="o">$</span><span class="n">LatLon</span><span class="p">,</span><span class="w"> </span><span class="o">$</span><span class="n">winkel</span><span class="p">)</span>
+</code></pre></div>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="mf">1.491</span><span class="w"> </span><span class="n">μs</span><span class="w"> </span><span class="p">(</span><span class="mi">10</span><span class="w"> </span><span class="n">allocations</span><span class="o">:</span><span class="w"> </span><span class="mi">192</span><span class="w"> </span><span class="n">bytes</span><span class="p">)</span><span class="w"> </span><span class="c"># main</span>
+</code></pre></div>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="mf">6.356</span><span class="w"> </span><span class="n">μs</span><span class="w"> </span><span class="p">(</span><span class="mi">144</span><span class="w"> </span><span class="n">allocations</span><span class="o">:</span><span class="w"> </span><span class="mf">2.88</span><span class="w"> </span><span class="n">KiB</span><span class="p">)</span><span class="w"> </span><span class="c"># PR</span>
+</code></pre></div>
+
+
+
+<a name="481372526"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481372526" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481372526">(Nov 08 2024 at 19:13)</a>:</h4>
+<p>You can see that the <a href="https://juliahub.com/ui/Packages/General/ForwardDiff">ForwardDiff.jl</a> in the PR is 6x slower. The underlying functions <code>fx</code> and <code>fx</code> are here:</p>
+<p><a href="https://github.com/JuliaEarth/CoordRefSystems.jl/blob/d9193f6d692816fae9982dfcfb284e26613add6a/src/crs/projected/winkeltripel.jl#L77-L79">https://github.com/JuliaEarth/CoordRefSystems.jl/blob/d9193f6d692816fae9982dfcfb284e26613add6a/src/crs/projected/winkeltripel.jl#L77-L79</a></p>
+
+
+
+<a name="481372556"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481372556" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481372556">(Nov 08 2024 at 19:13)</a>:</h4>
+<p>Trigonometric functions.</p>
+
+
+
+<a name="481372610"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481372610" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481372610">(Nov 08 2024 at 19:14)</a>:</h4>
+<p>what is sincα?</p>
+
+
+
+<a name="481372681"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481372681" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481372681">(Nov 08 2024 at 19:14)</a>:</h4>
+<p>oh I see</p>
+
+
+
+<a name="481372719"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481372719" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481372719">(Nov 08 2024 at 19:14)</a>:</h4>
+<p>defined right above</p>
+
+
+
+<a name="481373445"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481373445" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481373445">(Nov 08 2024 at 19:20)</a>:</h4>
+<p>Wait you're talking about AD in the nonlinear solve not of the nonlinear solve?</p>
+
+
+
+<a name="481373510"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481373510" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481373510">(Nov 08 2024 at 19:21)</a>:</h4>
+<p>Yes, the AD is in the functions <code>fx</code> and <code>fy</code> inside the nonlinear solve.</p>
+
+
+
+<a name="481373605"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481373605" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481373605">(Nov 08 2024 at 19:22)</a>:</h4>
+<p>I was assuming that this should be instantaneous given the "simplicity" of these trigonometric functions.</p>
+
+
+
+<a name="481373636"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481373636" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481373636">(Nov 08 2024 at 19:22)</a>:</h4>
+<p>so where is your forwarddiff code?</p>
+
+
+
+<a name="481373649"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481373649" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481373649">(Nov 08 2024 at 19:22)</a>:</h4>
+<p>These are functions <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>f</mi><mspace></mspace><mspace width="0.1111em"/><mo lspace="0em" rspace="0.17em"></mo><mtext> ⁣</mtext><mo lspace="0em" rspace="0em">:</mo><mspace width="0.3333em"/><msup><mi>R</mi><mn>2</mn></msup><mo>→</mo><mi>R</mi></mrow><annotation encoding="application/x-tex">f\colon R^2 \to R</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.0085em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.10764em;">f</span><span class="mspace nobreak"></span><span class="mspace" style="margin-right:0.1111em;"></span><span class="mpunct"></span><span class="mspace" style="margin-right:-0.1667em;"></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mrel">:</span></span><span class="mspace" style="margin-right:0.3333em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.00773em;">R</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8141em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.00773em;">R</span></span></span></span></p>
+
+
+
+<a name="481373657"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481373657" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481373657">(Nov 08 2024 at 19:22)</a>:</h4>
+<p>My guess is you did something odd to handle the multiple returns.</p>
+
+
+
+<a name="481373714"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481373714" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481373714">(Nov 08 2024 at 19:23)</a>:</h4>
+<p>I think this kind of scalar, branch-free straight line code is the best-case performance scenario for Zygote. So it's not crazy that it'd be faster than ForwardDiff.</p>
+
+
+
+<a name="481373727"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481373727" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481373727">(Nov 08 2024 at 19:23)</a>:</h4>
+<p>In this PR I shared a few messages ago: <a href="https://github.com/JuliaEarth/CoordRefSystems.jl/pull/199">https://github.com/JuliaEarth/CoordRefSystems.jl/pull/199</a></p>
+
+
+
+<a name="481373779"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481373779" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481373779">(Nov 08 2024 at 19:23)</a>:</h4>
+<p>The PR literally replaces Zygote by ForwardDiff, nothing else.</p>
+
+
+
+<a name="481373907"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481373907" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481373907">(Nov 08 2024 at 19:24)</a>:</h4>
+<p>yeah this kind of case is not so bad for Zygote, though either should do fine</p>
+
+
+
+<a name="481373963"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481373963" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481373963">(Nov 08 2024 at 19:25)</a>:</h4>
+<p>you shouldn't be getting so many allocs with forwarddiff though</p>
+
+
+
+<a name="481374042"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481374042" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481374042">(Nov 08 2024 at 19:25)</a>:</h4>
+<p>but for this kind of case, AD inside the ODE for a scalar output, Zygote should just optimize out all allocs which is usually what would kill it</p>
+
+
+
+<a name="481374144"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481374144" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481374144">(Nov 08 2024 at 19:26)</a>:</h4>
+<p>So Zygote should be fine, and should almost even match Enzyme here without some Reactant tricks.</p>
+
+
+
+<a name="481374192"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481374192" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481374192">(Nov 08 2024 at 19:26)</a>:</h4>
+<p>The only other thing to try really is just avoiding the AD with something like an ITP and seeing how that does.</p>
+
+
+
+<a name="481374209"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481374209" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481374209">(Nov 08 2024 at 19:26)</a>:</h4>
+<p>So the moral of the story is <a href="https://juliahub.com/ui/Packages/General/Zygote">Zygote.jl</a> is still recommended even in this scalar case with N=2 and M=1</p>
+
+
+
+<a name="481374267"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481374267" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481374267">(Nov 08 2024 at 19:27)</a>:</h4>
+<p>in this case, yes, because it can compile away a bunch of stuff so its normal issues don't come up here.</p>
+
+
+
+<a name="481374287"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481374287" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481374287">(Nov 08 2024 at 19:27)</a>:</h4>
+<p>there are cases for which that is not true</p>
+
+
+
+<a name="481374293"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481374293" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481374293">(Nov 08 2024 at 19:27)</a>:</h4>
+<p>it's somewhat code dependent</p>
+
+
+
+<a name="481374328"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481374328" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481374328">(Nov 08 2024 at 19:27)</a>:</h4>
+<p>Zygote sucks at optimizing code with arrays and falls off a cliff any time there's a branch, but yes this is one of the few niches it's perf-competitive in.</p>
+
+
+
+<a name="481374480"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481374480" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481374480">(Nov 08 2024 at 19:29)</a>:</h4>
+<p>Hence the demos Mike and others used to do where they showed it constant-folding all the way to the correct gradient</p>
+
+
+
+<a name="481374568"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481374568" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481374568">(Nov 08 2024 at 19:29)</a>:</h4>
+<p>These heuristics to pick an AD backend are super hard. Every time we dive into it, we unlearn something that was told.</p>
+
+
+
+<a name="481374569"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481374569" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481374569">(Nov 08 2024 at 19:29)</a>:</h4>
+<p>It still bothers me the original issue of this thread where <a href="https://juliahub.com/ui/Packages/General/Zygote">Zygote.jl</a> returns <code>nothing</code>. That is really annoying.</p>
+
+
+
+<a name="481374707"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481374707" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481374707">(Nov 08 2024 at 19:30)</a>:</h4>
+<p>I think it's better to have a hard zero? It's annoying with AD just treats structural zeros as <code>0.0</code> because then it's harder to debug.</p>
+
+
+
+<a name="481374742"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481374742" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481374742">(Nov 08 2024 at 19:30)</a>:</h4>
+<p>For your case you could just <code>x === nothing ? 0.0 : x</code></p>
+
+
+
+<a name="481374799"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481374799" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481374799">(Nov 08 2024 at 19:31)</a>:</h4>
+<p>A lot of inputs Zygote accepts are not conducive to having natural Zeros. Structs with arbitrary type constraints, for example</p>
+
+
+
+<a name="481374802"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481374802" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481374802">(Nov 08 2024 at 19:31)</a>:</h4>
+<p>though almost certainly if you get that nothing in your code, it's likely a bug and you should throw an error saying "you likely have a bug in your <code>f</code>"</p>
+
+
+
+<a name="481374914"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481374914" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481374914">(Nov 08 2024 at 19:32)</a>:</h4>
+<p>One challenge ChainRules and later Mooncake ran into is that some types can't even be reliably represented by <em>structural</em> zeroes! Self-referential structs being a big culprit</p>
+
+
+
+<a name="481374955"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481374955" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481374955">(Nov 08 2024 at 19:32)</a>:</h4>
+<p>It is not a bug in <code>f</code>. It is common to have formulas that only depend on a subset of the arguments in this context.</p>
+
+
+
+<a name="481374966"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481374966" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481374966">(Nov 08 2024 at 19:32)</a>:</h4>
+<p>yeah but that's a general case</p>
+
+
+
+<a name="481374981"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481374981" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481374981">(Nov 08 2024 at 19:32)</a>:</h4>
+<p>That is not grounded in this specific case</p>
+
+
+
+<a name="481375012"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481375012" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481375012">(Nov 08 2024 at 19:32)</a>:</h4>
+<p>in this specific case, if you get <code>nothing</code>, that means <code>f</code> is not a function of the parameter</p>
+
+
+
+<a name="481375019"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481375019" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481375019">(Nov 08 2024 at 19:32)</a>:</h4>
+<p>that means you can just remove it from the rootfind</p>
+
+
+
+<a name="481375045"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481375045" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481375045">(Nov 08 2024 at 19:33)</a>:</h4>
+<p>that tell you that you can optimize it more!</p>
+
+
+
+<a name="481375110"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481375110" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481375110">(Nov 08 2024 at 19:33)</a>:</h4>
+<p>I think in an alternate world where ChainRules matured a little earlier, Zygote could've used <code>ZeroTangent</code> and <code>NoTangent</code> instead of <code>nothing</code></p>
+
+
+
+<a name="481375227"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481375227" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481375227">(Nov 08 2024 at 19:34)</a>:</h4>
+<p>That is a good point. Maybe refactoring the algorithm with a branch that handles <code>nothing</code> is not that bad. In any case, I wish we had <a href="https://juliahub.com/ui/Packages/General/Enzyme">Enzyme.jl</a> behavior here, it always returns 0.0 for zero gradient.</p>
+
+
+
+<a name="481375234"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481375234" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481375234">(Nov 08 2024 at 19:34)</a>:</h4>
+<p>Regardless though, this code should want the <code>nothing</code> or whatever structural zero because then it should just branch down to doing a scalar rootfind and double its speed</p>
+
+
+
+<a name="481375268"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481375268" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481375268">(Nov 08 2024 at 19:34)</a>:</h4>
+<p>This code should also be compatible with Enzyme?</p>
+
+
+
+<a name="481375346"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481375346" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481375346">(Nov 08 2024 at 19:35)</a>:</h4>
+<p>It is. It is just that we are trying to keep it native Julia as much as possible, at least for now. Maybe we will consider <a href="https://juliahub.com/ui/Packages/General/Enzyme">Enzyme.jl</a> as the only exception.</p>
+
+
+
+<a name="481375492"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481375492" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481375492">(Nov 08 2024 at 19:36)</a>:</h4>
+<p>Exploiting the structural zero with Zygote would still beat Enzyme here though</p>
+
+
+
+<a name="481375511"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481375511" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481375511">(Nov 08 2024 at 19:36)</a>:</h4>
+<p>The full stack is native Julia, which facilitates deployment in exotic platforms.</p>
+
+
+
+<a name="481375564"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481375564" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481375564">(Nov 08 2024 at 19:37)</a>:</h4>
+<p><a href="/user_uploads/7178/sH-8NZxNaEs1YL46L5nIfyMM/Screenshot-2024-11-08-at-6.36.36PM.png">Screenshot 2024-11-08 at 6.36.36 PM.png</a></p>
+<div class="message_inline_image"><a href="/user_uploads/7178/sH-8NZxNaEs1YL46L5nIfyMM/Screenshot-2024-11-08-at-6.36.36PM.png" title="Screenshot 2024-11-08 at 6.36.36 PM.png"><img data-original-dimensions="3016x1714" src="/user_uploads/thumbnail/7178/sH-8NZxNaEs1YL46L5nIfyMM/Screenshot-2024-11-08-at-6.36.36PM.png/840x560.webp"></a></div>
+
+
+
+<a name="481375606"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481375606" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481375606">(Nov 08 2024 at 19:37)</a>:</h4>
+<p>Chopping out the fy gradient could be like half of the compute, so I'd just exploit the nothing and call it a day.</p>
+
+
+
+<a name="481375639"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481375639" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481375639">(Nov 08 2024 at 19:37)</a>:</h4>
+<blockquote>
+<p>The full stack is native Julia, which facilitates deployment in exotic platforms.</p>
+</blockquote>
+<p>Like what?</p>
+
+
+
+<a name="481375722"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481375722" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481375722">(Nov 08 2024 at 19:38)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="278119">Christopher Rackauckas</span> <a href="#narrow/channel/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60/near/481375606">said</a>:</p>
+<blockquote>
+<p>Chopping out the fy gradient could be like half of the compute, so I'd just exploit the nothing and call it a day.</p>
+</blockquote>
+<p>Yes, it sounds reasonable.</p>
+
+
+
+<a name="481375837"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481375837" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481375837">(Nov 08 2024 at 19:38)</a>:</h4>
+<p>The other thing you could potentially do is use fastmath approximations to the trig functions in the gradient context.</p>
+
+
+
+<a name="481375879"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481375879" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481375879">(Nov 08 2024 at 19:38)</a>:</h4>
+<p>Or run this as a mixed precision and just do the gradient in 32-bit</p>
+
+
+
+<a name="481375917"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481375917" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481375917">(Nov 08 2024 at 19:39)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="278119">Christopher Rackauckas</span> <a href="#narrow/channel/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60/near/481375639">said</a>:</p>
+<blockquote>
+<blockquote>
+<p>The full stack is native Julia, which facilitates deployment in exotic platforms.</p>
+</blockquote>
+<p>Like what?</p>
+</blockquote>
+<p>We are investigating some heterogeneous cluster setups. I understand that external binary dependencies may support a subset of the platforms that Julia supports.</p>
+
+
+
+<a name="481376074"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481376074" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481376074">(Nov 08 2024 at 19:40)</a>:</h4>
+<p>So we avoid external binary deps as much as possible. What is the situation with <a href="https://juliahub.com/ui/Packages/General/Enzyme">Enzyme.jl</a>? Does it support all platforms that Julia does because it is LLVM-based?</p>
+
+
+
+<a name="481376088"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481376088" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481376088">(Nov 08 2024 at 19:40)</a>:</h4>
+<p>like how exotic though, ARMv7/8? Or like, embedded type chips?</p>
+
+
+
+<a name="481376138"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481376138" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481376138">(Nov 08 2024 at 19:40)</a>:</h4>
+<p>Julia doesn't even support all LLVM supported platforms because of runtime things</p>
+
+
+
+<a name="481376229"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481376229" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481376229">(Nov 08 2024 at 19:41)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="278119">Christopher Rackauckas</span> <a href="#narrow/channel/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60/near/481376088">said</a>:</p>
+<blockquote>
+<p>like how exotic though, ARMv7/8? Or like, embedded type chips?</p>
+</blockquote>
+<p>Nothing specific at the moment. We are just trying to save ourselves from build issues that we can't address easily.</p>
+
+
+
+<a name="481376276"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481376276" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481376276">(Nov 08 2024 at 19:42)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="278119">Christopher Rackauckas</span> <a href="#narrow/channel/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60/near/481376138">said</a>:</p>
+<blockquote>
+<p>Julia doesn't even support all LLVM supported platforms because of runtime things</p>
+</blockquote>
+<p>So adding <a href="https://juliahub.com/ui/Packages/General/Enzyme">Enzyme.jl</a> as a dependency shouldn't reduce the list of supported platforms, right?</p>
+
+
+
+<a name="481376340"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481376340" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481376340">(Nov 08 2024 at 19:42)</a>:</h4>
+<p>Premature optimization can be the root of all evil.</p>
+
+
+
+<a name="481376398"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481376398" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481376398">(Nov 08 2024 at 19:42)</a>:</h4>
+<p>I mean, it might be easier to get Julia to kick something out for like a TI C600 without Enzyme, but the chances that will ever be in a cluster is zero.</p>
+
+
+
+<a name="481376481"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481376481" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481376481">(Nov 08 2024 at 19:43)</a>:</h4>
+<p>In this case, I see it as precaution. If we can stick to a native Julia app, why not? <span aria-label="smile" class="emoji emoji-1f642" role="img" title="smile">:smile:</span></p>
+
+
+
+<a name="481376611"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481376611" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481376611">(Nov 08 2024 at 19:44)</a>:</h4>
+<p>If <a href="https://juliahub.com/ui/Packages/General/Enzyme">Enzyme.jl</a> is indeed the best thing to adopt, and the benefits outweigh the downsides, we will go for it.</p>
+
+
+
+<a name="481376750"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Zygote.jl%20gradient%20returning%20%60nothing%60/near/481376750" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rackauckas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Zygote.2Ejl.20gradient.20returning.20.60nothing.60.html#481376750">(Nov 08 2024 at 19:45)</a>:</h4>
+<p>I mean, I see eVTOLs and satellites deploying to ARMv8 these days. I would be surprised if your case is actually all that exotic unless it's for a microsat</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

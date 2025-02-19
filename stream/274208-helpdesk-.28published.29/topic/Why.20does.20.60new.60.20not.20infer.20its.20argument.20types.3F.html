@@ -1,0 +1,105 @@
+<html>
+<head><meta charset="utf-8"><title>Why does `new` not infer its argument types? · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Why.20does.20.60new.60.20not.20infer.20its.20argument.20types.3F.html">Why does `new` not infer its argument types?</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="230180372"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Why%20does%20%60new%60%20not%20infer%20its%20argument%20types%3F/near/230180372" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Colin Caine <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Why.20does.20.60new.60.20not.20infer.20its.20argument.20types.3F.html#230180372">(Mar 13 2021 at 18:30)</a>:</h4>
+<p>Why does this not work:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="n">Y</span><span class="p">{</span><span class="n">T</span><span class="o">&lt;:</span><span class="kt">Integer</span><span class="p">}</span>
+    <span class="n">y</span><span class="o">::</span><span class="n">T</span>
+    <span class="n">Y</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">=</span> <span class="n">new</span><span class="p">(</span><span class="n">a</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>Instead, you have to do this, which seems like a lot of ceremony:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="n">X</span><span class="p">{</span><span class="n">T</span><span class="o">&lt;:</span><span class="kt">Integer</span><span class="p">}</span>
+    <span class="n">x</span><span class="o">::</span><span class="n">T</span>
+    <span class="n">X</span><span class="p">(</span><span class="n">a</span><span class="o">::</span><span class="n">T</span><span class="p">)</span> <span class="n">where</span> <span class="p">{</span><span class="n">T</span><span class="p">}</span> <span class="o">=</span> <span class="n">new</span><span class="p">{</span><span class="n">T</span><span class="p">}(</span><span class="n">a</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>Edit: search terms: <code>ERROR: syntax: too few type parameters specified in "new{...}"</code></p>
+
+
+
+<a name="230181273"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Why%20does%20%60new%60%20not%20infer%20its%20argument%20types%3F/near/230181273" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Colin Caine <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Why.20does.20.60new.60.20not.20infer.20its.20argument.20types.3F.html#230181273">(Mar 13 2021 at 18:47)</a>:</h4>
+<p>Looking through the <a href="https://docs.julialang.org/en/v1/manual/constructors/#Parametric-Constructors">manual</a>, the expected form is something like this</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="n">Z</span><span class="p">{</span><span class="n">T</span><span class="p">}</span>
+    <span class="n">z</span><span class="o">::</span><span class="n">T</span>
+    <span class="n">Z</span><span class="p">{</span><span class="n">T</span><span class="p">}(</span><span class="n">a</span><span class="p">)</span> <span class="n">where</span> <span class="p">{</span><span class="n">T</span><span class="p">}</span> <span class="o">=</span> <span class="n">new</span><span class="p">(</span><span class="n">a</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="n">Z</span><span class="p">(</span><span class="n">a</span><span class="o">::</span><span class="n">T</span><span class="p">)</span> <span class="n">where</span> <span class="p">{</span><span class="n">T</span><span class="p">}</span> <span class="o">=</span> <span class="n">Z</span><span class="p">{</span><span class="n">T</span><span class="p">}(</span><span class="n">a</span><span class="p">)</span>
+</code></pre></div>
+<p>Which I guess is nice because it is very explicit? But I think it's adequately implied by <code>Y</code> above. It's nicer than <code>X</code>, tho</p>
+
+
+
+<a name="230182325"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Why%20does%20%60new%60%20not%20infer%20its%20argument%20types%3F/near/230182325" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Why.20does.20.60new.60.20not.20infer.20its.20argument.20types.3F.html#230182325">(Mar 13 2021 at 19:05)</a>:</h4>
+<p>Maybe it's because in general case type of <code>2*a</code> can differ from the type of <code>a</code>.  For example, what if <code>a</code> is of the (non existent) type <code>OddInteger</code>? In this case <code>2*a</code> is of the type <code>EvenInteger</code> and how compiler should solve this case? Is it <code>Y{OddInteger}(1)</code> or <code>Y{EvenInteger}(1)</code>? Only you know, what you really want to see in this case.</p>
+
+
+
+<a name="230183100"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Why%20does%20%60new%60%20not%20infer%20its%20argument%20types%3F/near/230183100" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Colin Caine <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Why.20does.20.60new.60.20not.20infer.20its.20argument.20types.3F.html#230183100">(Mar 13 2021 at 19:19)</a>:</h4>
+<p>I guess the issue is that I expect <code>new</code> to act like a generic method or a type with a default constructor. With those, we don't specify the types in the code, we just provide values and Julia decides what the types will be.</p>
+<p>With your example, I feel like I'd be more likely to mess it up if I'm forced to be explicit compared to if <code>new</code> behaved more like a function.</p>
+<p>(To be explicit, I expect a behaviour like:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="n">A</span><span class="p">{</span><span class="n">T</span><span class="p">}</span>
+    <span class="n">x</span><span class="o">::</span><span class="n">T</span>
+    <span class="k">function</span> <span class="n">A</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x1</span> <span class="o">=</span> <span class="n">x</span> <span class="o">*</span> <span class="mi">2</span>
+        <span class="n">new</span><span class="p">{</span><span class="n">typeof</span><span class="p">(</span><span class="n">x1</span><span class="p">)}(</span><span class="n">x1</span><span class="p">)</span>
+    <span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>)</p>
+
+
+
+<a name="230185054"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Why%20does%20%60new%60%20not%20infer%20its%20argument%20types%3F/near/230185054" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Why.20does.20.60new.60.20not.20infer.20its.20argument.20types.3F.html#230185054">(Mar 13 2021 at 19:55)</a>:</h4>
+<p>But this is not the behavior of <code>Z</code> or <code>X</code> structure, right? Because they more or less explicitly say <code>new{typeof(x)}(x1)</code></p>
+
+
+
+<a name="230185138"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Why%20does%20%60new%60%20not%20infer%20its%20argument%20types%3F/near/230185138" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Why.20does.20.60new.60.20not.20infer.20its.20argument.20types.3F.html#230185138">(Mar 13 2021 at 19:56)</a>:</h4>
+<p>Hmm, I guess <code>Z</code> will just error in this case.</p>
+
+
+
+<a name="230185202"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Why%20does%20%60new%60%20not%20infer%20its%20argument%20types%3F/near/230185202" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Why.20does.20.60new.60.20not.20infer.20its.20argument.20types.3F.html#230185202">(Mar 13 2021 at 19:57)</a>:</h4>
+<p>Maybe they both error.</p>
+
+
+
+<a name="230185208"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Why%20does%20%60new%60%20not%20infer%20its%20argument%20types%3F/near/230185208" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Why.20does.20.60new.60.20not.20infer.20its.20argument.20types.3F.html#230185208">(Mar 13 2021 at 19:58)</a>:</h4>
+<p>Should put it in REPL :-)</p>
+
+
+
+<a name="230186880"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Why%20does%20%60new%60%20not%20infer%20its%20argument%20types%3F/near/230186880" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Why.20does.20.60new.60.20not.20infer.20its.20argument.20types.3F.html#230186880">(Mar 13 2021 at 20:28)</a>:</h4>
+<p>Ah, after some consideration, I think I get the real reason, why you should be explicit.</p>
+<p>I think that <code>new</code>is really can infer types on its own, but default inner constructor is more complicated than that.<br>
+I think it's closer to <code>A{T}(x) where T = new{T}(convert(T, f(x))</code>, and this gives you possibility to write expressions like <code>Vector{Float64}(1)</code>. In your syntax <code>A(x) = new(f(x))</code> everything will be fine till the moment, when you would need to call constructor with explicit type (like in <code>Vector{Float64}</code> example). Since types infer from the result of calculation, construction of the form <code>A{T}(x)</code> will be forbidden. And it would be nice until the moment when you need it.</p>
+<p>In your last example:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">A</span><span class="p">{</span><span class="kt">Int</span><span class="p">}(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ERROR</span><span class="o">:</span> <span class="kt">MethodError</span><span class="o">:</span> <span class="n">no</span> <span class="n">method</span> <span class="n">matching</span> <span class="n">A</span><span class="p">{</span><span class="kt">Int64</span><span class="p">}(</span><span class="o">::</span><span class="kt">Int64</span><span class="p">)</span>
+</code></pre></div>
+<p>And it looks unexpected. So you can shoot yourself in a foot, but at least you have to make extra efforts for it.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

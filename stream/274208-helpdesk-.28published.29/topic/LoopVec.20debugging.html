@@ -1,0 +1,248 @@
+<html>
+<head><meta charset="utf-8"><title>LoopVec debugging · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVec.20debugging.html">LoopVec debugging</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="254800700"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVec%20debugging/near/254800700" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVec.20debugging.html#254800700">(Sep 25 2021 at 02:41)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="284680">chriselrod</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Sum.20of.20Squares.2C.20Numba.20vs.20Julia/near/254794323">said</a>:</p>
+<blockquote>
+<p>If you're willing to debug, maybe we can find out why.<br>
+But, --</p>
+</blockquote>
+<p>Sure, lemme know what to run</p>
+
+
+
+<a name="254800963"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVec%20debugging/near/254800963" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVec.20debugging.html#254800963">(Sep 25 2021 at 02:45)</a>:</h4>
+<p>Here's one problem I've noticed:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">let</span> <span class="n">A</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="mi">2048</span><span class="p">,</span> <span class="mi">2408</span><span class="p">),</span> <span class="n">B</span> <span class="o">=</span> <span class="n">similar</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+           <span class="nd">@btime</span> <span class="o">$</span><span class="n">B</span> <span class="o">.=</span> <span class="o">$</span><span class="n">A</span>
+           <span class="nd">@btime</span> <span class="n">copyto_turbo!</span><span class="p">(</span><span class="o">$</span><span class="n">B</span><span class="p">,</span> <span class="o">$</span><span class="n">A</span><span class="p">)</span>
+           <span class="nd">@btime</span> <span class="n">copyto_tturbo!</span><span class="p">(</span><span class="o">$</span><span class="n">B</span><span class="p">,</span> <span class="o">$</span><span class="n">A</span><span class="p">)</span>
+       <span class="k">end</span><span class="p">;</span>
+  <span class="mf">2.410</span> <span class="n">ms</span> <span class="p">(</span><span class="mi">0</span> <span class="n">allocations</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">)</span>
+  <span class="mf">4.465</span> <span class="n">ms</span> <span class="p">(</span><span class="mi">0</span> <span class="n">allocations</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">)</span>
+  <span class="mf">3.399</span> <span class="n">ms</span> <span class="p">(</span><span class="mi">0</span> <span class="n">allocations</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="254801416"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVec%20debugging/near/254801416" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVec.20debugging.html#254801416">(Sep 25 2021 at 02:52)</a>:</h4>
+<p>Apparently <code>__memcpy_avx_unaligned_erms</code> is fast.<br>
+How does a simple loop compare?<br>
+Note that <code>B .= A</code> forwards to <code>copyto!</code>, which calls <code>memcpy</code>.</p>
+<p>I don't see a difference as extreme as you (and <code>tturbo</code> is fastest), but it'd be interesting to find out what exactly <code>memcpy</code> is doing to be so fast. Seems like an obviously memory bound problem.</p>
+
+
+
+<a name="254803728"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVec%20debugging/near/254803728" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVec.20debugging.html#254803728">(Sep 25 2021 at 03:31)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">function</span> <span class="n">copyto_loop!</span><span class="p">(</span><span class="n">B</span><span class="o">::</span><span class="kt">Array</span><span class="p">{</span><span class="kt">T</span><span class="p">},</span> <span class="n">A</span><span class="o">::</span><span class="kt">Array</span><span class="p">{</span><span class="kt">T</span><span class="p">})</span> <span class="k">where</span> <span class="p">{</span><span class="kt">T</span><span class="p">}</span>
+           <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="n">eachindex</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span>
+               <span class="n">B</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+           <span class="k">end</span>
+           <span class="n">B</span>
+       <span class="k">end</span>
+<span class="n">copyto_loop!</span> <span class="p">(</span><span class="n">generic</span> <span class="k">function</span> <span class="n">with</span> <span class="mi">1</span> <span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="k">let</span> <span class="n">A</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="mi">2048</span><span class="p">,</span> <span class="mi">2408</span><span class="p">),</span> <span class="n">B</span> <span class="o">=</span> <span class="n">similar</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+           <span class="nd">@btime</span> <span class="n">copyto_loop!</span><span class="p">(</span><span class="o">$</span><span class="n">B</span><span class="p">,</span> <span class="o">$</span><span class="n">A</span><span class="p">)</span>
+       <span class="k">end</span><span class="p">;</span>
+<span class="mf">5.035</span> <span class="n">ms</span> <span class="p">(</span><span class="mi">0</span> <span class="n">allocations</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="254804216"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVec%20debugging/near/254804216" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVec.20debugging.html#254804216">(Sep 25 2021 at 03:39)</a>:</h4>
+<p>With <code>@inbounds</code>?<br>
+Anyone know where I can find the code for Julia's <code>memmove</code>?</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">unsafe_copyto!</span><span class="p">(</span><span class="n">dest</span><span class="o">::</span><span class="kt">Array</span><span class="p">{</span><span class="kt">T</span><span class="p">},</span> <span class="n">doffs</span><span class="p">,</span> <span class="n">src</span><span class="o">::</span><span class="kt">Array</span><span class="p">{</span><span class="kt">T</span><span class="p">},</span> <span class="n">soffs</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span> <span class="k">where</span> <span class="kt">T</span>
+    <span class="n">t1</span> <span class="o">=</span> <span class="nd">@_gc_preserve_begin</span> <span class="n">dest</span>
+    <span class="n">t2</span> <span class="o">=</span> <span class="nd">@_gc_preserve_begin</span> <span class="n">src</span>
+    <span class="n">destp</span> <span class="o">=</span> <span class="n">pointer</span><span class="p">(</span><span class="n">dest</span><span class="p">,</span> <span class="n">doffs</span><span class="p">)</span>
+    <span class="n">srcp</span> <span class="o">=</span> <span class="n">pointer</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">soffs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="o">!</span><span class="n">allocatedinline</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+        <span class="k">ccall</span><span class="p">(</span><span class="ss">:jl_array_ptr_copy</span><span class="p">,</span> <span class="kt">Cvoid</span><span class="p">,</span> <span class="p">(</span><span class="kt">Any</span><span class="p">,</span> <span class="kt">Ptr</span><span class="p">{</span><span class="kt">Cvoid</span><span class="p">},</span> <span class="kt">Any</span><span class="p">,</span> <span class="kt">Ptr</span><span class="p">{</span><span class="kt">Cvoid</span><span class="p">},</span> <span class="kt">Int</span><span class="p">),</span>
+              <span class="n">dest</span><span class="p">,</span> <span class="n">destp</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">srcp</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+    <span class="k">elseif</span> <span class="n">isbitstype</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+        <span class="k">ccall</span><span class="p">(</span><span class="ss">:memmove</span><span class="p">,</span> <span class="kt">Ptr</span><span class="p">{</span><span class="kt">Cvoid</span><span class="p">},</span> <span class="p">(</span><span class="kt">Ptr</span><span class="p">{</span><span class="kt">Cvoid</span><span class="p">},</span> <span class="kt">Ptr</span><span class="p">{</span><span class="kt">Cvoid</span><span class="p">},</span> <span class="kt">Csize_t</span><span class="p">),</span>
+              <span class="n">destp</span><span class="p">,</span> <span class="n">srcp</span><span class="p">,</span> <span class="n">n</span> <span class="o">*</span> <span class="n">aligned_sizeof</span><span class="p">(</span><span class="n">T</span><span class="p">))</span>
+    <span class="k">elseif</span> <span class="n">isbitsunion</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+        <span class="k">ccall</span><span class="p">(</span><span class="ss">:memmove</span><span class="p">,</span> <span class="kt">Ptr</span><span class="p">{</span><span class="kt">Cvoid</span><span class="p">},</span> <span class="p">(</span><span class="kt">Ptr</span><span class="p">{</span><span class="kt">Cvoid</span><span class="p">},</span> <span class="kt">Ptr</span><span class="p">{</span><span class="kt">Cvoid</span><span class="p">},</span> <span class="kt">Csize_t</span><span class="p">),</span>
+              <span class="n">destp</span><span class="p">,</span> <span class="n">srcp</span><span class="p">,</span> <span class="n">n</span> <span class="o">*</span> <span class="n">aligned_sizeof</span><span class="p">(</span><span class="n">T</span><span class="p">))</span>
+        <span class="c"># copy selector bytes</span>
+        <span class="k">ccall</span><span class="p">(</span><span class="ss">:memmove</span><span class="p">,</span> <span class="kt">Ptr</span><span class="p">{</span><span class="kt">Cvoid</span><span class="p">},</span> <span class="p">(</span><span class="kt">Ptr</span><span class="p">{</span><span class="kt">Cvoid</span><span class="p">},</span> <span class="kt">Ptr</span><span class="p">{</span><span class="kt">Cvoid</span><span class="p">},</span> <span class="kt">Csize_t</span><span class="p">),</span>
+              <span class="k">ccall</span><span class="p">(</span><span class="ss">:jl_array_typetagdata</span><span class="p">,</span> <span class="kt">Ptr</span><span class="p">{</span><span class="kt">UInt8</span><span class="p">},</span> <span class="p">(</span><span class="kt">Any</span><span class="p">,),</span> <span class="n">dest</span><span class="p">)</span> <span class="o">+</span> <span class="n">doffs</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
+              <span class="k">ccall</span><span class="p">(</span><span class="ss">:jl_array_typetagdata</span><span class="p">,</span> <span class="kt">Ptr</span><span class="p">{</span><span class="kt">UInt8</span><span class="p">},</span> <span class="p">(</span><span class="kt">Any</span><span class="p">,),</span> <span class="n">src</span><span class="p">)</span> <span class="o">+</span> <span class="n">soffs</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
+              <span class="n">n</span><span class="p">)</span>
+    <span class="k">else</span>
+        <span class="n">_unsafe_copyto!</span><span class="p">(</span><span class="n">dest</span><span class="p">,</span> <span class="n">doffs</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">soffs</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+    <span class="k">end</span>
+    <span class="nd">@_gc_preserve_end</span> <span class="n">t2</span>
+    <span class="nd">@_gc_preserve_end</span> <span class="n">t1</span>
+    <span class="k">return</span> <span class="n">dest</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>And, also which <code>memmove</code> is this/where does it come from?</p>
+
+
+
+<a name="254804697"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVec%20debugging/near/254804697" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVec.20debugging.html#254804697">(Sep 25 2021 at 03:47)</a>:</h4>
+<p>Oops, here it is with the inbounds</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">function</span> <span class="n">copyto_loop!</span><span class="p">(</span><span class="n">B</span><span class="o">::</span><span class="kt">Array</span><span class="p">{</span><span class="kt">T</span><span class="p">},</span> <span class="n">A</span><span class="o">::</span><span class="kt">Array</span><span class="p">{</span><span class="kt">T</span><span class="p">})</span> <span class="k">where</span> <span class="p">{</span><span class="kt">T</span><span class="p">}</span>
+           <span class="nd">@inbounds</span> <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="n">eachindex</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span>
+               <span class="n">B</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+           <span class="k">end</span>
+           <span class="n">B</span>
+       <span class="k">end</span>
+<span class="n">copyto_loop!</span> <span class="p">(</span><span class="n">generic</span> <span class="k">function</span> <span class="n">with</span> <span class="mi">1</span> <span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="k">let</span> <span class="n">A</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="mi">2048</span><span class="p">,</span> <span class="mi">2408</span><span class="p">),</span> <span class="n">B</span> <span class="o">=</span> <span class="n">similar</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+           <span class="nd">@btime</span> <span class="n">copyto_loop!</span><span class="p">(</span><span class="o">$</span><span class="n">B</span><span class="p">,</span> <span class="o">$</span><span class="n">A</span><span class="p">)</span>
+       <span class="k">end</span><span class="p">;</span>
+  <span class="mf">4.588</span> <span class="n">ms</span> <span class="p">(</span><span class="mi">0</span> <span class="n">allocations</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="254805305"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVec%20debugging/near/254805305" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVec.20debugging.html#254805305">(Sep 25 2021 at 03:56)</a>:</h4>
+<p>Thanks, so at least it isn't doing seem to do worse than LLVM, but it's obviously missing out on something pretty clever.</p>
+
+
+
+<a name="254805556"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVec%20debugging/near/254805556" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVec.20debugging.html#254805556">(Sep 25 2021 at 04:00)</a>:</h4>
+<p>Maybe it's just using nontemporal stores?<br>
+Could you try <code>@btime vmapnt!(identity, $B, $A)</code>?</p>
+<p>This is fast for me.</p>
+
+
+
+<a name="254805681"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVec%20debugging/near/254805681" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVec.20debugging.html#254805681">(Sep 25 2021 at 04:02)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="284680">chriselrod</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/LoopVec.20debugging/near/254805305">said</a>:</p>
+<blockquote>
+<p>Thanks, so at least it isn't doing seem to do worse than LLVM, but it's obviously missing out on something pretty clever.</p>
+</blockquote>
+<p>Well, it's a lot slower than broadcast</p>
+
+
+
+<a name="254805699"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVec%20debugging/near/254805699" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVec.20debugging.html#254805699">(Sep 25 2021 at 04:03)</a>:</h4>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span> <span class="nd">@btime</span> <span class="o">$</span><span class="n">B</span> <span class="o">.=</span> <span class="o">$</span><span class="n">A</span><span class="p">;</span>
+<span class="go">  2.625 ms (0 allocations: 0 bytes)</span>
+
+<span class="gp">julia&gt;</span> <span class="nd">@btime</span> <span class="nd">@turbo</span> <span class="o">$</span><span class="n">B</span> <span class="o">.=</span> <span class="o">$</span><span class="n">A</span><span class="p">;</span>
+<span class="go">  3.223 ms (0 allocations: 0 bytes)</span>
+
+<span class="gp">julia&gt;</span> <span class="nd">@btime</span> <span class="n">vmapnt!</span><span class="p">(</span><span class="n">identity</span><span class="p">,</span> <span class="o">$</span><span class="n">B</span><span class="p">,</span> <span class="o">$</span><span class="n">A</span><span class="p">);</span> <span class="c"># use non-temporal stores</span>
+<span class="go">  2.481 ms (0 allocations: 0 bytes)</span>
+</code></pre></div>
+
+
+
+<a name="254805726"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVec%20debugging/near/254805726" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVec.20debugging.html#254805726">(Sep 25 2021 at 04:03)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269150">Mason Protter</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/LoopVec.20debugging/near/254805681">said</a>:</p>
+<blockquote>
+<p>Well, it's a lot slower than broadcast</p>
+</blockquote>
+<p>The broadcast is <code>ccall</code>-ing <code>memmove</code>.</p>
+
+
+
+<a name="254805755"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVec%20debugging/near/254805755" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVec.20debugging.html#254805755">(Sep 25 2021 at 04:03)</a>:</h4>
+<p>Gotcha</p>
+
+
+
+<a name="254805837"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVec%20debugging/near/254805837" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVec.20debugging.html#254805837">(Sep 25 2021 at 04:05)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">let</span> <span class="n">A</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="mi">2048</span><span class="p">,</span> <span class="mi">2408</span><span class="p">),</span> <span class="n">B</span> <span class="o">=</span> <span class="n">similar</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+           <span class="nd">@btime</span> <span class="n">vmapnt!</span><span class="p">(</span><span class="n">identity</span><span class="p">,</span> <span class="o">$</span><span class="n">B</span><span class="p">,</span> <span class="o">$</span><span class="n">A</span><span class="p">)</span>
+       <span class="k">end</span>
+  <span class="mf">2.679</span> <span class="n">ms</span> <span class="p">(</span><span class="mi">0</span> <span class="n">allocations</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="254806268"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVec%20debugging/near/254806268" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVec.20debugging.html#254806268">(Sep 25 2021 at 04:12)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="284680">chriselrod</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/LoopVec.20debugging/near/254804216">said</a>:</p>
+<blockquote>
+<p>Anyone know where I can find the code for Julia's <code>memmove</code>?</p>
+</blockquote>
+<p><code>gdb</code> tells me this</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="p">(</span><span class="n">gdb</span><span class="p">)</span> <span class="n">b</span> <span class="n">memmove</span>
+<span class="n">Breakpoint</span> <span class="mi">2</span> <span class="n">at</span> <span class="mh">0x7ffff765db70</span><span class="o">:</span> <span class="n">file</span> <span class="o">../</span><span class="n">sysdeps</span><span class="o">/</span><span class="n">x86_64</span><span class="o">/</span><span class="n">multiarch</span><span class="o">/</span><span class="n">ifunc</span><span class="o">-</span><span class="n">memmove</span><span class="o">.</span><span class="n">h</span><span class="p">,</span> <span class="n">line</span> <span class="mf">44.</span>
+</code></pre></div>
+
+
+
+<a name="254806364"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVec%20debugging/near/254806364" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVec.20debugging.html#254806364">(Sep 25 2021 at 04:14)</a>:</h4>
+<p>So somewhere in here? <a href="https://github.com/bminor/glibc/blob/master/sysdeps/x86_64/multiarch/ifunc-memmove.h">https://github.com/bminor/glibc/blob/master/sysdeps/x86_64/multiarch/ifunc-memmove.h</a></p>
+
+
+
+<a name="254806433"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVec%20debugging/near/254806433" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVec.20debugging.html#254806433">(Sep 25 2021 at 04:16)</a>:</h4>
+<p>Thanks. I need to learn gdb (and rr) at some point to find out things like that.<br>
+For now, I'm looking at:<br>
+<a href="https://squadrick.dev/journal/going-faster-than-memcpy.html">https://squadrick.dev/journal/going-faster-than-memcpy.html</a><br>
+Somehow, I hadn't learned about nontemporal loads before. <a href="https://www.felixcloutier.com/x86/movntdqa">https://www.felixcloutier.com/x86/movntdqa</a></p>
+
+
+
+<a name="254806611"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVec%20debugging/near/254806611" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVec.20debugging.html#254806611">(Sep 25 2021 at 04:18)</a>:</h4>
+<p>Also, I need to add a fence instruction to <code>vmapnt(t)!</code>.</p>
+
+
+
+<a name="254806959"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVec%20debugging/near/254806959" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVec.20debugging.html#254806959">(Sep 25 2021 at 04:24)</a>:</h4>
+<p>That article used <code>sfence</code>, but I can only get <code>mfence</code> through the llvm <code>fence</code> instruction (and <code>mfence</code> is already available through <code>Threads.atomic_fence()</code>).</p>
+
+
+
+<a name="254807098"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVec%20debugging/near/254807098" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVec.20debugging.html#254807098">(Sep 25 2021 at 04:27)</a>:</h4>
+<p>But this doesn't sound right:</p>
+<blockquote>
+<p>Orders processor execution relative to all memory stores prior to the SFENCE instruction. The processor ensures that every store prior to SFENCE is globally visible before any store after SFENCE becomes globally visible. The SFENCE instruction is ordered with respect to memory stores, other SFENCE instructions, MFENCE instructions, and any serializing instructions (such as the CPUID instruction). It is not ordered with respect to memory loads or the LFENCE instruction.</p>
+</blockquote>
+<p><a href="https://www.felixcloutier.com/x86/sfence">https://www.felixcloutier.com/x86/sfence</a><br>
+Don't I care about the ordering of loads and stores? I.e., I'd want all loads after the sfence to correctly load from any stores before the sfence to that same memory address.<br>
+If this doesn't guarantee that, then I do need mfence?</p>
+
+
+
+<a name="254807702"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVec%20debugging/near/254807702" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVec.20debugging.html#254807702">(Sep 25 2021 at 04:38)</a>:</h4>
+<p>Maybe the idea is that, if you are doing concurrent programming, there will be atomic release store of a flag after the sfence? The happens-before edge would be established through this flag, but you'd need that the store to this flag is visible after the stores of the big buffer you just copied.</p>
+
+
+
+<a name="254807934"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVec%20debugging/near/254807934" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVec.20debugging.html#254807934">(Sep 25 2021 at 04:43)</a>:</h4>
+<p>I wonder if this is a peculiarity of x86's TSO guarantee. In x86, release store is free (normal mov) because the memory model is very strong. But then you'd need something extra for treating very weak operations like nontemporal store...?</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

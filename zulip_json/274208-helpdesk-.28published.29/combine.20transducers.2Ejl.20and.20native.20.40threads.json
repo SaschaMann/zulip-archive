@@ -1,0 +1,68 @@
+[
+    {
+        "content": "<p>After using <a href=\"https://juliahub.com/ui/Packages/General/Transducers\">Transducers.jl</a> operations in a script and then switching to <code>@threads</code> SOMETIMES I get an error.<br>\nSorry for the vagueness, but it's all I have now and I still didn't manage to reproduce the error.<br>\nAll I know is that sometimes this fails on the <code>Threads.@threads</code></p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">objs</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">tcollect</span><span class=\"p\">([</span><span class=\"n\">dosomething</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">X</span><span class=\"w\"> </span><span class=\"p\">])</span>\n<span class=\"n\">Threads</span><span class=\"o\">.</span><span class=\"nd\">@threads</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">s</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">eachindex</span><span class=\"p\">(</span><span class=\"n\">objs</span><span class=\"p\">)</span>\n<span class=\"w\">  </span><span class=\"n\">dosomethingelse</span><span class=\"p\">(</span><span class=\"o\">...</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<div class=\"spoiler-block\"><div class=\"spoiler-header\">\n<p>The error looks as the following:</p>\n</div><div class=\"spoiler-content\" aria-hidden=\"true\">\n<p>ERROR: LoadError: TaskFailedException</p>\n<div class=\"codehilite\"><pre><span></span><code>nested task error: Could not load glyph 0x0000000000000097 from FTFont (family = TeX Gyre Heros Makie, style = Regular) to get extent. with error: 20\nStacktrace:\n   [1] error(s::String)\n     @ Base ./error.jl:35\n   [2] check_error\n     @ ~/.julia/packages/FreeTypeAbstraction/b8EQ2/src/types.jl:1 [inlined]\n   [3] internal_get_extent(face::FreeTypeAbstraction.FTFont, glyphspec::UInt64)\n     @ FreeTypeAbstraction ~/.julia/packages/FreeTypeAbstraction/b8EQ2/src/types.jl:214\n   [4] #9\n     @ ~/.julia/packages/FreeTypeAbstraction/b8EQ2/src/types.jl:192 [inlined]\n   [5] get!(default::FreeTypeAbstraction.var&quot;#9#10&quot;{FreeTypeAbstraction.FTFont, UInt64}, h::Dict{UInt64, FreeTypeAbstraction.FontExtent{Float32}}, key::UInt64)\n     @ Base ./dict.jl:468\n   [6] get_extent\n     @ ~/.julia/packages/FreeTypeAbstraction/b8EQ2/src/types.jl:191 [inlined]\n   [7] Makie.GlyphExtent(font::FreeTypeAbstraction.FTFont, char::Char)\n     @ Makie ~/.julia/packages/Makie/1hq9u/src/types.jl:324\n   [8] #923\n     @ ~/.julia/packages/Makie/1hq9u/src/layouting/layouting.jl:84 [inlined]\n   [9] _broadcast_getindex_evalf\n</code></pre></div>\n\n<p>Stacktrace:<br>\n [1] threading_run(fun::var\"<a href=\"https://github.com/JuliaLang/julia/issues/418\">#418</a>#threadsfor_fun#63\"{var\"<a href=\"https://github.com/JuliaLang/julia/issues/418\">#418</a>#threadsfor_fun#61#64\"{Base.OneTo{Int64}}}, static::Bool)<br>\n   @ Base.Threads ./threadingconstructs.jl:157<br>\n [2] top-level scope<br>\n   @ ./threadingconstructs.jl:205</p>\n</div></div>\n<p>Initially I thought this was related to Makie but after googling \"Could not load glyph\" it appears other people also had problems with this when multiprocessing.</p>\n<p>Has something similar ever been an issue to you?</p>",
+        "id": 395565988,
+        "sender_full_name": "Filippos Christou",
+        "timestamp": 1696789464
+    },
+    {
+        "content": "<p>Makie does not support multithreading. Unpredictable behavior is expected.</p>",
+        "id": 395566176,
+        "sender_full_name": "jar",
+        "timestamp": 1696789635
+    },
+    {
+        "content": "<p>Plotting packages tend to use a lot of globals.  Too many, in my opinion.  Some of this is kind of understandable because they are usually aspiring to a very convenient user interface and they want to avoid burdening the user with handling objects they probably don't care about.</p>",
+        "id": 395574469,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1696797377
+    },
+    {
+        "content": "<p>Yeah, plotting packages and web frameworks take liberties with global variables and it's for the worse.</p>",
+        "id": 395581335,
+        "sender_full_name": "jar",
+        "timestamp": 1696804697
+    },
+    {
+        "content": "<p>At least web frameworks know they'll be run in a shared-almost-nothing, usually single-threaded environment</p>",
+        "id": 395582966,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1696806467
+    },
+    {
+        "content": "<p>Often that's true, though it's at least partly a consequence of being designed that way. And mutable global state isn't generally to my taste even in single-threaded environments.</p>",
+        "id": 395583902,
+        "sender_full_name": "jar",
+        "timestamp": 1696807401
+    },
+    {
+        "content": "<p>Web frameworks seem super goddamn weird to me.  I had a number of complaints about <a href=\"https://juliahub.com/ui/Packages/General/Oxygen\">Oxygen.jl</a> and only later did I realize that the things I was complaining about were common web framework stuff (among them: inexplicably excessive use of globals).</p>",
+        "id": 395584415,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1696807951
+    },
+    {
+        "content": "<p>Thankfully there are a lot of web frameworks out there, including some that share my design sensibilities.</p>",
+        "id": 395584581,
+        "sender_full_name": "jar",
+        "timestamp": 1696808137
+    },
+    {
+        "content": "<p>Oh, I was thinking about frontend libraries. I agree that having global variable state in server/backend ones is far less optimal, given those often run with a _high_ degree of both concurrency and parallelism</p>",
+        "id": 395609143,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1696822796
+    },
+    {
+        "content": "<p>that sounds reasonable. thanks. it's a pity though. Actually what's happening inside <code>@threads</code> is not generating the figures but saving them to the disk.</p>",
+        "id": 395624745,
+        "sender_full_name": "Filippos Christou",
+        "timestamp": 1696831608
+    },
+    {
+        "content": "<p>pretty much anything you do involving Makie should be assumed to be thread-unsafe.</p>",
+        "id": 395685621,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1696853739
+    }
+]

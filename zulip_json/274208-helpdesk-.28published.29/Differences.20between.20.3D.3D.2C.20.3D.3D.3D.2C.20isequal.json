@@ -1,0 +1,92 @@
+[
+    {
+        "content": "<p>Can you please elaborate on the differences between <code>==</code>, <code>===</code> and <code>isequal</code>? If you had to explain the differences to a newcomer, how would you do it? Can you also give some advise for developers who wish to implement \"equality\" for their own types?</p>",
+        "id": 224676390,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1612141966
+    },
+    {
+        "content": "<p>I would say something along the lines of</p>\n<blockquote>\n<p>There are various notions of equality that are useful for various circumstances. Sometimes we want to be able to distinguish between <code>1.0</code> and <code>1</code> for instance. Sometimes, we think 'yes, these two objects represent the same concept' but other times we want to be able to say 'well, even if they're closely related, they're nor <em>literally</em> identically the same'</p>\n<p>This is where <code>==</code> versus <code>===</code> comes in. <code>==</code> is sometimes called 'equality' whereas <code>===</code> means 'egality' (from German, egal)</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"mi\">1</span> <span class=\"o\">==</span> <span class=\"mf\">1.0</span>\n<span class=\"kc\">true</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"mi\">1</span> <span class=\"o\">===</span> <span class=\"mf\">1.0</span>\n<span class=\"kc\">false</span>\n</code></pre></div>\n<p>The difference between <code>==</code> and isequal` is a bit more subtle, but they're usually the same, except for with Floating point numbers where they behave a bit different for legacy compatability reasons</p>\n</blockquote>",
+        "id": 224677236,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1612143109
+    },
+    {
+        "content": "<p>Maybe extend the example to <code>1</code>, <code>1.0</code>, and <code>NaN</code>? As in</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">vals</span> <span class=\"o\">=</span> <span class=\"kt\">Any</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"mf\">1.0</span><span class=\"p\">,</span> <span class=\"nb\">NaN</span><span class=\"p\">]</span>\n<span class=\"mi\">3</span><span class=\"o\">-</span><span class=\"n\">element</span> <span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">Any</span><span class=\"p\">,</span><span class=\"mi\">1</span><span class=\"p\">}</span><span class=\"o\">:</span>\n   <span class=\"mi\">1</span>\n   <span class=\"mf\">1.0</span>\n <span class=\"nb\">NaN</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"p\">[</span><span class=\"n\">isequal</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span><span class=\"n\">y</span><span class=\"p\">)</span> <span class=\"k\">for</span> <span class=\"n\">x</span> <span class=\"kp\">in</span> <span class=\"n\">vals</span><span class=\"p\">,</span> <span class=\"n\">y</span> <span class=\"kp\">in</span> <span class=\"n\">vals</span><span class=\"p\">]</span>\n<span class=\"mi\">3</span><span class=\"n\">×3</span> <span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">Bool</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">}</span><span class=\"o\">:</span>\n <span class=\"mi\">1</span>  <span class=\"mi\">1</span>  <span class=\"mi\">0</span>\n <span class=\"mi\">1</span>  <span class=\"mi\">1</span>  <span class=\"mi\">0</span>\n <span class=\"mi\">0</span>  <span class=\"mi\">0</span>  <span class=\"mi\">1</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"p\">[</span><span class=\"n\">x</span> <span class=\"o\">==</span> <span class=\"n\">y</span> <span class=\"k\">for</span> <span class=\"n\">x</span> <span class=\"kp\">in</span> <span class=\"n\">vals</span><span class=\"p\">,</span> <span class=\"n\">y</span> <span class=\"kp\">in</span> <span class=\"n\">vals</span><span class=\"p\">]</span>\n<span class=\"mi\">3</span><span class=\"n\">×3</span> <span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">Bool</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">}</span><span class=\"o\">:</span>\n <span class=\"mi\">1</span>  <span class=\"mi\">1</span>  <span class=\"mi\">0</span>\n <span class=\"mi\">1</span>  <span class=\"mi\">1</span>  <span class=\"mi\">0</span>\n <span class=\"mi\">0</span>  <span class=\"mi\">0</span>  <span class=\"mi\">0</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"p\">[</span><span class=\"n\">x</span> <span class=\"o\">===</span> <span class=\"n\">y</span> <span class=\"k\">for</span> <span class=\"n\">x</span> <span class=\"kp\">in</span> <span class=\"n\">vals</span><span class=\"p\">,</span> <span class=\"n\">y</span> <span class=\"kp\">in</span> <span class=\"n\">vals</span><span class=\"p\">]</span>\n<span class=\"mi\">3</span><span class=\"n\">×3</span> <span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">Bool</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">}</span><span class=\"o\">:</span>\n <span class=\"mi\">1</span>  <span class=\"mi\">0</span>  <span class=\"mi\">0</span>\n <span class=\"mi\">0</span>  <span class=\"mi\">1</span>  <span class=\"mi\">0</span>\n <span class=\"mi\">0</span>  <span class=\"mi\">0</span>  <span class=\"mi\">1</span>\n</code></pre></div>",
+        "id": 224677403,
+        "sender_full_name": "Benoit Pasquier",
+        "timestamp": 1612143341
+    },
+    {
+        "content": "<p>Two nans helps a bit actually:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">vals</span> <span class=\"o\">=</span> <span class=\"kt\">Any</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"mf\">1.0</span><span class=\"p\">,</span> <span class=\"nb\">NaN</span><span class=\"p\">,</span> <span class=\"nb\">NaN</span><span class=\"p\">]</span>\n<span class=\"mi\">4</span><span class=\"o\">-</span><span class=\"n\">element</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Any</span><span class=\"p\">}</span><span class=\"o\">:</span>\n   <span class=\"mi\">1</span>\n   <span class=\"mf\">1.0</span>\n <span class=\"nb\">NaN</span>\n <span class=\"nb\">NaN</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"p\">[</span><span class=\"n\">isequal</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span><span class=\"n\">y</span><span class=\"p\">)</span> <span class=\"k\">for</span> <span class=\"n\">x</span> <span class=\"kp\">in</span> <span class=\"n\">vals</span><span class=\"p\">,</span> <span class=\"n\">y</span> <span class=\"kp\">in</span> <span class=\"n\">vals</span><span class=\"p\">]</span>\n<span class=\"mi\">4</span><span class=\"n\">×4</span> <span class=\"kt\">Matrix</span><span class=\"p\">{</span><span class=\"kt\">Bool</span><span class=\"p\">}</span><span class=\"o\">:</span>\n <span class=\"mi\">1</span>  <span class=\"mi\">1</span>  <span class=\"mi\">0</span>  <span class=\"mi\">0</span>\n <span class=\"mi\">1</span>  <span class=\"mi\">1</span>  <span class=\"mi\">0</span>  <span class=\"mi\">0</span>\n <span class=\"mi\">0</span>  <span class=\"mi\">0</span>  <span class=\"mi\">1</span>  <span class=\"mi\">1</span>\n <span class=\"mi\">0</span>  <span class=\"mi\">0</span>  <span class=\"mi\">1</span>  <span class=\"mi\">1</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"p\">[</span><span class=\"n\">x</span> <span class=\"o\">==</span> <span class=\"n\">y</span> <span class=\"k\">for</span> <span class=\"n\">x</span> <span class=\"kp\">in</span> <span class=\"n\">vals</span><span class=\"p\">,</span> <span class=\"n\">y</span> <span class=\"kp\">in</span> <span class=\"n\">vals</span><span class=\"p\">]</span>\n<span class=\"mi\">4</span><span class=\"n\">×4</span> <span class=\"kt\">Matrix</span><span class=\"p\">{</span><span class=\"kt\">Bool</span><span class=\"p\">}</span><span class=\"o\">:</span>\n <span class=\"mi\">1</span>  <span class=\"mi\">1</span>  <span class=\"mi\">0</span>  <span class=\"mi\">0</span>\n <span class=\"mi\">1</span>  <span class=\"mi\">1</span>  <span class=\"mi\">0</span>  <span class=\"mi\">0</span>\n <span class=\"mi\">0</span>  <span class=\"mi\">0</span>  <span class=\"mi\">0</span>  <span class=\"mi\">0</span>\n <span class=\"mi\">0</span>  <span class=\"mi\">0</span>  <span class=\"mi\">0</span>  <span class=\"mi\">0</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"p\">[</span><span class=\"n\">x</span> <span class=\"o\">===</span> <span class=\"n\">y</span> <span class=\"k\">for</span> <span class=\"n\">x</span> <span class=\"kp\">in</span> <span class=\"n\">vals</span><span class=\"p\">,</span> <span class=\"n\">y</span> <span class=\"kp\">in</span> <span class=\"n\">vals</span><span class=\"p\">]</span>\n<span class=\"mi\">4</span><span class=\"n\">×4</span> <span class=\"kt\">Matrix</span><span class=\"p\">{</span><span class=\"kt\">Bool</span><span class=\"p\">}</span><span class=\"o\">:</span>\n <span class=\"mi\">1</span>  <span class=\"mi\">0</span>  <span class=\"mi\">0</span>  <span class=\"mi\">0</span>\n <span class=\"mi\">0</span>  <span class=\"mi\">1</span>  <span class=\"mi\">0</span>  <span class=\"mi\">0</span>\n <span class=\"mi\">0</span>  <span class=\"mi\">0</span>  <span class=\"mi\">1</span>  <span class=\"mi\">1</span>\n <span class=\"mi\">0</span>  <span class=\"mi\">0</span>  <span class=\"mi\">1</span>  <span class=\"mi\">1</span>\n</code></pre></div>",
+        "id": 224677548,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1612143546
+    },
+    {
+        "content": "<p>I'm not sure I see why <span aria-label=\"sweat smile\" class=\"emoji emoji-1f605\" role=\"img\" title=\"sweat smile\">:sweat_smile:</span></p>",
+        "id": 224677687,
+        "sender_full_name": "Benoit Pasquier",
+        "timestamp": 1612143740
+    },
+    {
+        "content": "<p>Oh I <del>know</del> <em>think I get it</em>, what about this:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">vals</span> <span class=\"o\">=</span> <span class=\"kt\">Any</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"mf\">1.0</span><span class=\"p\">,</span> <span class=\"nb\">NaN</span><span class=\"p\">,</span> <span class=\"mi\">0</span><span class=\"o\">/</span><span class=\"mi\">0</span><span class=\"p\">]</span>\n<span class=\"mi\">4</span><span class=\"o\">-</span><span class=\"n\">element</span> <span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">Any</span><span class=\"p\">,</span><span class=\"mi\">1</span><span class=\"p\">}</span><span class=\"o\">:</span>\n   <span class=\"mi\">1</span>\n   <span class=\"mf\">1.0</span>\n <span class=\"nb\">NaN</span>\n <span class=\"nb\">NaN</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"p\">[</span><span class=\"n\">isequal</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span><span class=\"n\">y</span><span class=\"p\">)</span> <span class=\"k\">for</span> <span class=\"n\">x</span> <span class=\"kp\">in</span> <span class=\"n\">vals</span><span class=\"p\">,</span> <span class=\"n\">y</span> <span class=\"kp\">in</span> <span class=\"n\">vals</span><span class=\"p\">]</span>\n<span class=\"mi\">4</span><span class=\"n\">×4</span> <span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">Bool</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">}</span><span class=\"o\">:</span>\n <span class=\"mi\">1</span>  <span class=\"mi\">1</span>  <span class=\"mi\">0</span>  <span class=\"mi\">0</span>\n <span class=\"mi\">1</span>  <span class=\"mi\">1</span>  <span class=\"mi\">0</span>  <span class=\"mi\">0</span>\n <span class=\"mi\">0</span>  <span class=\"mi\">0</span>  <span class=\"mi\">1</span>  <span class=\"mi\">1</span>\n <span class=\"mi\">0</span>  <span class=\"mi\">0</span>  <span class=\"mi\">1</span>  <span class=\"mi\">1</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"p\">[</span><span class=\"n\">x</span> <span class=\"o\">==</span> <span class=\"n\">y</span> <span class=\"k\">for</span> <span class=\"n\">x</span> <span class=\"kp\">in</span> <span class=\"n\">vals</span><span class=\"p\">,</span> <span class=\"n\">y</span> <span class=\"kp\">in</span> <span class=\"n\">vals</span><span class=\"p\">]</span>\n<span class=\"mi\">4</span><span class=\"n\">×4</span> <span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">Bool</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">}</span><span class=\"o\">:</span>\n <span class=\"mi\">1</span>  <span class=\"mi\">1</span>  <span class=\"mi\">0</span>  <span class=\"mi\">0</span>\n <span class=\"mi\">1</span>  <span class=\"mi\">1</span>  <span class=\"mi\">0</span>  <span class=\"mi\">0</span>\n <span class=\"mi\">0</span>  <span class=\"mi\">0</span>  <span class=\"mi\">0</span>  <span class=\"mi\">0</span>\n <span class=\"mi\">0</span>  <span class=\"mi\">0</span>  <span class=\"mi\">0</span>  <span class=\"mi\">0</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"p\">[</span><span class=\"n\">x</span> <span class=\"o\">===</span> <span class=\"n\">y</span> <span class=\"k\">for</span> <span class=\"n\">x</span> <span class=\"kp\">in</span> <span class=\"n\">vals</span><span class=\"p\">,</span> <span class=\"n\">y</span> <span class=\"kp\">in</span> <span class=\"n\">vals</span><span class=\"p\">]</span>\n<span class=\"mi\">4</span><span class=\"n\">×4</span> <span class=\"kt\">Array</span><span class=\"p\">{</span><span class=\"kt\">Bool</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">}</span><span class=\"o\">:</span>\n <span class=\"mi\">1</span>  <span class=\"mi\">0</span>  <span class=\"mi\">0</span>  <span class=\"mi\">0</span>\n <span class=\"mi\">0</span>  <span class=\"mi\">1</span>  <span class=\"mi\">0</span>  <span class=\"mi\">0</span>\n <span class=\"mi\">0</span>  <span class=\"mi\">0</span>  <span class=\"mi\">1</span>  <span class=\"mi\">0</span>\n <span class=\"mi\">0</span>  <span class=\"mi\">0</span>  <span class=\"mi\">0</span>  <span class=\"mi\">1</span>\n</code></pre></div>",
+        "id": 224677728,
+        "sender_full_name": "Benoit Pasquier",
+        "timestamp": 1612143840
+    },
+    {
+        "content": "<p>Yeah, <code>isequal</code> treats all various <code>NaN</code> values (of which there are many!) the same.</p>",
+        "id": 224677934,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1612144102
+    },
+    {
+        "content": "<p>BTW, are you sure the origin for egal is not french? (Could not find the flag emojis!)</p>",
+        "id": 224678084,
+        "sender_full_name": "Benoit Pasquier",
+        "timestamp": 1612144345
+    },
+    {
+        "content": "<p>Ah I didn't realize this was also in french. Looks like it's a loan word in German from French!</p>",
+        "id": 224678241,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1612144600
+    },
+    {
+        "content": "<p>I have no idea, I just asked because we also say \"égal\" in french, like in the french moto <a href=\"https://en.wikipedia.org/wiki/Libert%C3%A9,_%C3%A9galit%C3%A9,_fraternit%C3%A9\">\"Liberté, Égalité, Fraternité\" </a></p>",
+        "id": 224687648,
+        "sender_full_name": "Benoit Pasquier",
+        "timestamp": 1612158054
+    },
+    {
+        "content": "<p>You should add a <code>missing</code>, too. <code>missing === missing</code> but not <code>missing == missing</code>, which is... <code>missing</code> ^^</p>",
+        "id": 224697888,
+        "sender_full_name": "Florian Große",
+        "timestamp": 1612168813
+    },
+    {
+        "content": "<p>Yes it would be nice to add missing to the great code snippets above.</p>",
+        "id": 224700613,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1612170700
+    },
+    {
+        "content": "<p>Oh wait, is it better to edit my post above (because it is published now?) or should I just reply?</p>",
+        "id": 224709222,
+        "sender_full_name": "Benoit Pasquier",
+        "timestamp": 1612176329
+    },
+    {
+        "content": "<p>Maybe it's worth including minus zero? <code>vals = Any[0, 0.0, -0.0, NaN, 0/0, missing]</code>. Would actually be great to put this in the docs somewhere.</p>",
+        "id": 224714210,
+        "sender_full_name": "Michael Abbott",
+        "timestamp": 1612179690
+    },
+    {
+        "content": "<p>Strange. Egality seems to be closer in meaning to equivalence. I'd inclined to think that <code>1</code> is equivalent to <code>1.0</code>, but not equal to <code>1.0</code>.</p>",
+        "id": 224819839,
+        "sender_full_name": "Rein Zustand",
+        "timestamp": 1612230947
+    }
+]

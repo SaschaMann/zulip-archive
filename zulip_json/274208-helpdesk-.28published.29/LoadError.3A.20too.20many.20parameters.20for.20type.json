@@ -1,0 +1,68 @@
+[
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"c\">#CartesianGrid is defined like this</span>\n<span class=\"k\">struct</span> <span class=\"n\">CartesianGrid</span><span class=\"p\">{</span><span class=\"n\">Dim</span><span class=\"p\">,</span><span class=\"n\">T</span><span class=\"p\">}</span> <span class=\"o\">&lt;:</span> <span class=\"n\">Mesh</span><span class=\"p\">{</span><span class=\"n\">Dim</span><span class=\"p\">,</span><span class=\"n\">T</span><span class=\"p\">}</span>\n    <span class=\"c\">#code</span>\n<span class=\"k\">end</span>\n\n<span class=\"c\">#This function throws error</span>\n<span class=\"k\">function</span> <span class=\"n\">AbstractPlotting</span><span class=\"o\">.</span><span class=\"n\">plot!</span><span class=\"p\">(</span><span class=\"n\">grid</span><span class=\"o\">::</span><span class=\"n\">CartesianGrid</span><span class=\"p\">{</span><span class=\"n\">Dim</span><span class=\"p\">,</span><span class=\"n\">T</span><span class=\"p\">})</span> <span class=\"n\">where</span> <span class=\"p\">{</span><span class=\"n\">Dim</span><span class=\"p\">,</span><span class=\"n\">T</span><span class=\"p\">}</span>\n    <span class=\"c\">#code</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>throws error <code>LoadError: too many parameters for type</code><br>\nMy understanding is that I'm specifying two parameters <code>Dim</code> and <code>T</code> whereas only one/none should be possible according to this error. Why is it so?</p>\n<p><a href=\"https://discourse.julialang.org/t/tricky-too-many-parameters-for-type-error/25182/6\">https://discourse.julialang.org/t/tricky-too-many-parameters-for-type-error/25182/6</a> this is also about the same error but I'm unable to understand the solution there.</p>",
+        "id": 227549351,
+        "sender_full_name": "Gaurav Wasnik",
+        "timestamp": 1614143606
+    },
+    {
+        "content": "<p>Could you give a runnable example that replciates the error you're getting?</p>",
+        "id": 227549611,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614143873
+    },
+    {
+        "content": "<p>E.g. how is <code>Mesh</code> defined?</p>",
+        "id": 227549654,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614143885
+    },
+    {
+        "content": "<p>Whatever is causing the error you're experiencing isn't actually caused by the code you've written here:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">abstract</span> <span class=\"k\">type</span> <span class=\"n\">Mesh</span><span class=\"p\">{</span><span class=\"n\">Dim</span><span class=\"p\">,</span> <span class=\"n\">T</span><span class=\"p\">}</span> <span class=\"k\">end</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">struct</span> <span class=\"n\">CartesianGrid</span><span class=\"p\">{</span><span class=\"n\">Dim</span><span class=\"p\">,</span> <span class=\"n\">T</span><span class=\"p\">}</span> <span class=\"o\">&lt;:</span> <span class=\"n\">Mesh</span><span class=\"p\">{</span><span class=\"n\">Dim</span><span class=\"p\">,</span> <span class=\"n\">T</span><span class=\"p\">}</span> <span class=\"k\">end</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"n\">CartesianGrid</span><span class=\"p\">{</span><span class=\"n\">Dim</span><span class=\"p\">,</span> <span class=\"n\">T</span><span class=\"p\">})</span> <span class=\"n\">where</span> <span class=\"p\">{</span><span class=\"n\">Dim</span><span class=\"p\">,</span> <span class=\"n\">T</span><span class=\"p\">}</span> <span class=\"o\">=</span> <span class=\"p\">(</span><span class=\"n\">Dim</span><span class=\"p\">,</span> <span class=\"n\">T</span><span class=\"p\">)</span>\n<span class=\"n\">f</span> <span class=\"p\">(</span><span class=\"n\">generic</span> <span class=\"k\">function</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">CartesianGrid</span><span class=\"p\">{</span><span class=\"mi\">2</span><span class=\"p\">,</span> <span class=\"kt\">Float64</span><span class=\"p\">}())</span>\n<span class=\"p\">(</span><span class=\"mi\">2</span><span class=\"p\">,</span> <span class=\"kt\">Float64</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 227549786,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614144008
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">abstract</span> <span class=\"k\">type</span> <span class=\"n\">Mesh</span><span class=\"p\">{</span><span class=\"n\">Dim</span><span class=\"p\">,</span><span class=\"n\">T</span><span class=\"p\">}</span> <span class=\"o\">&lt;:</span> <span class=\"n\">Domain</span><span class=\"p\">{</span><span class=\"n\">Dim</span><span class=\"p\">,</span><span class=\"n\">T</span><span class=\"p\">}</span> <span class=\"k\">end</span>\n<span class=\"k\">abstract</span> <span class=\"k\">type</span> <span class=\"n\">Domain</span><span class=\"p\">{</span><span class=\"n\">Dim</span><span class=\"p\">,</span><span class=\"n\">T</span><span class=\"p\">}</span> <span class=\"k\">end</span>\n</code></pre></div>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"c\">#Code to reproduce the error</span>\n<span class=\"c\">#CartesianGrid is defined in Meshes</span>\n<span class=\"k\">using</span> <span class=\"n\">Meshes</span>\n<span class=\"k\">using</span> <span class=\"n\">GLMakie</span>\n\n<span class=\"nd\">@recipe</span><span class=\"p\">(</span><span class=\"n\">CartesianGrid</span><span class=\"p\">)</span> <span class=\"k\">do</span> <span class=\"n\">scene</span>\n    <span class=\"n\">Attributes</span><span class=\"p\">(</span>\n        <span class=\"n\">seriescolor</span> <span class=\"o\">=</span> <span class=\"o\">:</span><span class=\"n\">black</span><span class=\"p\">,</span>\n    <span class=\"p\">)</span>\n  <span class=\"k\">end</span>\n\n<span class=\"k\">function</span> <span class=\"n\">AbstractPlotting</span><span class=\"o\">.</span><span class=\"n\">plot!</span><span class=\"p\">(</span><span class=\"n\">grid</span><span class=\"o\">::</span><span class=\"n\">CartesianGrid</span><span class=\"p\">{</span><span class=\"n\">Dim</span><span class=\"p\">,</span><span class=\"n\">T</span><span class=\"p\">})</span> <span class=\"n\">where</span> <span class=\"p\">{</span><span class=\"n\">Dim</span><span class=\"p\">,</span><span class=\"n\">T</span><span class=\"p\">}</span>\n    <span class=\"c\">#code</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>Thanks for the quick reply<br>\nShould I look into the source code of Meshes; and what could be the possible mistake leading to this error?</p>",
+        "id": 227550432,
+        "sender_full_name": "Gaurav Wasnik",
+        "timestamp": 1614144643
+    },
+    {
+        "content": "<p>It looks like the reason this is happening is that <code>CartesianGrid</code> isn't a struct, it's actually this:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">CartesianGrid</span>\n<span class=\"n\">Combined</span><span class=\"p\">{</span><span class=\"n\">cartesiangrid</span><span class=\"p\">,</span> <span class=\"n\">ArgType</span><span class=\"p\">}</span> <span class=\"n\">where</span> <span class=\"n\">ArgType</span>\n</code></pre></div>\n<p>It only has one type parameter, not two.</p>",
+        "id": 227551166,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614145331
+    },
+    {
+        "content": "<p>Aha! it looks like it's the <code>recipe</code> that screwed things up:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@macroexpand</span> <span class=\"nd\">@recipe</span><span class=\"p\">(</span><span class=\"n\">CartesianGrid</span><span class=\"p\">)</span> <span class=\"k\">do</span> <span class=\"n\">scene</span>\n           <span class=\"n\">Attributes</span><span class=\"p\">(</span>\n               <span class=\"n\">seriescolor</span> <span class=\"o\">=</span> <span class=\"o\">:</span><span class=\"n\">black</span><span class=\"p\">,</span>\n           <span class=\"p\">)</span>\n         <span class=\"k\">end</span>\n<span class=\"k\">quote</span>\n    <span class=\"cm\">#= /home/mason/.julia/packages/AbstractPlotting/cfp2m/src/recipes.jl:130 =#</span>\n    <span class=\"n\">cartesiangrid</span><span class=\"p\">()</span> <span class=\"o\">=</span> <span class=\"k\">begin</span>\n            <span class=\"cm\">#= /home/mason/.julia/packages/AbstractPlotting/cfp2m/src/recipes.jl:130 =#</span>\n            <span class=\"n\">AbstractPlotting</span><span class=\"o\">.</span><span class=\"n\">not_implemented_for</span><span class=\"p\">(</span><span class=\"n\">cartesiangrid</span><span class=\"p\">)</span>\n        <span class=\"k\">end</span>\n    <span class=\"cm\">#= /home/mason/.julia/packages/AbstractPlotting/cfp2m/src/recipes.jl:131 =#</span>\n    <span class=\"kd\">const</span> <span class=\"n\">CartesianGrid</span><span class=\"p\">{</span><span class=\"n\">ArgType</span><span class=\"p\">}</span> <span class=\"o\">=</span> <span class=\"n\">AbstractPlotting</span><span class=\"o\">.</span><span class=\"n\">Combined</span><span class=\"p\">{</span><span class=\"n\">cartesiangrid</span><span class=\"p\">,</span> <span class=\"n\">ArgType</span><span class=\"p\">}</span>\n<span class=\"p\">[</span><span class=\"o\">...</span><span class=\"p\">]</span>\n</code></pre></div>\n<p>See here, it defined a new <code>CartesianGrid</code> that shadowed <code>Meshes.CartesianGrid</code> in your module</p>",
+        "id": 227551306,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614145515
+    },
+    {
+        "content": "<p>You could write</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">AbstractPlotting</span><span class=\"o\">.</span><span class=\"n\">plot!</span><span class=\"p\">(</span><span class=\"n\">grid</span><span class=\"o\">::</span><span class=\"n\">Meshes</span><span class=\"o\">.</span><span class=\"n\">CartesianGrid</span><span class=\"p\">{</span><span class=\"n\">Dim</span><span class=\"p\">,</span><span class=\"n\">T</span><span class=\"p\">})</span> <span class=\"n\">where</span> <span class=\"p\">{</span><span class=\"n\">Dim</span><span class=\"p\">,</span><span class=\"n\">T</span><span class=\"p\">}</span>\n    <span class=\"c\">#code</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 227551317,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614145538
+    },
+    {
+        "content": "<p>Woah, thanks for the solution!<br>\nIt works now and also the reason behind the error is clear! <span aria-label=\"+1\" class=\"emoji emoji-1f44d\" role=\"img\" title=\"+1\">:+1:</span></p>",
+        "id": 227551496,
+        "sender_full_name": "Gaurav Wasnik",
+        "timestamp": 1614145695
+    },
+    {
+        "content": "<p>Glad I could help <span aria-label=\"grinning\" class=\"emoji emoji-1f600\" role=\"img\" title=\"grinning\">:grinning:</span></p>",
+        "id": 227551527,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1614145799
+    },
+    {
+        "content": "<p>You can also ask this sort of questions in <a class=\"stream\" data-stream-id=\"275558\" href=\"/#narrow/stream/275558-meshes.2Ejl\">#meshes.jl</a> channel. <span class=\"user-mention\" data-user-id=\"273172\">@Júlio Hoffimann</span> is a main maintainer of the corresponding packages and usually very responsive.</p>",
+        "id": 227559561,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1614152399
+    }
+]

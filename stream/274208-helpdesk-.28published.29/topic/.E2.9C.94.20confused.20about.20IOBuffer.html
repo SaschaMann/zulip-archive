@@ -1,0 +1,71 @@
+<html>
+<head><meta charset="utf-8"><title>✔ confused about IOBuffer · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20confused.20about.20IOBuffer.html">✔ confused about IOBuffer</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="448850059"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20confused%20about%20IOBuffer/near/448850059" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Leandro Martínez <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20confused.20about.20IOBuffer.html#448850059">(Jul 03 2024 at 13:27)</a>:</h4>
+<p>Here I want to iterate over the lines of a generated buffer:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="n">io</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">IOBuffer</span><span class="p">();</span><span class="w"> </span><span class="n">write</span><span class="p">(</span><span class="n">io</span><span class="p">,</span><span class="w"> </span><span class="s">"abc</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span><span class="w"> </span><span class="n">write</span><span class="p">(</span><span class="n">io</span><span class="p">,</span><span class="w"> </span><span class="s">"def"</span><span class="p">)</span>
+<span class="go">3</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">line</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">eachline</span><span class="p">(</span><span class="n">io</span><span class="p">)</span>
+<span class="w">           </span><span class="nd">@show</span><span class="w"> </span><span class="n">line</span>
+<span class="w">       </span><span class="k">end</span>
+
+<span class="gp">julia&gt;</span>
+</code></pre></div>
+<p>Clearly, it does not work. I have to convert the <code>io</code> object to a string, then I try:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="n">io</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">IOBuffer</span><span class="p">();</span><span class="w"> </span><span class="n">write</span><span class="p">(</span><span class="n">io</span><span class="p">,</span><span class="w"> </span><span class="s">"abc</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span><span class="w"> </span><span class="n">write</span><span class="p">(</span><span class="n">io</span><span class="p">,</span><span class="w"> </span><span class="s">"def"</span><span class="p">)</span>
+<span class="go">3</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">line</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">eachline</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="n">take!</span><span class="p">(</span><span class="n">io</span><span class="p">)))</span>
+<span class="w">           </span><span class="nd">@show</span><span class="w"> </span><span class="n">line</span>
+<span class="w">       </span><span class="k">end</span>
+<span class="gr">ERROR: SystemError: opening file "abc\ndef": No such file or directory</span>
+</code></pre></div>
+<p>which fails, because <code>eachline</code> expects a filename, or a <code>IOBuffer</code>. Thus,<br>
+I have to wrap the string again in a <code>IOBuffer</code> to make that work:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="n">io</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">IOBuffer</span><span class="p">();</span><span class="w"> </span><span class="n">write</span><span class="p">(</span><span class="n">io</span><span class="p">,</span><span class="w"> </span><span class="s">"abc</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span><span class="w"> </span><span class="n">write</span><span class="p">(</span><span class="n">io</span><span class="p">,</span><span class="w"> </span><span class="s">"def"</span><span class="p">)</span>
+<span class="go">3</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">String</span><span class="p">(</span><span class="n">take!</span><span class="p">(</span><span class="n">io</span><span class="p">))</span>
+<span class="go">"abc\ndef"</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">line</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">eachline</span><span class="p">(</span><span class="kt">IOBuffer</span><span class="p">(</span><span class="n">str</span><span class="p">))</span>
+<span class="w">           </span><span class="nd">@show</span><span class="w"> </span><span class="n">line</span>
+<span class="w">       </span><span class="k">end</span>
+<span class="go">line = "abc"</span>
+<span class="go">line = "def"</span>
+</code></pre></div>
+<p>That feels a little odd. Is there a more reasonable approach to iterate over the lines of the originally written <code>io</code> object without having to <br>
+first convert it to string and then wrap it again in a <code>IOBuffer</code>?</p>
+
+
+
+<a name="448851347"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20confused%20about%20IOBuffer/near/448851347" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gunnar Farnebäck <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20confused.20about.20IOBuffer.html#448851347">(Jul 03 2024 at 13:33)</a>:</h4>
+<p>Try <code>seekstart</code>. It's the position in the buffer which trips you up.</p>
+
+
+
+<a name="448858854"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20confused%20about%20IOBuffer/near/448858854" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20confused.20about.20IOBuffer.html#448858854">(Jul 03 2024 at 14:03)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="455681">Leandro Martínez</span> has marked this topic as resolved.</p>
+
+
+
+<a name="448858881"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20confused%20about%20IOBuffer/near/448858881" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Leandro Martínez <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20confused.20about.20IOBuffer.html#448858881">(Jul 03 2024 at 14:03)</a>:</h4>
+<p>Thanks!</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

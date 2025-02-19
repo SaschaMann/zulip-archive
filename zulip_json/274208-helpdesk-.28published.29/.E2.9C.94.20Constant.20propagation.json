@@ -1,0 +1,158 @@
+[
+    {
+        "content": "<p>Is there a way to tell constant propagation to <em>just keep propagating</em>? I keep running into cases where the types are perfectly well known, but  constant propagation has been \"Disabled by argument and rettype heuristics\" and the return type has been widened into something else.</p>",
+        "id": 290546826,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1658512980
+    },
+    {
+        "content": "<p>At first glance it seems like <code>Base.@constprop :aggressive</code> should do exactly what I want, but so far when I've tried it it actually hasn't helped</p>",
+        "id": 290546901,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1658513019
+    },
+    {
+        "content": "<p>I haven't found it terribly useful in practice (similar experiences). I would be happy to help but I can't promise that I'm smart enough to figure it out.</p>",
+        "id": 290548359,
+        "sender_full_name": "Zachary P Christensen",
+        "timestamp": 1658513679
+    },
+    {
+        "content": "<p>The next thing I'm trying is just adding manual type annotations.. think that'll work?</p>",
+        "id": 290548546,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1658513768
+    },
+    {
+        "content": "<p>The context is the top-level functions in <a href=\"https://github.com/brenhinkeller/StaticMPI.jl\">https://github.com/brenhinkeller/StaticMPI.jl</a></p>",
+        "id": 290548620,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1658513824
+    },
+    {
+        "content": "<p>I'm trying to get things to statically compile, so need total type stability --  which so far works fine if I keep the whole program _super simple_ -- but as soon as I try to do something less trivial, functions that were previously inferring stably start giving that \"Disabled by argument and rettype heuristics\" message in Cthulhu and I start getting <code>Union{}</code></p>",
+        "id": 290548905,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1658513980
+    },
+    {
+        "content": "<p>is it the <code>source</code>, <code>dest</code>,  and <code>tag</code> in the <code>MPI_*</code> methods?</p>",
+        "id": 290549066,
+        "sender_full_name": "Zachary P Christensen",
+        "timestamp": 1658514059
+    },
+    {
+        "content": "<p>The return types of functions like <a href=\"https://github.com/brenhinkeller/StaticMPI.jl/blob/main/src/StaticMPI.jl#L110-L118\">https://github.com/brenhinkeller/StaticMPI.jl/blob/main/src/StaticMPI.jl#L110-L118</a> have been giving me a lot of trouble -- like I'll put an Int32 in the ref, but when I fetch it back out it doesn't seem to know the type any more unless I annotate it</p>",
+        "id": 290549784,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1658514452
+    },
+    {
+        "content": "<p>The very simplest functions are fine, so like this example in the tests works just fine: <a href=\"https://github.com/brenhinkeller/StaticMPI.jl/blob/main/test/scripts/mpihello_mpich.jl\">https://github.com/brenhinkeller/StaticMPI.jl/blob/main/test/scripts/mpihello_mpich.jl</a></p>",
+        "id": 290549889,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1658514500
+    },
+    {
+        "content": "<p>But the Isend and Irecv have been a lot of trouble to get working</p>",
+        "id": 290549920,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1658514515
+    },
+    {
+        "content": "<p>This is my current attempt which I just can't get to work <br>\n<a href=\"https://github.com/brenhinkeller/StaticMPI.jl/blob/main/test/scripts/mpisendrecv.jl\">https://github.com/brenhinkeller/StaticMPI.jl/blob/main/test/scripts/mpisendrecv.jl</a><br>\n(though there may also be some regular old bugs in there confounding things -- it doesn't help that I can't call any of these MPI functions interactively to test things because they segfault unless compiled in a way that links to libmpi <span aria-label=\"laughing\" class=\"emoji emoji-1f606\" role=\"img\" title=\"laughing\">:laughing:</span> )</p>",
+        "id": 290550942,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1658515022
+    },
+    {
+        "content": "<p>What happens if you use the concrete type <code>RefValue{T}</code> instead of the abstract type <code>Ref{T}</code>?</p>",
+        "id": 290552127,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1658515732
+    },
+    {
+        "content": "<p>Hmm, good point..</p>",
+        "id": 290552164,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1658515768
+    },
+    {
+        "content": "<p><code>RefValue</code> was my gonna be my first guess too. Perhaps going back and forth between<code>Ref</code> and <code>⅋</code> into a pointer is part of the problem. I'm not sure how well the heuristics of constant propagation play with memory storage.</p>",
+        "id": 290552720,
+        "sender_full_name": "Zachary P Christensen",
+        "timestamp": 1658516060
+    },
+    {
+        "content": "<p>Yeah, that probably doesn't help..</p>",
+        "id": 290554927,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1658517238
+    },
+    {
+        "content": "<p>BTW, note that Julia 1.8 adds the effects system, and Cthulhu can help you inspect inferred effects (<code>e</code> for effects).</p>",
+        "id": 290592050,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1658549633
+    },
+    {
+        "content": "<p>It helps to turn off optimizations <code>o</code>, otherwise a lot of the interesting code will be compiled away.</p>",
+        "id": 290592251,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1658549897
+    },
+    {
+        "content": "<p>These allow constant evaluation, which is dramatically faster than constant propagation. E.g., constant propagation for <code>sin(1.0)</code> means running code through the AbstractInterpreter, which is a very slow interpreter, while constant evaluation means the compiler just gets to call <code>sin(::Float64)</code>, so it's likely to be more aggressive.</p>\n<p>But <code>RefValue</code>s do cause problems currently, because of course <code>setfield!</code> has a side effect, and <code>getfield</code> of a memory address isn't consistent</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"p\">[(</span><span class=\"o\">!</span><span class=\"n\">c</span><span class=\"p\">,</span><span class=\"o\">!</span><span class=\"n\">e</span><span class=\"p\">,</span><span class=\"o\">+</span><span class=\"n\">n</span><span class=\"p\">,</span><span class=\"o\">+</span><span class=\"n\">t</span><span class=\"p\">,</span><span class=\"o\">+</span><span class=\"n\">s</span><span class=\"p\">)]</span><span class=\"n\">reftest</span><span class=\"p\">()</span><span class=\"w\"></span>\n<span class=\"w\">     </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">Main</span><span class=\"w\"> </span><span class=\"n\">REPL</span><span class=\"p\">[</span><span class=\"mi\">5</span><span class=\"p\">]</span><span class=\"o\">:</span><span class=\"mi\">1</span><span class=\"w\"></span>\n<span class=\"n\">Variables</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"c\">#self#::Core.Const(reftest)</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">Base</span><span class=\"o\">.</span><span class=\"kt\">RefValue</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">}</span><span class=\"w\"></span>\n\n<span class=\"n\">│</span><span class=\"w\"> </span><span class=\"n\">─</span><span class=\"w\"> </span><span class=\"o\">%-</span><span class=\"mi\">1</span><span class=\"w\">  </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">invoke</span><span class=\"w\"> </span><span class=\"n\">reftest</span><span class=\"p\">()</span><span class=\"o\">::</span><span class=\"kt\">Int64</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">REPL</span><span class=\"p\">[</span><span class=\"mi\">5</span><span class=\"p\">]</span><span class=\"o\">:</span><span class=\"mi\">2</span><span class=\"w\"> </span><span class=\"n\">within</span><span class=\"w\"> </span><span class=\"sb\">`reftest`</span><span class=\"w\"></span>\n<span class=\"mi\">1</span><span class=\"w\"> </span><span class=\"n\">─</span><span class=\"w\"> </span><span class=\"o\">%</span><span class=\"mi\">1</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">RefValue</span><span class=\"o\">::</span><span class=\"kt\">Core</span><span class=\"o\">.</span><span class=\"n\">Const</span><span class=\"p\">(</span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">RefValue</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"n\">│</span><span class=\"w\">   </span><span class=\"o\">%</span><span class=\"mi\">2</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">Core</span><span class=\"o\">.</span><span class=\"n\">apply_type</span><span class=\"p\">(</span><span class=\"o\">%</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">Main</span><span class=\"o\">.</span><span class=\"kt\">Int</span><span class=\"p\">)</span><span class=\"o\">::</span><span class=\"kt\">Core</span><span class=\"o\">.</span><span class=\"n\">Const</span><span class=\"p\">(</span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"kt\">RefValue</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">})</span><span class=\"w\"></span>\n<span class=\"n\">│</span><span class=\"w\">        </span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"o\">%</span><span class=\"mi\">2</span><span class=\"p\">)())</span><span class=\"o\">::</span><span class=\"kt\">Base</span><span class=\"o\">.</span><span class=\"kt\">RefValue</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">}</span><span class=\"w\"></span>\n<span class=\"n\">│</span><span class=\"w\">   </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">REPL</span><span class=\"p\">[</span><span class=\"mi\">5</span><span class=\"p\">]</span><span class=\"o\">:</span><span class=\"mi\">3</span><span class=\"w\"> </span><span class=\"n\">within</span><span class=\"w\"> </span><span class=\"sb\">`reftest`</span><span class=\"w\"></span>\n<span class=\"n\">│</span><span class=\"w\">        </span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">setindex!</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">3</span><span class=\"p\">)</span><span class=\"o\">::</span><span class=\"kt\">Any</span><span class=\"w\"></span>\n<span class=\"n\">│</span><span class=\"w\">   </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">REPL</span><span class=\"p\">[</span><span class=\"mi\">5</span><span class=\"p\">]</span><span class=\"o\">:</span><span class=\"mi\">4</span><span class=\"w\"> </span><span class=\"n\">within</span><span class=\"w\"> </span><span class=\"sb\">`reftest`</span><span class=\"w\"></span>\n<span class=\"n\">│</span><span class=\"w\">   </span><span class=\"o\">%</span><span class=\"mi\">5</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">getindex</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"o\">::</span><span class=\"kt\">Int64</span><span class=\"w\"></span>\n<span class=\"n\">└──</span><span class=\"w\">      </span><span class=\"k\">return</span><span class=\"w\"> </span><span class=\"o\">%</span><span class=\"mi\">5</span><span class=\"w\"></span>\n<span class=\"n\">Select</span><span class=\"w\"> </span><span class=\"n\">a</span><span class=\"w\"> </span><span class=\"n\">call</span><span class=\"w\"> </span><span class=\"n\">to</span><span class=\"w\"> </span><span class=\"n\">descend</span><span class=\"w\"> </span><span class=\"n\">into</span><span class=\"w\"> </span><span class=\"n\">or</span><span class=\"w\"> </span><span class=\"o\">↩</span><span class=\"w\"> </span><span class=\"n\">to</span><span class=\"w\"> </span><span class=\"n\">ascend</span><span class=\"o\">.</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">q</span><span class=\"p\">]</span><span class=\"n\">uit</span><span class=\"o\">.</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">b</span><span class=\"p\">]</span><span class=\"n\">ookmark</span><span class=\"o\">.</span><span class=\"w\"></span>\n<span class=\"n\">Toggles</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">o</span><span class=\"p\">]</span><span class=\"n\">ptimize</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">w</span><span class=\"p\">]</span><span class=\"n\">arn</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">h</span><span class=\"p\">]</span><span class=\"n\">ide</span><span class=\"w\"> </span><span class=\"n\">type</span><span class=\"o\">-</span><span class=\"n\">stable</span><span class=\"w\"> </span><span class=\"n\">statements</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">d</span><span class=\"p\">]</span><span class=\"n\">ebuginfo</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">r</span><span class=\"p\">]</span><span class=\"n\">emarks</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">e</span><span class=\"p\">]</span><span class=\"n\">ffects</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span><span class=\"n\">nlining</span><span class=\"w\"> </span><span class=\"n\">costs</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">t</span><span class=\"p\">]</span><span class=\"n\">ype</span><span class=\"w\"> </span><span class=\"n\">annotations</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">s</span><span class=\"p\">]</span><span class=\"n\">yntax</span><span class=\"w\"> </span><span class=\"n\">highlight</span><span class=\"w\"> </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">Source</span><span class=\"o\">/</span><span class=\"n\">LLVM</span><span class=\"o\">/</span><span class=\"n\">Native</span><span class=\"o\">.</span><span class=\"w\"></span>\n<span class=\"n\">Show</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">S</span><span class=\"p\">]</span><span class=\"n\">ource</span><span class=\"w\"> </span><span class=\"n\">code</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">A</span><span class=\"p\">]</span><span class=\"n\">ST</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">T</span><span class=\"p\">]</span><span class=\"n\">yped</span><span class=\"w\"> </span><span class=\"n\">code</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">L</span><span class=\"p\">]</span><span class=\"n\">LVM</span><span class=\"w\"> </span><span class=\"n\">IR</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">N</span><span class=\"p\">]</span><span class=\"n\">ative</span><span class=\"w\"> </span><span class=\"n\">code</span><span class=\"w\"></span>\n<span class=\"n\">Actions</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">E</span><span class=\"p\">]</span><span class=\"n\">dit</span><span class=\"w\"> </span><span class=\"n\">source</span><span class=\"w\"> </span><span class=\"n\">code</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">R</span><span class=\"p\">]</span><span class=\"n\">evise</span><span class=\"w\"> </span><span class=\"n\">and</span><span class=\"w\"> </span><span class=\"n\">redisplay</span><span class=\"w\"></span>\n<span class=\"n\">Advanced</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"n\">dump</span><span class=\"w\"> </span><span class=\"p\">[</span><span class=\"n\">P</span><span class=\"p\">]</span><span class=\"n\">arams</span><span class=\"w\"> </span><span class=\"n\">cache</span><span class=\"o\">.</span><span class=\"w\"></span>\n<span class=\"w\"> </span><span class=\"n\">•</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"o\">?</span><span class=\"n\">c</span><span class=\"p\">,</span><span class=\"o\">+</span><span class=\"n\">e</span><span class=\"p\">,</span><span class=\"o\">+</span><span class=\"n\">n</span><span class=\"p\">,</span><span class=\"o\">+</span><span class=\"n\">t</span><span class=\"p\">,</span><span class=\"o\">+</span><span class=\"n\">s</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">%</span><span class=\"mi\">3</span><span class=\"w\">  </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">RefValue</span><span class=\"p\">()</span><span class=\"o\">::</span><span class=\"kt\">Base</span><span class=\"o\">.</span><span class=\"kt\">RefValue</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">}</span><span class=\"w\"></span>\n<span class=\"w\">   </span><span class=\"p\">(</span><span class=\"o\">!</span><span class=\"n\">c</span><span class=\"p\">,</span><span class=\"o\">!</span><span class=\"n\">e</span><span class=\"p\">,</span><span class=\"o\">+</span><span class=\"n\">n</span><span class=\"p\">,</span><span class=\"o\">+</span><span class=\"n\">t</span><span class=\"p\">,</span><span class=\"o\">+</span><span class=\"n\">s</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">%</span><span class=\"mi\">4</span><span class=\"w\">  </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"o\">&lt;</span><span class=\"w\"> </span><span class=\"n\">constprop</span><span class=\"w\"> </span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">setindex!</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Base</span><span class=\"o\">.</span><span class=\"kt\">RefValue</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">},</span><span class=\"o\">::</span><span class=\"kt\">Core</span><span class=\"o\">.</span><span class=\"n\">Const</span><span class=\"p\">(</span><span class=\"mi\">3</span><span class=\"p\">))</span><span class=\"o\">::</span><span class=\"kt\">Any</span><span class=\"w\"></span>\n<span class=\"w\">   </span><span class=\"p\">(</span><span class=\"o\">!</span><span class=\"n\">c</span><span class=\"p\">,</span><span class=\"o\">+</span><span class=\"n\">e</span><span class=\"p\">,</span><span class=\"o\">+</span><span class=\"n\">n</span><span class=\"p\">,</span><span class=\"o\">+</span><span class=\"n\">t</span><span class=\"p\">,</span><span class=\"o\">+</span><span class=\"n\">s</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">%</span><span class=\"mi\">5</span><span class=\"w\">  </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">getindex</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Base</span><span class=\"o\">.</span><span class=\"kt\">RefValue</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">})</span><span class=\"o\">::</span><span class=\"kt\">Int64</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 290592252,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1658549912
+    },
+    {
+        "content": "<p>Some sort of lifetime modeling could handle this in the future.</p>",
+        "id": 290592271,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1658549965
+    },
+    {
+        "content": "<p>Folks in Boston were treated to an excellent presentation by <span class=\"user-mention\" data-user-id=\"307643\">@Shuhei Kadowaki</span> on Thursday.</p>",
+        "id": 290592336,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1658550011
+    },
+    {
+        "content": "<p>Oh cool!</p>",
+        "id": 290592354,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1658550086
+    },
+    {
+        "content": "<p>Success! <a href=\"https://github.com/brenhinkeller/StaticMPI.jl/blob/main/test/scripts/mpisendrecv.jl\">https://github.com/brenhinkeller/StaticMPI.jl/blob/main/test/scripts/mpisendrecv.jl</a></p>",
+        "id": 290592441,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1658550191
+    },
+    {
+        "content": "<p>Turns out there were still a bunch of actual bugs I had to iron out, and once I took care of those I didn't actually need any manual type annotations any more</p>",
+        "id": 290592555,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1658550324
+    },
+    {
+        "content": "<p>There are still a bunch of warnings in Cthulhu about constprop being disabled, but it turns out none of them were actually preventing static compilation (just making it a bit harder for me to find where my actual problem was)</p>",
+        "id": 290592567,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1658550362
+    },
+    {
+        "content": "<p>So I owe the compiler a bit of an apology <span aria-label=\"sweat smile\" class=\"emoji emoji-1f605\" role=\"img\" title=\"sweat smile\">:sweat_smile:</span></p>",
+        "id": 290592606,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1658550377
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"293896\">Brenhin Keller</span> has marked this topic as resolved.</p>",
+        "id": 290592618,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1658550386
+    }
+]

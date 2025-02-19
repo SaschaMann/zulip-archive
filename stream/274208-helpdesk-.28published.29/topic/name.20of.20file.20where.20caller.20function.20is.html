@@ -1,0 +1,54 @@
+<html>
+<head><meta charset="utf-8"><title>name of file where caller function is · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/name.20of.20file.20where.20caller.20function.20is.html">name of file where caller function is</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="246197873"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/name%20of%20file%20where%20caller%20function%20is/near/246197873" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> disberd <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/name.20of.20file.20where.20caller.20function.20is.html#246197873">(Jul 16 2021 at 08:38)</a>:</h4>
+<p>Hi, I would like to know if there is a function that returns the name of the file where the function is evaluated, much like pwd() does for the directory.<br>
+I can't use @__FILE__ as that returns the name of the file where the function containing the @__FILE__ is, so it doesn't work if I call my function containig @__FILE__ from somewhere else.</p>
+<p>Some more details on my use-case</p>
+<p>Say I have a julia file in path X that calls my utility function <code>know_filename()</code> defined in path Y and I would like <code>know_filename()</code> to be aware of the file-name of X during its processing.<br>
+I know that I could pass @__FILE__ as an argument to the function from the caller, but I would like to avoid having to explicitly pass this as argument if possible.</p>
+<p>I would need this this for storing pasted images to serve on Pluto notebooks.<br>
+I often finds the need to directly paste images inside Pluto notebooks.<br>
+To do so, I practically want to automatically move the pasted image in a subfolder of where my Pluto notebook is located.<br>
+More specifically, since I may have more than one notebook in the same folder, I would like images to be stored in a subdirectory structure like this<br>
+<code>notebook_folder/pastedImages/notebook_name/img_name.png</code></p>
+<p>I was already using @__DIR__ inside my function to get the working directory, but I just realized that indeed that was providing the directory of where my utility function is defined, rather than the directry where the notebook is located.<br>
+That can easily be fixed using pwd() inside the utility function, but is there a similar way to obtain the filename of the notebook calling the function without the need to pass it as an argument?</p>
+
+
+
+<a name="246254876"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/name%20of%20file%20where%20caller%20function%20is/near/246254876" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/name.20of.20file.20where.20caller.20function.20is.html#246254876">(Jul 16 2021 at 17:36)</a>:</h4>
+<p>That is only possible using macros. In this case I guess you can use a macro like this (pseudo code):</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="nd">@pass_filename</span> <span class="n">f</span><span class="p">(</span><span class="n">args</span><span class="o">...</span><span class="p">)</span>
+</code></pre></div>
+<p>that just calls e.g.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">f</span><span class="p">(</span><span class="n">args</span><span class="o">...</span><span class="p">;</span> <span class="n">file</span> <span class="o">=</span> <span class="o">...</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="246283510"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/name%20of%20file%20where%20caller%20function%20is/near/246283510" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gunnar Farnebäck <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/name.20of.20file.20where.20caller.20function.20is.html#246283510">(Jul 16 2021 at 21:37)</a>:</h4>
+<p><code>string(stacktrace(backtrace())[2].file)</code> might give you the answer but it reaches into internals and I'm not sure how reliable it is.</p>
+
+
+
+<a name="246310925"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/name%20of%20file%20where%20caller%20function%20is/near/246310925" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> disberd <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/name.20of.20file.20where.20caller.20function.20is.html#246310925">(Jul 17 2021 at 07:32)</a>:</h4>
+<p>Thanks, indeed in the end I relied on stacktrace() and on the fact that the filename (in the stacktrace) of function call where the Pluto cell output evaluation is happening always ends with <code>notebook-name#==#CELL-UUID</code>.<br>
+So I can extract the notebook name by looking for that pattern</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

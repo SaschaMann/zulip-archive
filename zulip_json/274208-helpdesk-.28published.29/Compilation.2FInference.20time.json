@@ -1,0 +1,194 @@
+[
+    {
+        "content": "<p>Is there a quick and dirty way to see where compilation/inference time is being spent when running a particular script? I feel like I've done this before, but I can't remember how. Is the answer just using Snoopcompile?</p>",
+        "id": 235391807,
+        "sender_full_name": "Adam non-jedi Beckmeyer",
+        "timestamp": 1618943324
+    },
+    {
+        "content": "<p>I didn't realize y'all had created <a class=\"stream\" data-stream-id=\"274208\" href=\"/#narrow/stream/274208-helpdesk-.28published.29\">#helpdesk (published)</a> in addition to this stream since I last visited zulip. Could a mod please move this message to that stream?</p>",
+        "id": 235398315,
+        "sender_full_name": "Adam non-jedi Beckmeyer",
+        "timestamp": 1618945753
+    },
+    {
+        "content": "<p>This topic was moved here from <a class=\"stream-topic\" data-stream-id=\"225542\" href=\"/#narrow/stream/225542-helpdesk/topic/Compilation.2FInference.20time\">#helpdesk &gt; Compilation/Inference time</a> by <span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span></p>",
+        "id": 235398963,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1618946028
+    },
+    {
+        "content": "<p>Welcome back <span class=\"user-mention\" data-user-id=\"296263\">@Adam non-jedi Beckmeyer</span>! Yeah, unfortunately this is kinda a hard thing to profile right now. <a href=\"https://github.com/search?q=SnoopCompile.jl&amp;type=Repositories\">SnoopCompile.jl</a> has the best tools for this as far as I'm aware</p>",
+        "id": 235399112,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1618946081
+    },
+    {
+        "content": "<p>It won't necessarily help you find which functions the compiler spends the most time on necessarily, but it'll definitely help identify things like invalidation which lead to excessive re-compilation</p>",
+        "id": 235399246,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1618946137
+    },
+    {
+        "content": "<p>Thanks. Guess I'll have to dig back into how snoopcompile works. This script has just a handful of new functions (none are methods of existing functions, so no invalidations afaik), so it's very confusing that it's spending over a .75 seconds on compilation/inference (compared to 5.5 second total runtime).</p>",
+        "id": 235409991,
+        "sender_full_name": "Adam non-jedi Beckmeyer",
+        "timestamp": 1618950727
+    },
+    {
+        "content": "<p>Hmm, interesting. Are you loading packages? It could be that you are loading packages which invalidate <code>Base</code> methods which end up in the call chain of your code.</p>",
+        "id": 235414581,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1618952456
+    },
+    {
+        "content": "<p>Nope. But I think I found the culprit; just a sec</p>",
+        "id": 235415018,
+        "sender_full_name": "Adam non-jedi Beckmeyer",
+        "timestamp": 1618952532
+    },
+    {
+        "content": "<p>A big chunk of the time wasn't actually compilation but evaluation of code I was using to define global <code>const</code>s (please don't judge the code below):</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@time</span> <span class=\"k\">begin</span>\n         <span class=\"n\">REVMASKS</span> <span class=\"o\">=</span> <span class=\"kt\">Tuple</span><span class=\"p\">(</span><span class=\"kt\">Tuple</span><span class=\"p\">(</span><span class=\"n\">reverse!</span><span class=\"p\">(</span><span class=\"n\">VecElement</span><span class=\"o\">.</span><span class=\"p\">(</span><span class=\"mi\">0</span><span class=\"o\">%</span><span class=\"kt\">Int8</span><span class=\"o\">:</span><span class=\"mi\">15</span><span class=\"o\">%</span><span class=\"kt\">Int8</span><span class=\"p\">),</span> <span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"n\">i</span><span class=\"p\">))</span> <span class=\"k\">for</span> <span class=\"n\">i</span><span class=\"o\">=</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">16</span><span class=\"p\">)</span>\n         <span class=\"n\">SHIFTMASKS</span> <span class=\"o\">=</span> <span class=\"kt\">Tuple</span><span class=\"p\">(</span><span class=\"kt\">Tuple</span><span class=\"p\">(</span><span class=\"n\">insert!</span><span class=\"p\">(</span><span class=\"n\">VecElement</span><span class=\"o\">.</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"o\">%</span><span class=\"kt\">Int8</span><span class=\"o\">:</span><span class=\"mi\">15</span><span class=\"o\">%</span><span class=\"kt\">Int8</span><span class=\"p\">),</span> <span class=\"n\">i</span><span class=\"p\">,</span> <span class=\"n\">VecElement</span><span class=\"p\">(</span><span class=\"mi\">0</span><span class=\"o\">%</span><span class=\"kt\">Int8</span><span class=\"p\">)))</span> <span class=\"k\">for</span> <span class=\"n\">i</span><span class=\"o\">=</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">16</span><span class=\"p\">)</span>\n       <span class=\"k\">end</span><span class=\"p\">;</span>\n  <span class=\"mf\">0.273808</span> <span class=\"n\">seconds</span> <span class=\"p\">(</span><span class=\"mf\">760.64</span> <span class=\"n\">k</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mf\">46.730</span> <span class=\"n\">MiB</span><span class=\"p\">,</span> <span class=\"mf\">1.84</span><span class=\"o\">%</span> <span class=\"n\">gc</span> <span class=\"n\">time</span><span class=\"p\">,</span> <span class=\"mf\">100.70</span><span class=\"o\">%</span> <span class=\"n\">compilation</span> <span class=\"n\">time</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>Replacing that with the equivalent using nested <code>Base.Cartesian.@ntuple</code> fixed things right up.</p>",
+        "id": 235416654,
+        "sender_full_name": "Adam non-jedi Beckmeyer",
+        "timestamp": 1618952932
+    },
+    {
+        "content": "<p>Moral of the story: the difference between <code>/usr/bin/time</code> and <code>@btime</code> shouldn't immediately be blamed on compilation/inference time.</p>",
+        "id": 235416761,
+        "sender_full_name": "Adam non-jedi Beckmeyer",
+        "timestamp": 1618952969
+    },
+    {
+        "content": "<p>Always fun to see \"compilation time\" &gt; 100%</p>",
+        "id": 235417074,
+        "sender_full_name": "Adam non-jedi Beckmeyer",
+        "timestamp": 1618953059
+    },
+    {
+        "content": "<p>Code like <code>Tuple(Tuple(reverse!(VecElement.(0%Int8:15%Int8), 1, i)) for i=1:16)</code> defines some complicated closures so I wouldn't be surprised if it takes time to compile it. I wonder if sandwiching it with <code>@nospecialize</code> and <code>@specialize</code> helps. Another approach is to work with <code>Any[]</code>.</p>",
+        "id": 235419388,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1618953955
+    },
+    {
+        "content": "<p>Second time running it only gets you from 0.27 down to 0.17, so it's slow regardless of compilation fwiw.</p>",
+        "id": 235419588,
+        "sender_full_name": "Adam non-jedi Beckmeyer",
+        "timestamp": 1618954042
+    },
+    {
+        "content": "<p>I think it's more the dynamism in creating the tuples than compilation per-se that's the problem. I.e. dynamically using <code>Val</code> types will be slow regardless of whether the code has been compiled already or not</p>",
+        "id": 235419778,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1618954144
+    },
+    {
+        "content": "<p>Out of curiosity, how much faster was the the <code>@ntuple</code> solution?</p>",
+        "id": 235419831,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1618954177
+    },
+    {
+        "content": "<p>Quite a bit...</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">using</span> <span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">Cartesian</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"kd\">const</span> <span class=\"n\">V</span> <span class=\"o\">=</span> <span class=\"n\">VecElement</span>\n<span class=\"n\">VecElement</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@time</span> <span class=\"k\">begin</span>\n           <span class=\"n\">REVMASKS</span> <span class=\"o\">=</span> <span class=\"nd\">@ntuple</span> <span class=\"mi\">16</span> <span class=\"n\">i</span><span class=\"o\">-&gt;</span>\n               <span class=\"nd\">@ntuple</span> <span class=\"mi\">16</span> <span class=\"n\">k</span><span class=\"o\">-&gt;</span> <span class=\"n\">V</span><span class=\"p\">{</span><span class=\"kt\">Int8</span><span class=\"p\">}(</span><span class=\"n\">k</span> <span class=\"o\">&lt;=</span> <span class=\"n\">i</span> <span class=\"o\">?</span> <span class=\"n\">i</span> <span class=\"o\">-</span> <span class=\"n\">k</span> <span class=\"o\">:</span> <span class=\"n\">k</span> <span class=\"o\">-</span> <span class=\"mi\">1</span><span class=\"p\">)</span>\n           <span class=\"n\">SHIFTMASKS</span> <span class=\"o\">=</span> <span class=\"nd\">@ntuple</span> <span class=\"mi\">16</span> <span class=\"n\">i</span><span class=\"o\">-&gt;</span>\n               <span class=\"nd\">@ntuple</span> <span class=\"mi\">16</span> <span class=\"n\">k</span><span class=\"o\">-&gt;</span> <span class=\"n\">V</span><span class=\"p\">{</span><span class=\"kt\">Int8</span><span class=\"p\">}(</span><span class=\"n\">k</span> <span class=\"o\">==</span> <span class=\"n\">i</span> <span class=\"o\">?</span> <span class=\"mi\">0</span> <span class=\"o\">:</span> <span class=\"n\">k</span> <span class=\"o\">&lt;</span> <span class=\"n\">i</span> <span class=\"o\">?</span> <span class=\"n\">k</span> <span class=\"o\">:</span> <span class=\"n\">k</span> <span class=\"o\">-</span> <span class=\"mi\">1</span><span class=\"p\">)</span>\n       <span class=\"k\">end</span><span class=\"p\">;</span>\n  <span class=\"mf\">0.000001</span> <span class=\"n\">seconds</span>\n</code></pre></div>",
+        "id": 235420220,
+        "sender_full_name": "Adam non-jedi Beckmeyer",
+        "timestamp": 1618954372
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"296263\">Adam non-jedi Beckmeyer</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Compilation.2FInference.20time/near/235419588\">said</a>:</p>\n<blockquote>\n<p>Second time running it only gets you from 0.27 down to 0.17, so it's slow regardless of compilation fwiw.</p>\n</blockquote>\n<p>how do you run it \"second time\"? I think, evaluating <code>GLOBAL = $RHS</code> twice creates different closure type if <code>$RHS</code> needs one. so, the inference of the closure is always done from scratch (though the inference for functions called inside is cached). you need to write <code>f() = $RHS; GLOBAL = f()</code> if you want to exclude the compilation.</p>",
+        "id": 235420297,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1618954401
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"297129\">Takafumi Arakaki (tkf)</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Compilation.2FInference.20time/near/235420297\">said</a>:</p>\n<blockquote>\n<p>I think, evaluating <code>GLOBAL = $RHS</code> twice creates different closure type if <code>$RHS</code> needs one. so, the inference of the closure is always done from scratch</p>\n</blockquote>\n<p>Ah. I didn't think about the fact that the closure the second time around wouldn't have the same type; good point.</p>",
+        "id": 235420461,
+        "sender_full_name": "Adam non-jedi Beckmeyer",
+        "timestamp": 1618954479
+    },
+    {
+        "content": "<p>(On a related note, julia is about to be faster than both C and Rust on <a href=\"https://benchmarksgame-team.pages.debian.net/benchmarksgame/performance/fannkuchredux.html\">one of the benchmarks from the benchmarks game</a>...)</p>",
+        "id": 235420924,
+        "sender_full_name": "Adam non-jedi Beckmeyer",
+        "timestamp": 1618954746
+    },
+    {
+        "content": "<p>Btw, if you don't want to do an explicit <code>using Base.Cartesian</code>, I believe that doing</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"nd\">@time</span> <span class=\"k\">begin</span>\n    <span class=\"n\">REVMASKS</span> <span class=\"o\">=</span> <span class=\"n\">ntuple</span><span class=\"p\">(</span><span class=\"kt\">Val</span><span class=\"p\">(</span><span class=\"mi\">16</span><span class=\"p\">))</span> <span class=\"k\">do</span> <span class=\"n\">i</span>\n        <span class=\"n\">ntuple</span><span class=\"p\">(</span><span class=\"n\">k</span> <span class=\"o\">-&gt;</span> <span class=\"n\">V</span><span class=\"p\">{</span><span class=\"kt\">Int8</span><span class=\"p\">}(</span><span class=\"n\">k</span> <span class=\"o\">&lt;=</span> <span class=\"n\">i</span> <span class=\"o\">?</span> <span class=\"n\">i</span> <span class=\"o\">-</span> <span class=\"n\">k</span> <span class=\"o\">:</span> <span class=\"n\">k</span> <span class=\"o\">-</span> <span class=\"mi\">1</span><span class=\"p\">),</span> <span class=\"kt\">Val</span><span class=\"p\">(</span><span class=\"mi\">16</span><span class=\"p\">))</span>\n    <span class=\"k\">end</span>\n    <span class=\"n\">SHIFTMASKS</span> <span class=\"o\">=</span> <span class=\"n\">ntuple</span><span class=\"p\">(</span><span class=\"kt\">Val</span><span class=\"p\">(</span><span class=\"mi\">16</span><span class=\"p\">))</span> <span class=\"k\">do</span> <span class=\"n\">i</span>\n        <span class=\"n\">ntuple</span><span class=\"p\">(</span><span class=\"n\">k</span><span class=\"o\">-&gt;</span> <span class=\"n\">V</span><span class=\"p\">{</span><span class=\"kt\">Int8</span><span class=\"p\">}(</span><span class=\"n\">k</span> <span class=\"o\">==</span> <span class=\"n\">i</span> <span class=\"o\">?</span> <span class=\"mi\">0</span> <span class=\"o\">:</span> <span class=\"n\">k</span> <span class=\"o\">&lt;</span> <span class=\"n\">i</span> <span class=\"o\">?</span> <span class=\"n\">k</span> <span class=\"o\">:</span> <span class=\"n\">k</span> <span class=\"o\">-</span> <span class=\"mi\">1</span><span class=\"p\">),</span> <span class=\"kt\">Val</span><span class=\"p\">(</span><span class=\"mi\">16</span><span class=\"p\">))</span>\n    <span class=\"k\">end</span>\n<span class=\"k\">end</span><span class=\"p\">;</span>\n</code></pre></div>\n<p>should be equivalent</p>",
+        "id": 235422816,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1618955844
+    },
+    {
+        "content": "<p>Slower than the version with <code>Tuple</code> actually</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"kd\">const</span> <span class=\"n\">V</span> <span class=\"o\">=</span> <span class=\"n\">VecElement</span>\n<span class=\"n\">VecElement</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@time</span> <span class=\"k\">begin</span>\n           <span class=\"n\">REVMASKS</span> <span class=\"o\">=</span> <span class=\"n\">ntuple</span><span class=\"p\">(</span><span class=\"kt\">Val</span><span class=\"p\">(</span><span class=\"mi\">16</span><span class=\"p\">))</span> <span class=\"k\">do</span> <span class=\"n\">i</span>\n               <span class=\"n\">ntuple</span><span class=\"p\">(</span><span class=\"n\">k</span> <span class=\"o\">-&gt;</span> <span class=\"n\">V</span><span class=\"p\">{</span><span class=\"kt\">Int8</span><span class=\"p\">}(</span><span class=\"n\">k</span> <span class=\"o\">&lt;=</span> <span class=\"n\">i</span> <span class=\"o\">?</span> <span class=\"n\">i</span> <span class=\"o\">-</span> <span class=\"n\">k</span> <span class=\"o\">:</span> <span class=\"n\">k</span> <span class=\"o\">-</span> <span class=\"mi\">1</span><span class=\"p\">),</span> <span class=\"kt\">Val</span><span class=\"p\">(</span><span class=\"mi\">16</span><span class=\"p\">))</span>\n           <span class=\"k\">end</span>\n           <span class=\"n\">SHIFTMASKS</span> <span class=\"o\">=</span> <span class=\"n\">ntuple</span><span class=\"p\">(</span><span class=\"kt\">Val</span><span class=\"p\">(</span><span class=\"mi\">16</span><span class=\"p\">))</span> <span class=\"k\">do</span> <span class=\"n\">i</span>\n               <span class=\"n\">ntuple</span><span class=\"p\">(</span><span class=\"n\">k</span><span class=\"o\">-&gt;</span> <span class=\"n\">V</span><span class=\"p\">{</span><span class=\"kt\">Int8</span><span class=\"p\">}(</span><span class=\"n\">k</span> <span class=\"o\">==</span> <span class=\"n\">i</span> <span class=\"o\">?</span> <span class=\"mi\">0</span> <span class=\"o\">:</span> <span class=\"n\">k</span> <span class=\"o\">&lt;</span> <span class=\"n\">i</span> <span class=\"o\">?</span> <span class=\"n\">k</span> <span class=\"o\">:</span> <span class=\"n\">k</span> <span class=\"o\">-</span> <span class=\"mi\">1</span><span class=\"p\">),</span> <span class=\"kt\">Val</span><span class=\"p\">(</span><span class=\"mi\">16</span><span class=\"p\">))</span>\n           <span class=\"k\">end</span>\n       <span class=\"k\">end</span><span class=\"p\">;</span>\n  <span class=\"mf\">0.303107</span> <span class=\"n\">seconds</span> <span class=\"p\">(</span><span class=\"mf\">1.38</span> <span class=\"n\">M</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mf\">91.848</span> <span class=\"n\">MiB</span><span class=\"p\">,</span> <span class=\"mf\">3.30</span><span class=\"o\">%</span> <span class=\"n\">gc</span> <span class=\"n\">time</span><span class=\"p\">,</span> <span class=\"mf\">100.96</span><span class=\"o\">%</span> <span class=\"n\">compilation</span> <span class=\"n\">time</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 235425957,
+        "sender_full_name": "Adam non-jedi Beckmeyer",
+        "timestamp": 1618957691
+    },
+    {
+        "content": "<p>It has the same problem as the original version where it's creating closures. <code>@ntuple</code> doesn't actually treat the anonymous functions it operates on as functions appearances to the contrary.</p>",
+        "id": 235426070,
+        "sender_full_name": "Adam non-jedi Beckmeyer",
+        "timestamp": 1618957799
+    },
+    {
+        "content": "<p>Ah interesting</p>",
+        "id": 235426124,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1618957808
+    },
+    {
+        "content": "<p><code>ntuple(_, Val(n))</code> is a <code>@generated</code> function so the compiler tries very hard to optimize it</p>",
+        "id": 235428333,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1618959157
+    },
+    {
+        "content": "<p>I don't really like <code>Base.Cartesian</code> but I think it's the best option here</p>",
+        "id": 235428388,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1618959193
+    },
+    {
+        "content": "<p>I think we should open an issue to track and hopefully fix why we get &gt;100% compilation times. These are quite nice MWE’s</p>",
+        "id": 235674722,
+        "sender_full_name": "Ian Butterworth",
+        "timestamp": 1619097422
+    },
+    {
+        "content": "<p>I though compilation was multi-threaded now, so seeing &gt;100% compilation time was expected behavior?</p>",
+        "id": 235719930,
+        "sender_full_name": "Adam non-jedi Beckmeyer",
+        "timestamp": 1619113761
+    },
+    {
+        "content": "<p>Precompilation of multiple separate modules can be multithreaded, but not compilation itself (yet)</p>",
+        "id": 235721139,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1619114226
+    },
+    {
+        "content": "<p>Ah. hrm</p>",
+        "id": 235721173,
+        "sender_full_name": "Adam non-jedi Beckmeyer",
+        "timestamp": 1619114238
+    },
+    {
+        "content": "<p>I think the &gt;100% is due to some nesting of the timing blocks in src</p>",
+        "id": 235755269,
+        "sender_full_name": "Ian Butterworth",
+        "timestamp": 1619128914
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Compilation.2FInference.20time/near/235721139\">said</a>:</p>\n<blockquote>\n<p>Precompilation of multiple separate modules can be multithreaded, but not compilation itself (yet)</p>\n</blockquote>\n<p>Kinda nitpick, but parallelization of <code>Pkg.precompile</code> is process-based so it's not \"threaded\" in the sense of <code>Base.Threads</code>.</p>",
+        "id": 235759351,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1619131172
+    },
+    {
+        "content": "<p>Oh I didn't realize it used processes, that makes sense, thanks</p>",
+        "id": 235759697,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1619131338
+    }
+]

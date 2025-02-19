@@ -1,0 +1,175 @@
+<html>
+<head><meta charset="utf-8"><title>✔ Normalize DataFrames? · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Normalize.20DataFrames.3F.html">✔ Normalize DataFrames?</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="245757464"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Normalize%20DataFrames%3F/near/245757464" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Normalize.20DataFrames.3F.html#245757464">(Jul 12 2021 at 22:17)</a>:</h4>
+<p>Hello Everyone,</p>
+<p>Might there be a more practical and workable <br>
+approach to normalizing all the elements of <br>
+a dataframe?</p>
+<p>x = CookieMonster[1:15,:]<br>
+y = CookieMonster[16:16,:]</p>
+<p>Currently, I have found two guidelines that both<br>
+result in an error.</p>
+<p>1.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code> <span class="n">X</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">.-</span> <span class="n">mean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dims</span> <span class="o">=</span> <span class="mi">2</span><span class="p">))</span> <span class="o">./</span> <span class="n">std</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dims</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span>
+</code></pre></div>
+<p>Error as: 'no method matching mean'</p>
+<p>2.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">normalize</span><span class="p">(</span><span class="n">input_df</span><span class="o">::</span><span class="kt">DataFrame</span><span class="p">,</span> <span class="n">cols</span><span class="o">::</span><span class="kt">Array</span><span class="p">{</span><span class="kt">Int64</span><span class="p">})</span>
+    <span class="n">norm_df</span> <span class="o">=</span> <span class="n">input_df</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="n">cols</span>
+        <span class="n">norm_df</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">input_df</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">minimum</span><span class="p">(</span><span class="n">input_df</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span> <span class="o">/</span>
+            <span class="p">(</span><span class="n">maximum</span><span class="p">(</span><span class="n">input_df</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">-</span> <span class="n">minimum</span><span class="p">(</span><span class="n">input_df</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+    <span class="k">end</span>
+    <span class="n">norm_df</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>Error as: 'no method matching normalize'</p>
+<p>The normalize() method was around since 2015,<br>
+but I have not seen any updates to it. </p>
+<p>I am programming in <em>Pluto.</em> </p>
+<p>Any tips?</p>
+
+
+
+<a name="245782050"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Normalize%20DataFrames%3F/near/245782050" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Felix Kastner <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Normalize.20DataFrames.3F.html#245782050">(Jul 13 2021 at 05:53)</a>:</h4>
+<p>Are you <code>using LinearAlgebra</code> which is needed for <code>mean</code>?</p>
+
+
+
+<a name="245782631"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Normalize%20DataFrames%3F/near/245782631" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel Karrasch <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Normalize.20DataFrames.3F.html#245782631">(Jul 13 2021 at 06:06)</a>:</h4>
+<p>I think <code>mean</code> is from <code>Statistics</code>, <code>normalize</code> may be in <code>LinearAlgebra</code>.</p>
+
+
+
+<a name="245783587"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Normalize%20DataFrames%3F/near/245783587" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Felix Kastner <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Normalize.20DataFrames.3F.html#245783587">(Jul 13 2021 at 06:24)</a>:</h4>
+<p>Oh, you're right. Sry</p>
+
+
+
+<a name="245833397"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Normalize%20DataFrames%3F/near/245833397" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Normalize.20DataFrames.3F.html#245833397">(Jul 13 2021 at 14:32)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="421686">Daniel Karrasch</span> </p>
+<p>Thank you much -- when I attempt to qualify <br>
+with la.normalize(x), I am getting the following <br>
+error: </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="kt">MethodError</span><span class="o">:</span> <span class="n">no</span> <span class="n">method</span> <span class="n">matching</span> <span class="n">normalize</span><span class="p">(</span><span class="o">::</span><span class="kt">DataFrames</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="245834128"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Normalize%20DataFrames%3F/near/245834128" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel Karrasch <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Normalize.20DataFrames.3F.html#245834128">(Jul 13 2021 at 14:38)</a>:</h4>
+<p>Honestly, I'm not familiar with the specifics of the <code>DataFrames</code> package. I think you should consult their documentation to see what manipulation methods they have. <code>normalize</code> is defined in the stdlib <code>LinearAlgebra</code> for some generic types, to which, apparently, <code>DataFrame</code> doesn't subtype. So then it's no surprise that <code>LinearAlgebra</code> doesn't define a normalize method for <code>DataFrame</code>s. This function overload would be the task of <code>DataFrames.jl</code>.</p>
+
+
+
+<a name="245835640"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Normalize%20DataFrames%3F/near/245835640" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Normalize.20DataFrames.3F.html#245835640">(Jul 13 2021 at 14:48)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="421686">Daniel Karrasch</span> </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code> <span class="n">X</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">.-</span> <span class="n">mean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dims</span> <span class="o">=</span> <span class="mi">2</span><span class="p">))</span> <span class="o">./</span> <span class="n">std</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dims</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span>
+</code></pre></div>
+<p>Is what I am attempting to achieve from the FluxML<br>
+example <a href="https://github.com/FluxML/model-zoo/blob/master/other/housing/housing.jl">HERE</a></p>
+<p>When I qualify the methods, I am returning the same <br>
+error. As you might suspect, normalizing a DF is not <br>
+really the be practice, however, perhaps what they <br>
+presented here was pseudo code, because I do not<br>
+think it can work, even when I attempted nesting the <br>
+eachrow() method.</p>
+
+
+
+<a name="245836648"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Normalize%20DataFrames%3F/near/245836648" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Normalize.20DataFrames.3F.html#245836648">(Jul 13 2021 at 14:54)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="421686">Daniel Karrasch</span> </p>
+<p>Okay -- I attempted something like this: </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">x2</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">.-</span> <span class="n">mean</span><span class="p">(</span><span class="kt">Array</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">dims</span> <span class="o">=</span> <span class="mi">2</span><span class="p">))</span> <span class="o">./</span> <span class="n">std</span><span class="p">(</span><span class="kt">Array</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">dims</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span>
+</code></pre></div>
+<p>What do you think?</p>
+
+
+
+<a name="245837029"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Normalize%20DataFrames%3F/near/245837029" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel Karrasch <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Normalize.20DataFrames.3F.html#245837029">(Jul 13 2021 at 14:57)</a>:</h4>
+<p>That might work, but I wonder if there are more efficient ways that don't allocate the extra array.</p>
+
+
+
+<a name="245837944"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Normalize%20DataFrames%3F/near/245837944" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Normalize.20DataFrames.3F.html#245837944">(Jul 13 2021 at 15:01)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="421686">Daniel Karrasch</span> </p>
+<p>So far I am seeing some methods in C++ and Java. </p>
+<p>Am seeing tips on Stack OverFlow <a href="https://stackoverflow.com/questions/41238097/dynamic-allocation-to-array-of-pointers-and-its-alternatives">HERE</a></p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">std</span><span class="o">::</span><span class="kt">vector</span><span class="o">&lt;</span><span class="n">int</span><span class="o">&gt;</span> <span class="n">vi</span><span class="p">;</span>  <span class="o">//</span> <span class="k">if</span> <span class="n">the</span> <span class="n">number</span> <span class="n">of</span> <span class="n">int</span><span class="o">-</span><span class="n">s</span> <span class="n">are</span> <span class="n">dynamic</span>
+<span class="n">std</span><span class="o">::</span><span class="kt">array</span><span class="o">&lt;</span><span class="n">int</span><span class="p">,</span> <span class="mi">50</span><span class="o">&gt;</span> <span class="n">ai</span><span class="p">;</span> <span class="o">//</span> <span class="k">if</span> <span class="n">the</span> <span class="n">number</span> <span class="n">of</span> <span class="n">int</span><span class="o">-</span><span class="n">s</span> <span class="n">are</span> <span class="n">fixed</span>
+</code></pre></div>
+
+
+
+<a name="245838549"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Normalize%20DataFrames%3F/near/245838549" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel Karrasch <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Normalize.20DataFrames.3F.html#245838549">(Jul 13 2021 at 15:04)</a>:</h4>
+<p>Is there a problem for a <code>DataFrame</code> <code>x</code> when you call <code>mean(x, dims=2)</code> or <code>std(x, dims=2)</code>? Do you need this <code>Array(x)</code>?</p>
+
+
+
+<a name="245839035"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Normalize%20DataFrames%3F/near/245839035" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Normalize.20DataFrames.3F.html#245839035">(Jul 13 2021 at 15:07)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="421686">Daniel Karrasch</span> </p>
+<p>Yes -- without the Array() method, I get the error that:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code>  <span class="n">no</span> <span class="n">method</span> <span class="n">matches</span> <span class="n">mean</span><span class="p">(</span><span class="n">DataFrames</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="245845015"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Normalize%20DataFrames%3F/near/245845015" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel Karrasch <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Normalize.20DataFrames.3F.html#245845015">(Jul 13 2021 at 15:48)</a>:</h4>
+<p>Aha, that may be because it is common that DataFrames are non-numeric? What does <code>DataFrames.jl</code> recommend for operations like that? That should be a common problem.</p>
+
+
+
+<a name="245845763"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Normalize%20DataFrames%3F/near/245845763" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Normalize.20DataFrames.3F.html#245845763">(Jul 13 2021 at 15:53)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="421686">Daniel Karrasch</span> </p>
+<p>I am not seeing anything specific to this error message <a href="https://dataframes.juliadata.org/stable/man/querying_frameworks/">HERE</a></p>
+
+
+
+<a name="245849605"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Normalize%20DataFrames%3F/near/245849605" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Normalize.20DataFrames.3F.html#245849605">(Jul 13 2021 at 16:21)</a>:</h4>
+<p>Recommended way to work with such operations described here: <a href="https://bkamins.github.io/julialang/2021/07/09/multicol.html">https://bkamins.github.io/julialang/2021/07/09/multicol.html</a></p>
+
+
+
+<a name="246566378"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Normalize%20DataFrames%3F/near/246566378" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Normalize.20DataFrames.3F.html#246566378">(Jul 20 2021 at 10:13)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="390081">QuBit</span> has marked this topic as resolved.</p>
+
+
+
+<a name="246566470"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Normalize%20DataFrames%3F/near/246566470" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Normalize.20DataFrames.3F.html#246566470">(Jul 20 2021 at 10:14)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="390081">QuBit</span> has marked this topic as unresolved.</p>
+
+
+
+<a name="246566496"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Normalize%20DataFrames%3F/near/246566496" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Normalize.20DataFrames.3F.html#246566496">(Jul 20 2021 at 10:15)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="390081">QuBit</span> has marked this topic as resolved.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

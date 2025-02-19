@@ -1,0 +1,128 @@
+[
+    {
+        "content": "<p>Is there a good reason that <code>Base.Fix2</code> uses the default comparison (i.e. <code>==(x,y) = x === y</code>) instead of comparing its members by <code>==</code>?</p>\n<p>Because this causes the rather unintuitive:</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">startswith</span><span class=\"p\">(</span><span class=\"s\">\"abc\"</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">==</span><span class=\"w\"> </span><span class=\"n\">startswith</span><span class=\"p\">(</span><span class=\"s\">\"abc\"</span><span class=\"p\">)</span>\n<span class=\"go\">true</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">startswith</span><span class=\"p\">(</span><span class=\"sa\">r</span><span class=\"sr\">\"abc\"</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">==</span><span class=\"w\"> </span><span class=\"n\">startswith</span><span class=\"p\">(</span><span class=\"sa\">r</span><span class=\"sr\">\"abc\"</span><span class=\"p\">)</span>\n<span class=\"go\">false</span>\n</code></pre></div>\n<p>Even though:</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"sa\">r</span><span class=\"sr\">\"abc\"</span><span class=\"w\"> </span><span class=\"o\">==</span><span class=\"w\"> </span><span class=\"sa\">r</span><span class=\"sr\">\"abc\"</span>\n<span class=\"go\">true</span>\n</code></pre></div>\n<p>(Maybe it would be considered breaking to change anyway?)</p>",
+        "id": 494299499,
+        "sender_full_name": "Rasmus Henningsson",
+        "timestamp": 1737099671
+    },
+    {
+        "content": "<p>I think the reason is just that no-one bothered to implement == for Fix2.<br>\nSo the problem here is really the default of ==. If you design a fallback implementation, you better be sure it's the one you actually want. I think most people by now agree that the fallback definition of == was a mistake (with disagreement on whether it should be defined recursively in terms of the fields, or whether it should have no default implementation)</p>",
+        "id": 494314309,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1737105117
+    },
+    {
+        "content": "<p>And a PR for <code>Fix2</code> (and <code>Fix1</code>) would probably not be accepted because it's breaking?</p>",
+        "id": 494317431,
+        "sender_full_name": "Rasmus Henningsson",
+        "timestamp": 1737106118
+    },
+    {
+        "content": "<p>I doubt it'd actually break anything.</p>",
+        "id": 494321417,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1737107388
+    },
+    {
+        "content": "<p>I mean, I'm definitely open to being surprised, but this sounds like a very fixable issue. I'd just open a PR, and then we can run the regression tests and find out if there is a problem or not.</p>",
+        "id": 494321585,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1737107429
+    },
+    {
+        "content": "<p>I may be wrong, but I don't remember anyone defending the fact <code>==</code> defaults to <code>===</code>, it seems to me more a (very unfortunate) accident</p>",
+        "id": 494323189,
+        "sender_full_name": "Mosè Giordano",
+        "timestamp": 1737107975
+    },
+    {
+        "content": "<p>I've literally never seen someone complain about <code>Tuple</code> or <code>NamedTuple</code> using <code>==</code> fieldwise, which really makes me suspect that nobody would have objected in practice to that just being the default for all structs.</p>",
+        "id": 494324114,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1737108243
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"269186\">@Mosè Giordano</span> I have some vague recollection of Stefan Karpinski saying that they thought it was a good idea to have it default to === back in the day, but now realize that whenever you want to compare two things and don't know their types, you essentially always want to use === anyway.</p>",
+        "id": 494377829,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1737125662
+    },
+    {
+        "content": "<p>FWIW I would prefer to have it have no default, for the same reason. Usually you want ===. In the cases where you don't you usually have to manually define == anyway.</p>",
+        "id": 494378124,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1737125751
+    },
+    {
+        "content": "<p>But a struct that includes a <code>Vector{Int}</code> will by default give <code>false</code> even if the fields are <code>==</code>. Applying <code>==</code> fieldwise would work... Habitually using a macro <code>@noeq MyStruct</code> that throws, until you decide to write a method might be a good idea.</p>",
+        "id": 494429965,
+        "sender_full_name": "John Lapeyre",
+        "timestamp": 1737143836
+    },
+    {
+        "content": "<p>The issue of equality for <code>ComposedFunction</code> seems somewhat similar to the issue of equality for <code>Fix</code>:<br>\n<a href=\"https://github.com/JuliaLang/julia/issues/53853\">https://github.com/JuliaLang/julia/issues/53853</a></p>",
+        "id": 494437316,
+        "sender_full_name": "Neven Sajko",
+        "timestamp": 1737146948
+    },
+    {
+        "content": "<p>I'm not sure there's a meaningful definition for <code>==</code> in any of the two cases, though. Maybe those should just throw?</p>",
+        "id": 494437950,
+        "sender_full_name": "Neven Sajko",
+        "timestamp": 1737147192
+    },
+    {
+        "content": "<p>Specifically, for <code>Fix</code>, regarding the <code>x</code> field, I think that the required comparison depends on the <code>f</code> field. E.g., for some values of the <code>f</code> field, it might make sense to compare the <code>x</code> fields with <code>==</code>, while for other values of the <code>f</code> field it might make sense to compare the <code>x</code> fields with <code>===</code>.</p>\n<p>The point being it doesn't seem correct to compare among <code>Fix</code> in a pairwise fashion, rather equality should IMO only be defined when the types of both fields are known to whoever is defining the <code>==</code> method.</p>",
+        "id": 494438739,
+        "sender_full_name": "Neven Sajko",
+        "timestamp": 1737147486
+    },
+    {
+        "content": "<p>This is the definition of <code>struct Fix</code>, btw: <a href=\"https://github.com/JuliaLang/julia/blob/98f8aca9ac8eb1c9467b685c7e8594d981192d96/base/operators.jl#L1173-L1175\">https://github.com/JuliaLang/julia/blob/98f8aca9ac8eb1c9467b685c7e8594d981192d96/base/operators.jl#L1173-L1175</a></p>",
+        "id": 494439038,
+        "sender_full_name": "Neven Sajko",
+        "timestamp": 1737147587
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"285705\">Rasmus Henningsson</span> <a href=\"#narrow/channel/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D/near/494299499\">said</a>:</p>\n<blockquote>\n<p>Because this causes the rather unintuitive:</p>\n<p><div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">startswith</span><span class=\"p\">(</span><span class=\"s\">\"abc\"</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">==</span><span class=\"w\"> </span><span class=\"n\">startswith</span><span class=\"p\">(</span><span class=\"s\">\"abc\"</span><span class=\"p\">)</span>\n<span class=\"nb\">true</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">startswith</span><span class=\"p\">(</span><span class=\"sa\">r</span><span class=\"sr\">\"abc\"</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">==</span><span class=\"w\"> </span><span class=\"n\">startswith</span><span class=\"p\">(</span><span class=\"sa\">r</span><span class=\"sr\">\"abc\"</span><span class=\"p\">)</span>\n<span class=\"nb\">false</span>\n</code></pre></div><br>\n</p>\n</blockquote>\n<p>Isn't the truly weird part here that <code>\"abc\" === \"abc\"</code>?</p>\n<p>Apparently, strings are heap allocated, <code>isbitstype(String) == false</code>, <code>ismutabletype(String) == true</code>, <code>pointer(\"abc\") != pointer(\"abc\")</code>, but still <code>Base.isidentityfree(String) == true</code>, i.e., strings have value identity like immutable structs. How does this work?</p>\n<p>I know that Julia strings are immutable, but that _could_ just have meant that there's no interface that lets you mutate them and the compiler makes assumptions accordingly. Instead, it appears to mean that the full package of immutable struct semantics has been grafted onto a non-isbits, heap-allocated, variable-length type.</p>",
+        "id": 494456839,
+        "sender_full_name": "Daniel Wennberg",
+        "timestamp": 1737156372
+    },
+    {
+        "content": "<p>I suppose <code>objectid(::String)</code> is special-cased to simply be another <code>hash</code>, and <code>===(::String, ::String)</code> is special-cased to compare contents instead of memory address in the case of an <code>objectid</code> collision. Maybe that's sufficient for everything to work?</p>",
+        "id": 494457265,
+        "sender_full_name": "Daniel Wennberg",
+        "timestamp": 1737156652
+    },
+    {
+        "content": "<p>Yeah pretty much</p>",
+        "id": 494485056,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1737179877
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"727071\">Neven Sajko</span> <a href=\"#narrow/channel/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D/near/494438739\">said</a>:</p>\n<blockquote>\n<p>Specifically, for <code>Fix</code>, regarding the <code>x</code> field, I think that the required comparison depends on the <code>f</code> field. E.g., for some values of the <code>f</code> field, it might make sense to compare the <code>x</code> fields with <code>==</code>, while for other values of the <code>f</code> field it might make sense to compare the <code>x</code> fields with <code>===</code>.</p>\n<p>The point being it doesn't seem correct to compare among <code>Fix</code> in a pairwise fashion, rather equality should IMO only be defined when the types of both fields are known to whoever is defining the <code>==</code> method.</p>\n</blockquote>\n<p>I think it makes sense with <code>==</code> for <code>Fix1</code>/<code>Fix2</code>. (As <span class=\"user-mention\" data-user-id=\"272650\">@Jakob Nybo Nissen</span> mentioned, the problem is more general, but that ship has sailed. However we can still improve where it makes sense if it doesn't break anything.)</p>\n<p>The main problem here is that both <code>==</code> and <code>===</code> are useful, but since <code>==</code> falls back to <code>===</code> we lose that distinction. The current choice makes Julia code less expressive, and harder to understand.</p>\n<p>Consider two vectors <code>v1 = [1,2,3]</code> and <code>v2 = [1,2,3]</code>. <code>v1==v2</code> is <code>true</code>, but <code>v1===v2</code> is false.<br>\nIn a similar way, we could use <code>Fix1</code> to define accumulators</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">acc</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">Fix1</span><span class=\"p\">(</span><span class=\"n\">push!</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">v1</span><span class=\"p\">)</span>\n<span class=\"n\">acc2</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">Fix1</span><span class=\"p\">(</span><span class=\"n\">push!</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">v2</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>There are two meaningful ways to compare <code>acc</code> and <code>acc2</code>.</p>\n<ol>\n<li>Are they the same accumulator? For this <code>===</code> is natural.</li>\n<li>Do they currently have the same state? For this <code>==</code> would be natural.</li>\n</ol>\n<p>This is currently impossible with <code>acc</code> and <code>acc2</code> however. And crucially, the behavior changes compared to <code>v1</code> and <code>v2</code>.</p>\n<p>Unless someone finds a good counterexample, I think any case that you actually want the <code>===</code> behavior, it is also natural to use <code>===</code> to compare the <code>Fix1</code>/<code>Fix2</code> objects. <span aria-label=\"smile\" class=\"emoji emoji-1f642\" role=\"img\" title=\"smile\">:smile:</span> (I guess I'm repeating <span class=\"user-mention\" data-user-id=\"272650\">@Jakob Nybo Nissen</span>'s point here.)</p>",
+        "id": 494517949,
+        "sender_full_name": "Rasmus Henningsson",
+        "timestamp": 1737205918
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"368583\">Daniel Wennberg</span> <a href=\"#narrow/channel/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D/near/494456839\">said</a>:</p>\n<blockquote>\n<p>...<br>\nIsn't the truly weird part here that <code>\"abc\" === \"abc\"</code>?<br>\n...</p>\n</blockquote>\n<p>Yes, that's a good point. (But we could also consider that an implementation detail. In theory, since strings are immutable in Julia, it could have been implemented using some fancy string pool so that if two identical strings were created, they would indeed share the same memory. Isn't <code>Symbol</code> akin to this? I might be wrong about that though. <span aria-label=\"smile\" class=\"emoji emoji-1f642\" role=\"img\" title=\"smile\">:smile:</span>)</p>\n<p>But I hope my <code>Vector</code> example above shows another situation where it makes much more sense to compare with <code>==</code>. Even though there's no case where <code>Fix1</code>/<code>Fix2</code> handles that well at the moment.</p>",
+        "id": 494518484,
+        "sender_full_name": "Rasmus Henningsson",
+        "timestamp": 1737206324
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"727071\">Neven Sajko</span> <a href=\"#narrow/channel/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D/near/494437316\">said</a>:</p>\n<blockquote>\n<p>The issue of equality for <code>ComposedFunction</code> seems somewhat similar to the issue of equality for <code>Fix</code>:<br>\n<a href=\"https://github.com/JuliaLang/julia/issues/53853\">https://github.com/JuliaLang/julia/issues/53853</a></p>\n</blockquote>\n<p>Thanks for this! That's a great example to compare to when considering making this change.</p>\n<p>(I'm currently on a shaky internet connection, but I'll make a pull request sometime soon.)</p>",
+        "id": 494518726,
+        "sender_full_name": "Rasmus Henningsson",
+        "timestamp": 1737206502
+    },
+    {
+        "content": "<blockquote>\n<p>Isn't <code>Symbol</code> akin to this?</p>\n</blockquote>\n<p>Yup.</p>",
+        "id": 494527881,
+        "sender_full_name": "Timothy",
+        "timestamp": 1737213663
+    }
+]

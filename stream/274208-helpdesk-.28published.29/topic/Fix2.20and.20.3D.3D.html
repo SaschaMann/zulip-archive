@@ -1,0 +1,201 @@
+<html>
+<head><meta charset="utf-8"><title>Fix2 and == · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D.html">Fix2 and ==</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="494299499"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Fix2%20and%20%3D%3D/near/494299499" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rasmus Henningsson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D.html#494299499">(Jan 17 2025 at 07:41)</a>:</h4>
+<p>Is there a good reason that <code>Base.Fix2</code> uses the default comparison (i.e. <code>==(x,y) = x === y</code>) instead of comparing its members by <code>==</code>?</p>
+<p>Because this causes the rather unintuitive:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="n">startswith</span><span class="p">(</span><span class="s">"abc"</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">startswith</span><span class="p">(</span><span class="s">"abc"</span><span class="p">)</span>
+<span class="go">true</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">startswith</span><span class="p">(</span><span class="sa">r</span><span class="sr">"abc"</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">startswith</span><span class="p">(</span><span class="sa">r</span><span class="sr">"abc"</span><span class="p">)</span>
+<span class="go">false</span>
+</code></pre></div>
+<p>Even though:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="sa">r</span><span class="sr">"abc"</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="sa">r</span><span class="sr">"abc"</span>
+<span class="go">true</span>
+</code></pre></div>
+<p>(Maybe it would be considered breaking to change anyway?)</p>
+
+
+
+<a name="494314309"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Fix2%20and%20%3D%3D/near/494314309" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D.html#494314309">(Jan 17 2025 at 09:11)</a>:</h4>
+<p>I think the reason is just that no-one bothered to implement == for Fix2.<br>
+So the problem here is really the default of ==. If you design a fallback implementation, you better be sure it's the one you actually want. I think most people by now agree that the fallback definition of == was a mistake (with disagreement on whether it should be defined recursively in terms of the fields, or whether it should have no default implementation)</p>
+
+
+
+<a name="494317431"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Fix2%20and%20%3D%3D/near/494317431" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rasmus Henningsson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D.html#494317431">(Jan 17 2025 at 09:28)</a>:</h4>
+<p>And a PR for <code>Fix2</code> (and <code>Fix1</code>) would probably not be accepted because it's breaking?</p>
+
+
+
+<a name="494321417"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Fix2%20and%20%3D%3D/near/494321417" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D.html#494321417">(Jan 17 2025 at 09:49)</a>:</h4>
+<p>I doubt it'd actually break anything.</p>
+
+
+
+<a name="494321585"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Fix2%20and%20%3D%3D/near/494321585" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D.html#494321585">(Jan 17 2025 at 09:50)</a>:</h4>
+<p>I mean, I'm definitely open to being surprised, but this sounds like a very fixable issue. I'd just open a PR, and then we can run the regression tests and find out if there is a problem or not.</p>
+
+
+
+<a name="494323189"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Fix2%20and%20%3D%3D/near/494323189" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mosè Giordano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D.html#494323189">(Jan 17 2025 at 09:59)</a>:</h4>
+<p>I may be wrong, but I don't remember anyone defending the fact <code>==</code> defaults to <code>===</code>, it seems to me more a (very unfortunate) accident</p>
+
+
+
+<a name="494324114"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Fix2%20and%20%3D%3D/near/494324114" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D.html#494324114">(Jan 17 2025 at 10:04)</a>:</h4>
+<p>I've literally never seen someone complain about <code>Tuple</code> or <code>NamedTuple</code> using <code>==</code> fieldwise, which really makes me suspect that nobody would have objected in practice to that just being the default for all structs.</p>
+
+
+
+<a name="494377829"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Fix2%20and%20%3D%3D/near/494377829" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D.html#494377829">(Jan 17 2025 at 14:54)</a>:</h4>
+<p><span class="user-mention" data-user-id="269186">@Mosè Giordano</span> I have some vague recollection of Stefan Karpinski saying that they thought it was a good idea to have it default to === back in the day, but now realize that whenever you want to compare two things and don't know their types, you essentially always want to use === anyway.</p>
+
+
+
+<a name="494378124"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Fix2%20and%20%3D%3D/near/494378124" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D.html#494378124">(Jan 17 2025 at 14:55)</a>:</h4>
+<p>FWIW I would prefer to have it have no default, for the same reason. Usually you want ===. In the cases where you don't you usually have to manually define == anyway.</p>
+
+
+
+<a name="494429965"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Fix2%20and%20%3D%3D/near/494429965" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> John Lapeyre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D.html#494429965">(Jan 17 2025 at 19:57)</a>:</h4>
+<p>But a struct that includes a <code>Vector{Int}</code> will by default give <code>false</code> even if the fields are <code>==</code>. Applying <code>==</code> fieldwise would work... Habitually using a macro <code>@noeq MyStruct</code> that throws, until you decide to write a method might be a good idea.</p>
+
+
+
+<a name="494437316"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Fix2%20and%20%3D%3D/near/494437316" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Neven Sajko <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D.html#494437316">(Jan 17 2025 at 20:49)</a>:</h4>
+<p>The issue of equality for <code>ComposedFunction</code> seems somewhat similar to the issue of equality for <code>Fix</code>:<br>
+<a href="https://github.com/JuliaLang/julia/issues/53853">https://github.com/JuliaLang/julia/issues/53853</a></p>
+
+
+
+<a name="494437950"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Fix2%20and%20%3D%3D/near/494437950" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Neven Sajko <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D.html#494437950">(Jan 17 2025 at 20:53)</a>:</h4>
+<p>I'm not sure there's a meaningful definition for <code>==</code> in any of the two cases, though. Maybe those should just throw?</p>
+
+
+
+<a name="494438739"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Fix2%20and%20%3D%3D/near/494438739" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Neven Sajko <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D.html#494438739">(Jan 17 2025 at 20:58)</a>:</h4>
+<p>Specifically, for <code>Fix</code>, regarding the <code>x</code> field, I think that the required comparison depends on the <code>f</code> field. E.g., for some values of the <code>f</code> field, it might make sense to compare the <code>x</code> fields with <code>==</code>, while for other values of the <code>f</code> field it might make sense to compare the <code>x</code> fields with <code>===</code>.</p>
+<p>The point being it doesn't seem correct to compare among <code>Fix</code> in a pairwise fashion, rather equality should IMO only be defined when the types of both fields are known to whoever is defining the <code>==</code> method.</p>
+
+
+
+<a name="494439038"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Fix2%20and%20%3D%3D/near/494439038" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Neven Sajko <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D.html#494439038">(Jan 17 2025 at 20:59)</a>:</h4>
+<p>This is the definition of <code>struct Fix</code>, btw: <a href="https://github.com/JuliaLang/julia/blob/98f8aca9ac8eb1c9467b685c7e8594d981192d96/base/operators.jl#L1173-L1175">https://github.com/JuliaLang/julia/blob/98f8aca9ac8eb1c9467b685c7e8594d981192d96/base/operators.jl#L1173-L1175</a></p>
+
+
+
+<a name="494456839"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Fix2%20and%20%3D%3D/near/494456839" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel Wennberg <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D.html#494456839">(Jan 17 2025 at 23:26)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="285705">Rasmus Henningsson</span> <a href="#narrow/channel/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D/near/494299499">said</a>:</p>
+<blockquote>
+<p>Because this causes the rather unintuitive:</p>
+<p><div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">startswith</span><span class="p">(</span><span class="s">"abc"</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">startswith</span><span class="p">(</span><span class="s">"abc"</span><span class="p">)</span>
+<span class="nb">true</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">startswith</span><span class="p">(</span><span class="sa">r</span><span class="sr">"abc"</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">startswith</span><span class="p">(</span><span class="sa">r</span><span class="sr">"abc"</span><span class="p">)</span>
+<span class="nb">false</span>
+</code></pre></div><br>
+</p>
+</blockquote>
+<p>Isn't the truly weird part here that <code>"abc" === "abc"</code>?</p>
+<p>Apparently, strings are heap allocated, <code>isbitstype(String) == false</code>, <code>ismutabletype(String) == true</code>, <code>pointer("abc") != pointer("abc")</code>, but still <code>Base.isidentityfree(String) == true</code>, i.e., strings have value identity like immutable structs. How does this work?</p>
+<p>I know that Julia strings are immutable, but that _could_ just have meant that there's no interface that lets you mutate them and the compiler makes assumptions accordingly. Instead, it appears to mean that the full package of immutable struct semantics has been grafted onto a non-isbits, heap-allocated, variable-length type.</p>
+
+
+
+<a name="494457265"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Fix2%20and%20%3D%3D/near/494457265" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Daniel Wennberg <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D.html#494457265">(Jan 17 2025 at 23:30)</a>:</h4>
+<p>I suppose <code>objectid(::String)</code> is special-cased to simply be another <code>hash</code>, and <code>===(::String, ::String)</code> is special-cased to compare contents instead of memory address in the case of an <code>objectid</code> collision. Maybe that's sufficient for everything to work?</p>
+
+
+
+<a name="494485056"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Fix2%20and%20%3D%3D/near/494485056" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D.html#494485056">(Jan 18 2025 at 05:57)</a>:</h4>
+<p>Yeah pretty much</p>
+
+
+
+<a name="494517949"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Fix2%20and%20%3D%3D/near/494517949" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rasmus Henningsson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D.html#494517949">(Jan 18 2025 at 13:11)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="727071">Neven Sajko</span> <a href="#narrow/channel/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D/near/494438739">said</a>:</p>
+<blockquote>
+<p>Specifically, for <code>Fix</code>, regarding the <code>x</code> field, I think that the required comparison depends on the <code>f</code> field. E.g., for some values of the <code>f</code> field, it might make sense to compare the <code>x</code> fields with <code>==</code>, while for other values of the <code>f</code> field it might make sense to compare the <code>x</code> fields with <code>===</code>.</p>
+<p>The point being it doesn't seem correct to compare among <code>Fix</code> in a pairwise fashion, rather equality should IMO only be defined when the types of both fields are known to whoever is defining the <code>==</code> method.</p>
+</blockquote>
+<p>I think it makes sense with <code>==</code> for <code>Fix1</code>/<code>Fix2</code>. (As <span class="user-mention" data-user-id="272650">@Jakob Nybo Nissen</span> mentioned, the problem is more general, but that ship has sailed. However we can still improve where it makes sense if it doesn't break anything.)</p>
+<p>The main problem here is that both <code>==</code> and <code>===</code> are useful, but since <code>==</code> falls back to <code>===</code> we lose that distinction. The current choice makes Julia code less expressive, and harder to understand.</p>
+<p>Consider two vectors <code>v1 = [1,2,3]</code> and <code>v2 = [1,2,3]</code>. <code>v1==v2</code> is <code>true</code>, but <code>v1===v2</code> is false.<br>
+In a similar way, we could use <code>Fix1</code> to define accumulators</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">acc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">Fix1</span><span class="p">(</span><span class="n">push!</span><span class="p">,</span><span class="w"> </span><span class="n">v1</span><span class="p">)</span>
+<span class="n">acc2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">Fix1</span><span class="p">(</span><span class="n">push!</span><span class="p">,</span><span class="w"> </span><span class="n">v2</span><span class="p">)</span>
+</code></pre></div>
+<p>There are two meaningful ways to compare <code>acc</code> and <code>acc2</code>.</p>
+<ol>
+<li>Are they the same accumulator? For this <code>===</code> is natural.</li>
+<li>Do they currently have the same state? For this <code>==</code> would be natural.</li>
+</ol>
+<p>This is currently impossible with <code>acc</code> and <code>acc2</code> however. And crucially, the behavior changes compared to <code>v1</code> and <code>v2</code>.</p>
+<p>Unless someone finds a good counterexample, I think any case that you actually want the <code>===</code> behavior, it is also natural to use <code>===</code> to compare the <code>Fix1</code>/<code>Fix2</code> objects. <span aria-label="smile" class="emoji emoji-1f642" role="img" title="smile">:smile:</span> (I guess I'm repeating <span class="user-mention" data-user-id="272650">@Jakob Nybo Nissen</span>'s point here.)</p>
+
+
+
+<a name="494518484"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Fix2%20and%20%3D%3D/near/494518484" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rasmus Henningsson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D.html#494518484">(Jan 18 2025 at 13:18)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="368583">Daniel Wennberg</span> <a href="#narrow/channel/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D/near/494456839">said</a>:</p>
+<blockquote>
+<p>...<br>
+Isn't the truly weird part here that <code>"abc" === "abc"</code>?<br>
+...</p>
+</blockquote>
+<p>Yes, that's a good point. (But we could also consider that an implementation detail. In theory, since strings are immutable in Julia, it could have been implemented using some fancy string pool so that if two identical strings were created, they would indeed share the same memory. Isn't <code>Symbol</code> akin to this? I might be wrong about that though. <span aria-label="smile" class="emoji emoji-1f642" role="img" title="smile">:smile:</span>)</p>
+<p>But I hope my <code>Vector</code> example above shows another situation where it makes much more sense to compare with <code>==</code>. Even though there's no case where <code>Fix1</code>/<code>Fix2</code> handles that well at the moment.</p>
+
+
+
+<a name="494518726"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Fix2%20and%20%3D%3D/near/494518726" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rasmus Henningsson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D.html#494518726">(Jan 18 2025 at 13:21)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="727071">Neven Sajko</span> <a href="#narrow/channel/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D/near/494437316">said</a>:</p>
+<blockquote>
+<p>The issue of equality for <code>ComposedFunction</code> seems somewhat similar to the issue of equality for <code>Fix</code>:<br>
+<a href="https://github.com/JuliaLang/julia/issues/53853">https://github.com/JuliaLang/julia/issues/53853</a></p>
+</blockquote>
+<p>Thanks for this! That's a great example to compare to when considering making this change.</p>
+<p>(I'm currently on a shaky internet connection, but I'll make a pull request sometime soon.)</p>
+
+
+
+<a name="494527881"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Fix2%20and%20%3D%3D/near/494527881" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Fix2.20and.20.3D.3D.html#494527881">(Jan 18 2025 at 15:21)</a>:</h4>
+<blockquote>
+<p>Isn't <code>Symbol</code> akin to this?</p>
+</blockquote>
+<p>Yup.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

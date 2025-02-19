@@ -1,0 +1,225 @@
+<html>
+<head><meta charset="utf-8"><title>✔ When should I read config file? · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20When.20should.20I.20read.20config.20file.3F.html">✔ When should I read config file?</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="272776531"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20When%20should%20I%20read%20config%20file%3F/near/272776531" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20When.20should.20I.20read.20config.20file.3F.html#272776531">(Feb 22 2022 at 09:10)</a>:</h4>
+<p>I can't quite understand difference between <code>__init__</code> function and regular code written in module.</p>
+<p>So, the problem is the following: I want to store some configuration parameters in a toml file, somewhere in a file system, and I want to read it during <code>using</code> step. Where should I put initialization steps?</p>
+<p>Version №1</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">module</span> <span class="n">Foo</span>
+<span class="k">using</span> <span class="n">TOML</span>
+<span class="k">const</span> <span class="n">OPTIONS</span> <span class="o">=</span> <span class="kt">Ref</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="n">OPTIONS</span><span class="p">[]</span> <span class="o">=</span> <span class="n">TOML</span><span class="o">.</span><span class="n">parsefile</span><span class="p">(</span><span class="s">"/config.toml"</span><span class="p">)[</span><span class="s">"var"</span><span class="p">]</span>
+
+<span class="k">end</span> <span class="c">#module</span>
+</code></pre></div>
+<p>or Version №2</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">module</span> <span class="n">Foo</span>
+<span class="k">using</span> <span class="n">TOML</span>
+<span class="k">const</span> <span class="n">OPTIONS</span> <span class="o">=</span> <span class="kt">Ref</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="k">function</span> <span class="n">__init__</span><span class="p">()</span>
+  <span class="n">OPTIONS</span><span class="p">[]</span> <span class="o">=</span> <span class="n">TOML</span><span class="o">.</span><span class="n">parsefile</span><span class="p">(</span><span class="s">"/config.toml"</span><span class="p">)[</span><span class="s">"var"</span><span class="p">]</span>
+  <span class="k">return</span>
+<span class="k">end</span>
+
+<span class="k">end</span> <span class="c">#module</span>
+</code></pre></div>
+<p>Which one is a correct way of initializing variables?</p>
+
+
+
+<a name="272776926"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20When%20should%20I%20read%20config%20file%3F/near/272776926" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20When.20should.20I.20read.20config.20file.3F.html#272776926">(Feb 22 2022 at 09:14)</a>:</h4>
+<p>And second question, is there any common Julia path, where I can keep this configuration file? I can do it in <code>~/.config/...</code> but I would prefer something more system independent.</p>
+
+
+
+<a name="272777400"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20When%20should%20I%20read%20config%20file%3F/near/272777400" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20When.20should.20I.20read.20config.20file.3F.html#272777400">(Feb 22 2022 at 09:20)</a>:</h4>
+<p>Idk if there's a julia version of <a href="https://pypi.org/project/appdirs/">appdirs</a> but I think that's the platform-agnostic application-agnostic answer to "which directory". Julia itself should use the XDG dirs too but currently doesn't.</p>
+
+
+
+<a name="272777433"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20When%20should%20I%20read%20config%20file%3F/near/272777433" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20When.20should.20I.20read.20config.20file.3F.html#272777433">(Feb 22 2022 at 09:20)</a>:</h4>
+<p>The first will run when precompiling the package, the second when <code>using</code> the package.</p>
+
+
+
+<a name="272777568"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20When%20should%20I%20read%20config%20file%3F/near/272777568" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20When.20should.20I.20read.20config.20file.3F.html#272777568">(Feb 22 2022 at 09:22)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="272771">Andrey Oskin</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/When.20should.20I.20read.20config.20file.3F/near/272776926">said</a>:</p>
+<blockquote>
+<p>And second question, is there any common Julia path, where I can keep this configuration file? I can do it in <code>~/.config/...</code> but I would prefer something more system independent.</p>
+</blockquote>
+<p>Maybe have a look at <a href="https://github.com/JuliaPackaging/Preferences.jl">https://github.com/JuliaPackaging/Preferences.jl</a></p>
+
+
+
+<a name="272779306"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20When%20should%20I%20read%20config%20file%3F/near/272779306" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20When.20should.20I.20read.20config.20file.3F.html#272779306">(Feb 22 2022 at 09:38)</a>:</h4>
+<p>Thank you, so I suppose I need second, if I want to change settings between runs.</p>
+
+
+
+<a name="272779386"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20When%20should%20I%20read%20config%20file%3F/near/272779386" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20When.20should.20I.20read.20config.20file.3F.html#272779386">(Feb 22 2022 at 09:39)</a>:</h4>
+<p>Between restarts, yes.</p>
+
+
+
+<a name="272780004"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20When%20should%20I%20read%20config%20file%3F/near/272780004" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20When.20should.20I.20read.20config.20file.3F.html#272780004">(Feb 22 2022 at 09:45)</a>:</h4>
+<p>Thank you.</p>
+<p>I do not quite get the idea of <a href="https://github.com/search?q=Preferences.jl&amp;type=Repositories">Preferences.jl</a>. It can store preferences in <code>LocalPreferences.toml</code> file of the package. But packages usually have path <code>~/.julia/packages/Foo/&lt;some random token&gt;/...</code> where random token is different between package versions. So what, each time I get a new version of the file, my LocalPreferences will be forgotten? It doesn't look convinient.</p>
+
+
+
+<a name="272780120"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20When%20should%20I%20read%20config%20file%3F/near/272780120" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20When.20should.20I.20read.20config.20file.3F.html#272780120">(Feb 22 2022 at 09:46)</a>:</h4>
+<p>No that is not how it works, the <code>LocalPreferences.toml</code> file is stored in your <em>current</em> project, for example:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="o">$</span> <span class="n">ls</span>
+<span class="n">LocalPreferences</span><span class="o">.</span><span class="n">toml</span>  <span class="n">Manifest</span><span class="o">.</span><span class="n">toml</span>  <span class="n">Project</span><span class="o">.</span><span class="n">toml</span>
+
+<span class="o">$</span> <span class="n">cat</span> <span class="n">Project</span><span class="o">.</span><span class="n">toml</span>
+<span class="p">[</span><span class="n">deps</span><span class="p">]</span>
+<span class="n">Example</span> <span class="o">=</span> <span class="s">"7876af07-990d-54b4-ab0e-23690620f79a"</span>
+
+<span class="o">$</span> <span class="n">cat</span> <span class="n">LocalPreferences</span><span class="o">.</span><span class="n">toml</span>
+<span class="p">[</span><span class="n">Example</span><span class="p">]</span>
+<span class="n">foo</span> <span class="o">=</span> <span class="s">"bar"</span>
+</code></pre></div>
+
+
+
+<a name="272780369"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20When%20should%20I%20read%20config%20file%3F/near/272780369" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20When.20should.20I.20read.20config.20file.3F.html#272780369">(Feb 22 2022 at 09:49)</a>:</h4>
+<p>And global in <code>Project.toml</code> of the package?</p>
+<p>Yeah, it's not what I really want. I am always running julia with <code>julia --project=.</code> so each time I have isolated environment.</p>
+
+
+
+<a name="272780458"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20When%20should%20I%20read%20config%20file%3F/near/272780458" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20When.20should.20I.20read.20config.20file.3F.html#272780458">(Feb 22 2022 at 09:50)</a>:</h4>
+<p>It is exactly what you want, if you run <code>julia --project=.</code> it will pick up preferences from the <code>LocalPreferences.toml</code> file next to your <code>Project.toml</code>.</p>
+
+
+
+<a name="272780491"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20When%20should%20I%20read%20config%20file%3F/near/272780491" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20When.20should.20I.20read.20config.20file.3F.html#272780491">(Feb 22 2022 at 09:50)</a>:</h4>
+<p>But thank you, this package gave me few good ideas.</p>
+
+
+
+<a name="272780874"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20When%20should%20I%20read%20config%20file%3F/near/272780874" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20When.20should.20I.20read.20config.20file.3F.html#272780874">(Feb 22 2022 at 09:54)</a>:</h4>
+<p>I guess in my case, I can do the same as thing as <code>PyCall</code>: </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">const</span> <span class="n">prefsfile</span> <span class="o">=</span> <span class="n">joinpath</span><span class="p">(</span><span class="n">first</span><span class="p">(</span><span class="nb">DEPOT_PATH</span><span class="p">),</span> <span class="s">"prefs"</span><span class="p">,</span> <span class="s">"Foo.toml"</span><span class="p">)</span>
+<span class="n">mkpath</span><span class="p">(</span><span class="n">dirname</span><span class="p">(</span><span class="n">prefsfile</span><span class="p">))</span>
+</code></pre></div>
+
+
+
+<a name="272781108"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20When%20should%20I%20read%20config%20file%3F/near/272781108" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20When.20should.20I.20read.20config.20file.3F.html#272781108">(Feb 22 2022 at 09:56)</a>:</h4>
+<p><a href="https://github.com/search?q=PyCall.jl&amp;type=Repositories">PyCall.jl</a> is moving to <a href="https://github.com/search?q=Preferences.jl&amp;type=Repositories">Preferences.jl</a> too (<a href="https://github.com/JuliaPy/PyCall.jl/pull/945">https://github.com/JuliaPy/PyCall.jl/pull/945</a>). I don't understand why <a href="https://github.com/search?q=Preferences.jl&amp;type=Repositories">Preferences.jl</a> is not exactly what you want?</p>
+
+
+
+<a name="272782440"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20When%20should%20I%20read%20config%20file%3F/near/272782440" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20When.20should.20I.20read.20config.20file.3F.html#272782440">(Feb 22 2022 at 10:08)</a>:</h4>
+<p>Guess we are both do not understand each other (and I do not understand <a href="https://github.com/search?q=Preferences.jl&amp;type=Repositories">Preferences.jl</a>). Thank you for your patience, let me explain what I want in more details.</p>
+<p>Suppose that I have package Foo, which can do some calculations and it produces some output for these calculations. It can be long description and it can be short description. So, I have to choose which type of description is default, but I do not want to set it in code, I want to make it optional.</p>
+<p>My idea is the following: I can create system wide config file, where I can set <code>output = compact</code> or <code>output = long</code>.</p>
+<p>For example I set this config file to <code>output = compact</code></p>
+<p>Now, I can go to directory 1 and run </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span> <span class="o">--</span><span class="n">project</span><span class="o">=.</span>
+
+<span class="k">using</span> <span class="n">Foo</span><span class="o">:</span> <span class="n">Bar</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">Bar</span><span class="p">()</span>
+<span class="n">calc</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="c"># Compact output</span>
+</code></pre></div>
+<p>I can go to directory 2 and run</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span> <span class="o">--</span><span class="n">project</span><span class="o">=.</span> <span class="c"># it is new Project.toml and everything else</span>
+
+<span class="k">using</span> <span class="n">Foo</span><span class="o">:</span> <span class="n">Bar</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">Bar</span><span class="p">()</span>
+<span class="n">calc</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="c"># Compact output, since I still use system wide preferences</span>
+</code></pre></div>
+<p>If I change settings to <code>output = long</code> then in each directory I run the same code, I'll see long output, because that's what I want. I kind of changes my desire for default behaviour.</p>
+<p>Now, if I get it right, then <a href="https://github.com/search?q=Preferences.jl&amp;type=Repositories">Preferences.jl</a> do something different. It allows me to set my settings in each directory individually, but if I am not doing it, then it uses default value from the package.  I.e. each time I should do</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">cd</span> <span class="n">dir3</span>
+<span class="n">julia</span> <span class="o">--</span><span class="n">project</span><span class="o">=.</span>
+
+<span class="n">setpreferences</span><span class="p">(</span><span class="n">output</span><span class="o">=</span><span class="n">compact</span><span class="p">)</span>
+</code></pre></div>
+<p>otherwise I get package default, not my default.</p>
+
+
+
+<a name="272782484"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20When%20should%20I%20read%20config%20file%3F/near/272782484" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20When.20should.20I.20read.20config.20file.3F.html#272782484">(Feb 22 2022 at 10:08)</a>:</h4>
+<p>Hope it makes it more clear.<br>
+But may be I misunderstood general idea of <a href="https://github.com/search?q=Preferences.jl&amp;type=Repositories">Preferences.jl</a></p>
+
+
+
+<a name="272782724"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20When%20should%20I%20read%20config%20file%3F/near/272782724" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20When.20should.20I.20read.20config.20file.3F.html#272782724">(Feb 22 2022 at 10:11)</a>:</h4>
+<p>Okay, I believe you can have global preferences with <a href="https://github.com/search?q=Preferences.jl&amp;type=Repositories">Preferences.jl</a> too.</p>
+
+
+
+<a name="272785169"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20When%20should%20I%20read%20config%20file%3F/near/272785169" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20When.20should.20I.20read.20config.20file.3F.html#272785169">(Feb 22 2022 at 10:38)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="272771">Andrey Oskin</span> has marked this topic as resolved.</p>
+
+
+
+<a name="272825470"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20When%20should%20I%20read%20config%20file%3F/near/272825470" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Felix Kastner <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20When.20should.20I.20read.20config.20file.3F.html#272825470">(Feb 22 2022 at 16:11)</a>:</h4>
+<p>You can have preferences stored in your default environments Project.toml or a LocalPreferences.toml at the same location. The only drawback is that the package for which you want to record preferences has to be added to that environment.<br>
+So</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span> <span class="n">Preferences</span>
+<span class="k">using</span> <span class="n">Example</span>
+<span class="n">set_preferences!</span><span class="p">(</span><span class="n">Example</span><span class="p">,</span> <span class="s">"foo"</span> <span class="o">=&gt;</span> <span class="s">"bar"</span><span class="p">)</span>
+</code></pre></div>
+<p>stores it in ~/.julia/environments/v1.7/LocalPreferences.toml.<br>
+This can then be loaded using <code>load_preference(Example, "foo")</code> which will traverse the LOAD_PATH to look for stored preferences.</p>
+
+
+
+<a name="272831965"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20When%20should%20I%20read%20config%20file%3F/near/272831965" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20When.20should.20I.20read.20config.20file.3F.html#272831965">(Feb 22 2022 at 16:52)</a>:</h4>
+<p>It will read from <code>~/.julia/environments/v1.7/LocalPreferences.toml</code> even when I start Julia with <code>--project=.</code> flag? It's going hierarchically? If it can't find local preferences in current directory it will read from global? If yes, it can make this approach more interesting (of course min 1.6 is still a huge drawback)</p>
+
+
+
+<a name="272832085"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20When%20should%20I%20read%20config%20file%3F/near/272832085" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20When.20should.20I.20read.20config.20file.3F.html#272832085">(Feb 22 2022 at 16:52)</a>:</h4>
+<p>I guess I should just try it and see how it goes.</p>
+
+
+
+<a name="272832169"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20When%20should%20I%20read%20config%20file%3F/near/272832169" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20When.20should.20I.20read.20config.20file.3F.html#272832169">(Feb 22 2022 at 16:53)</a>:</h4>
+<p>Yes, that should work. Since Julia versions &lt; 1.6 are not supported versions anymore I don't think it is a drawback really.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

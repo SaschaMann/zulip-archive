@@ -1,0 +1,44 @@
+[
+    {
+        "content": "<p>The documentation claims that <code>take!(::IOBuffer)</code> does not copying, but it's clearly lying:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">io</span> <span class=\"o\">=</span> <span class=\"kt\">IOBuffer</span><span class=\"p\">(</span><span class=\"n\">zeros</span><span class=\"p\">(</span><span class=\"kt\">UInt8</span><span class=\"p\">,</span> <span class=\"mi\">2</span><span class=\"o\">^</span><span class=\"mi\">18</span><span class=\"p\">));</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">v</span> <span class=\"o\">=</span> <span class=\"n\">take!</span><span class=\"p\">(</span><span class=\"n\">io</span><span class=\"p\">);</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">io</span><span class=\"o\">.</span><span class=\"n\">data</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span> <span class=\"o\">=</span> <span class=\"mh\">0xff</span>\n<span class=\"mh\">0xff</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">v</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span>\n<span class=\"mh\">0x00</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">take!</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">io</span><span class=\"p\">);</span>\n  <span class=\"mf\">17.486</span> <span class=\"n\">μs</span> <span class=\"p\">(</span><span class=\"mi\">2</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mf\">256.14</span> <span class=\"n\">KiB</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 229397022,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1615246967
+    },
+    {
+        "content": "<p>As far as I can tell this happens whenever the buffer is <em>not</em> writable.  I guess because it assumes in those cases the data in the buffer has to be preserved at all costs?</p>",
+        "id": 229397415,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1615247190
+    },
+    {
+        "content": "<p><code>take!</code>'s docstring is correct. it just does not say that it will also create a new array</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">io</span> <span class=\"o\">=</span> <span class=\"kt\">IOBuffer</span><span class=\"p\">();</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">data</span> <span class=\"o\">=</span> <span class=\"n\">io</span><span class=\"o\">.</span><span class=\"n\">data</span><span class=\"p\">;</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">take!</span><span class=\"p\">(</span><span class=\"n\">io</span><span class=\"p\">)</span> <span class=\"o\">===</span> <span class=\"n\">data</span>\n<span class=\"kc\">true</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">io</span><span class=\"o\">.</span><span class=\"n\">data</span> <span class=\"o\">===</span> <span class=\"n\">data</span>\n<span class=\"kc\">false</span>\n</code></pre></div>",
+        "id": 229399732,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1615248539
+    },
+    {
+        "content": "<p>so where are you saying it's creating an array here?</p>",
+        "id": 229400243,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1615248815
+    },
+    {
+        "content": "<p><code>take!(io) === data</code> indicates that it returns the internal buffer as-is. <code>io.data !== data</code> indicates that the internal buffer is re-allocated. You can also see the code here: <a href=\"https://github.com/JuliaLang/julia/blob/970edc7d7734ce0175177699e474ffc8f7b9eb27/base/iobuffer.jl#L391\">https://github.com/JuliaLang/julia/blob/970edc7d7734ce0175177699e474ffc8f7b9eb27/base/iobuffer.jl#L391</a></p>",
+        "id": 229401436,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1615249565
+    },
+    {
+        "content": "<p>Ok, I was so confused about the internal buffer being re-allocated I just kind of dind't believe it lol</p>",
+        "id": 229401494,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1615249597
+    },
+    {
+        "content": "<p>I mean, I guess it's for the same reason I said above, to preserve the data, it's just really confusing</p>",
+        "id": 229401518,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1615249617
+    }
+]

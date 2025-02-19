@@ -1,0 +1,166 @@
+<html>
+<head><meta charset="utf-8"><title>✔ JET analysis of Base.isless for field Union{T, Nothing} · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20JET.20analysis.20of.20Base.2Eisless.20for.20field.20Union.7BT.2C.20Nothing.7D.html">✔ JET analysis of Base.isless for field Union{T, Nothing}</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="384909618"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20JET%20analysis%20of%20Base.isless%20for%20field%20Union%7BT%2C%20Nothing%7D/near/384909618" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jesper Stemann Andersen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20JET.20analysis.20of.20Base.2Eisless.20for.20field.20Union.7BT.2C.20Nothing.7D.html#384909618">(Aug 14 2023 at 21:02)</a>:</h4>
+<p>I have a (mutable, edit) struct with a field that has type <code>Union{T, Nothing}</code>, and I've been trying to implement <code>Base.isless</code> for this struct, but I cannot figure out how to make <a href="https://github.com/search?q=JET.jl&amp;type=Repositories">JET.jl</a> happy...</p>
+<p>A simple function works fine,</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">foo</span><span class="p">(</span><span class="n">a</span><span class="o">::</span><span class="kt">Union</span><span class="p">{</span><span class="kt">Int</span><span class="p">,</span><span class="w"> </span><span class="kt">Nothing</span><span class="p">},</span><span class="w"> </span><span class="n">b</span><span class="o">::</span><span class="kt">Union</span><span class="p">{</span><span class="kt">Int</span><span class="p">,</span><span class="w"> </span><span class="kt">Nothing</span><span class="p">})</span>
+<span class="w">           </span><span class="k">if</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">isa</span><span class="w"> </span><span class="kt">Nothing</span>
+<span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="k">isa</span><span class="w"> </span><span class="kt">Nothing</span>
+<span class="w">                   </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span>
+<span class="w">               </span><span class="k">else</span>
+<span class="w">                   </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span>
+<span class="w">               </span><span class="k">end</span>
+<span class="w">           </span><span class="k">else</span>
+<span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="k">isa</span><span class="w"> </span><span class="kt">Nothing</span>
+<span class="w">                   </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span>
+<span class="w">               </span><span class="k">else</span>
+<span class="w">                   </span><span class="k">return</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">b</span>
+<span class="w">               </span><span class="k">end</span>
+<span class="w">           </span><span class="k">end</span>
+<span class="w">       </span><span class="k">end</span>
+<span class="go">foo (generic function with 1 method)</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">JET</span><span class="o">.</span><span class="nd">@report_opt</span><span class="w"> </span><span class="n">foo</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
+<span class="go">No errors detected</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">JET</span><span class="o">.</span><span class="nd">@report_call</span><span class="w"> </span><span class="n">foo</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+<span class="go">No errors detected</span>
+</code></pre></div>
+<p>But once the <code>a</code> and <code>b</code> are encapsulated in a struct, JET complains:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="k">mutable</span><span class="w"> </span><span class="k">struct</span> <span class="kt">Bar</span>
+<span class="w">           </span><span class="n">x</span><span class="o">::</span><span class="kt">Union</span><span class="p">{</span><span class="kt">Int</span><span class="p">,</span><span class="w"> </span><span class="kt">Nothing</span><span class="p">}</span>
+<span class="w">       </span><span class="k">end</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">isless</span><span class="p">(</span><span class="n">a</span><span class="o">::</span><span class="kt">Bar</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="o">::</span><span class="kt">Bar</span><span class="p">)</span>
+<span class="w">           </span><span class="k">if</span><span class="w"> </span><span class="n">a</span><span class="o">.</span><span class="n">x</span><span class="w"> </span><span class="k">isa</span><span class="w"> </span><span class="kt">Nothing</span>
+<span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="n">b</span><span class="o">.</span><span class="n">x</span><span class="w"> </span><span class="k">isa</span><span class="w"> </span><span class="kt">Nothing</span>
+<span class="w">                   </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span>
+<span class="w">               </span><span class="k">else</span>
+<span class="w">                   </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span>
+<span class="w">               </span><span class="k">end</span>
+<span class="w">           </span><span class="k">else</span>
+<span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="n">b</span><span class="o">.</span><span class="n">x</span><span class="w"> </span><span class="k">isa</span><span class="w"> </span><span class="kt">Nothing</span>
+<span class="w">                   </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span>
+<span class="w">               </span><span class="k">else</span>
+<span class="w">                   </span><span class="k">return</span><span class="w"> </span><span class="n">a</span><span class="o">.</span><span class="n">x</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">b</span><span class="o">.</span><span class="n">x</span>
+<span class="w">               </span><span class="k">end</span>
+<span class="w">           </span><span class="k">end</span>
+<span class="w">       </span><span class="k">end</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">JET</span><span class="o">.</span><span class="nd">@report_opt</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">isless</span><span class="p">(</span><span class="n">Bar</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">Bar</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+<span class="go">═════ 2 possible errors found ═════</span>
+<span class="go">┌ isless(a::Bar, b::Bar) @ Main ./REPL[16]:12</span>
+<span class="go">│┌ &lt;(x::Int64, y::Nothing) @ Base ./operators.jl:343</span>
+<span class="go">││ runtime dispatch detected: isless(x::Int64, y::Nothing)</span>
+<span class="go">│└────────────────────</span>
+<span class="go">│┌ &lt;(x::Nothing, y::Int64) @ Base ./operators.jl:343</span>
+<span class="go">││ runtime dispatch detected: isless(x::Nothing, y::Int64)</span>
+<span class="go">│└────────────────────</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">JET</span><span class="o">.</span><span class="nd">@report_call</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">isless</span><span class="p">(</span><span class="n">Bar</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">Bar</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+<span class="go">═════ 3 possible errors found ═════</span>
+<span class="go">┌ isless(a::Bar, b::Bar) @ Main ./REPL[16]:12</span>
+<span class="go">│┌ &lt;(x::Nothing, y::Nothing) @ Base ./operators.jl:343</span>
+<span class="go">││ no matching method found `isless(::Nothing, ::Nothing)`: isless(x::Nothing, y::Nothing)</span>
+<span class="go">│└────────────────────</span>
+<span class="go">│┌ &lt;(x::Int64, y::Nothing) @ Base ./operators.jl:343</span>
+<span class="go">││ no matching method found `isless(::Int64, ::Nothing)`: isless(x::Int64, y::Nothing)</span>
+<span class="go">│└────────────────────</span>
+<span class="go">│┌ &lt;(x::Nothing, y::Int64) @ Base ./operators.jl:343</span>
+<span class="go">││ no matching method found `isless(::Nothing, ::Int64)`: isless(x::Nothing, y::Int64)</span>
+<span class="go">│└────────────────────</span>
+</code></pre></div>
+<p>Using JET v0.8.9 on Julia v1.9.2.</p>
+<p>Any ideas?</p>
+
+
+
+<a name="384911334"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20JET%20analysis%20of%20Base.isless%20for%20field%20Union%7BT%2C%20Nothing%7D/near/384911334" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jesper Stemann Andersen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20JET.20analysis.20of.20Base.2Eisless.20for.20field.20Union.7BT.2C.20Nothing.7D.html#384911334">(Aug 14 2023 at 21:12)</a>:</h4>
+<p>... I guess <code>JET.@report_opt</code> is already telling me, quite clearly, that it ends up in dynamic dispatch..., so of course making the Bar field type a type parameter <code>&lt;: Union{Int, Nothing}</code> works...</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="k">mutable</span><span class="w"> </span><span class="k">struct</span> <span class="kt">Bar</span><span class="p">{</span><span class="kt">T</span><span class="o">&lt;:</span><span class="kt">Union</span><span class="p">{</span><span class="kt">Int</span><span class="p">,</span><span class="w"> </span><span class="kt">Nothing</span><span class="p">}}</span>
+<span class="w">           </span><span class="n">x</span><span class="o">::</span><span class="kt">T</span>
+<span class="w">       </span><span class="k">end</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">isless</span><span class="p">(</span><span class="n">a</span><span class="o">::</span><span class="kt">Bar</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="o">::</span><span class="kt">Bar</span><span class="p">)</span>
+<span class="w">                  </span><span class="k">if</span><span class="w"> </span><span class="n">a</span><span class="o">.</span><span class="n">x</span><span class="w"> </span><span class="k">isa</span><span class="w"> </span><span class="kt">Nothing</span>
+<span class="w">                      </span><span class="k">if</span><span class="w"> </span><span class="n">b</span><span class="o">.</span><span class="n">x</span><span class="w"> </span><span class="k">isa</span><span class="w"> </span><span class="kt">Nothing</span>
+<span class="w">                          </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span>
+<span class="w">                      </span><span class="k">else</span>
+<span class="w">                          </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span>
+<span class="w">                      </span><span class="k">end</span>
+<span class="w">                  </span><span class="k">else</span>
+<span class="w">                      </span><span class="k">if</span><span class="w"> </span><span class="n">b</span><span class="o">.</span><span class="n">x</span><span class="w"> </span><span class="k">isa</span><span class="w"> </span><span class="kt">Nothing</span>
+<span class="w">                          </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span>
+<span class="w">                      </span><span class="k">else</span>
+<span class="w">                          </span><span class="k">return</span><span class="w"> </span><span class="n">a</span><span class="o">.</span><span class="n">x</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">b</span><span class="o">.</span><span class="n">x</span>
+<span class="w">                      </span><span class="k">end</span>
+<span class="w">                  </span><span class="k">end</span>
+<span class="w">              </span><span class="k">end</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">JET</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">JET</span><span class="o">.</span><span class="nd">@report_opt</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">isless</span><span class="p">(</span><span class="n">Bar</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">Bar</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+<span class="go">No errors detected</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">JET</span><span class="o">.</span><span class="nd">@report_call</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">isless</span><span class="p">(</span><span class="n">Bar</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">Bar</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+<span class="go">No errors detected</span>
+</code></pre></div>
+<p>... but that's not what I was looking for - I would like to be able to modify the field - make it a Nothing and vice versa...</p>
+
+
+
+<a name="385000797"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20JET%20analysis%20of%20Base.isless%20for%20field%20Union%7BT%2C%20Nothing%7D/near/385000797" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20JET.20analysis.20of.20Base.2Eisless.20for.20field.20Union.7BT.2C.20Nothing.7D.html#385000797">(Aug 15 2023 at 04:52)</a>:</h4>
+<p>The issue is that currently, the Julia compiler doesn't realise that if you load the same field multiple times from the same struct, the field is of the same type. So, even though you checked that a.x is not nothing and b.x is not nothing, when you do the comparison, Julia has "forgotten" that you checked</p>
+
+
+
+<a name="385000814"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20JET%20analysis%20of%20Base.isless%20for%20field%20Union%7BT%2C%20Nothing%7D/near/385000814" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20JET.20analysis.20of.20Base.2Eisless.20for.20field.20Union.7BT.2C.20Nothing.7D.html#385000814">(Aug 15 2023 at 04:53)</a>:</h4>
+<p>You solve it by storing them in a variable</p>
+
+
+
+<a name="385001157"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20JET%20analysis%20of%20Base.isless%20for%20field%20Union%7BT%2C%20Nothing%7D/near/385001157" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20JET.20analysis.20of.20Base.2Eisless.20for.20field.20Union.7BT.2C.20Nothing.7D.html#385001157">(Aug 15 2023 at 04:56)</a>:</h4>
+<p>See more here: <a href="https://aviatesk.github.io/JET.jl/stable/jetanalysis/#no-matching-method-found-(x/y-union-split)">https://aviatesk.github.io/JET.jl/stable/jetanalysis/#no-matching-method-found-(x/y-union-split)</a></p>
+
+
+
+<a name="385004300"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20JET%20analysis%20of%20Base.isless%20for%20field%20Union%7BT%2C%20Nothing%7D/near/385004300" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jesper Stemann Andersen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20JET.20analysis.20of.20Base.2Eisless.20for.20field.20Union.7BT.2C.20Nothing.7D.html#385004300">(Aug 15 2023 at 05:20)</a>:</h4>
+<p>Right! I should’ve re-read the documentation for JET… Thanks!</p>
+
+
+
+<a name="385012116"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20JET%20analysis%20of%20Base.isless%20for%20field%20Union%7BT%2C%20Nothing%7D/near/385012116" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20JET.20analysis.20of.20Base.2Eisless.20for.20field.20Union.7BT.2C.20Nothing.7D.html#385012116">(Aug 15 2023 at 06:09)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="432905">Jesper Stemann Andersen</span> has marked this topic as resolved.</p>
+
+
+
+<a name="385023523"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20JET%20analysis%20of%20Base.isless%20for%20field%20Union%7BT%2C%20Nothing%7D/near/385023523" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sebastian Pfitzner <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20JET.20analysis.20of.20Base.2Eisless.20for.20field.20Union.7BT.2C.20Nothing.7D.html#385023523">(Aug 15 2023 at 07:11)</a>:</h4>
+<p>worth noting that JET is correct in this specific case  -- <code>Bar</code> is mutable after all, so some other thread could write a <code>nothing</code> to <code>a.x</code> or <code>b.x</code> after your check. Only accessing the field once and storing that in a local variable <em>technically</em> changes the behaviour of your program</p>
+
+
+
+<a name="385024699"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20JET%20analysis%20of%20Base.isless%20for%20field%20Union%7BT%2C%20Nothing%7D/near/385024699" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jesper Stemann Andersen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20JET.20analysis.20of.20Base.2Eisless.20for.20field.20Union.7BT.2C.20Nothing.7D.html#385024699">(Aug 15 2023 at 07:16)</a>:</h4>
+<p>Right ... I was also wondering whether that point should be added as a footnote to the JET documentation...</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

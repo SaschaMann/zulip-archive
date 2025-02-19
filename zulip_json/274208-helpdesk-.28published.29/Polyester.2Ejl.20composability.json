@@ -1,0 +1,68 @@
+[
+    {
+        "content": "<p>Does <a href=\"https://github.com/search?q=Polyester.jl&amp;type=Repositories\">Polyester.jl</a> compose with tasks launched with <code>Threads.@threads</code> etc? i.e., will launching a bunch of tasks with both simultaneously cause oversubscription? I see in the README there's a section about using <code>disable_polyester_threads()</code>, but I don't know if that's because it doesn't compose well with <code>Base.Threads</code>, or if it's just to avoid the overhead of launching too many tasks.</p>",
+        "id": 362688474,
+        "sender_full_name": "James Wrigley",
+        "timestamp": 1685612454
+    },
+    {
+        "content": "<p>No, it does not compose well</p>",
+        "id": 362788605,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1685632063
+    },
+    {
+        "content": "<p>Ah, that's unfortunate. Do you know why? I browsed the repo and docs but couldn't really grok how it works, it's pretty under-documented.</p>",
+        "id": 362862638,
+        "sender_full_name": "James Wrigley",
+        "timestamp": 1685648064
+    },
+    {
+        "content": "<p>It's basically an orthogonal threading system that makes different tradeoffs in order to get lower overhead. From what I understand, it would lose those benefits if it tried to compose well</p>",
+        "id": 362879700,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1685653123
+    },
+    {
+        "content": "<p>Maybe <span class=\"user-mention\" data-user-id=\"284680\">@chriselrod</span> can expand or correct what I've said though</p>",
+        "id": 362879743,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1685653137
+    },
+    {
+        "content": "<p>Any other things one <em>shouldn't</em> use Polyester for in preference to base Threads?  The only thing that comes to mind for me is that I once had a problem when trying to <code>@batch</code> something that including making and saving some <a href=\"https://github.com/search?q=Plots.jl&amp;type=Repositories\">Plots.jl</a> plots but wasn't sure if it was because of <a href=\"https://github.com/search?q=Plots.jl&amp;type=Repositories\">Plots.jl</a> doing weird non-thread-safe things or something else</p>",
+        "id": 362880586,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1685653407
+    },
+    {
+        "content": "<p>I don't know of any cases where Polyester isn't prefereable to <code>Threads.@threads</code>, but Polyester also has no replacement for things like <code>Threads.@spawn</code> as far as I'm aware.</p>",
+        "id": 362881346,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1685653642
+    },
+    {
+        "content": "<p>I see, thanks.</p>",
+        "id": 362887590,
+        "sender_full_name": "James Wrigley",
+        "timestamp": 1685655915
+    },
+    {
+        "content": "<p>Polyester won't oversubscribe your CPU, because it runs on regular Julia tasks that get scheduled by the regular scheduler.<br>\nInstead of having a short lifetime, these tasks live until you exit Julia. Polyester works by telling them what to do.<br>\nIt is faster because it avoids spawning new tasks and getting the scheduler to schedule them. It is much more direct in this way.</p>\n<p>ThreadingUtilities is the library that provides both the task pool, and the ability to send them code to run.</p>\n<p>PolyesterWeave is the extremely naive scheduling library that Polyester, LoopVectorization, and Octavian use.<br>\nOne could experiment with writing other scheduling libraries/taking other approaches. That'd be interesting, but unfortunately not something I have time for. An alternative to PolyesterWeave that supports <code>@spawn</code>/implements work-stealing while still quickly allowing one to launch large threaded jobs would be great.</p>",
+        "id": 363028891,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1685708373
+    },
+    {
+        "content": "<p>I think code should generally work when you run Polyester and base threading together, but it will likely regress performance.</p>",
+        "id": 363029234,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1685708439
+    },
+    {
+        "content": "<p>Ah thanks, that clears up a lot <span aria-label=\"thumbs up\" class=\"emoji emoji-1f44d\" role=\"img\" title=\"thumbs up\">:thumbs_up:</span></p>",
+        "id": 363481925,
+        "sender_full_name": "James Wrigley",
+        "timestamp": 1685879758
+    }
+]

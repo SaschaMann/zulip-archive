@@ -1,0 +1,71 @@
+<html>
+<head><meta charset="utf-8"><title>Convenient pattern for optional kwargs in callback function · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Convenient.20pattern.20for.20optional.20kwargs.20in.20callback.20function.html">Convenient pattern for optional kwargs in callback function</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="482126655"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Convenient%20pattern%20for%20optional%20kwargs%20in%20callback%20function/near/482126655" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Convenient.20pattern.20for.20optional.20kwargs.20in.20callback.20function.html#482126655">(Nov 13 2024 at 09:30)</a>:</h4>
+<p>Here is a situation that pops up for me every now and then: I have a function which takes a callback function from the end user which needs to support a wide variety of options, for example like this:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">my_library_function</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="n">args</span><span class="o">...</span><span class="p">)</span>
+<span class="c"># Stuff...</span>
+<span class="n">customization</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">;</span><span class="w"> </span><span class="o">&lt;</span><span class="n">lots</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">keyword</span><span class="w"> </span><span class="n">arguments</span><span class="p">)</span>
+<span class="c"># More stuff</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>Is there a way (e.g. in <code>my_library_function</code>) to make it so that the end user can supply a function with this signature:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">end_users_callback</span><span class="p">(</span><span class="n">x</span><span class="p">;</span><span class="w"> </span><span class="n">the_only_kwarg_they_need_for_this_particular_customization</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="c"># Stuff....</span>
+</code></pre></div>
+<p>Note that I want the end user to be able to omit slurping the kwargs or else there would be no need for me to post this :)</p>
+<p>I know the best way is probably to not have those options, but for the sake of brevity, assume this is not applicable here.</p>
+<p>One option is to have a signature where the optional arguments are supplied as one big named tuple so users just pick out what they want, e.g. like this</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">end_users_callback</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">options</span><span class="p">)</span>
+<span class="n">flag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">options</span><span class="o">.</span><span class="n">the_only_kwarg_they_need_for_this_particular_customization</span>
+<span class="c"># Stuff ...</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>But I'm wondering if there is an even more convenient way to do it.</p>
+
+
+
+<a name="482130162"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Convenient%20pattern%20for%20optional%20kwargs%20in%20callback%20function/near/482130162" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gunnar Farnebäck <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Convenient.20pattern.20for.20optional.20kwargs.20in.20callback.20function.html#482130162">(Nov 13 2024 at 09:47)</a>:</h4>
+<p>I would design the callback to take optional stuff in a single argument that could be either a named tuple, a dictionary, or a struct, whatever works best.</p>
+
+
+
+<a name="482165869"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Convenient%20pattern%20for%20optional%20kwargs%20in%20callback%20function/near/482165869" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> aplavin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Convenient.20pattern.20for.20optional.20kwargs.20in.20callback.20function.html#482165869">(Nov 13 2024 at 12:55)</a>:</h4>
+<p>Passing a named tuple (or any struct for that matter) and selecting specific values from it is quite convenient.<br>
+Try this</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">end_users_callback</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="p">(;</span><span class="w"> </span><span class="n">the_only_kwarg_they_need_for_this_particular_customization</span><span class="p">))</span>
+<span class="c"># Stuff ...</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>instead of </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">end_users_callback</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">options</span><span class="p">)</span>
+<span class="n">flag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">options</span><span class="o">.</span><span class="n">the_only_kwarg_they_need_for_this_particular_customization</span>
+<span class="c"># Stuff ...</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>Reads almost like kwargs :)</p>
+
+
+
+<a name="482196151"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Convenient%20pattern%20for%20optional%20kwargs%20in%20callback%20function/near/482196151" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Convenient.20pattern.20for.20optional.20kwargs.20in.20callback.20function.html#482196151">(Nov 13 2024 at 15:17)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="373536">aplavin</span> <a href="#narrow/channel/274208-helpdesk-.28published.29/topic/Convenient.20pattern.20for.20optional.20kwargs.20in.20callback.20function/near/482165869">said</a>:</p>
+<blockquote>
+<p>Try this</p>
+</blockquote>
+<p>Thats a nice one! I somehow thought that destructuring requires that you collect all members. I'll add this as a tip in the documentation.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

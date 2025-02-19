@@ -1,0 +1,361 @@
+<html>
+<head><meta charset="utf-8"><title>julia memory usage · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html">julia memory usage</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="251063293"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251063293" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#251063293">(Aug 28 2021 at 15:31)</a>:</h4>
+<p>I have a julia script that somehow requires 60+ gb of memory. However, running</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">varinfo</span><span class="p">(</span><span class="n">imported</span><span class="o">=</span><span class="nb">true</span><span class="p">,</span><span class="n">sortby</span><span class="o">=</span><span class="ss">:size</span><span class="p">,</span><span class="n">all</span><span class="o">=</span><span class="nb">true</span><span class="p">)</span>
+</code></pre></div>
+<p>shows something which adds up to 100mb. If I turn recursive=true on in varinfo, the process allocates an extra 40gb and runs out of memory...</p>
+<p>How can I found out how this memory is wasted? Are there any "usual suspects"?</p>
+
+
+
+<a name="251071019"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251071019" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Chad Scherrer <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#251071019">(Aug 28 2021 at 17:44)</a>:</h4>
+<p>I'd guess  you may have lots of intermediate allocations that are freed, but the garbage collector isn't keeping up. You could try <code>@allocated</code> on different pieces of the code, or annotate the code with <a href="https://github.com/search?q=TimerOutputs.jl&amp;type=Repositories">TimerOutputs.jl</a></p>
+
+
+
+<a name="251072022"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251072022" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#251072022">(Aug 28 2021 at 18:00)</a>:</h4>
+<p>I'm not sure, if I run just half of the script and get back repl access, then after GC.gc(), there shouldn't be any intermediary variables right? yet if I do this, the memory usage remains ridiculously high. Nothing is running, and the variables I see in varinfo are quite modest in size.</p>
+
+
+
+<a name="251072129"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251072129" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#251072129">(Aug 28 2021 at 18:02)</a>:</h4>
+<p>it's also bugging me that varinfo goes and takes up 40+ gigabytes before crashing.</p>
+
+
+
+<a name="251115156"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251115156" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#251115156">(Aug 29 2021 at 08:00)</a>:</h4>
+<p>Even if no variables are leaked into the REPL? Generated code is not GCd, do you by any chance do a lot of codegen?</p>
+<p>In either case, it would be nice if you could share the script as a MWE of a potential GC bug</p>
+
+
+
+<a name="251115717"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251115717" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#251115717">(Aug 29 2021 at 08:10)</a>:</h4>
+<p>at the moment it's not very minimal. There is a bit of generated code; can I check the size of the compiled code? There are a few variables leaked into the repl, but those I can see with varinfo, and they amount to 100mb. I can try to reduce the script a bit, and then share it.</p>
+
+
+
+<a name="251118499"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251118499" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#251118499">(Aug 29 2021 at 09:01)</a>:</h4>
+<p>I modified varinfo to spit out the intermediary results and I see lines like:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">MPSKit</span><span class="o">.</span><span class="n">MPSKit</span><span class="o">.</span><span class="n">LinearAlgebra</span><span class="o">.</span><span class="n">MPSKit</span><span class="o">.</span><span class="n">MPSKit</span><span class="o">.</span><span class="n">LinearAlgebra</span><span class="o">.</span><span class="n">BLAS</span><span class="o">.</span><span class="n">MPSKit</span><span class="o">.</span><span class="n">MPSKit</span><span class="o">.</span><span class="n">LinearAlgebra</span><span class="o">.</span><span class="n">MPSKit</span><span class="o">.</span><span class="n">MPSKit</span><span class="o">.</span><span class="n">LinearAlgebra</span><span class="o">.</span><span class="n">BLAS</span><span class="o">.</span><span class="n">LinearAlgebra</span><span class="o">.*</span>
+</code></pre></div>
+<p>which implies that it revisits modules that it already visited, so it's pretty bugged.</p>
+
+
+
+<a name="251121878"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251121878" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Bagge Carlson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#251121878">(Aug 29 2021 at 10:05)</a>:</h4>
+<p>Is the script performing disk IO? If so, is your issue similar to <a href="https://github.com/JuliaData/CSV.jl/issues/850">https://github.com/JuliaData/CSV.jl/issues/850</a><br>
+?</p>
+
+
+
+<a name="251216108"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251216108" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#251216108">(Aug 30 2021 at 11:37)</a>:</h4>
+<p>a tiny bit of disk io, so it's not similar</p>
+
+
+
+<a name="251216191"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251216191" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#251216191">(Aug 30 2021 at 11:38)</a>:</h4>
+<p>I wrote a dirty-patched version of varinfo <a href="/user_uploads/7178/n0paBM2SwS3PCecjHPnhQDEy/derp.txt">derp.txt</a>  and the total memory usage known about by julia is estimated at 600mb</p>
+
+
+
+<a name="251487205"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251487205" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> c42f <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#251487205">(Sep 01 2021 at 01:38)</a>:</h4>
+<blockquote>
+<p><code>MPSKit.MPSKit.LinearAlgebra.MPSKit</code></p>
+</blockquote>
+<p>This does seem troubling — how does the binding <code>LinearAlgebra.MPSKit</code> come to exist?</p>
+
+
+
+<a name="251503403"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251503403" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#251503403">(Sep 01 2021 at 05:22)</a>:</h4>
+<p>That turned out to be a problem in varinfo itself, which I think I have patched locally. However, I'm not entirely sure how the function was meant to work (why did it filter out Base,Main and Core), so I'm not sure if I should open a pull request</p>
+
+
+
+<a name="251503546"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251503546" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#251503546">(Sep 01 2021 at 05:24)</a>:</h4>
+<p>there was also a "mistake" in base, summarysize on bitarrays failed as size appears undefined</p>
+
+
+
+<a name="251504936"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251504936" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#251504936">(Sep 01 2021 at 05:40)</a>:</h4>
+<p>whut</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">total</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="p">)</span> <span class="k">in</span> <span class="n">SUNRepresentations</span><span class="o">.</span><span class="n">CGCCACHE</span><span class="p">[(</span><span class="mi">3</span><span class="p">,</span><span class="kt">Float64</span><span class="p">)]</span>
+       <span class="n">total</span><span class="o">+=</span><span class="n">Base</span><span class="o">.</span><span class="n">summarysize</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+       <span class="k">end</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">total</span>
+<span class="mi">2184221472</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">Base</span><span class="o">.</span><span class="n">summarysize</span><span class="p">(</span><span class="n">SUNRepresentations</span><span class="o">.</span><span class="n">CGCCACHE</span><span class="p">[(</span><span class="mi">3</span><span class="p">,</span><span class="kt">Float64</span><span class="p">)])</span>
+<span class="mi">463032</span>
+</code></pre></div>
+
+
+
+<a name="251505122"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251505122" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#251505122">(Sep 01 2021 at 05:42)</a>:</h4>
+<p>I understand summarysize is a lower bound, but this seems a bit too crazy</p>
+
+
+
+<a name="251507486"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251507486" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#251507486">(Sep 01 2021 at 06:09)</a>:</h4>
+<p>aha, perhaps this is related <a href="https://github.com/JuliaLang/julia/issues/41941">https://github.com/JuliaLang/julia/issues/41941</a></p>
+
+
+
+<a name="251815049"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251815049" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> c42f <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#251815049">(Sep 03 2021 at 02:41)</a>:</h4>
+<p>This does seem related and it was fixed in nightly already - <a href="https://github.com/JuliaLang/julia/pull/41492">https://github.com/JuliaLang/julia/pull/41492</a><br>
+Though I'm not sure that will fix all your varinfo problems here.</p>
+
+
+
+<a name="251831987"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251831987" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#251831987">(Sep 03 2021 at 07:09)</a>:</h4>
+<p>indeed it was! I changed varinfo a bit, I'm not sure if I should open a pull request as it does things differently as the other varinfo, but in combination with the latest julia it now shows nicely where the memory usage is coming from! :D</p>
+
+
+
+<a name="251852697"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/251852697" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#251852697">(Sep 03 2021 at 09:48)</a>:</h4>
+<p>the varinfo thing has apparantly also been fixed <a href="https://github.com/JuliaLang/julia/pull/42061">https://github.com/JuliaLang/julia/pull/42061</a></p>
+
+
+
+<a name="252572023"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/252572023" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jameson Nash <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#252572023">(Sep 09 2021 at 05:12)</a>:</h4>
+<blockquote>
+<p>why did it filter out Base,Main and Core</p>
+</blockquote>
+<p>I don't know either (author of that fix here), but I did give is a lovely fake name in my patch :)</p>
+
+
+
+<a name="252649499"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/252649499" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#252649499">(Sep 09 2021 at 15:55)</a>:</h4>
+<p>thanks a lot for the fix, the code is now also much nicer to read :) we also resolved the underlying issue in our own code, and now everything works again with much less memory usage</p>
+
+
+
+<a name="294966647"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/294966647" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#294966647">(Aug 24 2022 at 00:53)</a>:</h4>
+<p>I'm on julia 1.8.0 and am running into the same issue once again. Julia takes up 34.1G, the output of varinfo is</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">varinfo</span><span class="p">(</span><span class="n">all</span><span class="o">=</span><span class="nb">true</span><span class="p">,</span><span class="n">minsize</span><span class="o">=</span><span class="mi">1024</span><span class="p">,</span><span class="n">imported</span><span class="o">=</span><span class="nb">true</span><span class="p">,</span><span class="n">sortby</span><span class="o">=</span><span class="ss">:size</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="n">name</span><span class="w">                    </span><span class="n">size</span><span class="w"> </span><span class="n">summary</span><span class="w"></span>
+<span class="w">  </span><span class="n">––––––––––––––––</span><span class="w"> </span><span class="n">–––––––––––</span><span class="w"> </span><span class="n">–––––––––––––––––––––––––––––––</span><span class="w"></span>
+<span class="w">  </span><span class="n">Base</span><span class="w">                         </span><span class="kt">Module</span><span class="w"></span>
+<span class="w">  </span><span class="n">Core</span><span class="w">                         </span><span class="kt">Module</span><span class="w"></span>
+<span class="w">  </span><span class="n">Main</span><span class="w">                         </span><span class="kt">Module</span><span class="w"></span>
+<span class="w">  </span><span class="n">TensorKit</span><span class="w">        </span><span class="mf">122.409</span><span class="w"> </span><span class="n">MiB</span><span class="w"> </span><span class="kt">Module</span><span class="w"></span>
+<span class="w">  </span><span class="n">LinearAlgebra</span><span class="w">      </span><span class="mf">4.727</span><span class="w"> </span><span class="n">MiB</span><span class="w"> </span><span class="kt">Module</span><span class="w"></span>
+<span class="w">  </span><span class="n">JLD2</span><span class="w">               </span><span class="mf">3.486</span><span class="w"> </span><span class="n">MiB</span><span class="w"> </span><span class="kt">Module</span><span class="w"></span>
+<span class="w">  </span><span class="n">MPSKit</span><span class="w">             </span><span class="mf">2.533</span><span class="w"> </span><span class="n">MiB</span><span class="w"> </span><span class="kt">Module</span><span class="w"></span>
+<span class="w">  </span><span class="n">TensorOperations</span><span class="w">   </span><span class="mf">2.154</span><span class="w"> </span><span class="n">MiB</span><span class="w"> </span><span class="kt">Module</span><span class="w"></span>
+<span class="w">  </span><span class="n">KrylovKit</span><span class="w">          </span><span class="mf">1.668</span><span class="w"> </span><span class="n">MiB</span><span class="w"> </span><span class="kt">Module</span><span class="w"></span>
+<span class="w">  </span><span class="n">Test</span><span class="w">               </span><span class="mf">1.205</span><span class="w"> </span><span class="n">MiB</span><span class="w"> </span><span class="kt">Module</span><span class="w"></span>
+<span class="w">  </span><span class="n">Printf</span><span class="w">             </span><span class="mf">1.092</span><span class="w"> </span><span class="n">MiB</span><span class="w"> </span><span class="kt">Module</span><span class="w"></span>
+<span class="w">  </span><span class="n">OptimKit</span><span class="w">         </span><span class="mf">973.529</span><span class="w"> </span><span class="n">KiB</span><span class="w"> </span><span class="kt">Module</span><span class="w"></span>
+<span class="w">  </span><span class="n">DelimitedFiles</span><span class="w">   </span><span class="mf">957.035</span><span class="w"> </span><span class="n">KiB</span><span class="w"> </span><span class="kt">Module</span><span class="w"></span>
+<span class="w">  </span><span class="n">Parameters</span><span class="w">       </span><span class="mf">952.041</span><span class="w"> </span><span class="n">KiB</span><span class="w"> </span><span class="kt">Module</span><span class="w"></span>
+<span class="w">  </span><span class="n">FastClosures</span><span class="w">     </span><span class="mf">879.606</span><span class="w"> </span><span class="n">KiB</span><span class="w"> </span><span class="kt">Module</span><span class="w"></span>
+<span class="w">  </span><span class="n">InteractiveUtils</span><span class="w"> </span><span class="mf">326.286</span><span class="w"> </span><span class="n">KiB</span><span class="w"> </span><span class="kt">Module</span><span class="w"></span>
+<span class="w">  </span><span class="n">err</span><span class="w">                </span><span class="mf">4.919</span><span class="w"> </span><span class="n">KiB</span><span class="w"> </span><span class="mi">1</span><span class="o">-</span><span class="n">element</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">ExceptionStack</span><span class="w"></span>
+<span class="w">  </span><span class="c">##meta#58          3.129 KiB IdDict{Any, Any} with 2 entries</span><span class="w"></span>
+<span class="w">  </span><span class="n">ans</span><span class="w">                </span><span class="mf">1.469</span><span class="w"> </span><span class="n">KiB</span><span class="w"> </span><span class="n">Markdown</span><span class="o">.</span><span class="n">MD</span><span class="w"></span>
+</code></pre></div>
+<p>How do I even start debugging such a thing? The script takes a while to run before reaching this level of memory usage, so it's not easy to make a minimal working example</p>
+
+
+
+<a name="294993893"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/294993893" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#294993893">(Aug 24 2022 at 07:36)</a>:</h4>
+<p>have you done any allocation/performance optimization on your code? Are you doing everything in global scope or are you working in functions?</p>
+
+
+
+<a name="294993928"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/294993928" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#294993928">(Aug 24 2022 at 07:37)</a>:</h4>
+<p>Julia 1.8.0 will use a lot more memory for LinearAlgebra</p>
+
+
+
+<a name="294994958"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/294994958" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#294994958">(Aug 24 2022 at 07:45)</a>:</h4>
+<p>(but it should be faster)</p>
+
+
+
+<a name="294996541"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/294996541" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#294996541">(Aug 24 2022 at 07:58)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="306754">Sukera</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage/near/294993893">said</a>:</p>
+<blockquote>
+<p>have you done any allocation/performance optimization on your code? Are you doing everything in global scope or are you working in functions?</p>
+</blockquote>
+<p>I have not - the code heavily relies on krylov eigenvalue solvers which temporarily may allocate a lot (it's pretty much all you see if you run pprof, it's the dominating contribution). However, after the simulation is done this shouldn't matter - GC.gc() should clear it up. The simulation uses functions. </p>
+<p>I was hoping that whatever it will turn out to be would turn up in varinfo(all=true,imported=true,recursive=true)</p>
+
+
+
+<a name="294996642"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/294996642" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#294996642">(Aug 24 2022 at 07:59)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="374994">Michael Fiano</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage/near/294993928">said</a>:</p>
+<blockquote>
+<p>Julia 1.8.0 will use a lot more memory for LinearAlgebra</p>
+</blockquote>
+<p>What exactly changed there? Varinfo claims it doesn't really use too much:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">varinfo</span><span class="p">(</span><span class="n">LinearAlgebra</span><span class="p">,</span><span class="n">all</span><span class="o">=</span><span class="nb">true</span><span class="p">,</span><span class="n">minsize</span><span class="o">=</span><span class="mi">1024</span><span class="p">,</span><span class="n">imported</span><span class="o">=</span><span class="nb">true</span><span class="p">,</span><span class="n">sortby</span><span class="o">=</span><span class="ss">:size</span><span class="p">,</span><span class="n">recursive</span><span class="o">=</span><span class="nb">true</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="n">name</span><span class="w">                             </span><span class="n">size</span><span class="w"> </span><span class="n">summary</span><span class="w"></span>
+<span class="w">  </span><span class="n">–––––––––––––––––––––––––</span><span class="w"> </span><span class="n">–––––––––––</span><span class="w"> </span><span class="n">–––––––––––––––––––––––––––––––––</span><span class="w"></span>
+<span class="w">  </span><span class="n">Broadcast</span><span class="w">                   </span><span class="mf">6.830</span><span class="w"> </span><span class="n">MiB</span><span class="w"> </span><span class="kt">Module</span><span class="w"></span>
+<span class="w">  </span><span class="n">LinearAlgebra</span><span class="w">               </span><span class="mf">4.682</span><span class="w"> </span><span class="n">MiB</span><span class="w"> </span><span class="kt">Module</span><span class="w"></span>
+<span class="w">  </span><span class="n">BLAS</span><span class="o">.</span><span class="n">LinearAlgebra</span><span class="w">          </span><span class="mf">4.682</span><span class="w"> </span><span class="n">MiB</span><span class="w"> </span><span class="kt">Module</span><span class="w"></span>
+<span class="w">  </span><span class="n">BLAS</span><span class="w">                        </span><span class="mf">1.216</span><span class="w"> </span><span class="n">MiB</span><span class="w"> </span><span class="kt">Module</span><span class="w"></span>
+<span class="w">  </span><span class="n">BLAS</span><span class="o">.</span><span class="n">BLAS</span><span class="w">                   </span><span class="mf">1.216</span><span class="w"> </span><span class="n">MiB</span><span class="w"> </span><span class="kt">Module</span><span class="w"></span>
+<span class="w">  </span><span class="n">LAPACK</span><span class="w">                    </span><span class="mf">997.065</span><span class="w"> </span><span class="n">KiB</span><span class="w"> </span><span class="kt">Module</span><span class="w"></span>
+<span class="w">  </span><span class="n">LAPACK</span><span class="o">.</span><span class="n">LAPACK</span><span class="w">             </span><span class="mf">997.065</span><span class="w"> </span><span class="n">KiB</span><span class="w"> </span><span class="kt">Module</span><span class="w"></span>
+<span class="w">  </span><span class="c">##meta#58                 359.730 KiB IdDict{Any, Any} with 174 entries</span><span class="w"></span>
+<span class="w">  </span><span class="n">LAPACK</span><span class="o">.</span><span class="c">##meta#58          131.451 KiB IdDict{Any, Any} with 90 entries</span><span class="w"></span>
+<span class="w">  </span><span class="n">BLAS</span><span class="o">.</span><span class="c">##meta#58             82.208 KiB IdDict{Any, Any} with 56 entries</span><span class="w"></span>
+<span class="w">  </span><span class="n">Libdl</span><span class="w">                       </span><span class="mf">2.386</span><span class="w"> </span><span class="n">KiB</span><span class="w"> </span><span class="kt">Module</span><span class="w"></span>
+<span class="w">  </span><span class="n">BlasHessenbergQ</span><span class="w">             </span><span class="mf">1.297</span><span class="w"> </span><span class="n">KiB</span><span class="w"> </span><span class="kt">UnionAll</span><span class="w"></span>
+<span class="w">  </span><span class="n">StridedMaybeAdjOrTransMat</span><span class="w">   </span><span class="mf">1.281</span><span class="w"> </span><span class="n">KiB</span><span class="w"> </span><span class="kt">UnionAll</span><span class="w"></span>
+<span class="w">  </span><span class="n">AdjOrTransStridedMat</span><span class="w">        </span><span class="mf">1.094</span><span class="w"> </span><span class="n">KiB</span><span class="w"> </span><span class="kt">UnionAll</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="294996755"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/294996755" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#294996755">(Aug 24 2022 at 07:59)</a>:</h4>
+<p>it's possible that you're running into the GC not returning the memory to the system after it was allocated</p>
+
+
+
+<a name="294996831"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/294996831" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#294996831">(Aug 24 2022 at 08:00)</a>:</h4>
+<p>shouldn't matter too much, as it's all virtual memory</p>
+
+
+
+<a name="294996868"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/294996868" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#294996868">(Aug 24 2022 at 08:00)</a>:</h4>
+<p>gimme a sec, there was an issue about this...</p>
+
+
+
+<a name="294996912"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/294996912" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#294996912">(Aug 24 2022 at 08:00)</a>:</h4>
+<p>A lot more BLAS threads by default</p>
+
+
+
+<a name="294996968"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/294996968" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#294996968">(Aug 24 2022 at 08:01)</a>:</h4>
+<p>Tune it with <code>BLAS.set_num_threads()</code> if you need to</p>
+
+
+
+<a name="294997138"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/294997138" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#294997138">(Aug 24 2022 at 08:02)</a>:</h4>
+<p>I set the blas threads to 1, as they conflict with julia multithreading</p>
+
+
+
+<a name="294997228"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/294997228" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#294997228">(Aug 24 2022 at 08:03)</a>:</h4>
+<p>there we go <a href="https://github.com/JuliaLang/julia/issues/30653">https://github.com/JuliaLang/julia/issues/30653</a></p>
+
+
+
+<a name="294997362"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/294997362" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#294997362">(Aug 24 2022 at 08:04)</a>:</h4>
+<p>and now that I read that issue, this one as well <a href="https://github.com/JuliaLang/julia/issues/42566">https://github.com/JuliaLang/julia/issues/42566</a></p>
+
+
+
+<a name="294997824"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/294997824" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#294997824">(Aug 24 2022 at 08:07)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="306754">Sukera</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage/near/294997228">said</a>:</p>
+<blockquote>
+<p>there we go <a href="https://github.com/JuliaLang/julia/issues/30653">https://github.com/JuliaLang/julia/issues/30653</a></p>
+</blockquote>
+<p>thanks a ton!!!!</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">ccall</span><span class="p">(</span><span class="ss">:malloc_trim</span><span class="p">,</span><span class="w"> </span><span class="kt">Cvoid</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">Cint</span><span class="p">,),</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+</code></pre></div>
+<p>clears it right up! So it's nothing inherently wrong in my code, I'm perfectly fine with julia not returning that memory to the os</p>
+
+
+
+<a name="294997987"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/294997987" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#294997987">(Aug 24 2022 at 08:08)</a>:</h4>
+<p>I don't think that would be Julia</p>
+
+
+
+<a name="294998003"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/294998003" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#294998003">(Aug 24 2022 at 08:08)</a>:</h4>
+<p>That would be your libc implementation</p>
+
+
+
+<a name="294998935"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/294998935" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#294998935">(Aug 24 2022 at 08:14)</a>:</h4>
+<p>indeed</p>
+
+
+
+<a name="294999100"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/294999100" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#294999100">(Aug 24 2022 at 08:15)</a>:</h4>
+<p>julia has already called <code>free</code> on that memory, <code>malloc</code> just then was like "nah I don't need it yet, you keep it" in its internal table</p>
+
+
+
+<a name="294999322"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/294999322" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#294999322">(Aug 24 2022 at 08:17)</a>:</h4>
+<p>what lots of people don't know is that <code>malloc</code> is not just a simple table mapping pointers to ranges of memory, but a somewhat complex system for managing allocations systemwide.. and it's optimized for returning <em>fast</em>, so if you have another metric to optimize for, it may not be optimal</p>
+
+
+
+<a name="295010218"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/julia%20memory%20usage/near/295010218" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/julia.20memory.20usage.html#295010218">(Aug 24 2022 at 09:35)</a>:</h4>
+<p>there's still something weird going on - no other threads are running, yet I see a fluctuating summarysize. Probably nothing to worry about?</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">;</span><span class="w"> </span><span class="nd">@show</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">summarysize</span><span class="p">(</span><span class="n">envs</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">*</span><span class="mi">1024</span><span class="o">*</span><span class="mi">1024</span><span class="p">);</span><span class="w"> </span><span class="k">end</span><span class="p">;</span><span class="w"></span>
+<span class="n">Base</span><span class="o">.</span><span class="n">summarysize</span><span class="p">(</span><span class="n">envs</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="mi">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.6670088469982147</span><span class="w"></span>
+<span class="n">Base</span><span class="o">.</span><span class="n">summarysize</span><span class="p">(</span><span class="n">envs</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="mi">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">3.7884459123015404</span><span class="w"></span>
+<span class="n">Base</span><span class="o">.</span><span class="n">summarysize</span><span class="p">(</span><span class="n">envs</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="mi">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.5368779748678207</span><span class="w"></span>
+<span class="n">Base</span><span class="o">.</span><span class="n">summarysize</span><span class="p">(</span><span class="n">envs</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="mi">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.6451764479279518</span><span class="w"></span>
+<span class="n">Base</span><span class="o">.</span><span class="n">summarysize</span><span class="p">(</span><span class="n">envs</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="mi">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.2040650248527527</span><span class="w"></span>
+<span class="n">Base</span><span class="o">.</span><span class="n">summarysize</span><span class="p">(</span><span class="n">envs</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="mi">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.928450770676136</span><span class="w"></span>
+<span class="n">Base</span><span class="o">.</span><span class="n">summarysize</span><span class="p">(</span><span class="n">envs</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="mi">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.72379120439291</span><span class="w"></span>
+<span class="n">Base</span><span class="o">.</span><span class="n">summarysize</span><span class="p">(</span><span class="n">envs</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="mi">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.8031216561794281</span><span class="w"></span>
+<span class="n">Base</span><span class="o">.</span><span class="n">summarysize</span><span class="p">(</span><span class="n">envs</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="mi">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">3.0689545273780823</span><span class="w"></span>
+<span class="n">Base</span><span class="o">.</span><span class="n">summarysize</span><span class="p">(</span><span class="n">envs</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="mi">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.5368198826909065</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

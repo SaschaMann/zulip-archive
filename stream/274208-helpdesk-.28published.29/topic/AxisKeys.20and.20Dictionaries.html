@@ -1,0 +1,116 @@
+<html>
+<head><meta charset="utf-8"><title>AxisKeys and Dictionaries · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/AxisKeys.20and.20Dictionaries.html">AxisKeys and Dictionaries</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="342202767"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/AxisKeys%20and%20Dictionaries/near/342202767" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/AxisKeys.20and.20Dictionaries.html#342202767">(Mar 16 2023 at 02:19)</a>:</h4>
+<p>I have a 3x3x3 array and I'd like to use "labels" for indexing. I've looked at most of the implementations out there, for example <a href="https://github.com/mcabbott/AxisKeys.jl">AxisKeys.jl</a>. However, I'd like to do indexing with the labels, and no package seems to support it. From AxisKeys' readme:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">AxisKeys</span>
+<span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="kt">Int8</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="o">.|&gt;</span><span class="w"> </span><span class="n">abs</span><span class="p">;</span>
+<span class="n">A</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">KeyedArray</span><span class="p">(</span><span class="n">data</span><span class="p">;</span><span class="w"> </span><span class="n">channel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="ss">:left</span><span class="p">,</span><span class="w"> </span><span class="ss">:right</span><span class="p">],</span>
+<span class="w">                     </span><span class="n">time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">range</span><span class="p">(</span><span class="mi">13</span><span class="p">,</span><span class="w"> </span><span class="n">step</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.5</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span><span class="p">),</span>
+<span class="w">                     </span><span class="n">iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">31</span><span class="o">:</span><span class="mi">33</span><span class="p">)</span>
+</code></pre></div>
+<p>One can index as <code>A[iter=1]</code> or lookup as <code>A(iter=31)</code>. I really want to index as <code>A[iter=31]</code>, though (I'm not too concerned about performance in this particular case). <code>AxisArrays</code> is also quite clunky for this use case.</p>
+<p><a href="https://github.com/andyferris/Dictionaries.jl">Dictionaries.jl</a> is suggested as an alternative to do the kind of indexing I want. I just can't figure out how to do it for multidimensional arrays, though. If it is really possible, does anyone have an example?</p>
+
+
+
+<a name="342214213"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/AxisKeys%20and%20Dictionaries/near/342214213" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/AxisKeys.20and.20Dictionaries.html#342214213">(Mar 16 2023 at 04:28)</a>:</h4>
+<p>I don't think it's possible to do multidimensionality in <a href="https://github.com/search?q=Dictionaries.jl&amp;type=Repositories">Dictionaries.jl</a> though there are some discussions in issues about it</p>
+
+
+
+<a name="342286580"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/AxisKeys%20and%20Dictionaries/near/342286580" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> aplavin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/AxisKeys.20and.20Dictionaries.html#342286580">(Mar 16 2023 at 11:47)</a>:</h4>
+<p>AIU, when you start indexing by labels instead of sequential integer keys, the thing stops being an abstractarray. So, a dictionary is totally fine as long as you don't need array functionality:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dictionary</span><span class="p">([(</span><span class="n">channel</span><span class="o">=</span><span class="ss">:left</span><span class="p">,</span><span class="w"> </span><span class="n">time</span><span class="o">=</span><span class="mi">13</span><span class="p">,</span><span class="w"> </span><span class="n">iter</span><span class="o">=</span><span class="mi">31</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="ss">:right</span><span class="p">,</span><span class="w"> </span><span class="n">time</span><span class="o">=</span><span class="mi">13</span><span class="p">,</span><span class="w"> </span><span class="n">iter</span><span class="o">=</span><span class="mi">31</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="o">...</span><span class="p">])</span>
+<span class="n">d</span><span class="p">[(</span><span class="n">channel</span><span class="o">=</span><span class="ss">:left</span><span class="p">,</span><span class="w"> </span><span class="n">time</span><span class="o">=</span><span class="mi">13</span><span class="p">,</span><span class="w"> </span><span class="n">iter</span><span class="o">=</span><span class="mi">31</span><span class="p">)]</span><span class="w">  </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span>
+</code></pre></div>
+<p>But when array functionality is needed (eg slicing), it's probably better to stay within the realm of actual arrays. This means, indexing goes by sequential indices.<br>
+Why <code>AxisKeys</code>' label lookup with round brackets instead of square brackets doesn't work for your usecase?</p>
+
+
+
+<a name="342303187"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/AxisKeys%20and%20Dictionaries/near/342303187" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/AxisKeys.20and.20Dictionaries.html#342303187">(Mar 16 2023 at 12:58)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="373536">Alexander</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/AxisKeys.20and.20Dictionaries/near/342286580">said</a>:</p>
+<blockquote>
+<p>But when array functionality is needed (eg slicing), it's probably better to stay within the realm of actual arrays. This means, indexing goes by sequential indices.</p>
+</blockquote>
+<p>It can be done, but it's slow. In my particular use case, I'd rather have convenience than speed, though.</p>
+<blockquote>
+<p>Why <code>AxisKeys</code>' label lookup with round brackets instead of square brackets doesn't work for your usecase?</p>
+</blockquote>
+<p>The reason is that lookup doesn't work for assignment. I'd like to be able to do <code>A[iter=31] = ...</code>.</p>
+
+
+
+<a name="342327478"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/AxisKeys%20and%20Dictionaries/near/342327478" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/AxisKeys.20and.20Dictionaries.html#342327478">(Mar 16 2023 at 14:24)</a>:</h4>
+<p>I had missed <a href="https://github.com/davidavdav/NamedArrays.jl">NamedArrays.jl</a>, found it in an issue in <a href="https://github.com/search?q=Dictionaries.jl&amp;type=Repositories">Dictionaries.jl</a>. It is actually the closest to what I'm looking for.</p>
+
+
+
+<a name="342398339"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/AxisKeys%20and%20Dictionaries/near/342398339" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sundar R <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/AxisKeys.20and.20Dictionaries.html#342398339">(Mar 16 2023 at 18:54)</a>:</h4>
+<p>There's also <a href="https://github.com/invenia/NamedDims.jl">NamedDims.jl</a> and <a href="https://github.com/rafaqz/DimensionalData.jl">DimensionalData.jl</a></p>
+
+
+
+<a name="342399269"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/AxisKeys%20and%20Dictionaries/near/342399269" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> aplavin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/AxisKeys.20and.20Dictionaries.html#342399269">(Mar 16 2023 at 18:59)</a>:</h4>
+<blockquote>
+<p>The reason is that lookup doesn't work for assignment. I'd like to be able to do A[iter=31] = ....</p>
+</blockquote>
+<p>Setting the whole slice:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">A</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="ss">:left</span><span class="p">,</span><span class="w"> </span><span class="n">iter</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span><span class="w"> </span><span class="o">.=</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span>
+</code></pre></div>
+<p>Setting a single value:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="c"># note the trailing colon</span>
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">A</span><span class="p">(</span><span class="ss">:left</span><span class="p">,</span><span class="w"> </span><span class="mi">18</span><span class="p">,</span><span class="w"> </span><span class="mi">32</span><span class="p">,</span><span class="w"> </span><span class="o">:</span><span class="p">)</span><span class="w"> </span><span class="o">.=</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span>
+</code></pre></div>
+<p>Unfortunately, specifying dims by names doesn't work in the latter case. This isn't fundamental though, see <a href="https://github.com/mcabbott/AxisKeys.jl/pull/110">https://github.com/mcabbott/AxisKeys.jl/pull/110</a> (and upvote it :) ).</p>
+
+
+
+<a name="342400839"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/AxisKeys%20and%20Dictionaries/near/342400839" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/AxisKeys.20and.20Dictionaries.html#342400839">(Mar 16 2023 at 19:06)</a>:</h4>
+<p>Upvoted</p>
+
+
+
+<a name="342441193"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/AxisKeys%20and%20Dictionaries/near/342441193" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/AxisKeys.20and.20Dictionaries.html#342441193">(Mar 16 2023 at 23:25)</a>:</h4>
+<p>I'm implementing my own solution, just for fun... so far I got this:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">CatalogArrays</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span>
+<span class="go">2×3 Matrix{Float64}:</span>
+<span class="go"> 0.456233  0.322689  0.501975</span>
+<span class="go"> 0.943775  0.160793  0.482612</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CatalogArray</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">snr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">20</span><span class="p">),</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mf">.2</span><span class="p">,</span><span class="w"> </span><span class="mf">.4</span><span class="p">,</span><span class="w"> </span><span class="mf">.6</span><span class="p">));</span>
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">b</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">]</span>
+<span class="go">0.16079269059283696</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">b</span><span class="p">[</span><span class="n">snr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.4</span><span class="p">]</span>
+<span class="go">0.16079269059283696</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">b</span><span class="p">[</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.4</span><span class="p">,</span><span class="w"> </span><span class="n">snr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">20</span><span class="p">]</span>
+<span class="go">0.16079269059283696</span>
+</code></pre></div>
+<p>Now I <em>just</em> need to implement slicing and <code>setindex!</code> <span aria-label="stuck out tongue" class="emoji emoji-1f61b" role="img" title="stuck out tongue">:stuck_out_tongue:</span></p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

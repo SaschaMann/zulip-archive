@@ -1,0 +1,117 @@
+<html>
+<head><meta charset="utf-8"><title>Determining the disk usage of a folder · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Determining.20the.20disk.20usage.20of.20a.20folder.html">Determining the disk usage of a folder</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="393067891"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Determining%20the%20disk%20usage%20of%20a%20folder/near/393067891" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Determining.20the.20disk.20usage.20of.20a.20folder.html#393067891">(Sep 25 2023 at 17:11)</a>:</h4>
+<p>I _almost_ have a <code>du -B1</code> replacement in Julia, but in the odd directory it's slightly off (undercounting by a little bit), and I can't for the life of me work out why. Any help would be much appreciated.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="s">"""</span>
+<span class="s">    diskusage(path::String)</span>
+
+<span class="s">Find the disk usage of `path`, in bytes (as `du -B1` does). This is almost</span>
+<span class="s">eqivalent to [`filesize`](@ref) when applied to a file, and operates recursively</span>
+<span class="s">on directories.</span>
+<span class="s">"""</span>
+<span class="k">function</span><span class="w"> </span><span class="n">diskusage</span><span class="p">(</span><span class="n">path</span><span class="o">::</span><span class="kt">String</span><span class="p">)</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">isfile</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<span class="w">        </span><span class="n">st</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">stat</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<span class="w">        </span><span class="n">st</span><span class="o">.</span><span class="n">blocks</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">512</span><span class="w"> </span><span class="c"># 512 not the blocksize for historical reasons</span>
+<span class="w">    </span><span class="k">elseif</span><span class="w"> </span><span class="n">isdir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<span class="w">        </span><span class="k">try</span>
+<span class="w">            </span><span class="n">subpaths</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">readdir</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">join</span><span class="o">=</span><span class="nb">true</span><span class="p">)</span>
+<span class="w">            </span><span class="n">filter!</span><span class="p">(</span><span class="o">!</span><span class="n">islink</span><span class="p">,</span><span class="w"> </span><span class="n">subpaths</span><span class="p">)</span>
+<span class="w">            </span><span class="n">st</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">stat</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<span class="w">            </span><span class="n">sum</span><span class="p">(</span><span class="n">diskusage</span><span class="p">,</span><span class="w"> </span><span class="n">subpaths</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">st</span><span class="o">.</span><span class="n">blksize</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">size</span><span class="w"> </span><span class="o">÷</span><span class="w"> </span><span class="n">st</span><span class="o">.</span><span class="n">blksize</span><span class="p">))</span>
+<span class="w">        </span><span class="k">catch</span><span class="w"> </span><span class="n">err</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="n">err</span><span class="w"> </span><span class="k">isa</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">IOError</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">err</span><span class="o">.</span><span class="n">code</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="o">-</span><span class="n">Base</span><span class="o">.</span><span class="n">Libc</span><span class="o">.</span><span class="n">EACCES</span><span class="w"> </span><span class="c"># Permission denied</span>
+<span class="w">                </span><span class="n">printstyled</span><span class="p">(</span><span class="nb">stderr</span><span class="p">,</span><span class="w"> </span><span class="s">"[ Warning: "</span><span class="p">,</span><span class="w"> </span><span class="n">color</span><span class="o">=</span><span class="n">Base</span><span class="o">.</span><span class="n">warn_color</span><span class="p">(),</span><span class="w"> </span><span class="n">bold</span><span class="o">=</span><span class="nb">true</span><span class="p">)</span>
+<span class="w">                </span><span class="n">println</span><span class="p">(</span><span class="nb">stderr</span><span class="p">,</span><span class="w"> </span><span class="s">"Couldn't read </span><span class="si">$path</span><span class="s">: Permission denied"</span><span class="p">)</span>
+<span class="w">                </span><span class="mi">0</span>
+<span class="w">            </span><span class="k">else</span>
+<span class="w">                </span><span class="n">rethrow</span><span class="p">()</span>
+<span class="w">            </span><span class="k">end</span>
+<span class="w">        </span><span class="k">end</span>
+<span class="w">    </span><span class="k">else</span>
+<span class="w">        </span><span class="mi">0</span>
+<span class="w">    </span><span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="393068638"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Determining%20the%20disk%20usage%20of%20a%20folder/near/393068638" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sebastian Pfitzner <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Determining.20the.20disk.20usage.20of.20a.20folder.html#393068638">(Sep 25 2023 at 17:15)</a>:</h4>
+<p>what's that <code>st.blksize * (st.size ÷ st.blksize)</code> about? Isn't that essentially <code>floor(st.size)</code>, and if so, do you actually want it to be?</p>
+
+
+
+<a name="393068894"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Determining%20the%20disk%20usage%20of%20a%20folder/near/393068894" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Determining.20the.20disk.20usage.20of.20a.20folder.html#393068894">(Sep 25 2023 at 17:17)</a>:</h4>
+<p>When directories have many items, they seem to start taking up blocks. When <code>st.size</code> is say 400 I want 0, when it's say 9000 I want 4096 * 2. At least from my experiments so far, this seems about right.</p>
+
+
+
+<a name="393069731"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Determining%20the%20disk%20usage%20of%20a%20folder/near/393069731" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Determining.20the.20disk.20usage.20of.20a.20folder.html#393069731">(Sep 25 2023 at 17:21)</a>:</h4>
+<p>Here's me being slightly off in practice:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">diskusage</span><span class="p">(</span><span class="s">"/home/tec/Desktop/"</span><span class="p">)</span>
+<span class="mi">5505024</span>
+
+<span class="n">shell</span><span class="o">&gt;</span><span class="w"> </span><span class="n">du</span><span class="w"> </span><span class="o">-</span><span class="n">d0</span><span class="w"> </span><span class="o">-</span><span class="n">B1</span><span class="w"> </span><span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">tec</span><span class="o">/</span><span class="n">Desktop</span><span class="o">/</span>
+<span class="mi">5505024</span><span class="w">    </span><span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">tec</span><span class="o">/</span><span class="n">Desktop</span><span class="o">/</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">diskusage</span><span class="p">(</span><span class="s">"/home/tec/Documents/"</span><span class="p">)</span>
+<span class="mi">29516001280</span>
+
+<span class="n">shell</span><span class="o">&gt;</span><span class="w"> </span><span class="n">du</span><span class="w"> </span><span class="o">-</span><span class="n">d0</span><span class="w"> </span><span class="o">-</span><span class="n">B1</span><span class="w"> </span><span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">tec</span><span class="o">/</span><span class="n">Documents</span><span class="o">/</span>
+<span class="mi">29517352960</span><span class="w">    </span><span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">tec</span><span class="o">/</span><span class="n">Documents</span><span class="o">/</span>
+
+<span class="n">shell</span><span class="o">&gt;</span><span class="w"> </span><span class="n">du</span><span class="w"> </span><span class="o">-</span><span class="n">d0</span><span class="w"> </span><span class="o">-</span><span class="n">B1</span><span class="w"> </span><span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">tec</span><span class="o">/</span><span class="n">Videos</span><span class="o">/</span>
+<span class="mi">171021414400</span><span class="w">    </span><span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">tec</span><span class="o">/</span><span class="n">Videos</span><span class="o">/</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">diskusage</span><span class="p">(</span><span class="s">"/home/tec/Music/"</span><span class="p">)</span>
+<span class="mi">280397500416</span>
+
+<span class="n">shell</span><span class="o">&gt;</span><span class="w"> </span><span class="n">du</span><span class="w"> </span><span class="o">-</span><span class="n">d0</span><span class="w"> </span><span class="o">-</span><span class="n">B1</span><span class="w"> </span><span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">tec</span><span class="o">/</span><span class="n">Music</span><span class="o">/</span>
+<span class="mi">280397402112</span><span class="w">    </span><span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">tec</span><span class="o">/</span><span class="n">Music</span><span class="o">/</span>
+</code></pre></div>
+<p><code>~/Videos</code> is off by 4 blocks (0.000001%), <code>~/Documents</code> is off by 330 blocks (0.001%), etc.</p>
+
+
+
+<a name="393070684"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Determining%20the%20disk%20usage%20of%20a%20folder/near/393070684" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sebastian Pfitzner <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Determining.20the.20disk.20usage.20of.20a.20folder.html#393070684">(Sep 25 2023 at 17:25)</a>:</h4>
+<p>hm, makes sense I guess</p>
+
+
+
+<a name="393070909"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Determining%20the%20disk%20usage%20of%20a%20folder/near/393070909" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Determining.20the.20disk.20usage.20of.20a.20folder.html#393070909">(Sep 25 2023 at 17:26)</a>:</h4>
+<p>This is just guesswork. I'm struggling to find any documentation of the details here.</p>
+
+
+
+<a name="393071972"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Determining%20the%20disk%20usage%20of%20a%20folder/near/393071972" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Determining.20the.20disk.20usage.20of.20a.20folder.html#393071972">(Sep 25 2023 at 17:31)</a>:</h4>
+<p>Ah, I think I've found a minor error in the <code>stat</code> documentation. This seems wrong:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="w">  </span><span class="n">blksize</span><span class="w"> </span><span class="n">The</span><span class="w"> </span><span class="n">file</span><span class="o">-</span><span class="n">system</span><span class="w"> </span><span class="n">preferred</span><span class="w"> </span><span class="n">block</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">file</span>
+<span class="w">  </span><span class="n">blocks</span><span class="w">  </span><span class="n">The</span><span class="w"> </span><span class="n">number</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">such</span><span class="w"> </span><span class="n">blocks</span><span class="w"> </span><span class="n">allocated</span>
+</code></pre></div>
+
+
+
+<a name="393072958"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Determining%20the%20disk%20usage%20of%20a%20folder/near/393072958" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Determining.20the.20disk.20usage.20of.20a.20folder.html#393072958">(Sep 25 2023 at 17:37)</a>:</h4>
+<p><a href="https://github.com/JuliaLang/julia/issues/51447">https://github.com/JuliaLang/julia/issues/51447</a></p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

@@ -1,0 +1,68 @@
+[
+    {
+        "content": "<p>I have a deeply recursive structure for which I want to be able to compute gradients with Zygote. The structure is a computation graph where each vertex has references to its inputs.</p>\n<p>Problem is that Zygote randomly stalls indefinitely when compiling the backwards pass. I have up until now worked around this by first flattening the graph to a topologically sorted vector inside a <code>@nograd</code> and then doing the evaluation in a loop. However, I just realized that this approach doesn't work at all for explicit gradients which as far as I understand will soon be the mainstream (only?) way to update parameters.</p>\n<p>Old discourse thread with some example code in case it is unclear what I'm talking about: <a href=\"https://discourse.julialang.org/t/improve-performance-of-computation-graph-evaluation/32873\">https://discourse.julialang.org/t/improve-performance-of-computation-graph-evaluation/32873</a></p>\n<p>Question 1: Does anyone have an intuition about why Zygote would stall on a recursive structure? I suppose I should open an issue, but I have a hard time coming up with an MWE. The structure purposely uses some abstract and/or untypes fields to allow for mutation. Could that be the problem? Or could it be the opposite, e.g. too much specialization (which afaik also can have a negative impact on compile times) as many fields are typed and the compositional hiearachy is quite deep?</p>\n<p>Question 2: Is it madness to try to stich together gradients in the pullback function of an <code>rrule</code> so that I get a Tangent vector for the flattened graph and then recurse through the graph to create a  Tangent structure which matches the graph. This is basically moving all recursion to a pre-step in the primal (flatten the graph) and a post step in the pullback (turn the flat Tangent array to a recursive Tangent structure which matches the structure of the graph) so that AD never sees any recursion. I have a (seemingly) working version of this which didn't turn out too horrible, but maybe it will be a nightmare to maintain.</p>\n<p>I guess a third option is to do some <code>getproperty</code> hacking so that the flat tangent vector is backed by the graph (e.g <code>getproperty(graph, :vertices)</code> returns the flattened graph), but I don't know how to get <code>ChainRulesCore</code> to accept this.</p>",
+        "id": 285708782,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1654882342
+    },
+    {
+        "content": "<p>It seems like recursion vs looping might be a red herring. I managed to get a model which reproduced the issue 100% for both looping and recursion and for that case the culprit seems to be related to <a href=\"https://github.com/FluxML/Zygote.jl/issues/1111\">https://github.com/FluxML/Zygote.jl/issues/1111</a>. </p>\n<p>When either stripping the graph of any mutable wrappers or defining <code>rrule</code>s for them manually I get both implicit and explicit gradients for both the looping+stiching variant and the recursive variant. Lets see if it holds up when running  more models...</p>",
+        "id": 285739834,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1654900210
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"300483\">DrChainsaw</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Explicit.20gradients.20when.20Zygote.20chokes.20on.20recursion/near/285708782\">said</a>:</p>\n<blockquote>\n<p>The structure purposely uses some abstract and/or untypes fields to allow for mutation. Could that be the problem? Or could it be the opposite, e.g. too much specialization (which afaik also can have a negative impact on compile times) as many fields are typed and the compositional hiearachy is quite deep?</p>\n</blockquote>\n<p>I think both of these have come up before. Have you tried tossing the gradient call through PProf/StatProfilerHTML/etc to see where most of the time is spent? If LLVM is showing up a lot, then <a href=\"https://timholy.github.io/SnoopCompile.jl/stable/reference/#SnoopCompileCore.@snoopl\">https://timholy.github.io/SnoopCompile.jl/stable/reference/#SnoopCompileCore.@snoopl</a> may be helpful too.</p>",
+        "id": 285739843,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1654900224
+    },
+    {
+        "content": "<p>Mutable structs in Zygote are a massive headache :(. If I had a choice I would remove <code>setfield!</code> support entirely and wipe out a whole class of bugs + a good amount of internal complexity</p>",
+        "id": 285739924,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1654900320
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"278065\">@Brian Chen</span> : SnoopCompile works with gradients!? I had no idea!</p>\n<p>I'll definitely try it if I run into more issues. Is there a way to make it produce output in the complete stalling case or does it need to complete before any output is generated? When it stalls, not even ctrl+C works. I need to kill the whole process.</p>",
+        "id": 285739971,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1654900333
+    },
+    {
+        "content": "<p>SnoopCompile works with pretty much anything! Though note here I've not linked the type inference part of that library.</p>",
+        "id": 285740030,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1654900409
+    },
+    {
+        "content": "<p>One thing I've been trying recently is:</p>\n<ol>\n<li>get e2e + time inference types with <code>@snoopi_deep</code></li>\n<li>get LLVM time with <code>@snoopl</code></li>\n<li>If inference time is high, that's a type stability issue. If LLVM times are high, that's a codegen + possible overspecialization issue. If neither is high, wow we solved TTFG</li>\n</ol>",
+        "id": 285740203,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1654900522
+    },
+    {
+        "content": "<p>Yeah, I understand the issues with mutability and Zygote. In my case the mutable structs are only mutated when doing changes to the graph (i.e changing sizes of parameter arrays or adding/removing vertices or edges), and thankfully I don't need to compute gradients for that. I think I can work around all the cases now that I know this was the culprit.</p>",
+        "id": 285740205,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1654900524
+    },
+    {
+        "content": "<p>Unfortunately Zygote will destroy type stability the moment it sees a getfield on a mutable type. Likewise if it sees control flow. I've been thinking about ways to mitigate the damage, but working in the internals is slow going and  there are a lot of edge cases to cover (e.g. nested differentiation)</p>",
+        "id": 285740356,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1654900617
+    },
+    {
+        "content": "<p>Thats good info. I don't think I'm hurt alot by the type instability, but I guess it doesn't hurt to get rid of it. In many cases I can probably rewrite to a normal struct with some fields being <code>RefValues</code> (which are also fields which are not touched in the forward pass). Would that be an improvement?</p>",
+        "id": 285741004,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1654901142
+    },
+    {
+        "content": "<p>I'm not sure, since Refs get a similar treatment.</p>",
+        "id": 285745800,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1654905996
+    }
+]

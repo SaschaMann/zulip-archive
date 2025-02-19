@@ -1,0 +1,80 @@
+[
+    {
+        "content": "<p>I just want to check if I can write to a file at a certain path. Unfortunately, this seems surprisingly hard <span aria-label=\"half frown\" class=\"emoji emoji-1f615\" role=\"img\" title=\"half frown\">:half_frown:</span>.</p>\n<ul>\n<li><code>uperm</code> seems bugy, <code>uperm(\"/tmp\")</code> and <code>uperm(\"/root\")</code> both give <code>0x07</code> (!!)</li>\n<li><code>ccall(:access, Cint, (Cstring, Cint), path, 2)</code> (+ checking directory if file does not exist) seems to work, but I'm not sure how portable this is</li>\n</ul>\n<p>Any suggestions?</p>",
+        "id": 309556572,
+        "sender_full_name": "Timothy",
+        "timestamp": 1668417290
+    },
+    {
+        "content": "<p>EAFP? In other words, don't check, just try writing and see if it fails.</p>",
+        "id": 309560971,
+        "sender_full_name": "jar",
+        "timestamp": 1668419036
+    },
+    {
+        "content": "<p><code>uperm</code> gives the permissions for the <em>owner</em>. Both <code>/tmp</code> and <code>/root</code> are (typically) owned by root and root has full permissions for them.</p>",
+        "id": 309561437,
+        "sender_full_name": "Gunnar Farnebäck",
+        "timestamp": 1668419217
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"326776\">jar</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Check.20if.20.28optionally.20existant.29.20path.20is.20writable/near/309560971\">said</a>:</p>\n<blockquote>\n<p>EAFP? In other words, don't check, just try writing and see if it fails.</p>\n</blockquote>\n<p>That wouldn't be too bad, but I don't actually want to write to the path at this stage, just check if I <em>could</em>.</p>",
+        "id": 309562510,
+        "sender_full_name": "Timothy",
+        "timestamp": 1668419632
+    },
+    {
+        "content": "<p>But it might change later between when you check and when  you use it <a href=\"https://en.wikipedia.org/wiki/Time-of-check_to_time-of-use\">https://en.wikipedia.org/wiki/Time-of-check_to_time-of-use</a></p>",
+        "id": 309562661,
+        "sender_full_name": "jar",
+        "timestamp": 1668419693
+    },
+    {
+        "content": "<p>That's a reasonable concern, but not a problem here.</p>\n<p>I just need to check if I could write a file without actually trying to do so.</p>",
+        "id": 309567126,
+        "sender_full_name": "Timothy",
+        "timestamp": 1668421369
+    },
+    {
+        "content": "<p>Your best bet is probably to <code>ccall</code> to <code>:jl_fs_access</code>, which wraps <code>uv_fs_access</code>, which is libuv's attempt to make <code>access</code> portable. But I somehow suspect that actually trying to open a file for writing is more robust.</p>",
+        "id": 309590548,
+        "sender_full_name": "Gunnar Farnebäck",
+        "timestamp": 1668430052
+    },
+    {
+        "content": "<p>I must say, for a simple check this is surprisingly complicated…</p>",
+        "id": 309600408,
+        "sender_full_name": "Timothy",
+        "timestamp": 1668433416
+    },
+    {
+        "content": "<p>it's not a simple check, being filesystem and OS specific</p>",
+        "id": 309600910,
+        "sender_full_name": "Sukera",
+        "timestamp": 1668433546
+    },
+    {
+        "content": "<p>In my experience even the OS won't always know the answer. The permissions may look fine but then it turns out that the filesystem was mounted in some odd way or if it's a network file system that the server has its own ideas about what it wants to allow.</p>",
+        "id": 309621889,
+        "sender_full_name": "Gunnar Farnebäck",
+        "timestamp": 1668437889
+    },
+    {
+        "content": "<p>oh yes, NFS in particular will make a mess of things, simply due to NFS being a mess</p>",
+        "id": 309624026,
+        "sender_full_name": "Sukera",
+        "timestamp": 1668438476
+    },
+    {
+        "content": "<p>did you know that if you're locally root, you can pretend to be root on an NFS system and read all files mounted there? :)</p>",
+        "id": 309624153,
+        "sender_full_name": "Sukera",
+        "timestamp": 1668438506
+    },
+    {
+        "content": "<p>(talking about NFS specifically, not SMB or anything like that, which has its own set of things)</p>",
+        "id": 309624249,
+        "sender_full_name": "Sukera",
+        "timestamp": 1668438544
+    }
+]

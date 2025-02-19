@@ -1,0 +1,134 @@
+[
+    {
+        "content": "<p>Is there a way to get LineNumberNodes inserted into the expression returned by <code>Meta.parse</code> similar to <code>Meta.parseall</code>?</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">Meta</span><span class=\"o\">.</span><span class=\"n\">parse</span><span class=\"p\">(</span><span class=\"s\">\"\"\"</span>\n<span class=\"s\">           a = 1 + 1</span>\n<span class=\"s\">           b = a + 3</span>\n<span class=\"s\">       \"\"\"</span><span class=\"p\">,</span> <span class=\"mi\">1</span><span class=\"p\">)</span>\n<span class=\"p\">(</span><span class=\"o\">:</span><span class=\"p\">(</span><span class=\"n\">a</span> <span class=\"o\">=</span> <span class=\"mi\">1</span> <span class=\"o\">+</span> <span class=\"mi\">1</span><span class=\"p\">),</span> <span class=\"mi\">15</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">Meta</span><span class=\"o\">.</span><span class=\"n\">parseall</span><span class=\"p\">(</span><span class=\"s\">\"\"\"</span>\n<span class=\"s\">           a = 1 + 1</span>\n<span class=\"s\">           b = a + 3</span>\n<span class=\"s\">       \"\"\"</span><span class=\"p\">;</span> <span class=\"n\">filename</span><span class=\"o\">=</span><span class=\"s\">\"REPL\"</span><span class=\"p\">)</span>\n<span class=\"o\">:</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"p\">(</span><span class=\"kt\">Expr</span><span class=\"p\">(</span><span class=\"ss\">:toplevel</span><span class=\"p\">,</span> <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"cm\">#= REPL:1 =#</span><span class=\"p\">),</span> <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"n\">a</span> <span class=\"o\">=</span> <span class=\"mi\">1</span> <span class=\"o\">+</span> <span class=\"mi\">1</span><span class=\"p\">),</span> <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"cm\">#= REPL:2 =#</span><span class=\"p\">),</span> <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"n\">b</span> <span class=\"o\">=</span> <span class=\"n\">a</span> <span class=\"o\">+</span> <span class=\"mi\">3</span><span class=\"p\">))))</span>\n</code></pre></div>",
+        "id": 244908119,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1625473898
+    },
+    {
+        "content": "<p>There is the undocumented <code>Meta._parse_string(str, filename, 1, :statement)</code></p>",
+        "id": 244908938,
+        "sender_full_name": "Simeon Schaub",
+        "timestamp": 1625474448
+    },
+    {
+        "content": "<p>Yea I played around with that, but it doesn't result in any LineNumberNodes.</p>",
+        "id": 244909076,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1625474526
+    },
+    {
+        "content": "<p>That works for linenumbernodes for macros though:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">Meta</span><span class=\"o\">.</span><span class=\"n\">_parse_string</span><span class=\"p\">(</span><span class=\"s\">\"\"\"</span>\n<span class=\"s\">       @info \"hello\"</span>\n<span class=\"s\">       \"\"\"</span><span class=\"p\">,</span> <span class=\"s\">\"REPL\"</span><span class=\"p\">,</span> <span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"ss\">:statement</span><span class=\"p\">)</span>\n<span class=\"p\">(</span><span class=\"o\">:</span><span class=\"p\">(</span><span class=\"cm\">#= REPL:1 =#</span> <span class=\"nd\">@info</span> <span class=\"s\">\"hello\"</span><span class=\"p\">),</span> <span class=\"mi\">15</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 244909282,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1625474703
+    },
+    {
+        "content": "<p>But how about e.g.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">e</span> <span class=\"o\">=</span> <span class=\"n\">Meta</span><span class=\"o\">.</span><span class=\"n\">_parse_string</span><span class=\"p\">(</span><span class=\"s\">\"\"\"</span>\n<span class=\"s\">       error()</span>\n<span class=\"s\">       \"\"\"</span><span class=\"p\">,</span> <span class=\"s\">\"REPL\"</span><span class=\"p\">,</span> <span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"ss\">:statement</span><span class=\"p\">)[</span><span class=\"mi\">1</span><span class=\"p\">]</span>\n<span class=\"o\">:</span><span class=\"p\">(</span><span class=\"n\">error</span><span class=\"p\">())</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">eval</span><span class=\"p\">(</span><span class=\"n\">e</span><span class=\"p\">)</span>\n<span class=\"n\">ERROR</span><span class=\"o\">:</span>\n<span class=\"n\">Stacktrace</span><span class=\"o\">:</span>\n <span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span> <span class=\"n\">error</span><span class=\"p\">()</span>\n   <span class=\"err\">@</span> <span class=\"n\">Base</span> <span class=\"o\">./</span><span class=\"n\">error</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">42</span>\n <span class=\"p\">[</span><span class=\"mi\">2</span><span class=\"p\">]</span> <span class=\"n\">top</span><span class=\"o\">-</span><span class=\"n\">level</span> <span class=\"n\">scope</span>\n   <span class=\"err\">@</span> <span class=\"n\">none</span><span class=\"o\">:</span><span class=\"mi\">1</span>\n</code></pre></div>\n<p>Is there a way to replace the <code>none</code> there for example?</p>",
+        "id": 244909389,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1625474771
+    },
+    {
+        "content": "<p>I think you will need an explicit <code>begin ... end</code> to get the LineNumberNodes in between the statements.</p>",
+        "id": 244909402,
+        "sender_full_name": "Simeon Schaub",
+        "timestamp": 1625474791
+    },
+    {
+        "content": "<p>Otherwise you won't get a <code>block</code> expression, so there is nowhere for those nodes to go.</p>",
+        "id": 244909565,
+        "sender_full_name": "Simeon Schaub",
+        "timestamp": 1625474901
+    },
+    {
+        "content": "<p>Yea makes sense. I will have to parse twice then I think, first to get the single statement, then wrap that into <code>begin ... end</code> and parse again, and then decrement linenumbers with 1 or something.</p>",
+        "id": 244909644,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1625474965
+    },
+    {
+        "content": "<p>Can't you unconditionally wrap your string into <code>\"begin;$str;end\"</code>? begin/end blocks never change your code's semantics, right?</p>",
+        "id": 244910411,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1625475438
+    },
+    {
+        "content": "<p>But I want to parse one expression at a time, and <code>begin end</code> would make it all a single expression.</p>",
+        "id": 244910465,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1625475482
+    },
+    {
+        "content": "<p>This is the result I want:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">str</span> <span class=\"o\">=</span> <span class=\"s\">\"\"\"</span>\n<span class=\"s\">a = 1 + 2</span>\n<span class=\"s\">b = a + 3</span>\n<span class=\"s\">error()</span>\n<span class=\"s\">@info \"hello\"</span>\n<span class=\"s\">\"\"\"</span>\n\n<span class=\"n\">exprs</span> <span class=\"o\">=</span> <span class=\"p\">[]</span>\n<span class=\"n\">start</span> <span class=\"o\">=</span> <span class=\"mi\">1</span>\n\n<span class=\"k\">while</span> <span class=\"nb\">true</span>\n    <span class=\"n\">ex</span><span class=\"p\">,</span> <span class=\"n\">next_start</span> <span class=\"o\">=</span> <span class=\"n\">Meta</span><span class=\"o\">.</span><span class=\"n\">parse</span><span class=\"p\">(</span><span class=\"n\">str</span><span class=\"p\">,</span> <span class=\"n\">start</span><span class=\"p\">)</span>\n    <span class=\"n\">ex</span> <span class=\"o\">===</span> <span class=\"nb\">nothing</span> <span class=\"o\">&amp;&amp;</span> <span class=\"k\">break</span>\n\n    <span class=\"n\">stop</span> <span class=\"o\">=</span> <span class=\"n\">prevind</span><span class=\"p\">(</span><span class=\"n\">str</span><span class=\"p\">,</span> <span class=\"n\">next_start</span><span class=\"p\">)</span>\n\n    <span class=\"n\">ex</span><span class=\"p\">,</span> <span class=\"n\">_</span> <span class=\"o\">=</span> <span class=\"n\">Meta</span><span class=\"o\">.</span><span class=\"n\">_parse_string</span><span class=\"p\">(</span><span class=\"s\">\"begin; \"</span> <span class=\"o\">*</span> <span class=\"n\">str</span><span class=\"p\">[</span><span class=\"n\">start</span><span class=\"o\">:</span><span class=\"n\">stop</span><span class=\"p\">]</span> <span class=\"o\">*</span> <span class=\"s\">\"; end\"</span><span class=\"p\">,</span> <span class=\"s\">\"REPL\"</span><span class=\"p\">,</span> <span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"ss\">:statement</span><span class=\"p\">)</span>\n    <span class=\"n\">push!</span><span class=\"p\">(</span><span class=\"n\">exprs</span><span class=\"p\">,</span> <span class=\"n\">ex</span><span class=\"p\">)</span>\n\n    <span class=\"n\">start</span> <span class=\"o\">=</span> <span class=\"n\">next_start</span>\n<span class=\"k\">end</span>\n\n<span class=\"n\">exprs</span>\n</code></pre></div>\n<p>giving</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">exprs</span>\n<span class=\"mi\">4</span><span class=\"o\">-</span><span class=\"n\">element</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Any</span><span class=\"p\">}</span><span class=\"o\">:</span>\n <span class=\"k\">quote</span>\n    <span class=\"cm\">#= REPL:1 =#</span>\n    <span class=\"n\">a</span> <span class=\"o\">=</span> <span class=\"mi\">1</span> <span class=\"o\">+</span> <span class=\"mi\">2</span>\n<span class=\"k\">end</span>\n <span class=\"k\">quote</span>\n    <span class=\"cm\">#= REPL:1 =#</span>\n    <span class=\"n\">b</span> <span class=\"o\">=</span> <span class=\"n\">a</span> <span class=\"o\">+</span> <span class=\"mi\">3</span>\n<span class=\"k\">end</span>\n <span class=\"k\">quote</span>\n    <span class=\"cm\">#= REPL:1 =#</span>\n    <span class=\"n\">error</span><span class=\"p\">()</span>\n<span class=\"k\">end</span>\n <span class=\"k\">quote</span>\n    <span class=\"cm\">#= REPL:1 =#</span>\n    <span class=\"cm\">#= REPL:1 =#</span> <span class=\"nd\">@info</span> <span class=\"s\">\"hello\"</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>Now I just need to adjust the line number.</p>",
+        "id": 244910605,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1625475589
+    },
+    {
+        "content": "<p>Right, but that looks equivalent to</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">Meta</span><span class=\"o\">.</span><span class=\"n\">parse</span><span class=\"p\">(</span><span class=\"n\">string</span><span class=\"p\">(</span><span class=\"s\">\"begin;\"</span><span class=\"p\">,</span> <span class=\"n\">str</span><span class=\"p\">,</span> <span class=\"s\">\";end\"</span><span class=\"p\">))</span><span class=\"o\">.</span><span class=\"n\">args</span>\n<span class=\"mi\">8</span><span class=\"o\">-</span><span class=\"n\">element</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Any</span><span class=\"p\">}</span><span class=\"o\">:</span>\n <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"cm\">#= none:1 =#</span><span class=\"p\">)</span>\n <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"n\">a</span> <span class=\"o\">=</span> <span class=\"mi\">1</span> <span class=\"o\">+</span> <span class=\"mi\">2</span><span class=\"p\">)</span>\n <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"cm\">#= none:2 =#</span><span class=\"p\">)</span>\n <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"n\">b</span> <span class=\"o\">=</span> <span class=\"n\">a</span> <span class=\"o\">+</span> <span class=\"mi\">3</span><span class=\"p\">)</span>\n <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"cm\">#= none:3 =#</span><span class=\"p\">)</span>\n <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"n\">error</span><span class=\"p\">())</span>\n <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"cm\">#= none:4 =#</span><span class=\"p\">)</span>\n <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"cm\">#= none:4 =#</span> <span class=\"nd\">@info</span> <span class=\"s\">\"hello\"</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 244910827,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1625475722
+    },
+    {
+        "content": "<p>Yea was just gonna post :)</p>",
+        "id": 244910871,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1625475729
+    },
+    {
+        "content": "<p>Great, thanks.</p>",
+        "id": 244910921,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1625475777
+    },
+    {
+        "content": "<p>So then I will just use <code>Meta.parseall</code> (which lets me specify the filename) and reach into the <code>:toplevel</code> expr, and then the <code>:block</code> expr</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">Meta</span><span class=\"o\">.</span><span class=\"n\">parseall</span><span class=\"p\">(</span><span class=\"s\">\"begin;\"</span> <span class=\"o\">*</span> <span class=\"n\">str</span> <span class=\"o\">*</span> <span class=\"s\">\";end\"</span><span class=\"p\">;</span> <span class=\"n\">filename</span><span class=\"o\">=</span><span class=\"s\">\"test.jl\"</span><span class=\"p\">)</span><span class=\"o\">.</span><span class=\"n\">args</span><span class=\"p\">[</span><span class=\"mi\">2</span><span class=\"p\">]</span><span class=\"o\">.</span><span class=\"n\">args</span>\n<span class=\"mi\">8</span><span class=\"o\">-</span><span class=\"n\">element</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Any</span><span class=\"p\">}</span><span class=\"o\">:</span>\n <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"cm\">#= test.jl:1 =#</span><span class=\"p\">)</span>\n <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"n\">a</span> <span class=\"o\">=</span> <span class=\"mi\">1</span> <span class=\"o\">+</span> <span class=\"mi\">2</span><span class=\"p\">)</span>\n <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"cm\">#= test.jl:2 =#</span><span class=\"p\">)</span>\n <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"n\">b</span> <span class=\"o\">=</span> <span class=\"n\">a</span> <span class=\"o\">+</span> <span class=\"mi\">3</span><span class=\"p\">)</span>\n <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"cm\">#= test.jl:3 =#</span><span class=\"p\">)</span>\n <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"n\">error</span><span class=\"p\">())</span>\n <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"cm\">#= test.jl:4 =#</span><span class=\"p\">)</span>\n <span class=\"o\">:</span><span class=\"p\">(</span><span class=\"cm\">#= test.jl:4 =#</span> <span class=\"nd\">@info</span> <span class=\"s\">\"hello\"</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 244911252,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1625475998
+    },
+    {
+        "content": "<p>You don't need to wrap the string then, no?</p>",
+        "id": 244912052,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1625476481
+    },
+    {
+        "content": "<p>Yea of course. Looks like I had my answer in my first post :D</p>",
+        "id": 244912211,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1625476573
+    },
+    {
+        "content": "<p><img alt=\":rubberduck:\" class=\"emoji\" src=\"https://uploads.zulipusercontent.net/a09af84f7b080c816f1caab67ac9643a1fffbcb0/68747470733a2f2f7a756c69702d617661746172732e73332e616d617a6f6e6177732e636f6d2f373137382f656d6f6a692f696d616765732f31353139312e706e67\" title=\"rubberduck\"></p>",
+        "id": 244912224,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1625476582
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"208845\">Sebastian Pfitzner</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Meta.2Eparse.20with.20LineNumberNodes/near/244910411\">said</a>:</p>\n<blockquote>\n<p>Can't you unconditionally wrap your string into <code>\"begin;$str;end\"</code>? begin/end blocks never change your code's semantics, right?</p>\n</blockquote>\n<p>This can actually change the semantics ocassionally. There are differences between <code>Expr(:block, ...)</code> and <code>Expr(:toplevel, ...)</code>.</p>",
+        "id": 244949707,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1625499255
+    },
+    {
+        "content": "<p>Ah, forgot about the requirement to also know the string index where each expression starts/ends, so I think I can use <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Meta.2Eparse.20with.20LineNumberNodes/near/244910605\">https://julialang.zulipchat.com/#narrow/stream/274208-helpdesk-.28published.29/topic/Meta.2Eparse.20with.20LineNumberNodes/near/244910605</a> with some adjustments.</p>",
+        "id": 245021076,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1625568120
+    },
+    {
+        "content": "<p>Theoretically you could use CSTParser for that <span aria-label=\"stuck out tongue\" class=\"emoji emoji-1f61b\" role=\"img\" title=\"stuck out tongue\">:stuck_out_tongue:</span></p>",
+        "id": 245032351,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1625575269
+    },
+    {
+        "content": "<p>To close out this thread, here is the result: <a href=\"https://github.com/JuliaDocs/Documenter.jl/pull/1634\">https://github.com/JuliaDocs/Documenter.jl/pull/1634</a>.</p>",
+        "id": 245259262,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1625703719
+    }
+]

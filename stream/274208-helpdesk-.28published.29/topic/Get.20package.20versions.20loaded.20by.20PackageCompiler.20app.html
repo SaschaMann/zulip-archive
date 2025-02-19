@@ -1,0 +1,54 @@
+<html>
+<head><meta charset="utf-8"><title>Get package versions loaded by PackageCompiler app · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20package.20versions.20loaded.20by.20PackageCompiler.20app.html">Get package versions loaded by PackageCompiler app</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="274830923"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20package%20versions%20loaded%20by%20PackageCompiler%20app/near/274830923" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Simon Christ <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20package.20versions.20loaded.20by.20PackageCompiler.20app.html#274830923">(Mar 10 2022 at 13:01)</a>:</h4>
+<p>I tried to get the versions of Packages loaded by an app created with <a href="https://github.com/search?q=PackageCompiler.jl&amp;type=Repositories">PackageCompiler.jl</a>, but</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span> <span class="n">Pkg</span>
+<span class="k">function</span> <span class="n">julia_main</span><span class="p">()</span><span class="o">::</span><span class="kt">Cint</span>
+  <span class="n">Pkg</span><span class="o">.</span><span class="n">status</span><span class="p">()</span>
+  <span class="k">return</span> <span class="mi">0</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>gives</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">Project</span> <span class="n">OCTOPOS_DASH</span> <span class="n">v0</span><span class="mf">.0.0</span>
+      <span class="n">Status</span> <span class="sb">`~/.julia/dev/OCTOPOS/dashapp/share/julia/Project.toml`</span>
+<span class="n">IOError</span><span class="o">:</span> <span class="n">readdir</span><span class="p">(</span><span class="s">"~/.julia/dev/OCTOPOS/dashapp/share/julia/stdlib/v1.7"</span><span class="p">)</span><span class="o">:</span> <span class="n">no</span> <span class="n">such</span> <span class="n">file</span> <span class="n">or</span> <span class="n">directory</span> <span class="p">(</span><span class="n">ENOENT</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="274831147"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20package%20versions%20loaded%20by%20PackageCompiler%20app/near/274831147" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20package.20versions.20loaded.20by.20PackageCompiler.20app.html#274831147">(Mar 10 2022 at 13:03)</a>:</h4>
+<p>Maybe I'm misunderstanding the question, but isn't this expected? PackageCompiler essentially creates a new sysimage where the packages in the sysimage are like standard libraries, so similar to how you can't get a version for <code>Statistics</code> in base Julia you can't get a version for packages in a sysimage if I understand correctly?</p>
+
+
+
+<a name="274835635"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20package%20versions%20loaded%20by%20PackageCompiler%20app/near/274835635" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20package.20versions.20loaded.20by.20PackageCompiler.20app.html#274835635">(Mar 10 2022 at 13:41)</a>:</h4>
+<p>On master this information is stored: <a href="https://github.com/JuliaLang/julia/pull/44318">https://github.com/JuliaLang/julia/pull/44318</a></p>
+
+
+
+<a name="274835839"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20package%20versions%20loaded%20by%20PackageCompiler%20app/near/274835839" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20package.20versions.20loaded.20by.20PackageCompiler.20app.html#274835839">(Mar 10 2022 at 13:43)</a>:</h4>
+<p>Probably you can embed the output when precompiling though, something like</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">status_str</span> <span class="o">=</span> <span class="k">begin</span>
+    <span class="n">io</span> <span class="o">=</span> <span class="kt">IOBuffer</span><span class="p">();</span>
+    <span class="n">Pkg</span><span class="o">.</span><span class="n">status</span><span class="p">(;</span> <span class="n">io</span><span class="o">=</span><span class="n">io</span><span class="p">)</span>
+    <span class="kt">String</span><span class="p">(</span><span class="n">take!</span><span class="p">(</span><span class="n">io</span><span class="p">))</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

@@ -1,0 +1,80 @@
+<html>
+<head><meta charset="utf-8"><title>The package I&#x27;m developing precompiles every time · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/The.20package.20I.27m.20developing.20precompiles.20every.20time.html">The package I&#x27;m developing precompiles every time</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="490582675"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/The%20package%20I%27m%20developing%20precompiles%20every%20time/near/490582675" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> japhir <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/The.20package.20I.27m.20developing.20precompiles.20every.20time.html#490582675">(Dec 23 2024 at 20:59)</a>:</h4>
+<p>I'm developing a package and every time I launch a new REPL and run this code <code>using Revise;using Pkg; Pkg.activate(".");using MyDevPkg</code> it spends about 10 minutes precompiling. This is an unsustainable way of working and very frustrating. To test, I've just let it do all the precompilation, then killed that REPL, started a new one and ran the same lines -&gt; it's precompiling again.</p>
+<p>Is there something I'm missing here? I thought precompilation should be handled correctly automatically?<br>
+I'm on Julia v1.10.7, Revise v3.6.4</p>
+
+
+
+<a name="490583880"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/The%20package%20I%27m%20developing%20precompiles%20every%20time/near/490583880" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> japhir <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/The.20package.20I.27m.20developing.20precompiles.20every.20time.html#490583880">(Dec 23 2024 at 21:09)</a>:</h4>
+<p>hmm it also appears to happen with registered packages, it had just finished all the precompilation but after it just finished precompiling mine, the <code>using DifferentialEquations</code> call has also started to precompile again (after just having finished it before closing down the REPL). Did I misconfigure something?</p>
+
+
+
+<a name="490586794"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/The%20package%20I%27m%20developing%20precompiles%20every%20time/near/490586794" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mosè Giordano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/The.20package.20I.27m.20developing.20precompiles.20every.20time.html#490586794">(Dec 23 2024 at 21:32)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="740636">japhir</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/The.20package.20I'm.20developing.20precompiles.20every.20time/near/490582675">said</a>:</p>
+<blockquote>
+<p>I thought precompilation should be handled correctly automatically?</p>
+</blockquote>
+<p>That should be the case. Do you see warnings about precompilation being broken (e.g. because of methods overwritten)?</p>
+
+
+
+<a name="490587100"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/The%20package%20I%27m%20developing%20precompiles%20every%20time/near/490587100" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> japhir <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/The.20package.20I.27m.20developing.20precompiles.20every.20time.html#490587100">(Dec 23 2024 at 21:34)</a>:</h4>
+<p>I now see a lot of warnings that I did not notice earlier, but I'm not sure what has caused these to appear. They are all of the form:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="p">[</span><span class="w"> </span><span class="n">Info</span><span class="o">:</span><span class="w"> </span><span class="n">Precompiling</span><span class="w"> </span><span class="n">GLMakie</span><span class="w"> </span><span class="p">[</span><span class="n">e9467ef8</span><span class="o">-</span><span class="n">e4e7</span><span class="o">-</span><span class="mi">5192</span><span class="o">-</span><span class="mi">8</span><span class="n">a1a</span><span class="o">-</span><span class="n">b1aee30e663a</span><span class="p">]</span>
+<span class="n">┌</span><span class="w"> </span><span class="n">Warning</span><span class="o">:</span><span class="w"> </span><span class="kt">Module</span><span class="w"> </span><span class="n">GeometryBasics</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="n">build</span><span class="w"> </span><span class="n">ID</span><span class="w"> </span><span class="n">ffffffff</span><span class="o">-</span><span class="n">ffff</span><span class="o">-</span><span class="n">ffff</span><span class="o">-</span><span class="mi">0000</span><span class="o">-</span><span class="mf">1f8</span><span class="n">ad8b3710e</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="nb">missing</span><span class="w"> </span><span class="n">from</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">cache</span><span class="o">.</span>
+<span class="n">│</span><span class="w"> </span><span class="n">This</span><span class="w"> </span><span class="n">may</span><span class="w"> </span><span class="n">mean</span><span class="w"> </span><span class="n">GeometryBasics</span><span class="w"> </span><span class="p">[</span><span class="mi">5</span><span class="n">c1252a2</span><span class="o">-</span><span class="mf">5f33</span><span class="o">-</span><span class="mi">56</span><span class="n">bf</span><span class="o">-</span><span class="mi">86</span><span class="n">c9</span><span class="o">-</span><span class="mf">59e7332</span><span class="n">b4326</span><span class="p">]</span><span class="w"> </span><span class="n">does</span><span class="w"> </span><span class="n">not</span><span class="w"> </span><span class="n">support</span><span class="w"> </span><span class="n">precompilation</span><span class="w"> </span><span class="n">but</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">imported</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">module</span><span class="w"> </span><span class="n">that</span><span class="w"> </span><span class="n">does</span><span class="o">.</span>
+<span class="n">└</span><span class="w"> </span><span class="err">@</span><span class="w"> </span><span class="n">Base</span><span class="w"> </span><span class="n">loading</span><span class="o">.</span><span class="n">jl</span><span class="o">:</span><span class="mi">2011</span>
+<span class="p">[</span><span class="w"> </span><span class="n">Info</span><span class="o">:</span><span class="w"> </span><span class="n">Skipping</span><span class="w"> </span><span class="n">precompilation</span><span class="w"> </span><span class="n">since</span><span class="w"> </span><span class="n">precompile</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span><span class="o">.</span><span class="w"> </span><span class="n">Importing</span><span class="w"> </span><span class="n">GLMakie</span><span class="w"> </span><span class="p">[</span><span class="n">e9467ef8</span><span class="o">-</span><span class="n">e4e7</span><span class="o">-</span><span class="mi">5192</span><span class="o">-</span><span class="mi">8</span><span class="n">a1a</span><span class="o">-</span><span class="n">b1aee30e663a</span><span class="p">]</span><span class="o">.</span>
+</code></pre></div>
+
+
+
+<a name="490587345"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/The%20package%20I%27m%20developing%20precompiles%20every%20time/near/490587345" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> japhir <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/The.20package.20I.27m.20developing.20precompiles.20every.20time.html#490587345">(Dec 23 2024 at 21:36)</a>:</h4>
+<p>my startup.jl is very simple:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">try</span>
+<span class="w">    </span><span class="k">using</span><span class="w"> </span><span class="n">Revise</span>
+<span class="k">catch</span><span class="w"> </span><span class="n">e</span>
+<span class="w">    </span><span class="nd">@warn</span><span class="w"> </span><span class="s">"Error initializing Revise"</span>
+<span class="k">end</span>
+
+<span class="k">if</span><span class="w"> </span><span class="n">haskey</span><span class="p">(</span><span class="nb">ENV</span><span class="p">,</span><span class="w"> </span><span class="s">"INSIDE_EMACS"</span><span class="p">)</span>
+<span class="w">    </span><span class="nb">ENV</span><span class="p">[</span><span class="s">"JULIA_EDITOR"</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"emacsclient"</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>and I launch the REPL with julia-repl-mode in emacs, with only this option: <code>(setq julia-repl-switches "--threads 4")</code></p>
+
+
+
+<a name="490589078"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/The%20package%20I%27m%20developing%20precompiles%20every%20time/near/490589078" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mosè Giordano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/The.20package.20I.27m.20developing.20precompiles.20every.20time.html#490589078">(Dec 23 2024 at 21:52)</a>:</h4>
+<p>Try to delete the precompile cache in your depot <code>compile/v1.10</code></p>
+
+
+
+<a name="490622176"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/The%20package%20I%27m%20developing%20precompiles%20every%20time/near/490622176" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> japhir <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/The.20package.20I.27m.20developing.20precompiles.20every.20time.html#490622176">(Dec 24 2024 at 03:02)</a>:</h4>
+<p>OK I have deleted everything in the folder <code>~/.julia/compiled/v1.10</code> and re-ran the code that triggers precompilation (the using lines in my script). This works and I don't see any warnings during precompilation.<br>
+However, after killing the REPL and restarting, it starts to precompile my dev package as well as some of its dependencies (<code>74 dependencies successfully precompiled in 215 seconds. 641 already precompiled.</code>) again?!<br>
+Any advice would be appreciated! I have installed julia via juliaup on Arch Linux</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

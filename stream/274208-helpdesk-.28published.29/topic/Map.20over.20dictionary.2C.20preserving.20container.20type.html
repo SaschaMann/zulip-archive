@@ -1,0 +1,56 @@
+<html>
+<head><meta charset="utf-8"><title>Map over dictionary, preserving container type · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Map.20over.20dictionary.2C.20preserving.20container.20type.html">Map over dictionary, preserving container type</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="258142925"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Map%20over%20dictionary%2C%20preserving%20container%20type/near/258142925" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Evan Patterson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Map.20over.20dictionary.2C.20preserving.20container.20type.html#258142925">(Oct 19 2021 at 05:19)</a>:</h4>
+<p>A nice feature of <code>map</code> is that it preserves the container type while potentially changing the element type. For example, if you map over a <code>Vector</code>, you get back a <code>Vector</code>, and if you map over a <code>StaticVector</code>, you get back another <code>StaticVector</code>. This is a good reason to prefer <code>map</code> over list comprehensions in some cases.</p>
+<p>I'd like the same thing, but for dictionaries. Here's what I'm currently doing. I define a helper function</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">roottype</span><span class="p">(</span><span class="n">T</span><span class="p">)</span> <span class="o">=</span> <span class="n">T</span> <span class="k">isa</span> <span class="kt">UnionAll</span> <span class="o">?</span> <span class="n">T</span> <span class="o">:</span> <span class="n">T</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">wrapper</span>
+</code></pre></div>
+<p>and then I write something like</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">mapvals</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">d</span><span class="o">::</span><span class="kt">D</span><span class="p">)</span> <span class="k">where</span> <span class="kt">D</span> <span class="o">=</span> <span class="p">(</span><span class="n">roottype</span><span class="p">(</span><span class="n">D</span><span class="p">))(</span><span class="n">k</span> <span class="o">=&gt;</span> <span class="n">f</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="p">)</span> <span class="k">in</span> <span class="n">d</span><span class="p">)</span>
+</code></pre></div>
+<p>This seems to work but it feels bad. Is there a better way?</p>
+
+
+
+<a name="258159351"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Map%20over%20dictionary%2C%20preserving%20container%20type/near/258159351" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Map.20over.20dictionary.2C.20preserving.20container.20type.html#258159351">(Oct 19 2021 at 08:31)</a>:</h4>
+<p>Have you seen <a href="https://github.com/search?q=Dictionaries.jl&amp;type=Repositories">Dictionaries.jl</a>?</p>
+
+
+
+<a name="258226679"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Map%20over%20dictionary%2C%20preserving%20container%20type/near/258226679" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Evan Patterson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Map.20over.20dictionary.2C.20preserving.20container.20type.html#258226679">(Oct 19 2021 at 16:29)</a>:</h4>
+<p>It looks very nice, but it's a replacement for the standard dictionary types, right? I was looking for something that would work with <code>Dict</code>, <code>OrderedDict</code>, and other <code>AbstractDict</code> types.</p>
+
+
+
+<a name="258227723"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Map%20over%20dictionary%2C%20preserving%20container%20type/near/258227723" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Map.20over.20dictionary.2C.20preserving.20container.20type.html#258227723">(Oct 19 2021 at 16:35)</a>:</h4>
+<p>This would be a nice thing to have. I can’t really think of away to do it other than what you’ve suggested though unfortunately.</p>
+
+
+
+<a name="258227958"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Map%20over%20dictionary%2C%20preserving%20container%20type/near/258227958" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Map.20over.20dictionary.2C.20preserving.20container.20type.html#258227958">(Oct 19 2021 at 16:36)</a>:</h4>
+<p>I find the situation with <a href="https://github.com/search?q=Dictionaries.jl&amp;type=Repositories">Dictionaries.jl</a> rather frustrating.  I agree it is better than <code>Base</code> dictionaries, but so much is already designed to use <code>Base</code> dictionaries that I am hesitant to use it.</p>
+
+
+
+<a name="258228396"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Map%20over%20dictionary%2C%20preserving%20container%20type/near/258228396" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Evan Patterson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Map.20over.20dictionary.2C.20preserving.20container.20type.html#258228396">(Oct 19 2021 at 16:39)</a>:</h4>
+<p>That is my feeling as well.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

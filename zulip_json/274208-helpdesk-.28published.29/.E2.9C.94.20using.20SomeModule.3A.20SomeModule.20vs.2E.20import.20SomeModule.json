@@ -1,0 +1,152 @@
+[
+    {
+        "content": "<p>Normally if I don't want all the exported names from a module I use <code>import SomeModule</code> and access certain names with <code>SomeModule.somename</code>, or sometimes to avoid verbosity, <code>using SomeModule: somename</code>.</p>\n<p>Just recently I <a href=\"https://github.com/HaoxuanGuo/MeshBridge.jl/blob/main/src/MeshBridge.jl#L3\">saw</a> a pattern new to me, <code>using SomeModule: SomeModule</code>.  Is there any difference between this and simply <code>import SomeModule</code>? And is there any difference between <code>import SomeModule: somename</code> and <code>using SomeModule: somename</code>?</p>",
+        "id": 320759234,
+        "sender_full_name": "Patrick Bouffard",
+        "timestamp": 1673458765
+    },
+    {
+        "content": "<p>Yes, there is - <code>import</code> allows extension of <code>somename</code> with more methods, while <code>using</code> does not</p>",
+        "id": 320760712,
+        "sender_full_name": "Sukera",
+        "timestamp": 1673459245
+    },
+    {
+        "content": "<p><code>using SomeModule: SomeModule</code> is like <code>import SomeModule</code> light - it only brings <code>SomeModule</code> into scope, but without making the names exported from <code>SomeModule</code> available for implicit extension without the <code>SomeModule</code> prefix</p>",
+        "id": 320760933,
+        "sender_full_name": "Sukera",
+        "timestamp": 1673459314
+    },
+    {
+        "content": "<p>Yeah, IMO <code>using SomeModule: SomeModule</code> should typically be preferred over <code>import</code>.</p>",
+        "id": 320764207,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1673460307
+    },
+    {
+        "content": "<p>Ok that makes some sense; I guess a good way to remember is using = \"I just want to use\". <span class=\"user-mention\" data-user-id=\"269150\">@Mason Protter</span> I assume what you're saying applies to <code>using</code>/<code>import</code> of names as well, i.e. usually <code>using SomeModule: somename</code> unless <code>somename</code> is to be extended.</p>",
+        "id": 320778404,
+        "sender_full_name": "Patrick Bouffard",
+        "timestamp": 1673464652
+    },
+    {
+        "content": "<p>I'd even use it if I'm extending <code>somename</code> personally</p>",
+        "id": 320778741,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1673464762
+    },
+    {
+        "content": "<p>E.g. if I have <code>MyType</code>, I would never write</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">import</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"n\">show</span><span class=\"w\"></span>\n<span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">show</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">IO</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"o\">::</span><span class=\"kt\">MyType</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"o\">...</span><span class=\"w\"></span>\n<span class=\"k\">end</span><span class=\"w\"></span>\n</code></pre></div>\n<p>I would always write</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">show</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">IO</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"o\">::</span><span class=\"kt\">MyType</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"o\">...</span><span class=\"w\"></span>\n<span class=\"k\">end</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 320779029,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1673464857
+    },
+    {
+        "content": "<p>This way it's clear at the function definition site that I'm extending a function that didn't originate here.</p>",
+        "id": 320779145,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1673464894
+    },
+    {
+        "content": "<p><span aria-label=\"100\" class=\"emoji emoji-1f4af\" role=\"img\" title=\"100\">:100:</span>  ... in the second example you'd still need <code>using Base: Base</code>, no? (well, maybe not <code>Base</code> since I guess that's already in scope)</p>",
+        "id": 320779670,
+        "sender_full_name": "Patrick Bouffard",
+        "timestamp": 1673465017
+    },
+    {
+        "content": "<p>.. or does it need to be <code>import SomeModule; SomeModule.methodbeingextended() = ...</code>?</p>",
+        "id": 320779923,
+        "sender_full_name": "Patrick Bouffard",
+        "timestamp": 1673465080
+    },
+    {
+        "content": "<p>Yeah, if it was another package, the package name needs to be in scope.</p>",
+        "id": 320780321,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1673465214
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">SomeModule</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"n\">SomeModule</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">somefunction</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">anotherfunction</span><span class=\"w\"></span>\n<span class=\"n\">SomeModule</span><span class=\"o\">.</span><span class=\"n\">methodbeingextended</span><span class=\"p\">()</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"o\">...</span><span class=\"w\"></span>\n</code></pre></div>\n<p>is my preferred pattern.</p>",
+        "id": 320780442,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1673465257
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"343024\">Patrick Bouffard</span> has marked this topic as resolved.</p>",
+        "id": 320789470,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1673468343
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"343024\">Patrick Bouffard</span> has marked this topic as unresolved.</p>",
+        "id": 320789600,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1673468399
+    },
+    {
+        "content": "<p>So in what situations is <code>import SomeModule</code> needed? Is it in effect the same as <code>using SomeModule: SomeModule</code>?</p>",
+        "id": 320789756,
+        "sender_full_name": "Patrick Bouffard",
+        "timestamp": 1673468443
+    },
+    {
+        "content": "<p>You can define new methods on functions that have been imported without explicitly declaring the parent module, which is a very dangerous foot-gun.</p>",
+        "id": 320789911,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1673468509
+    },
+    {
+        "content": "<p>Agreed, and also a lot less clear.</p>",
+        "id": 320790146,
+        "sender_full_name": "Patrick Bouffard",
+        "timestamp": 1673468590
+    },
+    {
+        "content": "<p>see also <a href=\"https://github.com/JuliaLang/julia/issues/39235\">https://github.com/JuliaLang/julia/issues/39235</a></p>",
+        "id": 320790308,
+        "sender_full_name": "Sukera",
+        "timestamp": 1673468647
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269446\">Expanding Man</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/using.20SomeModule.3A.20SomeModule.20vs.2E.20import.20SomeModule/near/320789911\">said</a>:</p>\n<blockquote>\n<p>You can define new methods on functions that have been imported without explicitly declaring the parent module, which is a very dangerous foot-gun.</p>\n</blockquote>\n<p>I don't believe exports are put in scope when you use <code>import SomeModule</code> sans colon, only <code>using</code>?</p>",
+        "id": 320802040,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1673472979
+    },
+    {
+        "content": "<p>You do have to explicitly <code>import</code> the specific functions, but the problem is the same.</p>",
+        "id": 320808124,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1673475506
+    },
+    {
+        "content": "<p>I guess some might argue that because the functions are <code>import</code>ed explicitly it should not be confusing, but I used to do this and have spent a day debugging utterly bewildering bug I caused this way so now I never, ever do it.</p>",
+        "id": 320808201,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1673475557
+    },
+    {
+        "content": "<p>I'm inclined to agree. Maybe a good custom linter rule (once such a linter exists)</p>",
+        "id": 320822668,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1673482869
+    },
+    {
+        "content": "<p>To me the issue is not so much the risk that you might do this accidentally, but that if you do the failure mode will potentially be <em>very</em> weird.</p>",
+        "id": 320823476,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1673483319
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"343024\">Patrick Bouffard</span> has marked this topic as resolved.</p>",
+        "id": 320827200,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1673485923
+    },
+    {
+        "content": "<p>If you feel that the implicit extension stuff is dangerous, please do comment on the issue I linked, since that is part of the stuff that may be kept once this is tackled eventually</p>",
+        "id": 320861416,
+        "sender_full_name": "Sukera",
+        "timestamp": 1673504243
+    }
+]

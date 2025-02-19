@@ -1,0 +1,95 @@
+<html>
+<head><meta charset="utf-8"><title>Explicit gradients when Zygote chokes on recursion · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Explicit.20gradients.20when.20Zygote.20chokes.20on.20recursion.html">Explicit gradients when Zygote chokes on recursion</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="285708782"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Explicit%20gradients%20when%20Zygote%20chokes%20on%20recursion/near/285708782" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Explicit.20gradients.20when.20Zygote.20chokes.20on.20recursion.html#285708782">(Jun 10 2022 at 17:32)</a>:</h4>
+<p>I have a deeply recursive structure for which I want to be able to compute gradients with Zygote. The structure is a computation graph where each vertex has references to its inputs.</p>
+<p>Problem is that Zygote randomly stalls indefinitely when compiling the backwards pass. I have up until now worked around this by first flattening the graph to a topologically sorted vector inside a <code>@nograd</code> and then doing the evaluation in a loop. However, I just realized that this approach doesn't work at all for explicit gradients which as far as I understand will soon be the mainstream (only?) way to update parameters.</p>
+<p>Old discourse thread with some example code in case it is unclear what I'm talking about: <a href="https://discourse.julialang.org/t/improve-performance-of-computation-graph-evaluation/32873">https://discourse.julialang.org/t/improve-performance-of-computation-graph-evaluation/32873</a></p>
+<p>Question 1: Does anyone have an intuition about why Zygote would stall on a recursive structure? I suppose I should open an issue, but I have a hard time coming up with an MWE. The structure purposely uses some abstract and/or untypes fields to allow for mutation. Could that be the problem? Or could it be the opposite, e.g. too much specialization (which afaik also can have a negative impact on compile times) as many fields are typed and the compositional hiearachy is quite deep?</p>
+<p>Question 2: Is it madness to try to stich together gradients in the pullback function of an <code>rrule</code> so that I get a Tangent vector for the flattened graph and then recurse through the graph to create a  Tangent structure which matches the graph. This is basically moving all recursion to a pre-step in the primal (flatten the graph) and a post step in the pullback (turn the flat Tangent array to a recursive Tangent structure which matches the structure of the graph) so that AD never sees any recursion. I have a (seemingly) working version of this which didn't turn out too horrible, but maybe it will be a nightmare to maintain.</p>
+<p>I guess a third option is to do some <code>getproperty</code> hacking so that the flat tangent vector is backed by the graph (e.g <code>getproperty(graph, :vertices)</code> returns the flattened graph), but I don't know how to get <code>ChainRulesCore</code> to accept this.</p>
+
+
+
+<a name="285739834"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Explicit%20gradients%20when%20Zygote%20chokes%20on%20recursion/near/285739834" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Explicit.20gradients.20when.20Zygote.20chokes.20on.20recursion.html#285739834">(Jun 10 2022 at 22:30)</a>:</h4>
+<p>It seems like recursion vs looping might be a red herring. I managed to get a model which reproduced the issue 100% for both looping and recursion and for that case the culprit seems to be related to <a href="https://github.com/FluxML/Zygote.jl/issues/1111">https://github.com/FluxML/Zygote.jl/issues/1111</a>. </p>
+<p>When either stripping the graph of any mutable wrappers or defining <code>rrule</code>s for them manually I get both implicit and explicit gradients for both the looping+stiching variant and the recursive variant. Lets see if it holds up when running  more models...</p>
+
+
+
+<a name="285739843"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Explicit%20gradients%20when%20Zygote%20chokes%20on%20recursion/near/285739843" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Explicit.20gradients.20when.20Zygote.20chokes.20on.20recursion.html#285739843">(Jun 10 2022 at 22:30)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="300483">DrChainsaw</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Explicit.20gradients.20when.20Zygote.20chokes.20on.20recursion/near/285708782">said</a>:</p>
+<blockquote>
+<p>The structure purposely uses some abstract and/or untypes fields to allow for mutation. Could that be the problem? Or could it be the opposite, e.g. too much specialization (which afaik also can have a negative impact on compile times) as many fields are typed and the compositional hiearachy is quite deep?</p>
+</blockquote>
+<p>I think both of these have come up before. Have you tried tossing the gradient call through PProf/StatProfilerHTML/etc to see where most of the time is spent? If LLVM is showing up a lot, then <a href="https://timholy.github.io/SnoopCompile.jl/stable/reference/#SnoopCompileCore.@snoopl">https://timholy.github.io/SnoopCompile.jl/stable/reference/#SnoopCompileCore.@snoopl</a> may be helpful too.</p>
+
+
+
+<a name="285739924"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Explicit%20gradients%20when%20Zygote%20chokes%20on%20recursion/near/285739924" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Explicit.20gradients.20when.20Zygote.20chokes.20on.20recursion.html#285739924">(Jun 10 2022 at 22:32)</a>:</h4>
+<p>Mutable structs in Zygote are a massive headache :(. If I had a choice I would remove <code>setfield!</code> support entirely and wipe out a whole class of bugs + a good amount of internal complexity</p>
+
+
+
+<a name="285739971"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Explicit%20gradients%20when%20Zygote%20chokes%20on%20recursion/near/285739971" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Explicit.20gradients.20when.20Zygote.20chokes.20on.20recursion.html#285739971">(Jun 10 2022 at 22:32)</a>:</h4>
+<p><span class="user-mention" data-user-id="278065">@Brian Chen</span> : SnoopCompile works with gradients!? I had no idea!</p>
+<p>I'll definitely try it if I run into more issues. Is there a way to make it produce output in the complete stalling case or does it need to complete before any output is generated? When it stalls, not even ctrl+C works. I need to kill the whole process.</p>
+
+
+
+<a name="285740030"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Explicit%20gradients%20when%20Zygote%20chokes%20on%20recursion/near/285740030" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Explicit.20gradients.20when.20Zygote.20chokes.20on.20recursion.html#285740030">(Jun 10 2022 at 22:33)</a>:</h4>
+<p>SnoopCompile works with pretty much anything! Though note here I've not linked the type inference part of that library.</p>
+
+
+
+<a name="285740203"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Explicit%20gradients%20when%20Zygote%20chokes%20on%20recursion/near/285740203" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Explicit.20gradients.20when.20Zygote.20chokes.20on.20recursion.html#285740203">(Jun 10 2022 at 22:35)</a>:</h4>
+<p>One thing I've been trying recently is:</p>
+<ol>
+<li>get e2e + time inference types with <code>@snoopi_deep</code></li>
+<li>get LLVM time with <code>@snoopl</code></li>
+<li>If inference time is high, that's a type stability issue. If LLVM times are high, that's a codegen + possible overspecialization issue. If neither is high, wow we solved TTFG</li>
+</ol>
+
+
+
+<a name="285740205"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Explicit%20gradients%20when%20Zygote%20chokes%20on%20recursion/near/285740205" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Explicit.20gradients.20when.20Zygote.20chokes.20on.20recursion.html#285740205">(Jun 10 2022 at 22:35)</a>:</h4>
+<p>Yeah, I understand the issues with mutability and Zygote. In my case the mutable structs are only mutated when doing changes to the graph (i.e changing sizes of parameter arrays or adding/removing vertices or edges), and thankfully I don't need to compute gradients for that. I think I can work around all the cases now that I know this was the culprit.</p>
+
+
+
+<a name="285740356"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Explicit%20gradients%20when%20Zygote%20chokes%20on%20recursion/near/285740356" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Explicit.20gradients.20when.20Zygote.20chokes.20on.20recursion.html#285740356">(Jun 10 2022 at 22:36)</a>:</h4>
+<p>Unfortunately Zygote will destroy type stability the moment it sees a getfield on a mutable type. Likewise if it sees control flow. I've been thinking about ways to mitigate the damage, but working in the internals is slow going and  there are a lot of edge cases to cover (e.g. nested differentiation)</p>
+
+
+
+<a name="285741004"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Explicit%20gradients%20when%20Zygote%20chokes%20on%20recursion/near/285741004" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Explicit.20gradients.20when.20Zygote.20chokes.20on.20recursion.html#285741004">(Jun 10 2022 at 22:45)</a>:</h4>
+<p>Thats good info. I don't think I'm hurt alot by the type instability, but I guess it doesn't hurt to get rid of it. In many cases I can probably rewrite to a normal struct with some fields being <code>RefValues</code> (which are also fields which are not touched in the forward pass). Would that be an improvement?</p>
+
+
+
+<a name="285745800"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Explicit%20gradients%20when%20Zygote%20chokes%20on%20recursion/near/285745800" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Explicit.20gradients.20when.20Zygote.20chokes.20on.20recursion.html#285745800">(Jun 11 2022 at 00:06)</a>:</h4>
+<p>I'm not sure, since Refs get a similar treatment.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

@@ -1,0 +1,68 @@
+[
+    {
+        "content": "<p>What does <code>iswritable(io)</code> actually mean? I thought it would mean it would accept <code>write(io, stuf...)</code> but apparently not?</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">f</span> <span class=\"o\">=</span> <span class=\"n\">open</span><span class=\"p\">(</span><span class=\"s\">\"tmp\"</span><span class=\"p\">,</span> <span class=\"s\">\"w\"</span><span class=\"p\">);</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">iswritable</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">)</span>\n<span class=\"kc\">true</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">write</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"s\">\"hi\"</span><span class=\"p\">)</span>\n<span class=\"mi\">2</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">close</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">iswritable</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">)</span>\n<span class=\"kc\">true</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">write</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"s\">\"hi\"</span><span class=\"p\">)</span>\n<span class=\"mi\">0</span>\n</code></pre></div>",
+        "id": 224480109,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1611931716
+    },
+    {
+        "content": "<p>Should I check <code>isopen</code> <em>and</em> <code>iswritable</code> maybe?</p>",
+        "id": 224481042,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1611932149
+    },
+    {
+        "content": "<p>yes, I think so</p>",
+        "id": 224481452,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1611932294
+    },
+    {
+        "content": "<p><code>iswritable</code> checks whether your <code>io</code> is readonly or not:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">io</span> <span class=\"o\">=</span> <span class=\"kt\">IOBuffer</span><span class=\"p\">(</span><span class=\"s\">\"asd\"</span><span class=\"p\">)</span>\n<span class=\"kt\">IOBuffer</span><span class=\"p\">(</span><span class=\"n\">data</span><span class=\"o\">=</span><span class=\"kt\">UInt8</span><span class=\"p\">[</span><span class=\"o\">...</span><span class=\"p\">],</span> <span class=\"n\">readable</span><span class=\"o\">=</span><span class=\"kc\">true</span><span class=\"p\">,</span> <span class=\"n\">writable</span><span class=\"o\">=</span><span class=\"kc\">false</span><span class=\"p\">,</span> <span class=\"n\">seekable</span><span class=\"o\">=</span><span class=\"kc\">true</span><span class=\"p\">,</span> <span class=\"n\">append</span><span class=\"o\">=</span><span class=\"kc\">false</span><span class=\"p\">,</span> <span class=\"n\">size</span><span class=\"o\">=</span><span class=\"mi\">3</span><span class=\"p\">,</span> <span class=\"n\">maxsize</span><span class=\"o\">=</span><span class=\"nb\">Inf</span><span class=\"p\">,</span> <span class=\"n\">ptr</span><span class=\"o\">=</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"n\">mark</span><span class=\"o\">=-</span><span class=\"mi\">1</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">iswritable</span><span class=\"p\">(</span><span class=\"n\">io</span><span class=\"p\">)</span>\n<span class=\"kc\">false</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">write</span><span class=\"p\">(</span><span class=\"n\">io</span><span class=\"p\">,</span> <span class=\"s\">\"asd\"</span><span class=\"p\">)</span>\n<span class=\"n\">ERROR</span><span class=\"o\">:</span> <span class=\"kt\">ArgumentError</span><span class=\"o\">:</span> <span class=\"n\">ensureroom</span> <span class=\"n\">failed</span><span class=\"p\">,</span> <span class=\"kt\">IOBuffer</span> <span class=\"n\">is</span> <span class=\"n\">not</span> <span class=\"n\">writeable</span>\n</code></pre></div>",
+        "id": 224481555,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1611932335
+    },
+    {
+        "content": "<p>Right. I thought that <code>iswritable</code> would imply <code>isopen</code>.</p>",
+        "id": 224482533,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1611932704
+    },
+    {
+        "content": "<p>It seems that many streams don't define <code>iswritable</code> so it looks like the most fail-safe way is to just try. And since  e.g. <code>IOStream</code> does not even throw</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">io</span> <span class=\"o\">=</span> <span class=\"n\">open</span><span class=\"p\">(</span><span class=\"s\">\"test.txt\"</span><span class=\"p\">,</span> <span class=\"s\">\"w\"</span><span class=\"p\">)</span>\n       <span class=\"n\">close</span><span class=\"p\">(</span><span class=\"n\">io</span><span class=\"p\">)</span>\n       <span class=\"n\">write</span><span class=\"p\">(</span><span class=\"n\">io</span><span class=\"p\">,</span> <span class=\"s\">\"hello\"</span><span class=\"p\">)</span>\n<span class=\"mi\">0</span>\n</code></pre></div>\n<p>it looks like you have to verify that the number of written bytes is what you expect? Something like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">io</span> <span class=\"o\">=</span> <span class=\"n\">open</span><span class=\"p\">(</span><span class=\"s\">\"test.txt\"</span><span class=\"p\">,</span> <span class=\"s\">\"w\"</span><span class=\"p\">)</span>\n       <span class=\"n\">close</span><span class=\"p\">(</span><span class=\"n\">io</span><span class=\"p\">)</span>\n       <span class=\"n\">txt</span> <span class=\"o\">=</span> <span class=\"s\">\"hello\"</span>\n       <span class=\"n\">nb</span> <span class=\"o\">=</span> <span class=\"n\">sizeof</span><span class=\"p\">(</span><span class=\"n\">txt</span><span class=\"p\">)</span>\n       <span class=\"n\">n</span> <span class=\"o\">=</span> <span class=\"n\">write</span><span class=\"p\">(</span><span class=\"n\">io</span><span class=\"p\">,</span> <span class=\"n\">txt</span><span class=\"p\">)</span>\n       <span class=\"k\">if</span> <span class=\"n\">n</span> <span class=\"o\">!=</span> <span class=\"n\">nb</span>\n           <span class=\"n\">error</span><span class=\"p\">(</span><span class=\"s\">\"could not write\"</span><span class=\"p\">)</span>\n       <span class=\"k\">end</span>\n<span class=\"n\">ERROR</span><span class=\"o\">:</span> <span class=\"n\">could</span> <span class=\"n\">not</span> <span class=\"n\">write</span>\n<span class=\"n\">Stacktrace</span><span class=\"o\">:</span>\n <span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span> <span class=\"n\">error</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"o\">::</span><span class=\"n\">String</span><span class=\"p\">)</span>\n   <span class=\"err\">@</span> <span class=\"n\">Base</span> <span class=\"o\">./</span><span class=\"n\">error</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">33</span>\n <span class=\"p\">[</span><span class=\"mi\">2</span><span class=\"p\">]</span> <span class=\"n\">top</span><span class=\"o\">-</span><span class=\"n\">level</span> <span class=\"n\">scope</span>\n   <span class=\"err\">@</span> <span class=\"n\">REPL</span><span class=\"p\">[</span><span class=\"mi\">3</span><span class=\"p\">]</span><span class=\"o\">:</span><span class=\"mi\">7</span>\n</code></pre></div>",
+        "id": 224584927,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1612012940
+    },
+    {
+        "content": "<p>What is the benefit of <code>write</code> not throwing and instead returning <code>0</code> here?</p>",
+        "id": 224585666,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1612014110
+    },
+    {
+        "content": "<p>It seems inconsistent that if the stream is not writable it throws but if it is closed it returns 0. Why not either return 0 in both cases or throw in both cases?</p>",
+        "id": 224585837,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1612014332
+    },
+    {
+        "content": "<p>Python throws:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"o\">&gt;&gt;&gt;</span> <span class=\"n\">with</span> <span class=\"n\">open</span><span class=\"p\">(</span><span class=\"s\">\"file.txt\"</span><span class=\"p\">,</span> <span class=\"s\">\"w\"</span><span class=\"p\">)</span> <span class=\"n\">as</span> <span class=\"n\">io</span><span class=\"o\">:</span>\n<span class=\"o\">...</span>     <span class=\"n\">io</span><span class=\"o\">.</span><span class=\"n\">write</span><span class=\"p\">(</span><span class=\"s\">\"hello\"</span><span class=\"p\">)</span>\n<span class=\"o\">...</span>     <span class=\"n\">io</span><span class=\"o\">.</span><span class=\"n\">close</span><span class=\"p\">()</span>\n<span class=\"o\">...</span>     <span class=\"n\">io</span><span class=\"o\">.</span><span class=\"n\">write</span><span class=\"p\">(</span><span class=\"s\">\"world\"</span><span class=\"p\">)</span>\n<span class=\"o\">...</span>\n<span class=\"mi\">5</span>\n<span class=\"n\">Traceback</span> <span class=\"p\">(</span><span class=\"n\">most</span> <span class=\"n\">recent</span> <span class=\"n\">call</span> <span class=\"n\">last</span><span class=\"p\">)</span><span class=\"o\">:</span>\n  <span class=\"n\">File</span> <span class=\"s\">\"&lt;stdin&gt;\"</span><span class=\"p\">,</span> <span class=\"n\">line</span> <span class=\"mi\">4</span><span class=\"p\">,</span> <span class=\"kp\">in</span> <span class=\"o\">&lt;</span><span class=\"k\">module</span><span class=\"o\">&gt;</span>\n<span class=\"n\">ValueError</span><span class=\"o\">:</span> <span class=\"nb\">I</span><span class=\"o\">/</span><span class=\"n\">O</span> <span class=\"n\">operation</span> <span class=\"n\">on</span> <span class=\"n\">closed</span> <span class=\"n\">file</span><span class=\"o\">.</span>\n</code></pre></div>",
+        "id": 224586321,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1612015033
+    },
+    {
+        "content": "<p>Well spotted<span aria-label=\"point up\" class=\"emoji emoji-1f446\" role=\"img\" title=\"point up\">:point_up:</span> maybe there's a conclusive reason for that, but I'd definitely expect it to throw, too</p>",
+        "id": 224589249,
+        "sender_full_name": "Florian Große",
+        "timestamp": 1612019146
+    },
+    {
+        "content": "<p><a href=\"https://github.com/JuliaLang/julia/issues/1701\">https://github.com/JuliaLang/julia/issues/1701</a> seems to suggest it is intentional and <a href=\"https://linux.die.net/man/2/write\">https://linux.die.net/man/2/write</a> says <em>up to</em> n bytes.</p>",
+        "id": 224589663,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1612019707
+    }
+]

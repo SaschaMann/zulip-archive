@@ -1,0 +1,69 @@
+<html>
+<head><meta charset="utf-8"><title>Confusion with MIME types as function arguments · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Confusion.20with.20MIME.20types.20as.20function.20arguments.html">Confusion with MIME types as function arguments</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="232469021"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Confusion%20with%20MIME%20types%20as%20function%20arguments/near/232469021" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Confusion.20with.20MIME.20types.20as.20function.20arguments.html#232469021">(Mar 30 2021 at 17:56)</a>:</h4>
+<p>I've always been confused by this...<br>
+In <a href="https://docs.julialang.org/en/v1.6/manual/types/#man-custom-pretty-printing">https://docs.julialang.org/en/v1.6/manual/types/#man-custom-pretty-printing</a>, this function to pretty-print polar numbers is defined:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">Base</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">io</span><span class="o">::</span><span class="kt">IO</span><span class="p">,</span> <span class="o">::</span><span class="kt">MIME</span><span class="s">"text/html"</span><span class="p">,</span> <span class="n">z</span><span class="o">::</span><span class="n">Polar</span><span class="p">{</span><span class="n">T</span><span class="p">})</span> <span class="n">where</span> <span class="p">{</span><span class="n">T</span><span class="p">}</span> <span class="o">=</span>
+           <span class="n">println</span><span class="p">(</span><span class="n">io</span><span class="p">,</span> <span class="s">"&lt;code&gt;Polar{</span><span class="si">$T</span><span class="s">}&lt;/code&gt; complex number: "</span><span class="p">,</span>
+                   <span class="n">z</span><span class="o">.</span><span class="n">r</span><span class="p">,</span> <span class="s">" &lt;i&gt;e&lt;/i&gt;&lt;sup&gt;"</span><span class="p">,</span> <span class="n">z</span><span class="o">.</span><span class="n">Θ</span><span class="p">,</span> <span class="s">" &lt;i&gt;i&lt;/i&gt;&lt;/sup&gt;"</span><span class="p">)</span>
+</code></pre></div>
+<p>and then it is called as</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">show</span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span> <span class="s">"text/html"</span><span class="p">,</span> <span class="n">Polar</span><span class="p">(</span><span class="mf">3.0</span><span class="p">,</span><span class="mf">4.0</span><span class="p">))</span>
+</code></pre></div>
+<p>Why does <code>"text/html"</code>, which is a <code>String</code>, match the signature <code>::MIME"text/html"</code>?</p>
+<p>If I try to do the same in my own function, it doesn't work:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">ttt</span><span class="p">(</span><span class="o">::</span><span class="kt">MIME</span><span class="s">"text/html"</span><span class="p">)</span> <span class="o">=</span> <span class="n">println</span><span class="p">(</span><span class="s">"yes"</span><span class="p">)</span>
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">ttt</span><span class="p">(</span><span class="s">"text/html"</span><span class="p">)</span>
+<span class="n">ERROR</span><span class="o">:</span> <span class="kt">MethodError</span><span class="o">:</span> <span class="n">no</span> <span class="n">method</span> <span class="n">matching</span> <span class="n">ttt</span><span class="p">(</span><span class="o">::</span><span class="n">String</span><span class="p">)</span>
+<span class="n">Closest</span> <span class="n">candidates</span> <span class="n">are</span><span class="o">:</span>
+  <span class="n">ttt</span><span class="p">(</span><span class="o">::</span><span class="kt">MIME</span><span class="p">{</span><span class="kt">Symbol</span><span class="p">(</span><span class="s">"text/html"</span><span class="p">)})</span> <span class="n">at</span> <span class="n">REPL</span><span class="p">[</span><span class="mi">14</span><span class="p">]</span><span class="o">:</span><span class="mi">1</span>
+<span class="n">Stacktrace</span><span class="o">:</span>
+ <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="n">top</span><span class="o">-</span><span class="n">level</span> <span class="n">scope</span>
+   <span class="err">@</span> <span class="n">REPL</span><span class="p">[</span><span class="mi">16</span><span class="p">]</span><span class="o">:</span><span class="mi">1</span>
+</code></pre></div>
+
+
+
+<a name="232472587"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Confusion%20with%20MIME%20types%20as%20function%20arguments/near/232472587" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Confusion.20with.20MIME.20types.20as.20function.20arguments.html#232472587">(Mar 30 2021 at 18:18)</a>:</h4>
+<p>Nevermind, I found it in <code>multimedia.jl</code>:<br>
+<code>show(io::IO, m::AbstractString, x) = show(io, MIME(m), x)</code></p>
+
+
+
+<a name="232472655"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Confusion%20with%20MIME%20types%20as%20function%20arguments/near/232472655" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Confusion.20with.20MIME.20types.20as.20function.20arguments.html#232472655">(Mar 30 2021 at 18:19)</a>:</h4>
+<p>That part of the manual sure is confusing.</p>
+
+
+
+<a name="232519818"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Confusion%20with%20MIME%20types%20as%20function%20arguments/near/232519818" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Confusion.20with.20MIME.20types.20as.20function.20arguments.html#232519818">(Mar 31 2021 at 00:47)</a>:</h4>
+<p>Yeah. IMO the way we handle <code>show</code> has a lot of problems. It's really useful because it gives tonnes of different ways to customize <code>show</code>, but it sucks because it's really confusing and filled with edge cases.</p>
+
+
+
+<a name="232521815"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Confusion%20with%20MIME%20types%20as%20function%20arguments/near/232521815" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Confusion.20with.20MIME.20types.20as.20function.20arguments.html#232521815">(Mar 31 2021 at 01:17)</a>:</h4>
+<p>Yes; things like the two-argument and three-argument <code>show</code> variants, the reliance on MIME, plus <code>display</code>, plus all the multimedia I/O stuff are confusing. I spent hours getting Gaton's <code>show</code> to work properly in Pluto and IJulia, and I'm still not sure my implementation is correct.</p>
+
+
+
+<a name="232661979"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Confusion%20with%20MIME%20types%20as%20function%20arguments/near/232661979" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kirill Simonov <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Confusion.20with.20MIME.20types.20as.20function.20arguments.html#232661979">(Mar 31 2021 at 20:43)</a>:</h4>
+<p>I submitted an issue regarding <code>show()</code> for containers, got no response so far... <a href="https://github.com/JuliaLang/julia/issues/40030">https://github.com/JuliaLang/julia/issues/40030</a></p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

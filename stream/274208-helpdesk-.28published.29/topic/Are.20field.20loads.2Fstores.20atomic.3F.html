@@ -1,0 +1,116 @@
+<html>
+<head><meta charset="utf-8"><title>Are field loads/stores atomic? · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Are.20field.20loads.2Fstores.20atomic.3F.html">Are field loads/stores atomic?</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="248463865"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Are%20field%20loads/stores%20atomic%3F/near/248463865" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kenta Sato <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Are.20field.20loads.2Fstores.20atomic.3F.html#248463865">(Aug 05 2021 at 11:19)</a>:</h4>
+<p>I'm curious to know whether field accesses(i.e., <code>Core.getfield</code> and <code>Core.setfield</code>) are atomic by default. For example, can we call the following two accessor functions (<code>getx</code>, <code>setzero!</code>) concurrently from multiple threads without a data race? If not, does <code>Threads.Atomic</code> solve the problem?</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">mutable struct</span> <span class="kt">Foo</span>
+    <span class="n">x</span><span class="o">::</span><span class="kt">Int</span>
+<span class="k">end</span>
+<span class="n">getx</span><span class="p">(</span><span class="n">foo</span><span class="p">)</span> <span class="o">=</span> <span class="n">foo</span><span class="o">.</span><span class="n">x</span>
+<span class="n">setzero!</span><span class="p">(</span><span class="n">foo</span><span class="p">)</span> <span class="o">=</span> <span class="n">foo</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="mi">0</span>
+</code></pre></div>
+
+
+
+<a name="248472250"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Are%20field%20loads/stores%20atomic%3F/near/248472250" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> c42f <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Are.20field.20loads.2Fstores.20atomic.3F.html#248472250">(Aug 05 2021 at 12:51)</a>:</h4>
+<p>IIUC there's no memory ordering or atomicity implied for <code>setfield!</code> or <code>getfield</code> so you'll need <code>Threads.Atomic</code> to avoid a data race.</p>
+<p>In julia-1.7 there's been a lot of work done on atomic operations and you'll be able to to use the new atomic macro to annotate <code>@atomic x::Int</code>and the use sites of <code>x</code>. See <a href="https://github.com/JuliaLang/julia/pull/37847">https://github.com/JuliaLang/julia/pull/37847</a> and <a href="https://hackmd.io/s/SyFljvtdO">https://hackmd.io/s/SyFljvtdO</a></p>
+
+
+
+<a name="248474770"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Are%20field%20loads/stores%20atomic%3F/near/248474770" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kenta Sato <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Are.20field.20loads.2Fstores.20atomic.3F.html#248474770">(Aug 05 2021 at 13:12)</a>:</h4>
+<p>Thank you. I'm interested only in atomicity, not in memory ordering. I'd like to add a bit of my context: When I read the code of <code>lock(::ReentrantLock)</code>, I found it accesses the <code>locked_by</code> field before acquiring any lock. So, I thought Julia would implicitly assume atomicity of field access. I haven't read though that Manifesto (I found it yesterday!). Perhaps adding the <code>@atomic</code> macro before each field and access is a safer way.</p>
+
+
+
+<a name="248484204"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Are%20field%20loads/stores%20atomic%3F/near/248484204" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kenta Sato <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Are.20field.20loads.2Fstores.20atomic.3F.html#248484204">(Aug 05 2021 at 14:24)</a>:</h4>
+<p>Hmm, on all platforms supported by Julia, relaxed loads and stores seem to be mapped to vanilla loads and stores, respectively. <a href="https://www.cl.cam.ac.uk/~pes20/cpp/cpp0xmappings.html">https://www.cl.cam.ac.uk/~pes20/cpp/cpp0xmappings.html</a></p>
+
+
+
+<a name="248486225"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Are%20field%20loads/stores%20atomic%3F/near/248486225" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Are.20field.20loads.2Fstores.20atomic.3F.html#248486225">(Aug 05 2021 at 14:39)</a>:</h4>
+<p>Loads and stores of small single objects like <code>Int</code> are atomic, in that they're a single indivisible operation.</p>
+<p>Special "atomic" instructions are needed when what we'd like to do atomically normally would not be atomic, like <code>atomic_add!</code> which loads, adds, and stores as a single indivisible operation.<br>
+Or for memory ordering.</p>
+
+
+
+<a name="248489905"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Are%20field%20loads/stores%20atomic%3F/near/248489905" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kenta Sato <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Are.20field.20loads.2Fstores.20atomic.3F.html#248489905">(Aug 05 2021 at 15:02)</a>:</h4>
+<p>Right, but the specs of C++ define concurrent loads and stores are a data race and it leads to undefined behavior. I think this is the case even if the manipulated object is an integer.</p>
+
+
+
+<a name="248496828"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Are%20field%20loads/stores%20atomic%3F/near/248496828" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Are.20field.20loads.2Fstores.20atomic.3F.html#248496828">(Aug 05 2021 at 15:52)</a>:</h4>
+<p>That's correct. For some <em>specific</em> architectures and objects of some <em>specific</em> sizes, loads and stores <em>may</em> be indivisible but that's not what the C++ memory model (on which Julia's memory model is defined IIUC) formally defines. We are programming against the abstract machine, not concrete architecture. Otherwise, it's impossible to have an optimizing compiler and portable program.</p>
+<p>(Of course, performance tuning would benefit hugely from understanding concrete machine mechanisms. However, for writing correct code, I don't think we should be relying on the behavior of certain architecture as much as possible.)</p>
+<p>If you need indivisibility and are sure that no memory ordering is required, use the <code>:monotonic</code> (aka relaxed) ordering. In x86, it's likely compiled down to the normal load/store for small objects.</p>
+
+
+
+<a name="248499502"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Are%20field%20loads/stores%20atomic%3F/near/248499502" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kenta Sato <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Are.20field.20loads.2Fstores.20atomic.3F.html#248499502">(Aug 05 2021 at 16:13)</a>:</h4>
+<p>Thank you, all. So, my takeaway here is that field loads and stores are practically atomic for some objects on all supported platforms. However, this is not a solid specification and therefore Julia devs are now working on consolidating its memory model as Julia Atomics Manifesto, which will be introduced in Julia 1.7 (or 1.8?).</p>
+
+
+
+<a name="248501028"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Are%20field%20loads/stores%20atomic%3F/near/248501028" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Are.20field.20loads.2Fstores.20atomic.3F.html#248501028">(Aug 05 2021 at 16:26)</a>:</h4>
+<p>Yes, I think that's a nice summary!</p>
+
+
+
+<a name="248501135"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Are%20field%20loads/stores%20atomic%3F/near/248501135" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Are.20field.20loads.2Fstores.20atomic.3F.html#248501135">(Aug 05 2021 at 16:27)</a>:</h4>
+<p>1.7 already has the atomics, BTW</p>
+
+
+
+<a name="248555969"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Are%20field%20loads/stores%20atomic%3F/near/248555969" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> c42f <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Are.20field.20loads.2Fstores.20atomic.3F.html#248555969">(Aug 06 2021 at 01:04)</a>:</h4>
+<blockquote>
+<p>field loads and stores are practically atomic for some objects on all supported platforms</p>
+</blockquote>
+<p>It depends on what you mean by "atomic".  The term is rather overloaded, I'm afraid.</p>
+<p>For one thing, you may worry about whether you can see a "torn read" where some bits of a wide word come before an update vs some after.  IIUC this isn't something to worry about in practice right now, as you've stated. At least for reasonable sized word widths with correct alignment.</p>
+<p>But considerations like torn reads are really only one consequence of data races, potentially not even the major consequence.</p>
+<p>Much more tricky is how data races interact with compiler optimizations. The compiler is allowed to do all sorts of program transformations under the assumption that your code is data race free. On the other hand, if your program has data races many of these compiler transformations can just become invalid. I like the following article about this:<br>
+<a href="https://software.intel.com/content/www/us/en/develop/blogs/benign-data-races-what-could-possibly-go-wrong.html">https://software.intel.com/content/www/us/en/develop/blogs/benign-data-races-what-could-possibly-go-wrong.html</a></p>
+
+
+
+<a name="248558254"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Are%20field%20loads/stores%20atomic%3F/near/248558254" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Are.20field.20loads.2Fstores.20atomic.3F.html#248558254">(Aug 06 2021 at 01:50)</a>:</h4>
+<p>Yeah, I agree torn reads are not the hardest part. Caches also interact with memory ordering, too. FYI, for people who prefer watching over reading, I dumped a bunch of useful talks on atomics in <a href="#narrow/stream/236830-concurrency/topic/Useful.20talks.20on.20atomics">https://julialang.zulipchat.com/#narrow/stream/236830-concurrency/topic/Useful.20talks.20on.20atomics</a> For anyone new to this, I think Herb Sutter's atomic&lt;&gt; Weapons is a great introduction.</p>
+
+
+
+<a name="248569793"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Are%20field%20loads/stores%20atomic%3F/near/248569793" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> c42f <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Are.20field.20loads.2Fstores.20atomic.3F.html#248569793">(Aug 06 2021 at 04:08)</a>:</h4>
+<p>Right, I mentioned compiler optimizations... but hardware can also dynamically optimize some aspects of execution under a race free assumption (eg which cache to read from). In a high level language there's so many layers of this kind of thing. It seems best to assume there's no such thing as a safe data race.</p>
+
+
+
+<a name="248571516"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Are%20field%20loads/stores%20atomic%3F/near/248571516" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Are.20field.20loads.2Fstores.20atomic.3F.html#248571516">(Aug 06 2021 at 04:54)</a>:</h4>
+<p>Well, data race in C/C++ memory model is undefined behavior which is obviously unsafe <img alt=":troll:" class="emoji" src="https://zulip-avatars.s3.amazonaws.com/7178/emoji/images/15252.png" title="troll"> . OK, there's a C++ proposal called Tearable Atomics <a href="http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0690r1.html">http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0690r1.html</a> which is in a way trying to define almost-but-not-really-a-race. So, it's possible that we can even talk about "conforming torn read" at some point.</p>
+<p>(Although I do want this now, for implementing work-stealing deque and concurrent dictionary...)</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

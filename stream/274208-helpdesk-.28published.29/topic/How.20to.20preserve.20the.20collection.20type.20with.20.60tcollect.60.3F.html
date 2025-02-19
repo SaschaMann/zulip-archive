@@ -1,0 +1,162 @@
+<html>
+<head><meta charset="utf-8"><title>How to preserve the collection type with `tcollect`? · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20preserve.20the.20collection.20type.20with.20.60tcollect.60.3F.html">How to preserve the collection type with `tcollect`?</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="420543874"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20preserve%20the%20collection%20type%20with%20%60tcollect%60%3F/near/420543874" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20preserve.20the.20collection.20type.20with.20.60tcollect.60.3F.html#420543874">(Feb 08 2024 at 21:20)</a>:</h4>
+<p>The <a href="https://juliahub.com/ui/Packages/General/Transducers">Transducers.jl</a> <code>tcollect</code> function is super useful, but it seems to always return a <code>Vector</code> regardless of the input type.</p>
+<p>Is there a way to preserve the input type with <a href="https://juliahub.com/ui/Packages/General/Transducers">Transducers.jl</a> or Base.Threads?</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">Transducers</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">CircularArrays</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">tcollect</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span>
+<span class="mi">3</span><span class="o">-</span><span class="n">element</span><span class="w"> </span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Int64</span><span class="p">}</span><span class="o">:</span>
+<span class="w"> </span><span class="mi">1</span>
+<span class="w"> </span><span class="mi">2</span>
+<span class="w"> </span><span class="mi">3</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">tcollect</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">])</span>
+<span class="mi">3</span><span class="o">-</span><span class="n">element</span><span class="w"> </span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Int64</span><span class="p">}</span><span class="o">:</span>
+<span class="w"> </span><span class="mi">1</span>
+<span class="w"> </span><span class="mi">2</span>
+<span class="w"> </span><span class="mi">3</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">tcollect</span><span class="p">(</span><span class="n">CircularVector</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]))</span>
+<span class="mi">3</span><span class="o">-</span><span class="n">element</span><span class="w"> </span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Int64</span><span class="p">}</span><span class="o">:</span>
+<span class="w"> </span><span class="mi">1</span>
+<span class="w"> </span><span class="mi">2</span>
+<span class="w"> </span><span class="mi">3</span>
+</code></pre></div>
+
+
+
+<a name="420544125"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20preserve%20the%20collection%20type%20with%20%60tcollect%60%3F/near/420544125" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20preserve.20the.20collection.20type.20with.20.60tcollect.60.3F.html#420544125">(Feb 08 2024 at 21:22)</a>:</h4>
+<p>The underlying issue is that we have a couple of <code>map(fun, iter)</code> that we would like to parallelize. But replacing <code>map</code> with <code>tcollect</code> doesn't work as expected.</p>
+
+
+
+<a name="420552573"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20preserve%20the%20collection%20type%20with%20%60tcollect%60%3F/near/420552573" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20preserve.20the.20collection.20type.20with.20.60tcollect.60.3F.html#420552573">(Feb 08 2024 at 22:26)</a>:</h4>
+<p>Yeah, this is something <a href="https://juliahub.com/ui/Packages/General/Transducers">Transducers.jl</a> doesn't really handle well. I think the right function here is <code>tcopy</code> since that doesn't try to follow the behaviour of <code>collect</code></p>
+
+
+
+<a name="420552647"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20preserve%20the%20collection%20type%20with%20%60tcollect%60%3F/near/420552647" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20preserve.20the.20collection.20type.20with.20.60tcollect.60.3F.html#420552647">(Feb 08 2024 at 22:27)</a>:</h4>
+<p>but trying your examples with <code>tcopy</code>, none of them work still</p>
+
+
+
+<a name="420552659"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20preserve%20the%20collection%20type%20with%20%60tcollect%60%3F/near/420552659" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20preserve.20the.20collection.20type.20with.20.60tcollect.60.3F.html#420552659">(Feb 08 2024 at 22:27)</a>:</h4>
+<p>which I guess we should classify as bugs that need to be fixed.</p>
+
+
+
+<a name="420552681"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20preserve%20the%20collection%20type%20with%20%60tcollect%60%3F/near/420552681" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20preserve.20the.20collection.20type.20with.20.60tcollect.60.3F.html#420552681">(Feb 08 2024 at 22:27)</a>:</h4>
+<p>The circular arrays one could potentially be a package extension</p>
+
+
+
+<a name="420552752"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20preserve%20the%20collection%20type%20with%20%60tcollect%60%3F/near/420552752" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20preserve.20the.20collection.20type.20with.20.60tcollect.60.3F.html#420552752">(Feb 08 2024 at 22:28)</a>:</h4>
+<p>but this is in general a hard problem</p>
+
+
+
+<a name="420552876"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20preserve%20the%20collection%20type%20with%20%60tcollect%60%3F/near/420552876" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20preserve.20the.20collection.20type.20with.20.60tcollect.60.3F.html#420552876">(Feb 08 2024 at 22:29)</a>:</h4>
+<p>I would suggest though that if your problem is so time consuming that it requires parallelism, then maybe it's not <em>so</em> bad to have to do a convert after, i.e.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="kt">Tuple</span><span class="p">(</span><span class="n">tcollect</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)))</span>
+<span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">CircularVector</span><span class="p">(</span><span class="n">tcollect</span><span class="p">(</span><span class="n">CircularVector</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">])))</span>
+<span class="mi">3</span><span class="o">-</span><span class="n">element</span><span class="w"> </span><span class="n">CircularVector</span><span class="p">(</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Int64</span><span class="p">})</span><span class="o">:</span>
+<span class="w"> </span><span class="mi">1</span>
+<span class="w"> </span><span class="mi">2</span>
+<span class="w"> </span><span class="mi">3</span>
+</code></pre></div>
+
+
+
+<a name="420552906"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20preserve%20the%20collection%20type%20with%20%60tcollect%60%3F/near/420552906" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20preserve.20the.20collection.20type.20with.20.60tcollect.60.3F.html#420552906">(Feb 08 2024 at 22:29)</a>:</h4>
+<p>but I get that's also annoying</p>
+
+
+
+<a name="420553325"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20preserve%20the%20collection%20type%20with%20%60tcollect%60%3F/near/420553325" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20preserve.20the.20collection.20type.20with.20.60tcollect.60.3F.html#420553325">(Feb 08 2024 at 22:33)</a>:</h4>
+<p>Yes, we ended up following this route.</p>
+
+
+
+<a name="420553536"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20preserve%20the%20collection%20type%20with%20%60tcollect%60%3F/near/420553536" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20preserve.20the.20collection.20type.20with.20.60tcollect.60.3F.html#420553536">(Feb 08 2024 at 22:35)</a>:</h4>
+<p>It would be super nice if these things worked. Also, is it too big of a dream to imagine a future where we can just replace map by a pmap and choose the form of parallelism? Threads vs GPU threads vs processes...</p>
+
+
+
+<a name="420553577"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20preserve%20the%20collection%20type%20with%20%60tcollect%60%3F/near/420553577" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20preserve.20the.20collection.20type.20with.20.60tcollect.60.3F.html#420553577">(Feb 08 2024 at 22:35)</a>:</h4>
+<p>I wish we had a general pmap that performed all sorts of parallelism with keyword options</p>
+
+
+
+<a name="420553976"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20preserve%20the%20collection%20type%20with%20%60tcollect%60%3F/near/420553976" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20preserve.20the.20collection.20type.20with.20.60tcollect.60.3F.html#420553976">(Feb 08 2024 at 22:39)</a>:</h4>
+<blockquote>
+<p>Also, is it too big of a dream to imagine a future where we can just replace map by a pmap and choose the form of parallelism? Threads vs GPU threads vs processes...</p>
+</blockquote>
+<p>That's what <a href="https://juliahub.com/ui/Packages/General/Transducers">Transducers.jl</a> / <a href="https://juliahub.com/ui/Packages/General/Folds">Folds.jl</a> already does. They provide sequential, threaded, and distributed backends</p>
+
+
+
+<a name="420554000"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20preserve%20the%20collection%20type%20with%20%60tcollect%60%3F/near/420554000" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20preserve.20the.20collection.20type.20with.20.60tcollect.60.3F.html#420554000">(Feb 08 2024 at 22:39)</a>:</h4>
+<p>Taka worked on a GPU backend but it's broken now</p>
+
+
+
+<a name="420554010"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20preserve%20the%20collection%20type%20with%20%60tcollect%60%3F/near/420554010" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20preserve.20the.20collection.20type.20with.20.60tcollect.60.3F.html#420554010">(Feb 08 2024 at 22:39)</a>:</h4>
+<p>would be great if we could revive it</p>
+
+
+
+<a name="420554209"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20preserve%20the%20collection%20type%20with%20%60tcollect%60%3F/near/420554209" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20preserve.20the.20collection.20type.20with.20.60tcollect.60.3F.html#420554209">(Feb 08 2024 at 22:40)</a>:</h4>
+<p>Perhaps it is an issue of documentation then. I never saw the GPU case for instance</p>
+
+
+
+<a name="420554230"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20preserve%20the%20collection%20type%20with%20%60tcollect%60%3F/near/420554230" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20preserve.20the.20collection.20type.20with.20.60tcollect.60.3F.html#420554230">(Feb 08 2024 at 22:41)</a>:</h4>
+<p><a href="https://github.com/JuliaFolds/FoldsCUDA.jl">https://github.com/JuliaFolds/FoldsCUDA.jl</a></p>
+
+
+
+<a name="420554267"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20preserve%20the%20collection%20type%20with%20%60tcollect%60%3F/near/420554267" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20preserve.20the.20collection.20type.20with.20.60tcollect.60.3F.html#420554267">(Feb 08 2024 at 22:41)</a>:</h4>
+<p>It was always experimental though</p>
+
+
+
+<a name="420554400"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20preserve%20the%20collection%20type%20with%20%60tcollect%60%3F/near/420554400" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20preserve.20the.20collection.20type.20with.20.60tcollect.60.3F.html#420554400">(Feb 08 2024 at 22:42)</a>:</h4>
+<p>but yes, the idea is that Transducers can give us a very general way of doing parallelism that can be re-implemented for many different backends</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

@@ -1,0 +1,70 @@
+<html>
+<head><meta charset="utf-8"><title>Auto-downloading unregistered packages · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Auto-downloading.20unregistered.20packages.html">Auto-downloading unregistered packages</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="242143741"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Auto-downloading%20unregistered%20packages/near/242143741" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Graham Smith <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Auto-downloading.20unregistered.20packages.html#242143741">(Jun 09 2021 at 23:31)</a>:</h4>
+<p>I have two unregistered packages on Github, say <a href="https://github.com/search?q=Stripes.jl&amp;type=Repositories">Stripes.jl</a> and <a href="https://github.com/search?q=Tigers.jl&amp;type=Repositories">Tigers.jl</a> where the latter depends on the former. The way I'm dealing with this now is to have a <code>Tigers/setup.jl</code> script that you run to dev the <a href="https://github.com/search?q=Stripes.jl&amp;type=Repositories">Stripes.jl</a> repo before you build <a href="https://github.com/search?q=Tigers.jl&amp;type=Repositories">Tigers.jl</a>. With recentish Pkg updates I thought I'd automate this with <code>deps/build.jl</code> or similar, but I can't figure anything out. My naive approach is to dev <a href="https://github.com/search?q=Stripes.jl&amp;type=Repositories">Stripes.jl</a> in build.jl, but apparently Stripes needs to be registered (or dev'd) before the build file is run-- no build log is even produced before the error pops up (ERROR: expected package <code>Stripes [310cc8c8]</code> to be registered).</p>
+<p>I'm working around this by including Manifest.toml in the repo, but that doesn't seem like a "real" solution. Maybe there's just no real solution since packages shouldn't automatically depend on unregistered/implicitly untrusted git repos?</p>
+
+
+
+<a name="242145538"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Auto-downloading%20unregistered%20packages/near/242145538" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Auto-downloading.20unregistered.20packages.html#242145538">(Jun 09 2021 at 23:58)</a>:</h4>
+<p>The best way is to just document that you need to install them in that order. Something like:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="c">### Installation</span>
+<span class="n">In</span> <span class="n">order</span> <span class="n">to</span> <span class="n">install</span> <span class="n">this</span> <span class="n">package</span> <span class="n">you</span> <span class="n">first</span> <span class="n">need</span> <span class="n">to</span> <span class="n">install</span> <span class="n">Stripes</span><span class="o">.</span><span class="n">jl</span>
+<span class="sb">```julia</span>
+<span class="sb">pkg&gt; add https://github.com/username/Stripes.jl</span>
+
+<span class="sb">pkg&gt; add https://github.com/username/Tigers.jl</span>
+<span class="sb">```</span>
+</code></pre></div>
+
+
+
+<a name="242174001"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Auto-downloading%20unregistered%20packages/near/242174001" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gunnar Farnebäck <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Auto-downloading.20unregistered.20packages.html#242174001">(Jun 10 2021 at 08:27)</a>:</h4>
+<p>The best solution from a technical point of view is to register the packages in a registry of your own. It doesn't help at all with the trust issue though since the users would then also need to trust your registry.</p>
+
+
+
+<a name="242259856"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Auto-downloading%20unregistered%20packages/near/242259856" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Graham Smith <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Auto-downloading.20unregistered.20packages.html#242259856">(Jun 10 2021 at 19:43)</a>:</h4>
+<p>A personal registry is exactly the solution I wanted. For anyone looking to do this in the future, <a href="https://github.com/search?q=LocalRegistry.jl&amp;type=Repositories">LocalRegistry.jl</a> makes this super simple (<a href="https://github.com/GunnarFarneback/LocalRegistry.jl">https://github.com/GunnarFarneback/LocalRegistry.jl</a>).</p>
+
+
+
+<a name="242260087"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Auto-downloading%20unregistered%20packages/near/242260087" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Graham Smith <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Auto-downloading.20unregistered.20packages.html#242260087">(Jun 10 2021 at 19:45)</a>:</h4>
+<p>(I see you're the person who wrote that, <span class="user-mention" data-user-id="273176">@Gunnar Farnebäck</span> ! Thank you!)</p>
+
+
+
+<a name="242650887"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Auto-downloading%20unregistered%20packages/near/242650887" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> j-fu <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Auto-downloading.20unregistered.20packages.html#242650887">(Jun 14 2021 at 19:54)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="273176">Gunnar Farnebäck</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Auto-downloading.20unregistered.20packages/near/242174001">said</a>:</p>
+<blockquote>
+<p>The best solution from a technical point of view is to register the packages in a registry of your own. It doesn't help at all with the trust issue though since the users would then also need to trust your registry.</p>
+</blockquote>
+<p>Is there any experience/advice how to handle trust issues regarding private/user maintained registries besides writing a documentation to make things transparent ? E.g. a <a href="https://github.com/search?q=RegistryDocumenter.jl&amp;type=Repositories">RegistryDocumenter.jl</a> ? </p>
+<p>In particular I envision an "n+1" attack: someone re-registers a package from General with some backdoor with a higher version in his/her own registry and triggers users to add it by providing another "cool" package. Is there some automatism to prevent this ?</p>
+<p>(<a href="https://github.com/search?q=LocalRegistry.jl&amp;type=Repositories">LocalRegistry.jl</a> indeed is great!)</p>
+
+
+
+<a name="242657712"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Auto-downloading%20unregistered%20packages/near/242657712" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gunnar Farnebäck <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Auto-downloading.20unregistered.20packages.html#242657712">(Jun 14 2021 at 20:53)</a>:</h4>
+<p>That goes under the name "dependency confusion" attack and is exactly the trust issue with adding additional registries. There have been discussions about mechanisms to counteract it but it's all somewhat complicated by the fact that Pkg is designed to allow migration between registries. Note that the problem is slightly mitigated by the fact that instantiating a Manifest  doesn't bring in a new version just because it exists in the registry. The danger comes when you do a package update.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

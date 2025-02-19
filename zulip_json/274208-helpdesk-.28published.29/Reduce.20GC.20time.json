@@ -1,0 +1,440 @@
+[
+    {
+        "content": "<p>I have a task which spends 10% of the time on GC when executed on a single thread, but as soon as I thread it 70% of the execution time is GC. Might anyone have general suggestions on how I could improve this situation?</p>",
+        "id": 313920055,
+        "sender_full_name": "Timothy",
+        "timestamp": 1670232273
+    },
+    {
+        "content": "<p>unfortunately, the only \"real\" thing you can do right now is to allocate less in the threaded sections</p>",
+        "id": 313920572,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670232475
+    },
+    {
+        "content": "<p>reason being that GC runs stop other threads from executing as well</p>",
+        "id": 313920651,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670232495
+    },
+    {
+        "content": "<p>so lots of GC in a threaded section also means a large slowdown</p>",
+        "id": 313920700,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670232520
+    },
+    {
+        "content": "<p>That's a pity to hear. I've got to say, it's a bit disappointing when doing something embarrassingly parallel that when going from 1 thread to 60 performance only improves by ~1.4x.</p>",
+        "id": 313936418,
+        "sender_full_name": "Timothy",
+        "timestamp": 1670237768
+    },
+    {
+        "content": "<p>related to this: is there a chance to get another GC strategy in the near future (if at all possible)?</p>",
+        "id": 313936935,
+        "sender_full_name": "Max Köhler",
+        "timestamp": 1670237920
+    },
+    {
+        "content": "<p>you can always preallocate your working memory</p>",
+        "id": 313938484,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670238437
+    },
+    {
+        "content": "<p>I think <span class=\"user-mention\" data-user-id=\"362527\">@Gabriel Baraldi</span>  does some investigative work, but nothing in the near future. There is some <a href=\"https://github.com/JuliaLang/julia/pull/47292\">work on parallelizing GC</a> entirely, but no ETA on that.</p>",
+        "id": 313938824,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670238547
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"306754\">Sukera</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time/near/313938484\">said</a>:</p>\n<blockquote>\n<p>you can always preallocate your working memory</p>\n</blockquote>\n<p>yes I know, this is what I do. I was just wondering if other strategies exist and if so, if investigations are carried out</p>",
+        "id": 313938954,
+        "sender_full_name": "Max Köhler",
+        "timestamp": 1670238589
+    },
+    {
+        "content": "<p>it's a difficult problem and even with a parallel GC, you're going to want to minimize interaction with it either way <span aria-label=\"shrug\" class=\"emoji emoji-1f937\" role=\"img\" title=\"shrug\">:shrug:</span></p>",
+        "id": 313939172,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670238652
+    },
+    {
+        "content": "<p>memory management is expensive, no matter whether it's julia, C, C++ or Java</p>",
+        "id": 313939233,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670238670
+    },
+    {
+        "content": "<p>(relatively speaking to a hot loop)</p>",
+        "id": 313939300,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670238693
+    },
+    {
+        "content": "<p>that said, <span class=\"user-mention\" data-user-id=\"400021\">@Timothy</span>  if you only observe a speedup of 1.4x when you expect 60x, it suggests to me that your single threaded path is not at all optimized, so I'd suggest starting with that</p>",
+        "id": 313939429,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670238723
+    },
+    {
+        "content": "<p>I don't really see what the optimisation of the single-threaded path has to do with how well it paralelizes if there's no interaction between threads.</p>",
+        "id": 313940270,
+        "sender_full_name": "Timothy",
+        "timestamp": 1670239059
+    },
+    {
+        "content": "<p>because GC is interacting across threads.</p>",
+        "id": 313940362,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670239087
+    },
+    {
+        "content": "<p>Oh, you're talking about optimising it to produce less GC?</p>",
+        "id": 313940394,
+        "sender_full_name": "Timothy",
+        "timestamp": 1670239108
+    },
+    {
+        "content": "<p>yes</p>",
+        "id": 313940399,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670239112
+    },
+    {
+        "content": "<p>GC is single threaded, so if any thread wants to allocate memory, it needs to take a lock and blocks all other threads from allocating, IIRC.</p>",
+        "id": 313940477,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670239153
+    },
+    {
+        "content": "<p>on top of that, depending on how you're threading, you may accidentally share data/state between threads, which can lead to more boxing/allocations</p>",
+        "id": 313940612,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670239199
+    },
+    {
+        "content": "<p>the easiest way to tackle both is to optimize the single threaded version</p>",
+        "id": 313940693,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670239219
+    },
+    {
+        "content": "<p>That would be nice, but I have a feeling that would be quite difficult. The code is basically doing two major things:</p>\n<ul>\n<li>Constructing and evaluating decision trees (from <code>DecisionTree.jl</code>)</li>\n<li>Calculating permutation importance</li>\n</ul>",
+        "id": 313940699,
+        "sender_full_name": "Timothy",
+        "timestamp": 1670239220
+    },
+    {
+        "content": "<p>do you have an example?</p>",
+        "id": 313940858,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670239276
+    },
+    {
+        "content": "<p>keep in mind that e.g. <code>Threads.@threads</code> more or less has to create an anonymous function under the hood, so anything you capture in there is shared across threads</p>",
+        "id": 313941099,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670239352
+    },
+    {
+        "content": "<p>and that capturing may too lead to type instabilities, boxing etc.</p>",
+        "id": 313941124,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670239365
+    },
+    {
+        "content": "<p>This is the rough structure of the code (which uses <code>Transducers.jl</code>)</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"p\">(</span><span class=\"n\">sample</span><span class=\"w\"> </span><span class=\"n\">generator</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">|&gt;</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">Map</span><span class=\"p\">(</span><span class=\"n\">pairs</span><span class=\"w\"> </span><span class=\"o\">-&gt;</span><span class=\"w\"> </span><span class=\"n\">zip</span><span class=\"p\">(</span><span class=\"n\">pairs</span><span class=\"o\">...</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">.|&gt;</span><span class=\"w\"> </span><span class=\"n\">Iterators</span><span class=\"o\">.</span><span class=\"n\">flatten</span><span class=\"w\"> </span><span class=\"o\">.|&gt;</span><span class=\"w\"> </span><span class=\"n\">collect</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">|&gt;</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"n\">Map</span><span class=\"p\">(</span><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"p\">((</span><span class=\"n\">train</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">test</span><span class=\"p\">),)</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"n\">tree</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">train</span><span class=\"p\">(</span><span class=\"n\">decision</span><span class=\"w\"> </span><span class=\"n\">tree</span><span class=\"w\"> </span><span class=\"n\">on</span><span class=\"w\"> </span><span class=\"n\">train</span><span class=\"w\"> </span><span class=\"n\">data</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"n\">oob</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">predict</span><span class=\"p\">(</span><span class=\"n\">tree</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">test</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"n\">importance</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">permutation_importance</span><span class=\"p\">(</span><span class=\"n\">tree</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">test</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">    </span><span class=\"p\">(;</span><span class=\"w\"> </span><span class=\"n\">tree</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">oob</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">importance</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">  </span><span class=\"k\">end</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">|&gt;</span><span class=\"w\"> </span><span class=\"n\">tcollect</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 313941256,
+        "sender_full_name": "Timothy",
+        "timestamp": 1670239415
+    },
+    {
+        "content": "<p>The actual code is a bit more complicated, but if you're interested you can find it here: <a href=\"http://ix.io/4hNh\">http://ix.io/4hNh</a></p>",
+        "id": 313941453,
+        "sender_full_name": "Timothy",
+        "timestamp": 1670239491
+    },
+    {
+        "content": "<p>how large is <code>pairs</code>?</p>",
+        "id": 313941556,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670239531
+    },
+    {
+        "content": "<p>Usually a single-element vector (hence the <code>if</code> statement in the full version)</p>",
+        "id": 313941692,
+        "sender_full_name": "Timothy",
+        "timestamp": 1670239575
+    },
+    {
+        "content": "<p>your full version is type unstable - you only assign <code>importance</code> conditionally</p>",
+        "id": 313941767,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670239607
+    },
+    {
+        "content": "<p>Yea, <code>importance</code> and <code>oob</code> are both <code>Union{Nothing, X}</code>s, but I'm assuming that type instability isn't having a big impact overall.</p>",
+        "id": 313941908,
+        "sender_full_name": "Timothy",
+        "timestamp": 1670239664
+    },
+    {
+        "content": "<p>unprofiled assumptions are bad for making a decision :)</p>",
+        "id": 313942004,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670239684
+    },
+    {
+        "content": "<p><code>trainX</code> also creates a copy, does it really need to?</p>",
+        "id": 313942037,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670239697
+    },
+    {
+        "content": "<p>since slicing copies here <code>trainX, trainY = X1[train, :], y1[train]</code></p>",
+        "id": 313942107,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670239727
+    },
+    {
+        "content": "<p>It doesn't need to be a copy, but neither that or <code>Matrix(testX)</code> seem to have much of an impact overall</p>",
+        "id": 313942156,
+        "sender_full_name": "Timothy",
+        "timestamp": 1670239748
+    },
+    {
+        "content": "<p>because both copy</p>",
+        "id": 313942202,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670239769
+    },
+    {
+        "content": "<p>why not a <code>@view</code>?</p>",
+        "id": 313942211,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670239773
+    },
+    {
+        "content": "<p>I suppose I could prefix <code>@views</code> just for fun</p>",
+        "id": 313942258,
+        "sender_full_name": "Timothy",
+        "timestamp": 1670239792
+    },
+    {
+        "content": "<p>same general thought goes for <code>zip(pairs...)</code>, do you really need to <code>collect</code> it, thereby allocating new memory?</p>",
+        "id": 313942322,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670239803
+    },
+    {
+        "content": "<p>I'm not <code>|&gt;</code> collecting, I'm <code>.|&gt;</code> collecting, so it changes the structure</p>",
+        "id": 313942495,
+        "sender_full_name": "Timothy",
+        "timestamp": 1670239842
+    },
+    {
+        "content": "<p>same thought though, do you need to collect each flattened array?</p>",
+        "id": 313942570,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670239871
+    },
+    {
+        "content": "<p>and I also think the broadcast (which allocates yet-another array) can be elided by using <code>Iterators.map(Iterators.flatten, zip(pairs...))</code></p>",
+        "id": 313942863,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670239983
+    },
+    {
+        "content": "<p>Yes, otherwise I get a method error</p>",
+        "id": 313942879,
+        "sender_full_name": "Timothy",
+        "timestamp": 1670239989
+    },
+    {
+        "content": "<p>Also, in this particular case, I know that branch is never hit</p>",
+        "id": 313942900,
+        "sender_full_name": "Timothy",
+        "timestamp": 1670240002
+    },
+    {
+        "content": "<p>I'm not saying doing just that change will fix things, I'm just pointing out where you get those allocations</p>",
+        "id": 313943124,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670240077
+    },
+    {
+        "content": "<p>I appreciate it :)</p>",
+        "id": 313943150,
+        "sender_full_name": "Timothy",
+        "timestamp": 1670240085
+    },
+    {
+        "content": "<p>The <code>map</code> change is nice, I'll make that regardless of the impact</p>",
+        "id": 313943174,
+        "sender_full_name": "Timothy",
+        "timestamp": 1670240095
+    },
+    {
+        "content": "<p>tbh, transducers are supposed to compose, so I think you should be able to use the <a href=\"https://github.com/search?q=Transducers.jl&amp;type=Repositories\">Transducers.jl</a> native Map just as well</p>",
+        "id": 313943262,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670240126
+    },
+    {
+        "content": "<p>regardless, every broadcast in there (like <code>getproperty.(submachines, :test)</code> later on) has to allocate a result array</p>",
+        "id": 313943419,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670240179
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"400021\">Timothy</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Reduce.20GC.20time/near/313942879\">said</a>:</p>\n<blockquote>\n<p>Yes, otherwise I get a method error</p>\n</blockquote>\n<p>I'm very happy to discover that I'm wrong here! and it does help a bit!</p>",
+        "id": 313943502,
+        "sender_full_name": "Timothy",
+        "timestamp": 1670240210
+    },
+    {
+        "content": "<p>the <code>mapreduce</code> over dictionaries is going to be expensive too, since it needs to allocate a new dictionary and rehash all entries</p>",
+        "id": 313943510,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670240215
+    },
+    {
+        "content": "<p>Any recommendations there?</p>",
+        "id": 313943632,
+        "sender_full_name": "Timothy",
+        "timestamp": 1670240262
+    },
+    {
+        "content": "<p>put the <code>getproperty</code> thing into the <code>map</code> of the <code>mapreduce</code></p>",
+        "id": 313943900,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670240343
+    },
+    {
+        "content": "<p>you're already mapping</p>",
+        "id": 313943904,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670240346
+    },
+    {
+        "content": "<p>so why have another loop allocating memory before that?</p>",
+        "id": 313943923,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670240357
+    },
+    {
+        "content": "<p>(or get rid of the <code>Dict</code> entirely, but that is probably a bit more of an undertaking)</p>",
+        "id": 313944017,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670240395
+    },
+    {
+        "content": "<p>Since the keys are the same, I suppose I could sort each importance list on the keys and then directly sum the vectors of values?</p>",
+        "id": 313944167,
+        "sender_full_name": "Timothy",
+        "timestamp": 1670240453
+    },
+    {
+        "content": "<p>that's also an option, yeah</p>",
+        "id": 313944202,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670240466
+    },
+    {
+        "content": "<p>or you just iterate over <code>keys(..)</code> of one importance list and sum all entries of all lists</p>",
+        "id": 313944259,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670240493
+    },
+    {
+        "content": "<p>Ok, with the <code>.|&gt; collection</code> removal and <code>Iterators.map</code> the 60x thread increase now causes a 1.9x perf improvement</p>",
+        "id": 313945042,
+        "sender_full_name": "Timothy",
+        "timestamp": 1670240796
+    },
+    {
+        "content": "<p>so still 30x missing, possibly due to the other places with copy slicing instead of views</p>",
+        "id": 313945625,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670241021
+    },
+    {
+        "content": "<p>and depending on how much the code you're calling allocates, of course</p>",
+        "id": 313945677,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670241041
+    },
+    {
+        "content": "<p>I could share <code>tree_permutation_importance</code> too, if that's of interest?</p>",
+        "id": 313945947,
+        "sender_full_name": "Timothy",
+        "timestamp": 1670241131
+    },
+    {
+        "content": "<p>I'm a bit short on time for indepth reviews, sorry :/</p>",
+        "id": 313946064,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670241184
+    },
+    {
+        "content": "<p>That's fine, the 1.4 -&gt; 1.9x improvement is already very much appreciated :)</p>",
+        "id": 313946309,
+        "sender_full_name": "Timothy",
+        "timestamp": 1670241263
+    },
+    {
+        "content": "<p>If allocations can't be avoided, running multi-processing (e.g. <code>Distributed</code>) can help since then each instance gets its own allocator and gc.</p>\n<p>It has its own sets of drawbacks (sending data over sockets, multiple compilations etc.) so it is absolutely no silver bullet.</p>",
+        "id": 314081509,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1670260111
+    },
+    {
+        "content": "<p>I use <code>Distributed</code> a lot for this reason.</p>",
+        "id": 314345937,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1670368827
+    },
+    {
+        "content": "<p>Or <a href=\"https://github.com/search?q=MPI.jl&amp;type=Repositories\">MPI.jl</a>, if it makes sense</p>",
+        "id": 314348835,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1670370263
+    },
+    {
+        "content": "<p>Yea, the problem I have with distributed + a few packages + a large data sets is an explosion in memory required.</p>",
+        "id": 314360244,
+        "sender_full_name": "Timothy",
+        "timestamp": 1670376266
+    },
+    {
+        "content": "<p>My solution to that has been just buying a lot of ram, though sometimes it's not enough</p>",
+        "id": 314361389,
+        "sender_full_name": "jar",
+        "timestamp": 1670377015
+    },
+    {
+        "content": "<p>I have 128G and it's not enough <span aria-label=\"sweat smile\" class=\"emoji emoji-1f605\" role=\"img\" title=\"sweat smile\">:sweat_smile:</span></p>",
+        "id": 314361562,
+        "sender_full_name": "Timothy",
+        "timestamp": 1670377130
+    },
+    {
+        "content": "<p>there's always swap</p>",
+        "id": 314361791,
+        "sender_full_name": "jar",
+        "timestamp": 1670377306
+    },
+    {
+        "content": "<p>When I installed the OS I assumed I'd need no swap with so much memory <span aria-label=\"laughter tears\" class=\"emoji emoji-1f602\" role=\"img\" title=\"laughter tears\">:laughter_tears:</span></p>",
+        "id": 314362008,
+        "sender_full_name": "Timothy",
+        "timestamp": 1670377441
+    },
+    {
+        "content": "<p><a href=\"/user_uploads/7178/kjJ8DZiLW4sHHfbe6p9F-Woe/image.png\">image.png</a> it's not always fast but it does go</p>\n<div class=\"message_inline_image\"><a href=\"/user_uploads/7178/kjJ8DZiLW4sHHfbe6p9F-Woe/image.png\" title=\"image.png\"><img src=\"/user_uploads/7178/kjJ8DZiLW4sHHfbe6p9F-Woe/image.png\"></a></div>",
+        "id": 318354577,
+        "sender_full_name": "jar",
+        "timestamp": 1672284723
+    }
+]

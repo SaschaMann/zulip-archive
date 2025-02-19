@@ -1,0 +1,68 @@
+[
+    {
+        "content": "<p>Consider the following struct using <code>Parameters.jl</code>:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"nd\">@with_kw</span> <span class=\"k\">struct</span> <span class=\"kt\">MyStruct</span>\n <span class=\"n\">color1</span><span class=\"o\">::</span><span class=\"kt\">String</span> <span class=\"o\">=</span> <span class=\"s\">\"white\"</span>\n <span class=\"n\">color2</span><span class=\"o\">::</span><span class=\"kt\">String</span> <span class=\"o\">=</span> <span class=\"s\">\"black\"</span>\n <span class=\"n\">style1</span><span class=\"o\">::</span><span class=\"kt\">String</span> <span class=\"o\">=</span> <span class=\"s\">\"cool\"</span>\n <span class=\"n\">style2</span><span class=\"o\">::</span><span class=\"kt\">String</span> <span class=\"o\">=</span> <span class=\"s\">\"hot\"</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>Now, what I'd like to do is to enable the user to create a new instance of this struct with something like:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">s</span> <span class=\"o\">=</span> <span class=\"n\">MyStruct</span><span class=\"p\">(</span><span class=\"n\">color</span><span class=\"o\">=</span><span class=\"s\">\"blue\"</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>This should be equivalent to <code>s = MyStruct(color1=\"blue\", color2=\"blue\")</code>. Similarly for style, thus,<br>\n<code>s = MyStruct(color=\"red\", style=\"none\")</code>.</p>\n<p>Is there any \"elegant\" solution for such a problem?</p>",
+        "id": 267720104,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1641992403
+    },
+    {
+        "content": "<p>You can use multiple dispatch using <code>NamedTuple</code>s:<br>\n<a href=\"/user_uploads/7178/H87TMhFiIaGSahlBpYxyW2ns/image.png\">image.png</a></p>\n<div class=\"message_inline_image\"><a href=\"/user_uploads/7178/H87TMhFiIaGSahlBpYxyW2ns/image.png\" title=\"image.png\"><img src=\"/user_uploads/7178/H87TMhFiIaGSahlBpYxyW2ns/image.png\"></a></div>",
+        "id": 267722154,
+        "sender_full_name": "Elias Carvalho",
+        "timestamp": 1641993473
+    },
+    {
+        "content": "<p>not that I'm competent to answer, but how about adding a field <code>color</code> and an inner constructor that would check that <code>color1 == color2</code> to set its value?</p>",
+        "id": 267722345,
+        "sender_full_name": "Patrick Toche",
+        "timestamp": 1641993552
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"416587\">Patrick Toche</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Structs.20with.20.22optional.22.20fields/near/267722345\">said</a>:</p>\n<blockquote>\n<p>not that I'm competent to answer, but how about adding a field <code>color</code> and an inner constructor that would check that <code>color1 == color2</code> to set its value?</p>\n</blockquote>\n<p>Can you give an example? The thing is, the <code>color</code> field should be optional. It would be just a faster way of attributing <code>color1</code> and <code>color2</code>.</p>",
+        "id": 267732719,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1641998230
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"463400\">Elias Carvalho</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Structs.20with.20.22optional.22.20fields/near/267722154\">said</a>:</p>\n<blockquote>\n<p>You can use multiple dispatch using <code>NamedTuple</code>s:<br>\n<a href=\"/user_uploads/7178/H87TMhFiIaGSahlBpYxyW2ns/image.png\">image.png</a></p>\n</blockquote>\n<p>Thanks, this seems to work. Although, it does not seems to work perfectly, because I have more fields other than <code>color1</code>and <code>color2</code>. And also, I'm using <code>Parameters.jl</code>. The <code>MyStruct(;kwargs...)</code> seems to break the constructor from <a href=\"https://github.com/search?q=Parameters.jl&amp;type=Repositories\">Parameters.jl</a></p>",
+        "id": 267732936,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1641998329
+    },
+    {
+        "content": "<p>Ok, I think I came up with a nice solution:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"nd\">@with_kw</span> <span class=\"k\">struct</span> <span class=\"kt\">_Struct</span>\n    <span class=\"n\">color</span><span class=\"o\">::</span><span class=\"kt\">Union</span><span class=\"p\">{</span><span class=\"kt\">String</span><span class=\"p\">,</span><span class=\"kt\">Nothing</span><span class=\"p\">}</span> <span class=\"o\">=</span> <span class=\"nb\">nothing</span>\n    <span class=\"n\">color1</span><span class=\"o\">::</span><span class=\"kt\">String</span> <span class=\"o\">=</span> <span class=\"n\">color</span> <span class=\"o\">===</span> <span class=\"nb\">nothing</span> <span class=\"o\">?</span> <span class=\"s\">\"white\"</span> <span class=\"o\">:</span> <span class=\"n\">color</span>\n    <span class=\"n\">color2</span><span class=\"o\">::</span><span class=\"kt\">String</span> <span class=\"o\">=</span> <span class=\"n\">color</span> <span class=\"o\">===</span> <span class=\"nb\">nothing</span> <span class=\"o\">?</span> <span class=\"s\">\"black\"</span> <span class=\"o\">:</span> <span class=\"n\">color</span>\n    <span class=\"n\">style</span><span class=\"o\">::</span><span class=\"kt\">Union</span><span class=\"p\">{</span><span class=\"kt\">String</span><span class=\"p\">,</span><span class=\"kt\">Nothing</span><span class=\"p\">}</span> <span class=\"o\">=</span> <span class=\"nb\">nothing</span>\n    <span class=\"n\">style1</span><span class=\"o\">::</span><span class=\"kt\">String</span> <span class=\"o\">=</span> <span class=\"n\">style</span> <span class=\"o\">===</span> <span class=\"nb\">nothing</span> <span class=\"o\">?</span> <span class=\"s\">\"blue\"</span>  <span class=\"o\">:</span> <span class=\"n\">style</span>\n    <span class=\"n\">style2</span><span class=\"o\">::</span><span class=\"kt\">String</span> <span class=\"o\">=</span> <span class=\"n\">style</span> <span class=\"o\">===</span> <span class=\"nb\">nothing</span> <span class=\"o\">?</span> <span class=\"s\">\"white\"</span> <span class=\"o\">:</span> <span class=\"n\">style</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 267734471,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1641999012
+    },
+    {
+        "content": "<p>This is overcomplicated, you can just put it in a regular constructor.</p>",
+        "id": 267759865,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1642009378
+    },
+    {
+        "content": "<p>For example</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"kt\">MyStruct</span>\n <span class=\"n\">color1</span><span class=\"o\">::</span><span class=\"kt\">String</span>\n <span class=\"n\">color2</span><span class=\"o\">::</span><span class=\"kt\">String</span>\n <span class=\"n\">style1</span><span class=\"o\">::</span><span class=\"kt\">String</span>\n <span class=\"n\">style2</span><span class=\"o\">::</span><span class=\"kt\">String</span>\n<span class=\"k\">end</span>\n\n<span class=\"n\">MyStruct</span><span class=\"p\">(;</span> <span class=\"n\">color</span> <span class=\"o\">=</span> <span class=\"nb\">nothing</span><span class=\"p\">,</span>\n           <span class=\"n\">color1</span> <span class=\"o\">=</span> <span class=\"n\">color</span> <span class=\"o\">===</span> <span class=\"nb\">nothing</span> <span class=\"o\">?</span> <span class=\"s\">\"white\"</span> <span class=\"o\">:</span> <span class=\"n\">color</span><span class=\"p\">,</span>\n           <span class=\"n\">color2</span> <span class=\"o\">=</span> <span class=\"n\">color</span> <span class=\"o\">===</span> <span class=\"nb\">nothing</span> <span class=\"o\">?</span> <span class=\"s\">\"black\"</span> <span class=\"o\">:</span> <span class=\"n\">color</span><span class=\"p\">,</span>\n           <span class=\"n\">style</span> <span class=\"o\">=</span> <span class=\"nb\">nothing</span><span class=\"p\">,</span>\n           <span class=\"n\">style1</span> <span class=\"o\">=</span> <span class=\"n\">style</span> <span class=\"o\">===</span> <span class=\"nb\">nothing</span> <span class=\"o\">?</span> <span class=\"s\">\"cool\"</span> <span class=\"o\">:</span> <span class=\"n\">style</span><span class=\"p\">,</span>\n           <span class=\"n\">style2</span> <span class=\"o\">=</span> <span class=\"n\">style</span> <span class=\"o\">===</span> <span class=\"nb\">nothing</span> <span class=\"o\">?</span> <span class=\"s\">\"hot\"</span> <span class=\"o\">:</span> <span class=\"n\">style</span><span class=\"p\">)</span> <span class=\"o\">=</span>\n    <span class=\"n\">MyStruct</span><span class=\"p\">(</span><span class=\"n\">color1</span><span class=\"p\">,</span> <span class=\"n\">color2</span><span class=\"p\">,</span> <span class=\"n\">style1</span><span class=\"p\">,</span> <span class=\"n\">style2</span><span class=\"p\">)</span>\n</code></pre></div>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">MyStruct</span><span class=\"p\">(</span><span class=\"n\">color</span> <span class=\"o\">=</span> <span class=\"s\">\"green\"</span><span class=\"p\">,</span> <span class=\"n\">style1</span> <span class=\"o\">=</span> <span class=\"s\">\"warm\"</span><span class=\"p\">)</span>\n<span class=\"n\">MyStruct</span><span class=\"p\">(</span><span class=\"s\">\"green\"</span><span class=\"p\">,</span> <span class=\"s\">\"green\"</span><span class=\"p\">,</span> <span class=\"s\">\"warm\"</span><span class=\"p\">,</span> <span class=\"s\">\"hot\"</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 267774995,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1642016245
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"272771\">@Andrey Oskin</span> ,  your solution didn't work for me :/<br>\nThe issue is that I'm using <code>Parameters.jl</code>. So things get more complicated.</p>",
+        "id": 267789760,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1642023540
+    },
+    {
+        "content": "<p>But <a href=\"https://github.com/search?q=Parameters.jl&amp;type=Repositories\">Parameters.jl</a> is doing exactly that, it generates keyword constructor. Just instead of relying on macro you can generate it explicitly. There is no need to restrict yourself to Parameters default.</p>",
+        "id": 267790136,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1642023750
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"358317\">Davi Sales Barreira</span> has marked this topic as resolved.</p>",
+        "id": 268522256,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1642589982
+    }
+]

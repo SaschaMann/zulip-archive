@@ -1,0 +1,170 @@
+[
+    {
+        "content": "<p>Is there a <code>AbstractVector</code> implementation somewhere that takes a vector of vectors and returns a single <code>reduce(vcat, vecs)</code> without copying the data?</p>",
+        "id": 482010236,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731435742
+    },
+    {
+        "content": "<p>Are the vectors all the same size?</p>",
+        "id": 482011812,
+        "sender_full_name": "Michael Abbott",
+        "timestamp": 1731436345
+    },
+    {
+        "content": "<p>If so, any of these <a href=\"https://github.com/mcabbott/LazyStack.jl?tab=readme-ov-file#other-stack-like-packages\">https://github.com/mcabbott/LazyStack.jl?tab=readme-ov-file#other-stack-like-packages</a> combined with <code>vec</code>. </p>\n<p>If not, then maybe I only know of <a href=\"https://github.com/ahwillia/CatViews.jl\">CatViews.jl</a></p>",
+        "id": 482011930,
+        "sender_full_name": "Michael Abbott",
+        "timestamp": 1731436401
+    },
+    {
+        "content": "<p>We are actually trying to reduce the vertices of geometries lazily here:</p>\n<p><a href=\"https://github.com/JuliaGeometry/Meshes.jl/issues/1127\">https://github.com/JuliaGeometry/Meshes.jl/issues/1127</a></p>\n<p>But it seems that this is not possible?</p>",
+        "id": 482017901,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731438794
+    },
+    {
+        "content": "<p>It seems like a really hard problem.  As a practical matter I expect that the only solution is to have <code>MultiPolytope</code> store its vertices in this form (i.e. with the vertices already inlined but with a wrapper that gives it the interface of an array of arrays).  I don't know if that's compatible with what you need the representation to do elsewhere, at the very least I'm guessing it's not compatible with how the individual primitives are stored.  Perhaps a better approach would be trying to reduce the number of times this needs to be done?</p>",
+        "id": 482018747,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1731439085
+    },
+    {
+        "content": "<p>In case it's not already abundantly clear: <code>Array{&lt;:AbstractArray}</code> simply does not store data this way, the elements are actually pointers, so avoiding copying is impossible in the general case.  That pretty much leaves you with a wrapper type that makes an <code>Array</code> behave like an <code>Array{&lt;:AbstractArray}</code>, but that'll inevitably affect your implementation of <code>MultiPolytope</code>.</p>",
+        "id": 482018991,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1731439185
+    },
+    {
+        "content": "<p>Does it need to be a <code>Vector{Vector}</code> or can it be a Tuple of vectors?</p>",
+        "id": 482019102,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1731439209
+    },
+    {
+        "content": "<p>i.e. is it really large, and is its size stable?</p>",
+        "id": 482019140,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1731439224
+    },
+    {
+        "content": "<p>The <code>Multi</code> geometry represents regions in the world like countries that are made of polygons in the continent plus polygons in the ocean (islands). It is common to have as many as a couple of 100s of polygons sometimes inside a <code>Multi</code> geom.</p>",
+        "id": 482019654,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731439439
+    },
+    {
+        "content": "<p>Perhaps what you want is more like a lazy iterator over vertices?  I think that would be pretty efficient even if you did it very naively.  Collecting them efficiently, by contrast, is hard.</p>",
+        "id": 482019771,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1731439476
+    },
+    {
+        "content": "<p>We thought of lazy iterators, but it is not user-friendly. Perhaps we will need to introduce a new function to return interators.</p>",
+        "id": 482019864,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731439512
+    },
+    {
+        "content": "<p>So <code>vertices</code> remains as is, and a new <code>vertexiterator</code> returns an iterator</p>",
+        "id": 482019921,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731439533
+    },
+    {
+        "content": "<p>If the primitives in <code>MultiPolytope</code> were all of the same type, you could efficiently calculate the address of each vertex, in which case you could return a wrapper object that behaves exactly like your statement, but I'm guessing this is not the case.  If that's not the case you could potentially index the primitive types and then do something like <code>CatArray</code> from <a href=\"https://juliahub.com/ui/Packages/General/LazyArrays\">LazyArrays.jl</a> but that sounds like way more trouble than a lazy iterator.</p>",
+        "id": 482020275,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1731439660
+    },
+    {
+        "content": "<p>Might also be worth reminding yourself that it's <em>really easy</em> for users to get your explicit array out of a lazy iterator, i.e. <code>collect(lazyiterator)</code>.</p>",
+        "id": 482020493,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1731439737
+    },
+    {
+        "content": "<p>All the comments are really helpful. Thank you. I think we will go with two functions in the API: <code>vertices</code> and <code>vertexiterator</code>.</p>",
+        "id": 482020602,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731439781
+    },
+    {
+        "content": "<p>That way we introduce a new lazy function in a non-breaking way.</p>",
+        "id": 482020638,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731439798
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"273172\">Júlio Hoffimann</span> has marked this topic as resolved.</p>",
+        "id": 482021068,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1731439927
+    },
+    {
+        "content": "<p>I like this problem because it seems like a paradigmatic example of one of maybe 5 problems that are all that seem to occur over and over again in software engineering: procedure <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>a</mi></mrow><annotation encoding=\"application/x-tex\">a</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">a</span></span></span></span> is good for representation <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>A</mi></mrow><annotation encoding=\"application/x-tex\">A</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.6833em;\"></span><span class=\"mord mathnormal\">A</span></span></span></span>, but bad for representation <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>B</mi></mrow><annotation encoding=\"application/x-tex\">B</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.6833em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.05017em;\">B</span></span></span></span>, but procedure <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>b</mi></mrow><annotation encoding=\"application/x-tex\">b</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.6944em;\"></span><span class=\"mord mathnormal\">b</span></span></span></span> is good for representation <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>B</mi></mrow><annotation encoding=\"application/x-tex\">B</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.6833em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.05017em;\">B</span></span></span></span> but bad for representation <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>A</mi></mrow><annotation encoding=\"application/x-tex\">A</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.6833em;\"></span><span class=\"mord mathnormal\">A</span></span></span></span>, and converting between <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>A</mi></mrow><annotation encoding=\"application/x-tex\">A</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.6833em;\"></span><span class=\"mord mathnormal\">A</span></span></span></span> and <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>B</mi></mrow><annotation encoding=\"application/x-tex\">B</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.6833em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.05017em;\">B</span></span></span></span> is expensive, then how can I compute both <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>a</mi></mrow><annotation encoding=\"application/x-tex\">a</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">a</span></span></span></span> and <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>b</mi></mrow><annotation encoding=\"application/x-tex\">b</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.6944em;\"></span><span class=\"mord mathnormal\">b</span></span></span></span>?  I think it was weinberg or someone like that who said that the peculiar feature of reality is plurality of description.</p>",
+        "id": 482021282,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1731440023
+    },
+    {
+        "content": "<p>After this object is built, would you want to be able to make insertions into the individual sub-vectors later on, or would its structure be \"frozen\" after it's created?</p>",
+        "id": 482023868,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1731440337
+    },
+    {
+        "content": "<p>that is, do you ever need to <code>push!</code> / <code>append!</code>?</p>",
+        "id": 482024267,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1731440453
+    },
+    {
+        "content": "<p>These geometries are often \"frozen\" after creation. We can modify the underlying vectors of vertices, but that is not what happens in most algorithms. We tend to implement algorithms that avoid mutation (thinking of parallel jobs).</p>",
+        "id": 482024425,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731440484
+    },
+    {
+        "content": "<p>If that's the case, you might be able to do something like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"kt\">FlattenedVector</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span><span class=\"w\"> </span><span class=\"o\">&lt;:</span><span class=\"w\"> </span><span class=\"kt\">AbstractVector</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span>\n<span class=\"w\">    </span><span class=\"n\">vov</span><span class=\"o\">::</span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}}</span>\n<span class=\"w\">    </span><span class=\"n\">inds</span><span class=\"o\">::</span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"kt\">Int</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Int</span><span class=\"p\">}}</span>\n<span class=\"w\">    </span><span class=\"n\">len</span><span class=\"o\">::</span><span class=\"kt\">Int</span>\n<span class=\"w\">    </span><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">FlattenedVector</span><span class=\"p\">(</span><span class=\"n\">vov</span><span class=\"o\">::</span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}})</span><span class=\"w\"> </span><span class=\"k\">where</span><span class=\"w\"> </span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}</span>\n<span class=\"w\">        </span><span class=\"n\">len</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">sum</span><span class=\"p\">(</span><span class=\"n\">length</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">vov</span><span class=\"p\">)</span>\n<span class=\"w\">        </span><span class=\"n\">inds</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"kt\">Int</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Int</span><span class=\"p\">}}(</span><span class=\"nb\">undef</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">len</span><span class=\"p\">)</span>\n<span class=\"w\">        </span><span class=\"n\">ind</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mi\">1</span>\n<span class=\"w\">        </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">i</span><span class=\"w\"> </span><span class=\"k\">in</span><span class=\"w\"> </span><span class=\"n\">eachindex</span><span class=\"p\">(</span><span class=\"n\">vov</span><span class=\"p\">)</span>\n<span class=\"w\">            </span><span class=\"k\">for</span><span class=\"w\"> </span><span class=\"n\">j</span><span class=\"w\"> </span><span class=\"o\">∈</span><span class=\"w\"> </span><span class=\"n\">eachindex</span><span class=\"p\">(</span><span class=\"n\">vov</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">])</span>\n<span class=\"w\">                </span><span class=\"n\">inds</span><span class=\"p\">[</span><span class=\"n\">ind</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">i</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">j</span><span class=\"p\">)</span>\n<span class=\"w\">                </span><span class=\"n\">ind</span><span class=\"w\"> </span><span class=\"o\">+=</span><span class=\"w\"> </span><span class=\"mi\">1</span>\n<span class=\"w\">            </span><span class=\"k\">end</span>\n<span class=\"w\">        </span><span class=\"k\">end</span>\n<span class=\"w\">        </span><span class=\"kt\">new</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">}(</span><span class=\"n\">vov</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">inds</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">len</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"k\">end</span>\n<span class=\"k\">end</span>\n<span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">size</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"o\">::</span><span class=\"kt\">FlattenedVector</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"o\">.</span><span class=\"n\">len</span><span class=\"p\">,)</span>\n<span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">getindex</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"o\">::</span><span class=\"kt\">FlattenedVector</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">ind</span><span class=\"o\">::</span><span class=\"kt\">Integer</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"p\">(</span><span class=\"n\">i</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">j</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">v</span><span class=\"o\">.</span><span class=\"n\">inds</span><span class=\"p\">[</span><span class=\"n\">ind</span><span class=\"p\">]</span>\n<span class=\"w\">    </span><span class=\"n\">v</span><span class=\"o\">.</span><span class=\"n\">vov</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">][</span><span class=\"n\">j</span><span class=\"p\">]</span>\n<span class=\"k\">end</span>\n<span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">setindex!</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"o\">::</span><span class=\"kt\">FlattenedVector</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">ind</span><span class=\"o\">::</span><span class=\"kt\">Integer</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"p\">(</span><span class=\"n\">i</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">j</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">v</span><span class=\"o\">.</span><span class=\"n\">inds</span><span class=\"p\">[</span><span class=\"n\">ind</span><span class=\"p\">]</span>\n<span class=\"w\">    </span><span class=\"n\">v</span><span class=\"o\">.</span><span class=\"n\">vov</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">][</span><span class=\"n\">j</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">x</span>\n<span class=\"w\">    </span><span class=\"n\">v</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 482026853,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1731440806
+    },
+    {
+        "content": "<p>I don't know if this sort of construction is really worth it for you use-case but I think it's at least a possibility.</p>",
+        "id": 482027186,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1731440926
+    },
+    {
+        "content": "<p>The main challenge we face here is that we don't  want to materialize the <code>vov</code> field as a vector of vector. We want to just consume the underlying geometries, querying their vectors. So the input of the function is a vector of geometries, and the output is a vector of concatenated vertices.</p>",
+        "id": 482027525,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1731441045
+    },
+    {
+        "content": "<p>Just a hipshot suggestion for the initial question without having digested the conversation after: <a href=\"https://github.com/SciML/RecursiveArrayTools.jl\">https://github.com/SciML/RecursiveArrayTools.jl</a></p>",
+        "id": 482127501,
+        "sender_full_name": "DrChainsaw",
+        "timestamp": 1731490472
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"300483\">DrChainsaw</span> <a href=\"#narrow/channel/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Lazy.20.60reduce.60.20with.20.60vcat.60/near/482127501\">said</a>:</p>\n<blockquote>\n<p>without having digested the conversation</p>\n</blockquote>\n<p>That's covered in the link given above by <span class=\"user-mention\" data-user-id=\"272550\">@Michael Abbott</span></p>",
+        "id": 482192010,
+        "sender_full_name": "John Lapeyre",
+        "timestamp": 1731510027
+    },
+    {
+        "content": "<p>FWIW  <a href=\"https://juliahub.com/ui/Packages/General/CatViews\">CatViews.jl</a> is slow, as noted in the README of <a href=\"https://juliahub.com/ui/Packages/General/LazyStack\">LazyStack.jl</a>. The type instability of the registered version 1.0 was fixed five years ago in 1.0.1. But it appears that 1.0.1 was never registered.</p>",
+        "id": 482192788,
+        "sender_full_name": "John Lapeyre",
+        "timestamp": 1731510212
+    },
+    {
+        "content": "<p>Is the inner vector type of static size, e.g., similar to a static array? If so, <code>reshape(reinterpret(Float64, vector_of_vectors), length(first(vector_of_vectors)), :)</code> gives you a matrix without copying</p>",
+        "id": 482585091,
+        "sender_full_name": "Fredrik Bagge Carlson",
+        "timestamp": 1731668112
+    }
+]

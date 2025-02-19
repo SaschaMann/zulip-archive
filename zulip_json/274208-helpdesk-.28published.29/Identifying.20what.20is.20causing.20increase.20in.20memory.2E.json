@@ -1,0 +1,98 @@
+[
+    {
+        "content": "<p>Friends, I've encapsulated a series of data transformations in functions and created a pipe to perform the transformations. By the end of the pipe, I get the final dataframe. Now, I'm running this code in a notebook (for testing and tweaking). For some reason, everytime I run the pipe, the memory used by the notebook is increasing. I don't understand why is that so. From what I thought, since everything was in functions, it should be taking space in the memory once the code ran. Here is the code:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">importmovements</span><span class=\"p\">()</span>\n    <span class=\"n\">movements</span> <span class=\"o\">=</span> <span class=\"n\">CSV</span><span class=\"o\">.</span><span class=\"n\">read</span><span class=\"p\">(</span><span class=\"n\">datadir</span><span class=\"p\">(</span><span class=\"s\">\"exp_pro\"</span><span class=\"p\">)</span> <span class=\"o\">*</span> <span class=\"s\">\"/csvs/movements.csv\"</span><span class=\"p\">,</span> <span class=\"n\">DataFrame</span><span class=\"p\">,</span> <span class=\"n\">header</span> <span class=\"o\">=</span> <span class=\"nb\">false</span><span class=\"p\">,</span> <span class=\"n\">ntasks</span> <span class=\"o\">=</span> <span class=\"n\">ntasks</span><span class=\"p\">)</span>\n    <span class=\"n\">colsmovement</span> <span class=\"o\">=</span> <span class=\"p\">[</span><span class=\"s\">\"number\"</span><span class=\"p\">,</span> <span class=\"s\">\"date\"</span><span class=\"p\">,</span> <span class=\"s\">\"title\"</span><span class=\"p\">,</span> <span class=\"s\">\"text\"</span><span class=\"p\">]</span>\n    <span class=\"n\">rename!</span><span class=\"p\">(</span><span class=\"n\">movements</span><span class=\"p\">,</span> <span class=\"n\">colsmovement</span><span class=\"p\">)</span>\n    <span class=\"k\">return</span> <span class=\"n\">movements</span>\n<span class=\"k\">end</span>\n<span class=\"k\">function</span> <span class=\"n\">adicionarid!</span><span class=\"p\">(</span><span class=\"n\">movements</span><span class=\"p\">)</span>\n    <span class=\"n\">movements</span><span class=\"p\">[</span><span class=\"o\">!</span><span class=\"p\">,</span><span class=\"ss\">:id</span><span class=\"p\">]</span> <span class=\"o\">=</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">size</span><span class=\"p\">(</span><span class=\"n\">movements</span><span class=\"p\">)[</span><span class=\"mi\">1</span><span class=\"p\">]</span>\n    <span class=\"k\">return</span> <span class=\"n\">movements</span>\n<span class=\"k\">end</span>\n\n<span class=\"k\">function</span> <span class=\"n\">adicionaretapasiniciofim!</span><span class=\"p\">(</span><span class=\"n\">movements</span><span class=\"p\">)</span>\n    <span class=\"n\">movinit</span> <span class=\"o\">=</span> <span class=\"n\">combine</span><span class=\"p\">(</span><span class=\"n\">groupby</span><span class=\"p\">(</span><span class=\"n\">movements</span><span class=\"p\">,</span> <span class=\"ss\">:number</span><span class=\"p\">),</span>\n        <span class=\"p\">[</span><span class=\"ss\">:date</span><span class=\"p\">,</span> <span class=\"ss\">:title</span><span class=\"p\">,</span> <span class=\"ss\">:text</span><span class=\"p\">,</span> <span class=\"ss\">:id</span><span class=\"p\">]</span> <span class=\"o\">.=&gt;</span> <span class=\"n\">last</span><span class=\"p\">,</span>\n        <span class=\"n\">renamecols</span> <span class=\"o\">=</span> <span class=\"nb\">false</span><span class=\"p\">)</span>\n    <span class=\"n\">movinit</span><span class=\"p\">[</span><span class=\"o\">!</span><span class=\"p\">,</span> <span class=\"ss\">:etapa</span><span class=\"p\">]</span> <span class=\"o\">.=</span> <span class=\"s\">\"inicio\"</span>\n    <span class=\"n\">movinit</span><span class=\"p\">[</span><span class=\"o\">!</span><span class=\"p\">,</span> <span class=\"ss\">:subetapa</span><span class=\"p\">]</span> <span class=\"o\">.=</span> <span class=\"s\">\"inicio\"</span>\n\n\n    <span class=\"n\">combine</span><span class=\"p\">(</span><span class=\"n\">groupby</span><span class=\"p\">(</span><span class=\"n\">movinit</span><span class=\"p\">,</span> <span class=\"ss\">:title</span><span class=\"p\">),</span> <span class=\"n\">nrow</span> <span class=\"o\">=&gt;</span> <span class=\"ss\">:count</span><span class=\"p\">)</span>\n    <span class=\"n\">movements</span> <span class=\"o\">=</span> <span class=\"n\">antijoin</span><span class=\"p\">(</span><span class=\"n\">movements</span><span class=\"p\">,</span> <span class=\"n\">movinit</span><span class=\"p\">,</span> <span class=\"n\">on</span> <span class=\"o\">=</span> <span class=\"p\">[</span><span class=\"ss\">:number</span><span class=\"p\">,</span> <span class=\"ss\">:date</span><span class=\"p\">,</span> <span class=\"ss\">:title</span><span class=\"p\">])</span>\n    <span class=\"n\">movements</span> <span class=\"o\">=</span> <span class=\"n\">vcat</span><span class=\"p\">(</span><span class=\"n\">movements</span><span class=\"p\">,</span> <span class=\"n\">movinit</span><span class=\"p\">)</span>\n    <span class=\"n\">filter!</span><span class=\"p\">(</span><span class=\"n\">row</span> <span class=\"o\">-&gt;</span> <span class=\"o\">!</span><span class=\"n\">ismissing</span><span class=\"p\">(</span><span class=\"n\">row</span><span class=\"p\">[</span><span class=\"ss\">:etapa</span><span class=\"p\">]),</span> <span class=\"n\">movements</span><span class=\"p\">)</span>\n    <span class=\"n\">sort!</span><span class=\"p\">(</span><span class=\"n\">movements</span><span class=\"p\">,</span> <span class=\"p\">[</span><span class=\"ss\">:id</span><span class=\"p\">,</span> <span class=\"ss\">:number</span><span class=\"p\">,</span> <span class=\"ss\">:date</span><span class=\"p\">],</span> <span class=\"n\">rev</span> <span class=\"o\">=</span> <span class=\"nb\">true</span><span class=\"p\">)</span>\n    <span class=\"k\">return</span> <span class=\"n\">movements</span>\n<span class=\"k\">end</span>\n\n\n<span class=\"k\">function</span> <span class=\"n\">runpipemovement</span><span class=\"p\">()</span>\n    <span class=\"nd\">@pipe</span> <span class=\"n\">importmovements</span><span class=\"p\">()</span> <span class=\"o\">|&gt;</span> <span class=\"n\">unique!</span><span class=\"p\">(</span><span class=\"n\">_</span><span class=\"p\">)</span> <span class=\"o\">|&gt;</span> <span class=\"n\">adicionarid!</span><span class=\"p\">(</span><span class=\"n\">_</span><span class=\"p\">)</span> <span class=\"o\">|&gt;</span> <span class=\"n\">formatardata!</span><span class=\"p\">(</span><span class=\"n\">_</span><span class=\"p\">)</span> <span class=\"o\">|&gt;</span> <span class=\"n\">adicionaretapasiniciofim!</span><span class=\"p\">(</span><span class=\"n\">_</span><span class=\"p\">)</span> <span class=\"p\">;</span>\n<span class=\"k\">end</span>\n\n<span class=\"n\">runpipemovement</span><span class=\"p\">()</span>\n</code></pre></div>",
+        "id": 281182907,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1651682458
+    },
+    {
+        "content": "<p>Are you using Pluto notebooks?</p>",
+        "id": 281183186,
+        "sender_full_name": "Giovanni",
+        "timestamp": 1651682560
+    },
+    {
+        "content": "<p>Jupyter</p>",
+        "id": 281183199,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1651682566
+    },
+    {
+        "content": "<p>Then I have no clue :)</p>",
+        "id": 281184182,
+        "sender_full_name": "Giovanni",
+        "timestamp": 1651682991
+    },
+    {
+        "content": "<p>It’s probably because you’re printing the data frame each time</p>",
+        "id": 281185541,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1651683520
+    },
+    {
+        "content": "<p>jupyter stores the output of each evaluation in a dictionary called <code>Out</code></p>",
+        "id": 281185581,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1651683539
+    },
+    {
+        "content": "<p>you can do <code>empty!(Out)</code> to free up that memory</p>",
+        "id": 281185618,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1651683558
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"269150\">@Mason Protter</span> , I just run <code>empty!(Out)</code> in any cell? I've tried here, but the memory is still high.</p>",
+        "id": 281187233,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1651684142
+    },
+    {
+        "content": "<p>You’ll probably need to wait for the GC to run</p>",
+        "id": 281187307,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1651684172
+    },
+    {
+        "content": "<p>I've checked the notebook file. An it's not storing the dataframe.</p>",
+        "id": 281187496,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1651684232
+    },
+    {
+        "content": "<p>just an idea but did you check without using @pipe?</p>",
+        "id": 281188657,
+        "sender_full_name": "Giovanni",
+        "timestamp": 1651684684
+    },
+    {
+        "content": "<p>No. I'll try.</p>",
+        "id": 281188904,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1651684793
+    },
+    {
+        "content": "<p>The very last thing I would try is copying movements at end of  <code>adicionaretasinitiofim</code> and see if that solves the problem the only other thing you seem to create is <code>movinit</code>, in case it is carried out of the function somehow but essentially brainstorming here :)</p>",
+        "id": 281189697,
+        "sender_full_name": "Giovanni",
+        "timestamp": 1651685126
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"358317\">Davi Sales Barreira</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Identifying.20what.20is.20causing.20increase.20in.20memory.2E/near/281187496\">said</a>:</p>\n<blockquote>\n<p>I've checked the notebook file. An it's not storing the dataframe.</p>\n</blockquote>\n<p>It’s not in the notebook file itself</p>",
+        "id": 281190887,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1651685543
+    },
+    {
+        "content": "<p>It’s an object in the jupyter kernel session</p>",
+        "id": 281190937,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1651685569
+    },
+    {
+        "content": "<p>Oh, ok. Thanks, I'll try again. BTW, any tools to inspect his sort of thing? I've tried <a href=\"https://github.com/search?q=ProfileSVG.jl&amp;type=Repositories\">ProfileSVG.jl</a>, but didn't quite understood the output.</p>",
+        "id": 281193382,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1651686550
+    }
+]

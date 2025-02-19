@@ -1,0 +1,104 @@
+[
+    {
+        "content": "<p>I have a package where I want to create an extensible group of objects. I'm currently doing this via type parameters + dispatch, i.e. downstream packages defining methods for <code>Thing{:specific_symbol}</code>. This seems to be working rather well, but from what I can tell is technically type piracy.</p>\n<p>I'd be interested to hear thoughts on this.</p>\n<p>[ Cross-post from Slack: <a href=\"https://julialang.slack.com/archives/C6A044SQH/p1682264929271579\">https://julialang.slack.com/archives/C6A044SQH/p1682264929271579</a> ]</p>",
+        "id": 353189655,
+        "sender_full_name": "Timothy",
+        "timestamp": 1682587944
+    },
+    {
+        "content": "<p>That looks like type piracy to me. If two users both define <code>Thing{:foo}</code> they'll collide. Instead if they define their own namespaced value <code>Thing{ModuleA.Foo}</code>/<code>Thing{ModuleB.Foo}</code> then they won't.</p>",
+        "id": 353431406,
+        "sender_full_name": "jar",
+        "timestamp": 1682619674
+    },
+    {
+        "content": "<p>Dispatch on type parameters is a bit of a grey area, but generally speaking it is considered type piracy</p>",
+        "id": 353444497,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1682621602
+    },
+    {
+        "content": "<p>Honestly though without context it's really hard to say if it's a bad thing or not. Sometimes type piracy is a really useful tool</p>",
+        "id": 353444717,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1682621639
+    },
+    {
+        "content": "<p>Sometimes it's a horrible idea</p>",
+        "id": 353444807,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1682621646
+    },
+    {
+        "content": "<p>What's a scenario where <code>Base.maximum(Vector{MyType}) = </code> causes a problem?</p>",
+        "id": 353455263,
+        "sender_full_name": "jar",
+        "timestamp": 1682623323
+    },
+    {
+        "content": "<p>If someone in <code>Base</code> wrote code that relied on <code>Base.maximum(::Vector)</code> behaving in a specific way, and you pirated a new <code>Vector{MyType}</code> method in there that changed it's behaviour, then that could cause problems</p>",
+        "id": 353456390,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1682623517
+    },
+    {
+        "content": "<p>E.g. imagine if you wrote a method <code>Base.maximum(::Vector{MyType})</code> that calculated the maximum by comparing the absolute values of the <code>MyType</code>s rather than the regular values, then <code>maximum</code> wouldn't be the same as doing a <code>reduce(max, ::Vector{MyType})</code> which might be relied upon somewhere else</p>",
+        "id": 353457440,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1682623689
+    },
+    {
+        "content": "<p>You chose an example where one could easily say \"well there's a clearly right or wrong way to implement <code>maximum</code>\" but that's more or less besides the point.</p>",
+        "id": 353458000,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1682623786
+    },
+    {
+        "content": "<p>Instead of overloading <code>maximum</code> which operates on containers here, you should be overloading the scalar functions <code>max</code>, <code>min</code>, <code>&lt;</code>, etc.</p>",
+        "id": 353458389,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1682623844
+    },
+    {
+        "content": "<p><code>Thing{:foo}</code> with a symbol seems a bit like environment variables, where <code>ENV[\"package_var\"] = \"true\"</code> is OK so long as everyone sticks to some convention like having their unique package name there.</p>",
+        "id": 353511879,
+        "sender_full_name": "Michael Abbott",
+        "timestamp": 1682633129
+    },
+    {
+        "content": "<p>In my case, I have a TOML file with entries of different types, and each entry specifies \"I am an <code>X</code>\". The way I'm handling this is by using that to construct <code>Entry{:X}</code> structs and then relying on <code>dothing(::Entry{:X})</code> methods for a few crucial functions, and for more generic <code>dogenericthing(::Entry)</code> methods for general functionality. This way, to add support for a new entry type <code>Y</code>, a package just needs to implement a few <code>dothing(::Entry{:Y})</code> entries, it is possible that one package could override another's methods. Singletons from the packages as parameters would be better in this respect, but I need to construct the <code>Entry{:X}</code> instances based on the string in the TOML, which seems a fair bit less straightforward in the singleton type parameter approach.</p>\n<p>I have a feeling in practice this should be ok, but I appreciate the second opinions.</p>",
+        "id": 353552132,
+        "sender_full_name": "Timothy",
+        "timestamp": 1682640952
+    },
+    {
+        "content": "<p>If this is supposed to scale to many users, I think explicit namespacing should be used. eg using a tuple of <code>(packagename, symbol)</code> or similar.</p>",
+        "id": 353558441,
+        "sender_full_name": "jar",
+        "timestamp": 1682642254
+    },
+    {
+        "content": "<p>The entry types (which in this case are for data storage formats, e.g. <code>csv</code>, <code>json</code>, ...) are defined by packages, not users. I suppose the question here is whether it's worth worrying the creation or loading of two packages that say define a <code>:json</code> type. If one hopes that all potential packages that might build on my project will nicely cooperate and not fight over a certain name, then I suppose we'll be all right. If not, then I'll need to add a way of being able to specify the package and switch to singletons, or similar.</p>",
+        "id": 353693917,
+        "sender_full_name": "Timothy",
+        "timestamp": 1682666369
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Acceptable.20type.20piracy.3F/near/353457440\">said</a>:</p>\n<blockquote>\n<p>then <code>maximum</code> wouldn't be the same as doing a <code>reduce(max, ::Vector{MyType})</code> which might be relied upon somewhere else</p>\n</blockquote>\n<p>This can happen without any kind of near-piracy at all. Define your own <code>AbstractVector</code> type, define <code>maximum</code> for it in an arbitrary way - now you get this inconsistency.<br>\nThe issue here isn't piracy, it's non-formalizeable \"different methods of the same function should have the same general behavior\".</p>",
+        "id": 353748725,
+        "sender_full_name": "aplavin",
+        "timestamp": 1682673739
+    },
+    {
+        "content": "<p>It's absolutely formalizeable, we just don't have any way to enforce these interfaces/connections at the moment</p>",
+        "id": 353749837,
+        "sender_full_name": "Sukera",
+        "timestamp": 1682673884
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"373536\">@Alexander</span> the thing though is that code typically is anle to rely much more heavily on implementation details when they’re operating on concrete types they own. When operating on an <code>AbstractVector</code> the writer needs to be careful to write highly generic code that hews to accepted norms and documented interfaces. That isnt really the case with bare <code>Vector</code></p>",
+        "id": 353930263,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1682695259
+    }
+]

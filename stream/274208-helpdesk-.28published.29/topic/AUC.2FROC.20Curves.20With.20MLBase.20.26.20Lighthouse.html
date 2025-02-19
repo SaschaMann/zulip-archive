@@ -1,0 +1,70 @@
+<html>
+<head><meta charset="utf-8"><title>AUC/ROC Curves With MLBase &amp; Lighthouse · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/AUC.2FROC.20Curves.20With.20MLBase.20.26.20Lighthouse.html">AUC/ROC Curves With MLBase &amp; Lighthouse</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="246528264"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/AUC/ROC%20Curves%20With%20MLBase%20%26%20Lighthouse/near/246528264" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/AUC.2FROC.20Curves.20With.20MLBase.20.26.20Lighthouse.html#246528264">(Jul 19 2021 at 23:35)</a>:</h4>
+<p><span class="user-mention" data-user-id="269184">@Eric Hanson</span> Thank you. </p>
+<p>I was caught up in the preprocessing steps. <br>
+The main ones I encountered that are <br>
+essential for working with Lighthouse are: </p>
+<ol>
+<li>Formatting Floats to Integers using: </li>
+</ol>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">actual_test</span> <span class="o">=</span> <span class="n">parse</span><span class="o">.</span><span class="p">(</span><span class="kt">Int64</span><span class="p">,</span> <span class="p">(</span><span class="n">format</span><span class="o">.</span><span class="p">(</span><span class="n">test2</span><span class="p">[</span><span class="o">!</span><span class="p">,</span><span class="ss">:Ninjas</span><span class="p">],</span> <span class="n">precision</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)))</span>
+<span class="n">predicted_test</span> <span class="o">=</span> <span class="n">parse</span><span class="o">.</span><span class="p">(</span><span class="kt">Int64</span><span class="p">,</span> <span class="p">(</span><span class="n">format</span><span class="o">.</span><span class="p">(</span><span class="n">ypredicted_test</span><span class="p">,</span> <span class="n">precision</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)))</span>
+</code></pre></div>
+<ol start="2">
+<li>Determining the size of your Vector using: </li>
+</ol>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">size</span><span class="p">(</span><span class="n">actual_test</span><span class="p">)</span>
+<span class="n">size</span><span class="p">(</span><span class="n">predicted_test</span><span class="p">)</span>
+</code></pre></div>
+<p>This step is also a QA to make sure your <br>
+confusion matrix is mapped 1:1</p>
+<ol start="3">
+<li>Compute the Confusion Matrix</li>
+</ol>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">confusmat</span><span class="p">(</span><span class="mi">56</span><span class="p">,</span> <span class="n">actual_test</span><span class="p">,</span> <span class="n">predicted_test</span><span class="p">)</span>
+</code></pre></div>
+<p>Then as needed, you can apply Lighthouse<br>
+for items such as: </p>
+<ul>
+<li>Accuracy -- Lighthouse.accuracy(confusion:: AbstractMatrix)</li>
+<li>BinaryStatistics -- Lighthouse.binary_statistics(confusion::AbstractMatrix, class_index)</li>
+</ul>
+<p>Hope this helps someone out there. </p>
+<p><span aria-label="koala" class="emoji emoji-1f428" role="img" title="koala">:koala:</span></p>
+
+
+
+<a name="246666644"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/AUC/ROC%20Curves%20With%20MLBase%20%26%20Lighthouse/near/246666644" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/AUC.2FROC.20Curves.20With.20MLBase.20.26.20Lighthouse.html#246666644">(Jul 21 2021 at 00:27)</a>:</h4>
+<p><span class="user-mention" data-user-id="269184">@Eric Hanson</span> </p>
+<p>Do you know how to apply <br>
+binary_statistics (C, precision)? <br>
+and reference it in the println()</p>
+<p>I have added the function <a href="https://github.com/beacon-biosignals/Lighthouse.jl/blob/779c4b16324d574646e869e928e4eae48ceb5e16/src/metrics.jl#L38-L58">HERE</a> </p>
+<p>And added the binary_statistics function found right below the function <br>
+found at the link above.</p>
+<p>Do I need to  convert the matrix to a dataframe: </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">Bucket</span> <span class="o">=</span> <span class="n">DataFrame</span><span class="p">(</span><span class="n">binary_statistic</span><span class="p">(</span><span class="n">C</span><span class="p">))</span>
+</code></pre></div>
+<p>Then reference the index as: </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">println</span><span class="p">(</span><span class="s">"The Precision Score is"</span><span class="p">,</span> <span class="n">mean</span><span class="p">(</span><span class="n">Bucket</span><span class="p">[</span><span class="o">!</span><span class="p">,</span> <span class="ss">:precision</span><span class="p">]))</span>
+</code></pre></div>
+<p>Yes, I have imputed the values. Might there be a <br>
+more elegant approach? </p>
+<p>Thank you,</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

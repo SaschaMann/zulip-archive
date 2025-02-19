@@ -1,0 +1,62 @@
+[
+    {
+        "content": "<p>Hello,<br>\nI try to reach the speed of Matlab's FFT in Julia. By default:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">r</span><span class=\"o\">=</span><span class=\"n\">randn</span><span class=\"p\">(</span><span class=\"mi\">2</span><span class=\"o\">^</span><span class=\"mi\">10</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"o\">^</span><span class=\"mi\">10</span><span class=\"p\">)</span>\n<span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">FFTW</span>\n<span class=\"nd\">@time</span><span class=\"w\"> </span><span class=\"n\">s</span><span class=\"o\">=</span><span class=\"n\">fft</span><span class=\"p\">(</span><span class=\"n\">r</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>it is slower by more than one order of magnitude.<br>\nI noticed I could set the number of thread:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">FFTW</span><span class=\"o\">.</span><span class=\"n\">set_num_threads</span><span class=\"p\">(</span><span class=\"mi\">16</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>and use the real version of the fft: <code>rfft()</code>, and eventually compute the fft plan:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"w\"> </span><span class=\"n\">pr</span><span class=\"o\">=</span><span class=\"n\">plan_rfft</span><span class=\"p\">(</span><span class=\"n\">randn</span><span class=\"p\">(</span><span class=\"mi\">2</span><span class=\"o\">^</span><span class=\"mi\">10</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"o\">^</span><span class=\"mi\">10</span><span class=\"p\">);</span><span class=\"w\"> </span><span class=\"n\">flags</span><span class=\"o\">=</span><span class=\"n\">FFTW</span><span class=\"o\">.</span><span class=\"n\">PATIENT</span><span class=\"p\">,</span><span class=\"n\">timelimit</span><span class=\"o\">=</span><span class=\"nb\">Inf</span><span class=\"p\">);</span>\n<span class=\"nd\">@time</span><span class=\"w\"> </span><span class=\"n\">s</span><span class=\"o\">=</span><span class=\"n\">pr</span><span class=\"o\">*</span><span class=\"n\">r</span>\n</code></pre></div>\n<p>...to get much closer to Matlab's fft speed (measured with tic toc). However, it remains almost always slower than Matlab (that has very few variations in successive computation times, as compared to Julia).<br>\nDo I still miss some optimization (that Matlab apparently does under the hood)?<br>\nThank you!</p>",
+        "id": 360081997,
+        "sender_full_name": "Alexandre Guillet",
+        "timestamp": 1684684197
+    },
+    {
+        "content": "<p>One relatively uninformed idea: Matlab may ship with Intel binaries for some math libraries and high Julia does not because open source. See <a href=\"https://github.com/search?q=MKL.jl&amp;type=Repositories\">MKL.jl</a> for faster intel performance.</p>",
+        "id": 360114206,
+        "sender_full_name": "Alec",
+        "timestamp": 1684698608
+    },
+    {
+        "content": "<p>I use an AMD CPU if that matters.</p>",
+        "id": 360126657,
+        "sender_full_name": "Alexandre Guillet",
+        "timestamp": 1684706964
+    },
+    {
+        "content": "<p>You might be looking for the big note here: <a href=\"https://juliamath.github.io/AbstractFFTs.jl/stable/api/#AbstractFFTs.fft\">https://juliamath.github.io/AbstractFFTs.jl/stable/api/#AbstractFFTs.fft</a> </p>\n<blockquote>\n<p>This performs a multidimensional FFT by default. FFT libraries in other languages such as Python and Octave perform a one-dimensional FFT along the first non-singleton dimension of the array. This is worth noting while performing comparisons.</p>\n</blockquote>\n<p>Malab says:  </p>\n<blockquote>\n<p>If X is a matrix, then fft(X) treats the columns of X as vectors and returns the Fourier transform of each column.</p>\n</blockquote>",
+        "id": 360128163,
+        "sender_full_name": "Michael Abbott",
+        "timestamp": 1684708136
+    },
+    {
+        "content": "<p>Indeed, that's important to specify that I am using the 2-dimensional fft in Matlab:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">r</span><span class=\"o\">=</span><span class=\"n\">randn</span><span class=\"p\">(</span><span class=\"mi\">2</span><span class=\"o\">^</span><span class=\"mi\">10</span><span class=\"p\">);</span>\n<span class=\"n\">tic</span><span class=\"p\">;</span><span class=\"w\"> </span><span class=\"n\">s</span><span class=\"o\">=</span><span class=\"n\">fft2</span><span class=\"p\">(</span><span class=\"n\">r</span><span class=\"p\">);</span><span class=\"w\"> </span><span class=\"n\">toc</span><span class=\"p\">;</span>\n</code></pre></div>\n<p>When drawing the histogram of timings for the regular (complex) 2D FFT, I get this significant difference, even though I use plan_fft:<br>\n<a href=\"/user_uploads/7178/5DETErqPzx2YnzsNsQa5BC5_/FFT_Julia_Matlab_speed.png\">FFT_Julia_Matlab_speed.png</a></p>\n<div class=\"message_inline_image\"><a href=\"/user_uploads/7178/5DETErqPzx2YnzsNsQa5BC5_/FFT_Julia_Matlab_speed.png\" title=\"FFT_Julia_Matlab_speed.png\"><img src=\"/user_uploads/7178/5DETErqPzx2YnzsNsQa5BC5_/FFT_Julia_Matlab_speed.png\"></a></div><p>However, when I use Julia's rfft (real version) against Matlab's regular fft2 (complex), it looks more reassuring that yesterday, for some reason (less memory allocation to Matlab process?)<br>\n<a href=\"/user_uploads/7178/qUs4giFHM5U_QvSyJDE7wXH4/RFFT_Julia_Matlab_speed.png\">RFFT_Julia_Matlab_speed.png</a></p>\n<div class=\"message_inline_image\"><a href=\"/user_uploads/7178/qUs4giFHM5U_QvSyJDE7wXH4/RFFT_Julia_Matlab_speed.png\" title=\"RFFT_Julia_Matlab_speed.png\"><img src=\"/user_uploads/7178/qUs4giFHM5U_QvSyJDE7wXH4/RFFT_Julia_Matlab_speed.png\"></a></div>",
+        "id": 360194657,
+        "sender_full_name": "Alexandre Guillet",
+        "timestamp": 1684744875
+    },
+    {
+        "content": "<p>But <code>r=randn(2^10)</code> is a vector, while above it was a matrix? I'm confused, but I suggest you make very sure (on small arrays) that you are computing the same thing.</p>",
+        "id": 360261199,
+        "sender_full_name": "Michael Abbott",
+        "timestamp": 1684760366
+    },
+    {
+        "content": "<p>no, <code>randn(N)</code> returns a NxN matrix in Matlab</p>",
+        "id": 360278344,
+        "sender_full_name": "Sebastian Pfitzner",
+        "timestamp": 1684763658
+    },
+    {
+        "content": "<p>Oh, beware that the Matlab's 2d FFT and Julia's 2d FFT might not be the same thing</p>",
+        "id": 360656041,
+        "sender_full_name": "Martin D. Maas",
+        "timestamp": 1684884319
+    },
+    {
+        "content": "<p>One could be a true 2d transform, and the other just an array of 1d transforms</p>",
+        "id": 360656173,
+        "sender_full_name": "Martin D. Maas",
+        "timestamp": 1684884371
+    },
+    {
+        "content": "<p>OK, I can give some more insights.<br>\nActually, what I have measured and plotted seems to depend quite a lot on the computation history, certainly through memory and CPU states. After many joint attempts, Julia's standard (complex) 2D fft without and with plan_fft keep up quite well with Matlab. I don't know whether Matlab uses a garbage collector, but after many runs, the timing distributions for both Julia and Matlab are quite close and bimodal (supposedly runs without garbage collection and runs with it...).</p>\n<p>Here are the differences: Julia's fft has a delay (overhead) of 1ms as compared to Julia's plan_fft (about 10%), that achieves the same absolute minimal timing as Matlab (6ms). However, Julia's plan_fft (complex 2D) is 17% slower in average than Matlab's (complex  2D) fft. It could mean that garbage collection is quicker in Matlab.<br>\nAlso, for this same computation, Julia uses 66% of the total CPU resources while Matlab takes only 41% (both using all 16 threads). Here again, Matlab's old age is a synonym of efficiency.</p>\n<p>Satisfyingly, Julia's plan_rfft (for real 2D input) is 4 to 5 times faster (min 1.4ms, mean 1.8ms) than Matlab's always complex fft ;-)  (At least today... A fresh run of Julia seems slower while a fresh run in Matlab seems faster.)</p>",
+        "id": 360656916,
+        "sender_full_name": "Alexandre Guillet",
+        "timestamp": 1684884882
+    }
+]

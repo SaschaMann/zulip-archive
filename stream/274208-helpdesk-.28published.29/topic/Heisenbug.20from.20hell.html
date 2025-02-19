@@ -1,0 +1,158 @@
+<html>
+<head><meta charset="utf-8"><title>Heisenbug from hell · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Heisenbug.20from.20hell.html">Heisenbug from hell</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="241806437"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Heisenbug%20from%20hell/near/241806437" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Heisenbug.20from.20hell.html#241806437">(Jun 07 2021 at 16:52)</a>:</h4>
+<p>Program randomly terminates without any output whatsoever. No stacktrace, no Unreachable or segfault.</p>
+<p>Has anyone seen anything like it? Are there some lower level debugging tools which can be used to help pinpointing?</p>
+<p>It seems to happen randomly when Zygote and CUDA are at work running the first backpropagation using the normal Flux building blocks. If it gets through that phase once things seem to work for the duration of the session.</p>
+<p>My computer has spent the last couple of days trying to narrow down the problem by running smaller parts in a shell loop, saving how often it terminates without reaching the end:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">runtest</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span>
+    <span class="n">pname</span> <span class="o">=</span> <span class="s">"errors"</span>
+    <span class="n">mkpath</span><span class="p">(</span><span class="n">pname</span><span class="p">)</span>
+    <span class="n">fname</span> <span class="o">=</span> <span class="n">joinpath</span><span class="p">(</span><span class="n">pname</span><span class="p">,</span> <span class="n">string</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="sc">'_'</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="s">".jls"</span><span class="p">))</span>
+    <span class="n">current_errors</span> <span class="o">=</span> <span class="n">isfile</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span> <span class="o">?</span> <span class="n">deserialize</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span> <span class="o">:</span> <span class="mi">0</span>
+    <span class="nd">@info</span> <span class="s">"Test </span><span class="si">$fname</span><span class="s">, current_errors: </span><span class="si">$current_errors</span><span class="s">"</span>
+    <span class="n">serialize</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">current_errors</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">try</span>
+        <span class="n">f</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
+    <span class="k">catch</span> <span class="n">e</span>
+        <span class="nd">@warn</span> <span class="s">"  Threw </span><span class="si">$e</span><span class="s">"</span>
+    <span class="k">finally</span>
+        <span class="nd">@info</span> <span class="s">"  Completed!"</span>
+        <span class="n">serialize</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">current_errors</span><span class="p">)</span>
+    <span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>But I'm not getting anything which I could make an actionable issue out of. Here is the catch from the latest 24 hours of fishing:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="c"># In powershell</span>
+<span class="k">for</span><span class="p">(</span><span class="o">$</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="o">$</span><span class="n">i</span> <span class="o">-</span><span class="n">le</span> <span class="mi">10000</span><span class="p">;</span> <span class="o">$</span><span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c"># Other similar configs</span>
+    <span class="kt">julia</span> <span class="o">--</span><span class="kt">project</span><span class="o">=</span><span class="s">"."</span> <span class="o">-</span><span class="kt">e</span> <span class="err">'</span><span class="kt">include</span><span class="p">(</span><span class="o">\</span><span class="s">"ZCtest.jl</span><span class="se">\"</span><span class="s">); ZCtest.runtest(ZCtest.dsmresnet, ZCtest.cpu)'</span>
+<span class="s">    julia --project="</span><span class="o">.</span><span class="s">" -e 'include(</span><span class="se">\"</span><span class="s">ZCtest.jl</span><span class="se">\"</span><span class="s">); ZCtest.runtest(ZCtest.dsmresnet, ZCtest.gpu)'</span>
+<span class="s">    julia --project="</span><span class="o">.</span><span class="s">" -e 'include(</span><span class="se">\"</span><span class="s">ZCtest.jl</span><span class="se">\"</span><span class="s">); ZCtest.runtest(ZCtest.jresnet_graph, ZCtest.cpu)'</span>
+<span class="s">    # Other similar configs</span>
+<span class="s">}</span>
+
+<span class="s">[ Info: Test errors\dsmresnet_cpu.jls, current_errors: 0</span>
+<span class="s">[ Info:   Completed!</span>
+<span class="s">[ Info: Test errors\dsmresnet_gpu.jls, current_errors: 0</span>
+<span class="s">[ Info: Test errors\jresnet_graph_cpu.jls, current_errors: 0</span>
+<span class="s">[ Info:   Completed!</span>
+
+<span class="s">[ Info: Test errors\dsmresnet_cpu.jls, current_errors: 0</span>
+<span class="s">[ Info:   Completed!</span>
+<span class="s">[ Info: Test errors\dsmresnet_gpu.jls, current_errors: 1</span>
+<span class="s">[ Info: Test errors\jresnet_graph_cpu.jls, current_errors: 0</span>
+<span class="s">[ Info:   Completed!</span>
+</code></pre></div>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">versioninfo</span><span class="p">()</span>
+<span class="n">Julia</span> <span class="n">Version</span> <span class="mf">1.6.1</span>
+<span class="n">Commit</span> <span class="mi">6</span><span class="n">aaedecc44</span> <span class="p">(</span><span class="mi">2021</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">23</span> <span class="mi">05</span><span class="o">:</span><span class="mi">59</span> <span class="n">UTC</span><span class="p">)</span>
+<span class="n">Platform</span> <span class="n">Info</span><span class="o">:</span>
+  <span class="n">OS</span><span class="o">:</span> <span class="n">Windows</span> <span class="p">(</span><span class="n">x86_64</span><span class="o">-</span><span class="n">w64</span><span class="o">-</span><span class="n">mingw32</span><span class="p">)</span>
+  <span class="n">CPU</span><span class="o">:</span> <span class="n">Intel</span><span class="p">(</span><span class="n">R</span><span class="p">)</span> <span class="n">Core</span><span class="p">(</span><span class="n">TM</span><span class="p">)</span> <span class="n">i7</span><span class="o">-</span><span class="mi">5820</span><span class="n">K</span> <span class="n">CPU</span> <span class="err">@</span> <span class="mf">3.30</span><span class="n">GHz</span>
+  <span class="n">WORD_SIZE</span><span class="o">:</span> <span class="mi">64</span>
+  <span class="n">LIBM</span><span class="o">:</span> <span class="n">libopenlibm</span>
+  <span class="n">LLVM</span><span class="o">:</span> <span class="n">libLLVM</span><span class="o">-</span><span class="mf">11.0.1</span> <span class="p">(</span><span class="n">ORCJIT</span><span class="p">,</span> <span class="n">haswell</span><span class="p">)</span>
+<span class="n">Environment</span><span class="o">:</span>
+  <span class="n">JULIA_DEPOT_PATH</span> <span class="o">=</span> <span class="n">E</span><span class="o">:/</span><span class="n">Programs</span><span class="o">/</span><span class="n">julia</span><span class="o">/.</span><span class="n">julia</span>
+  <span class="n">JULIA_EDITOR</span> <span class="o">=</span> <span class="n">code</span>
+  <span class="n">JULIA_NUM_THREADS</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">CUDA</span><span class="o">.</span><span class="n">version</span><span class="p">()</span>
+<span class="sa">v</span><span class="s">"11.3.0"</span>
+</code></pre></div>
+
+
+
+<a name="241811462"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Heisenbug%20from%20hell/near/241811462" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Heisenbug.20from.20hell.html#241811462">(Jun 07 2021 at 17:27)</a>:</h4>
+<p>One possibility might be getting an rr trace: <a href="https://julialang.org/blog/2020/05/rr/">https://julialang.org/blog/2020/05/rr/</a></p>
+
+
+
+<a name="241812247"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Heisenbug%20from%20hell/near/241812247" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Heisenbug.20from.20hell.html#241812247">(Jun 07 2021 at 17:33)</a>:</h4>
+<p>For clarification, are you trying to run the first gradient pass multiple times until an error is encountered or running the script end-to-end? Can the issue be replicated if you extract just that part and feed in a dummy input?</p>
+
+
+
+<a name="241812413"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Heisenbug%20from%20hell/near/241812413" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Heisenbug.20from.20hell.html#241812413">(Jun 07 2021 at 17:34)</a>:</h4>
+<p>Likewise, is there any chance Windows is OOM-killing the process silently?</p>
+
+
+
+<a name="241820842"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Heisenbug%20from%20hell/near/241820842" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Heisenbug.20from.20hell.html#241820842">(Jun 07 2021 at 18:33)</a>:</h4>
+<p><span class="user-mention" data-user-id="345789">@mbaz</span> rr would be useful to try, but does it work on windows nowadays? I have WSL2 but I have not yet dared to jump through the hoops to get CUDA to work in it. I have never seen it trigger when not using CUDA.</p>
+<p><span class="user-mention" data-user-id="278065">@Brian Chen</span> <br>
+Yes, what I'm doing now is basically just running one single out of a few different things (e.g. single forward pass, single/few gradient of loss, single jacobian etc all with dummy input) and then exit. Is that what you meant by "that part"? If the program does not finish the error count for the test case is incremented by one. The shell loop will keep running testcases even in case of abnormal failures so the whole thing does not stop at the first error.</p>
+<p>A watchdog of some kind is definitely something which has crossed my mind but I haven't been able to figure out if there is one in windows. Fwiw, I have some intentionally too large to fit jobs in the suite and they throw OOM exceptions with 100% (so far) reliability. The test which triggers the failure computes the gradient of the loss but there are other tests which compute the full jacobian of the whole model and they use more memory (I think) and complete successfully (no OOM exception either). </p>
+<p>I remember a long time ago there was a GPU watchdog in windows that one needed to disable but I think one notices when it kicks in (screen flickers and a message). Also, GPU utilization is very low during the initial backpropagation since time is spent on building kernels and adjoints (I assume).</p>
+<p>Here is the code for the failed-once-in-24h-test.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">resnet</span><span class="p">()</span>
+    <span class="k">function</span> <span class="n">cbr</span><span class="p">(</span><span class="n">insize</span><span class="p">,</span> <span class="n">outsize</span><span class="p">,</span> <span class="n">maybepool</span> <span class="o">=</span> <span class="n">MaxPool</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">);</span> <span class="n">stride</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">)))</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">Conv</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">),</span> <span class="n">insize</span> <span class="o">=&gt;</span> <span class="n">outsize</span><span class="p">;</span><span class="n">pad</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="nb">false</span><span class="p">)</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="n">BatchNorm</span><span class="p">(</span><span class="n">outsize</span><span class="p">,</span> <span class="n">relu</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">c</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">maybepool</span>
+    <span class="k">end</span>
+
+    <span class="k">function</span> <span class="n">resblock</span><span class="p">(</span><span class="n">insize</span><span class="p">)</span>
+        <span class="n">res1</span> <span class="o">=</span> <span class="n">cbr</span><span class="p">(</span><span class="n">insize</span><span class="p">,</span> <span class="n">insize</span><span class="p">,</span> <span class="n">identity</span><span class="p">)</span>
+        <span class="n">res2</span> <span class="o">=</span> <span class="n">cbr</span><span class="p">(</span><span class="n">insize</span><span class="p">,</span> <span class="n">insize</span><span class="p">,</span> <span class="n">identity</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">SkipConnection</span><span class="p">(</span><span class="n">Chain</span><span class="p">(</span><span class="n">res1</span><span class="o">...</span><span class="p">,</span> <span class="n">res2</span><span class="o">...</span><span class="p">),</span> <span class="o">+</span><span class="p">)</span>
+    <span class="k">end</span>
+
+    <span class="n">Chain</span><span class="p">(</span>
+        <span class="n">cbr</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="n">identity</span><span class="p">)</span><span class="o">...</span><span class="p">,</span>
+        <span class="n">cbr</span><span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="mi">128</span><span class="p">)</span><span class="o">...</span><span class="p">,</span>
+        <span class="n">resblock</span><span class="p">(</span><span class="mi">128</span><span class="p">),</span>
+        <span class="n">cbr</span><span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">256</span><span class="p">)</span><span class="o">...</span><span class="p">,</span>
+        <span class="n">cbr</span><span class="p">(</span><span class="mi">256</span><span class="p">,</span> <span class="mi">512</span><span class="p">)</span><span class="o">...</span><span class="p">,</span>
+        <span class="n">resblock</span><span class="p">(</span><span class="mi">512</span><span class="p">),</span>
+        <span class="n">GlobalMaxPool</span><span class="p">(),</span>
+        <span class="n">Flux</span><span class="o">.</span><span class="n">flatten</span><span class="p">,</span>
+        <span class="n">Dense</span><span class="p">(</span><span class="mi">512</span><span class="p">,</span> <span class="mi">10</span><span class="p">;</span> <span class="n">bias</span><span class="o">=</span><span class="nb">false</span><span class="p">),</span>
+        <span class="n">x</span> <span class="o">-&gt;</span> <span class="n">convert</span><span class="p">(</span><span class="n">eltype</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="mf">0.125</span><span class="p">)</span> <span class="o">.*</span> <span class="n">x</span>
+    <span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>It is run like this:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">dsmresnet</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="o">=</span> <span class="n">dsmtest</span><span class="p">(</span><span class="n">resnet</span><span class="p">(),</span> <span class="n">w</span><span class="p">)</span>
+<span class="k">function</span> <span class="n">dsmtest</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="mi">10</span>
+        <span class="n">dsmtest</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">ones</span><span class="p">(</span><span class="kt">Float32</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span><span class="mi">32</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">512</span><span class="p">),</span> <span class="n">Flux</span><span class="o">.</span><span class="n">onehotbatch</span><span class="p">(</span><span class="n">rand</span><span class="p">(</span><span class="mi">0</span><span class="o">:</span><span class="mi">9</span><span class="p">,</span><span class="mi">512</span><span class="p">),</span> <span class="mi">0</span><span class="o">:</span><span class="mi">9</span><span class="p">),</span> <span class="n">w</span><span class="p">)</span>
+    <span class="k">end</span>
+<span class="k">end</span>
+<span class="n">dsmtest</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span> <span class="o">=</span> <span class="n">dsmtest</span><span class="p">(</span><span class="n">w</span><span class="p">(</span><span class="n">l</span><span class="p">),</span> <span class="n">w</span><span class="p">(</span><span class="n">d</span><span class="p">),</span> <span class="n">w</span><span class="p">(</span><span class="n">o</span><span class="p">))</span>
+<span class="n">dsmtest</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">o</span><span class="p">)</span> <span class="o">=</span> <span class="n">gradient</span><span class="p">(()</span> <span class="o">-&gt;</span> <span class="n">Flux</span><span class="o">.</span><span class="n">logitcrossentropy</span><span class="p">(</span><span class="n">l</span><span class="p">(</span><span class="n">d</span><span class="p">),</span> <span class="n">o</span><span class="p">),</span> <span class="n">params</span><span class="p">(</span><span class="n">l</span><span class="p">))</span>
+</code></pre></div>
+<p>Sorry for messy code. I have alot of very similar tests. In case it is not clear, <code>w</code> (for wrap :/) is either <code>gpu</code> or <code>cpu</code>.</p>
+
+
+
+<a name="241823088"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Heisenbug%20from%20hell/near/241823088" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Heisenbug.20from.20hell.html#241823088">(Jun 07 2021 at 18:52)</a>:</h4>
+<p>Oh, I missed you're on Windows, sorry. Yeah, I think rr works only on Linux.</p>
+
+
+
+<a name="241832599"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Heisenbug%20from%20hell/near/241832599" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Heisenbug.20from.20hell.html#241832599">(Jun 07 2021 at 20:03)</a>:</h4>
+<p>Ok, I just realized that it is possible to see exit codes in windows too <span aria-label="blush" class="emoji emoji-1f60a" role="img" title="blush">:blush:</span> </p>
+<p>I seem to be getting a mixture of 0xC0000005 (segfault?) and 0xC00000ff (bad function table?) when running the full program. Anyone knows the significance of them not generating the normal "please submit a bug report with this message" stacktrace? Potential hardware fault?</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

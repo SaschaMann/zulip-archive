@@ -1,0 +1,92 @@
+<html>
+<head><meta charset="utf-8"><title>ForwardDiff  mutates the input variable? · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/ForwardDiff.20.20mutates.20the.20input.20variable.3F.html">ForwardDiff  mutates the input variable?</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="257846145"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/ForwardDiff%20%20mutates%20the%20input%20variable%3F/near/257846145" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> reumle <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/ForwardDiff.20.20mutates.20the.20input.20variable.3F.html#257846145">(Oct 16 2021 at 17:09)</a>:</h4>
+<p>Hi i am a beginner with autodiff packages. In a test function, one input variable is a <code>Dict</code> with an <code>x</code> and a <code>y</code> component. <code>x</code> type is changed by running the function through ForwardDiff or ReverseDiff. </p>
+<ul>
+<li>from a  <code>:x =&gt; [6, 2, 3]</code> </li>
+<li>to a scary looking  [last line below] <code>:x =&gt; ForwardDiff.Dual{ForwardDiff.Tag{var"#165#166", Int64}, Int64, 3}[Dual{ForwardDiff.Tag{var"#165#166", Int64}}(2,1,0,0), Dual{ForwardDiff.Tag{var"#165#166", Int64}}(3,0,1,0), </code> <strong>[not finished]</strong></li>
+</ul>
+<p>is this expected? Is there documentation on this? </p>
+<p>1) function / to be differentiated</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">dfweight</span><span class="p">(</span><span class="n">dict</span><span class="p">,</span><span class="n">x_inp</span><span class="p">)</span>
+    <span class="n">dict</span><span class="p">[</span><span class="ss">:x</span><span class="p">]</span> <span class="o">=</span> <span class="n">x_inp</span>
+    <span class="n">df1</span> <span class="o">=</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="n">y</span> <span class="o">=</span> <span class="mi">4</span><span class="o">:</span><span class="mi">6</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="mi">9</span><span class="p">)</span>
+    <span class="n">aa</span><span class="o">=</span> <span class="n">sum</span><span class="p">(</span><span class="n">df1</span><span class="o">.</span><span class="n">x</span> <span class="o">.*</span> <span class="n">dict</span><span class="p">[</span><span class="ss">:x</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">sum</span><span class="p">(</span><span class="n">aa</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>2) REPL log.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">xloc</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">;</span> <span class="mi">3</span><span class="p">;</span> <span class="mi">7</span><span class="p">]</span>
+<span class="mi">3</span><span class="o">-</span><span class="n">element</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">Int64</span><span class="p">}</span><span class="o">:</span>
+ <span class="mi">2</span>
+ <span class="mi">3</span>
+ <span class="mi">7</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">dic</span><span class="o">=</span><span class="kt">Dict</span><span class="p">(</span><span class="ss">:x</span> <span class="o">=&gt;</span><span class="p">[</span><span class="mi">6</span><span class="p">;</span><span class="mi">2</span><span class="p">;</span><span class="mi">3</span><span class="p">],</span> <span class="ss">:y</span><span class="o">=&gt;</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="kt">Dict</span><span class="p">{</span><span class="kt">Symbol</span><span class="p">,</span> <span class="kt">Any</span><span class="p">}</span> <span class="n">with</span> <span class="mi">2</span> <span class="n">entries</span><span class="o">:</span>
+  <span class="ss">:y</span> <span class="o">=&gt;</span> <span class="mf">0.5</span>
+  <span class="ss">:x</span> <span class="o">=&gt;</span> <span class="p">[</span><span class="mi">6</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">dfweight</span><span class="p">(</span><span class="n">dic</span><span class="p">,</span><span class="n">xloc</span><span class="p">)</span> <span class="c"># --&gt; 29</span>
+<span class="mi">29</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">ForwardDiff</span><span class="o">.</span><span class="n">gradient</span><span class="p">(</span><span class="n">x</span> <span class="o">-&gt;</span> <span class="n">dfweight</span><span class="p">(</span><span class="n">dic</span><span class="p">,</span> <span class="n">x</span><span class="p">),</span><span class="n">xloc</span><span class="p">)</span>
+<span class="mi">3</span><span class="o">-</span><span class="n">element</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">Int64</span><span class="p">}</span><span class="o">:</span>
+ <span class="mi">1</span>
+ <span class="mi">2</span>
+ <span class="mi">3</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">dic</span>
+<span class="kt">Dict</span><span class="p">{</span><span class="kt">Symbol</span><span class="p">,</span> <span class="kt">Any</span><span class="p">}</span> <span class="n">with</span> <span class="mi">2</span> <span class="n">entries</span><span class="o">:</span>
+  <span class="ss">:y</span> <span class="o">=&gt;</span> <span class="mf">0.5</span>
+  <span class="ss">:x</span> <span class="o">=&gt;</span> <span class="n">ForwardDiff</span><span class="o">.</span><span class="kt">Dual</span><span class="p">{</span><span class="kt">ForwardDiff</span><span class="o">.</span><span class="kt">Tag</span><span class="p">{</span><span class="kt">var</span><span class="s">"#165#166"</span><span class="p">,</span> <span class="kt">Int64</span><span class="p">},</span> <span class="kt">Int64</span><span class="p">,</span> <span class="mi">3</span><span class="p">}[</span><span class="kt">Dual</span><span class="p">{</span><span class="kt">ForwardD…</span>
+</code></pre></div>
+
+
+
+<a name="257854420"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/ForwardDiff%20%20mutates%20the%20input%20variable%3F/near/257854420" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Abbott <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/ForwardDiff.20.20mutates.20the.20input.20variable.3F.html#257854420">(Oct 16 2021 at 19:19)</a>:</h4>
+<p>Yes this is expected. Passing numbers of a weird type through your function is precisely how ForwardDiff works:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">id</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="nd">@show</span> <span class="n">x</span><span class="p">;</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">ForwardDiff</span><span class="o">.</span><span class="n">derivative</span><span class="p">(</span><span class="n">id</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="kt">Dual</span><span class="p">{</span><span class="kt">ForwardDiff</span><span class="o">.</span><span class="kt">Tag</span><span class="p">{</span><span class="kt">typeof</span><span class="p">(</span><span class="kt">id</span><span class="p">),</span> <span class="kt">Int64</span><span class="p">}}(</span><span class="mi">5</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="mi">1</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">ForwardDiff</span><span class="o">.</span><span class="n">gradient</span><span class="p">(</span><span class="n">xs</span> <span class="o">-&gt;</span> <span class="n">sum</span><span class="p">(</span><span class="n">abs2</span> <span class="o">∘</span> <span class="n">id</span><span class="p">,</span> <span class="n">xs</span><span class="p">),</span> <span class="p">[</span><span class="mi">7</span><span class="p">,</span><span class="mi">11</span><span class="p">,</span><span class="mi">13</span><span class="p">])</span>
+<span class="n">x</span> <span class="o">=</span> <span class="kt">Dual</span><span class="p">{</span><span class="kt">ForwardDiff</span><span class="o">.</span><span class="kt">Tag</span><span class="p">{</span><span class="kt">var</span><span class="s">"#9#10"</span><span class="p">,</span> <span class="kt">Int64</span><span class="p">}}(</span><span class="mi">7</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="kt">Dual</span><span class="p">{</span><span class="kt">ForwardDiff</span><span class="o">.</span><span class="kt">Tag</span><span class="p">{</span><span class="kt">var</span><span class="s">"#9#10"</span><span class="p">,</span> <span class="kt">Int64</span><span class="p">}}(</span><span class="mi">11</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="kt">Dual</span><span class="p">{</span><span class="kt">ForwardDiff</span><span class="o">.</span><span class="kt">Tag</span><span class="p">{</span><span class="kt">var</span><span class="s">"#9#10"</span><span class="p">,</span> <span class="kt">Int64</span><span class="p">}}(</span><span class="mi">13</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="mi">3</span><span class="o">-</span><span class="n">element</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">Int64</span><span class="p">}</span><span class="o">:</span>
+ <span class="mi">14</span>
+ <span class="mi">22</span>
+ <span class="mi">26</span>
+</code></pre></div>
+<p>There's a bit of description here: <a href="https://juliadiff.org/ForwardDiff.jl/latest/dev/how_it_works.html">https://juliadiff.org/ForwardDiff.jl/latest/dev/how_it_works.html</a> . There's a longer description here: <a href="https://github.com/MikeInnes/diff-zoo">https://github.com/MikeInnes/diff-zoo</a></p>
+
+
+
+<a name="257860587"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/ForwardDiff%20%20mutates%20the%20input%20variable%3F/near/257860587" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> j-fu <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/ForwardDiff.20.20mutates.20the.20input.20variable.3F.html#257860587">(Oct 16 2021 at 20:54)</a>:</h4>
+<p>see also this discussion on zulip: <a href="#narrow/stream/225542-helpdesk/topic/Comparing.20julia.20and.20numpy/near/209135246">https://julialang.zulipchat.com/#narrow/stream/225542-helpdesk/topic/Comparing.20julia.20and.20numpy/near/209135246</a></p>
+
+
+
+<a name="257903529"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/ForwardDiff%20%20mutates%20the%20input%20variable%3F/near/257903529" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> reumle <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/ForwardDiff.20.20mutates.20the.20input.20variable.3F.html#257903529">(Oct 17 2021 at 09:17)</a>:</h4>
+<p>Thank you Michael, j-fu!</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

@@ -1,0 +1,210 @@
+<html>
+<head><meta charset="utf-8"><title>Recursive Types · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Recursive.20Types.html">Recursive Types</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="246823253"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Recursive%20Types/near/246823253" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Ignacio Quintero <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Recursive.20Types.html#246823253">(Jul 22 2021 at 09:01)</a>:</h4>
+<p>I'm trying to make a recursive type for a bifurcating tree with edge lengths. I'm not sure which would be more efficient or easier to handle afterwards. I've come with two options:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">mutable struct</span> <span class="kt">Tree</span>
+  <span class="n">d1</span><span class="o">::</span><span class="kt">Tree</span>
+  <span class="n">d2</span><span class="o">::</span><span class="kt">Tree</span>
+  <span class="n">edge</span><span class="o">::</span><span class="kt">Float64</span>
+  <span class="n">Tree</span><span class="p">()</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">=</span> <span class="n">new</span><span class="p">();</span> <span class="n">x</span><span class="o">.</span><span class="n">d1</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">d2</span> <span class="o">=</span> <span class="n">x</span><span class="p">,)</span>
+<span class="k">end</span>
+
+<span class="k">mutable struct</span> <span class="kt">Tree</span>
+  <span class="n">d1</span><span class="o">::</span><span class="kt">Union</span><span class="p">{</span><span class="kt">Tree</span><span class="p">,</span> <span class="kt">Nothing</span><span class="p">}</span>
+  <span class="n">d2</span><span class="o">::</span><span class="kt">Union</span><span class="p">{</span><span class="kt">Tree</span><span class="p">,</span> <span class="kt">Nothing</span><span class="p">}</span>
+  <span class="n">edge</span><span class="o">::</span><span class="kt">Float64</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>Any thoughts on which one is better?</p>
+
+
+
+<a name="246823379"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Recursive%20Types/near/246823379" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Recursive.20Types.html#246823379">(Jul 22 2021 at 09:02)</a>:</h4>
+<p>In my experience<code>Union{Tree, Nothing}</code> is better (note that you should use <code>Nothing</code> as a type, not <code>nothing</code> which is variable).</p>
+<p>EDITED: This is wrong, as it was explained in the thread later.</p>
+
+
+
+<a name="246823447"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Recursive%20Types/near/246823447" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Recursive.20Types.html#246823447">(Jul 22 2021 at 09:03)</a>:</h4>
+<p>It is better from performance point of view: <code>isdefined(tree, :d1)</code> take longer, then <code>tree.d1 === nothing</code>.</p>
+
+
+
+<a name="246824186"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Recursive%20Types/near/246824186" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Simeon Schaub <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Recursive.20Types.html#246824186">(Jul 22 2021 at 09:13)</a>:</h4>
+<blockquote>
+<p>It is better from performance point of view: <code>isdefined(tree, :d1)</code> take longer, then <code>tree.d1 === nothing</code>.</p>
+</blockquote>
+<p>Are you sure about that? That would surprise me, I wouldn't expect any big performance differences between both approaches. It also doesn't seem like <code>isdefined</code> will be used in the first example at all, but instead the end of the list is denoted by arriving at the original node again.</p>
+
+
+
+<a name="246824530"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Recursive%20Types/near/246824530" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Recursive.20Types.html#246824530">(Jul 22 2021 at 09:17)</a>:</h4>
+<p>Well, some time ago I've benchmarked these things.<br>
+Maybe something has changed, idk.</p>
+<p>And yes, you are right in this case there will be no validation for nothingness of the leaf, but as a rule of thumb, I prefer to follow one strategy always.</p>
+<p>And anyway, working with types is more consistent, than switching between <code>x.field</code> and <code>isdefined(x, :field)</code> notation.</p>
+
+
+
+<a name="246825300"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Recursive%20Types/near/246825300" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Recursive.20Types.html#246825300">(Jul 22 2021 at 09:27)</a>:</h4>
+<p>Hmmm... It's hard to measure properly, so probably my benchmarks are wrong.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="kt">Tree1</span>
+    <span class="n">l</span><span class="o">::</span><span class="kt">Tree1</span>
+    <span class="n">r</span><span class="o">::</span><span class="kt">Tree1</span>
+
+    <span class="n">Tree1</span><span class="p">()</span> <span class="o">=</span> <span class="n">new</span><span class="p">()</span>
+<span class="k">end</span>
+
+<span class="k">struct</span> <span class="kt">Tree2</span>
+    <span class="n">l</span><span class="o">::</span><span class="kt">Union</span><span class="p">{</span><span class="kt">Tree2</span><span class="p">,</span> <span class="kt">Nothing</span><span class="p">}</span>
+    <span class="n">r</span><span class="o">::</span><span class="kt">Union</span><span class="p">{</span><span class="kt">Tree2</span><span class="p">,</span> <span class="kt">Nothing</span><span class="p">}</span>
+<span class="k">end</span>
+<span class="n">Tree2</span><span class="p">()</span> <span class="o">=</span> <span class="n">Tree2</span><span class="p">(</span><span class="nb">nothing</span><span class="p">,</span> <span class="nb">nothing</span><span class="p">)</span>
+
+<span class="n">leftleaf</span><span class="p">(</span><span class="n">t</span><span class="o">::</span><span class="kt">Tree1</span><span class="p">)</span> <span class="o">=</span> <span class="n">isdefined</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="ss">:l</span><span class="p">)</span>
+<span class="n">leftleaf</span><span class="p">(</span><span class="n">t</span><span class="o">::</span><span class="kt">Tree2</span><span class="p">)</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">l</span> <span class="o">!==</span> <span class="nb">nothing</span>
+
+<span class="n">t1</span> <span class="o">=</span> <span class="p">[</span><span class="n">Tree1</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="mi">10000</span><span class="p">]</span>
+<span class="n">t2</span> <span class="o">=</span> <span class="p">[</span><span class="n">Tree2</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="mi">10000</span><span class="p">]</span>
+
+<span class="nd">@btime</span> <span class="n">leftleaf</span><span class="o">.</span><span class="p">(</span><span class="o">$</span><span class="n">t1</span><span class="p">);</span>
+<span class="c">#  11.222 μs (3 allocations: 5.55 KiB)</span>
+
+<span class="nd">@btime</span> <span class="n">leftleaf</span><span class="o">.</span><span class="p">(</span><span class="o">$</span><span class="n">t2</span><span class="p">);</span>
+<span class="c">#  8.423 μs (3 allocations: 5.55 KiB)</span>
+</code></pre></div>
+<p>Well, probably it's just interaction between broadcasting and <code>=== nothing</code> operations, but in real world, we always have some complicated interaction. Overall, I saw that <code>isdefined</code> is slower in real world applications in a situations when I have lots of operations with nodes.</p>
+
+
+
+<a name="246825485"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Recursive%20Types/near/246825485" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Recursive.20Types.html#246825485">(Jul 22 2021 at 09:29)</a>:</h4>
+<p>I mean it's hard to see the difference with a single operation, since it take ~1ns and difference is lost in the noise.</p>
+
+
+
+<a name="246829340"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Recursive%20Types/near/246829340" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Ignacio Quintero <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Recursive.20Types.html#246829340">(Jul 22 2021 at 10:16)</a>:</h4>
+<p>Thanks so much for this! So just to add, I need to do many iterations like transversing the tree and so forth, and according to the following very simple example, it would seem faster to transverse over the undefined type to estimate, say, the tree length:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">mutable struct</span> <span class="kt">Tree1</span>
+    <span class="n">l</span><span class="o">::</span><span class="kt">Tree1</span>
+    <span class="n">r</span><span class="o">::</span><span class="kt">Tree1</span>
+    <span class="n">e</span><span class="o">::</span><span class="kt">Float64</span>
+    <span class="n">Tree1</span><span class="p">()</span> <span class="o">=</span> <span class="n">new</span><span class="p">()</span>
+    <span class="n">Tree1</span><span class="p">(</span><span class="n">l</span><span class="o">::</span><span class="kt">Tree1</span><span class="p">,</span> <span class="n">r</span><span class="o">::</span><span class="kt">Tree1</span><span class="p">,</span> <span class="n">e</span><span class="o">::</span><span class="kt">Float64</span><span class="p">)</span> <span class="o">=</span> <span class="n">new</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="k">mutable struct</span> <span class="kt">Tree2</span>
+    <span class="n">l</span><span class="o">::</span><span class="kt">Union</span><span class="p">{</span><span class="kt">Tree2</span><span class="p">,</span> <span class="kt">Nothing</span><span class="p">}</span>
+    <span class="n">r</span><span class="o">::</span><span class="kt">Union</span><span class="p">{</span><span class="kt">Tree2</span><span class="p">,</span> <span class="kt">Nothing</span><span class="p">}</span>
+    <span class="n">e</span><span class="o">::</span><span class="kt">Float64</span>
+<span class="k">end</span>
+<span class="n">Tree2</span><span class="p">()</span> <span class="o">=</span> <span class="n">Tree2</span><span class="p">(</span><span class="nb">nothing</span><span class="p">,</span> <span class="nb">nothing</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+
+<span class="k">using</span> <span class="n">BenchmarkTools</span>
+
+<span class="n">t1</span> <span class="o">=</span> <span class="n">Tree1</span><span class="p">(</span><span class="n">Tree1</span><span class="p">(),</span> <span class="n">Tree1</span><span class="p">(),</span> <span class="mf">0.5</span><span class="p">)</span>
+<span class="n">t1</span><span class="o">.</span><span class="n">l</span><span class="o">.</span><span class="n">e</span> <span class="o">=</span> <span class="mf">1.0</span>
+<span class="n">t1</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">e</span> <span class="o">=</span> <span class="mf">1.0</span>
+<span class="n">t2</span> <span class="o">=</span> <span class="n">Tree2</span><span class="p">(</span><span class="n">Tree2</span><span class="p">(</span><span class="nb">nothing</span><span class="p">,</span> <span class="nb">nothing</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span> <span class="n">Tree2</span><span class="p">(</span><span class="nb">nothing</span><span class="p">,</span> <span class="nb">nothing</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span> <span class="mf">0.5</span><span class="p">)</span>
+
+<span class="k">function</span> <span class="n">treelength</span><span class="p">(</span><span class="n">t</span><span class="o">::</span><span class="kt">Tree1</span><span class="p">,</span> <span class="n">l</span><span class="o">::</span><span class="kt">Float64</span><span class="p">)</span>
+  <span class="n">l</span> <span class="o">+=</span> <span class="n">t</span><span class="o">.</span><span class="n">e</span>
+  <span class="k">if</span> <span class="n">isdefined</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="ss">:l</span><span class="p">)</span>
+    <span class="n">l</span> <span class="o">=</span> <span class="n">treelength</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">l</span><span class="p">,</span> <span class="n">l</span><span class="p">)</span>
+  <span class="k">end</span>
+  <span class="k">if</span> <span class="n">isdefined</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="ss">:r</span><span class="p">)</span>
+   <span class="n">l</span> <span class="o">=</span> <span class="n">treelength</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">r</span><span class="p">,</span> <span class="n">l</span><span class="p">)</span>
+  <span class="k">end</span>
+  <span class="k">return</span> <span class="n">l</span>
+<span class="k">end</span>
+
+<span class="n">treelength</span><span class="p">(</span><span class="n">t</span><span class="o">::</span><span class="kt">Tree2</span><span class="p">)</span> <span class="o">=</span>
+  <span class="n">t</span><span class="o">.</span><span class="n">e</span> <span class="o">+</span> <span class="n">treelength</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">l</span><span class="p">)</span> <span class="o">+</span> <span class="n">treelength</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">r</span><span class="p">)</span>
+<span class="n">treelength</span><span class="p">(</span><span class="n">t</span><span class="o">::</span><span class="kt">Nothing</span><span class="p">)</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+<span class="nd">@benchmark</span> <span class="n">treelength</span><span class="p">(</span><span class="o">$</span><span class="n">t1</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+  <span class="c"># memory estimate:  0 bytes</span>
+  <span class="c"># allocs estimate:  0</span>
+  <span class="c"># --------------</span>
+  <span class="c"># minimum time:     6.327 ns (0.00% GC)</span>
+  <span class="c"># median time:      6.357 ns (0.00% GC)</span>
+  <span class="c"># mean time:        6.731 ns (0.00% GC)</span>
+  <span class="c"># maximum time:     91.463 ns (0.00% GC)</span>
+  <span class="c"># --------------</span>
+  <span class="c"># samples:          10000</span>
+  <span class="c"># evals/sample:     1000</span>
+
+<span class="nd">@benchmark</span> <span class="n">treelength</span><span class="p">(</span><span class="o">$</span><span class="n">t2</span><span class="p">)</span>
+  <span class="c"># memory estimate:  0 bytes</span>
+  <span class="c"># allocs estimate:  0</span>
+  <span class="c"># --------------</span>
+  <span class="c"># minimum time:     7.770 ns (0.00% GC)</span>
+  <span class="c"># median time:      8.024 ns (0.00% GC)</span>
+  <span class="c"># mean time:        8.700 ns (0.00% GC)</span>
+  <span class="c"># maximum time:     113.810 ns (0.00% GC)</span>
+  <span class="c"># --------------</span>
+  <span class="c"># samples:          10000</span>
+  <span class="c"># evals/sample:     999</span>
+</code></pre></div>
+
+
+
+<a name="246829738"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Recursive%20Types/near/246829738" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Ignacio Quintero <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Recursive.20Types.html#246829738">(Jul 22 2021 at 10:21)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="272583">Simeon Schaub</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Recursive.20Types/near/246824186">said</a>:</p>
+<blockquote>
+<blockquote>
+<p>It is better from performance point of view: <code>isdefined(tree, :d1)</code> take longer, then <code>tree.d1 === nothing</code>.</p>
+</blockquote>
+<p>Are you sure about that? That would surprise me, I wouldn't expect any big performance differences between both approaches. It also doesn't seem like <code>isdefined</code> will be used in the first example at all, but instead the end of the list is denoted by arriving at the original node again.</p>
+</blockquote>
+<p>Yeah, so in the first case, one can test one arrived at leaf simply by <code>===</code>  with one of the daughters?</p>
+
+
+
+<a name="246831014"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Recursive%20Types/near/246831014" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Ignacio Quintero <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Recursive.20Types.html#246831014">(Jul 22 2021 at 10:36)</a>:</h4>
+<p>One final question, how do you start a Constructor for the undefined Type where one creates a new object with undefined recursive types but an <code>e = x</code> argument?<br>
+Something like <code>Tree1(e::Float64) = new(l, r, e)</code>(but that works...)</p>
+
+
+
+<a name="246844108"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Recursive%20Types/near/246844108" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Colin Caine <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Recursive.20Types.html#246844108">(Jul 22 2021 at 13:11)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="kt">Tree1</span>
+    <span class="n">l</span><span class="o">::</span><span class="kt">Tree1</span>
+    <span class="n">r</span><span class="o">::</span><span class="kt">Tree1</span>
+
+    <span class="n">Tree1</span><span class="p">()</span> <span class="o">=</span> <span class="n">new</span><span class="p">()</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>I think that's kind of wild because you can't edit <code>l</code> or <code>r</code> without pointer stuff. Maybe you meant to say <code>mutable</code>?</p>
+<p><span class="user-mention" data-user-id="339377">@Ignacio Quintero</span>  You might want to look at <a href="https://github.com/search?q=LinkedList.jl&amp;type=Repositories">LinkedList.jl</a> and <a href="https://github.com/search?q=DataStructures.jl&amp;type=Repositories">DataStructures.jl</a>   One of them takes the approach of Nil nodes and the other defines a leaf by checking if the <code>next</code> pointer is pointing to itself. Either way is fine.</p>
+
+
+
+<a name="246844601"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Recursive%20Types/near/246844601" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Recursive.20Types.html#246844601">(Jul 22 2021 at 13:15)</a>:</h4>
+<p>Haha, you right! Of course it should be <code>mutable</code> and then difference is not that big.</p>
+<p>Anyway, it looks like I should reconsider my own advice :-) It seems that <code>Union</code> version is worse than <code>undef</code> or even better cycled pointers.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

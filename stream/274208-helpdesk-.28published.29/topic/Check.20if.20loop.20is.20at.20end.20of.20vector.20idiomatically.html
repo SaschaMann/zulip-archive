@@ -1,0 +1,256 @@
+<html>
+<head><meta charset="utf-8"><title>Check if loop is at end of vector idiomatically · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Check.20if.20loop.20is.20at.20end.20of.20vector.20idiomatically.html">Check if loop is at end of vector idiomatically</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="251826082"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Check%20if%20loop%20is%20at%20end%20of%20vector%20idiomatically/near/251826082" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kim Paolo Laberinto <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Check.20if.20loop.20is.20at.20end.20of.20vector.20idiomatically.html#251826082">(Sep 03 2021 at 05:49)</a>:</h4>
+<p>I have a basic for-loop that is looping over a vector, and I would like to check if the loop iteration is at the end of vector. Are there any recommended ways of doing this idiomatically? Right now I have a basic <code>enumerate</code> and <code>if index != length(my_vector)</code>.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">for</span> <span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">element</span><span class="p">)</span> <span class="k">in</span> <span class="n">enumerate</span><span class="p">(</span><span class="n">my_vector</span><span class="p">)</span>
+    <span class="n">do_stuff</span><span class="p">(</span><span class="n">element</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">index</span> <span class="o">!=</span> <span class="n">length</span><span class="p">(</span><span class="n">my_vector</span><span class="p">)</span>
+       <span class="n">do_more_stuff</span><span class="p">()</span>
+    <span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="251826204"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Check%20if%20loop%20is%20at%20end%20of%20vector%20idiomatically/near/251826204" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Andrés Riedemann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Check.20if.20loop.20is.20at.20end.20of.20vector.20idiomatically.html#251826204">(Sep 03 2021 at 05:51)</a>:</h4>
+<p>you could iterate on a view of that vector , <code>@view(vector[begin:end-1])</code></p>
+
+
+
+<a name="251832138"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Check%20if%20loop%20is%20at%20end%20of%20vector%20idiomatically/near/251832138" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> rocco sprmnt21 <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Check.20if.20loop.20is.20at.20end.20of.20vector.20idiomatically.html#251832138">(Sep 03 2021 at 07:11)</a>:</h4>
+<p>Isn't it preferable in terms of performance to treat <em>your_vector [1: end-1]</em> and <em>your_vector [end</em>] separately?</p>
+<div class="codehilite"><pre><span></span><code>for (index, element) in enumerate(my_vector[1:end-1])
+    do_stuff(element)
+end
+do_more_stuff(my_vector[end])
+</code></pre></div>
+
+
+
+<a name="251841077"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Check%20if%20loop%20is%20at%20end%20of%20vector%20idiomatically/near/251841077" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Check.20if.20loop.20is.20at.20end.20of.20vector.20idiomatically.html#251841077">(Sep 03 2021 at 08:28)</a>:</h4>
+<p>You better use <code>pairs</code> instead of <code>enumerate</code>.</p>
+
+
+
+<a name="251921568"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Check%20if%20loop%20is%20at%20end%20of%20vector%20idiomatically/near/251921568" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kim Paolo Laberinto <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Check.20if.20loop.20is.20at.20end.20of.20vector.20idiomatically.html#251921568">(Sep 03 2021 at 18:13)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="272771">Andrey Oskin</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Check.20if.20loop.20is.20at.20end.20of.20vector.20idiomatically/near/251841077">said</a>:</p>
+<blockquote>
+<p>You better use <code>pairs</code> instead of <code>enumerate</code>.</p>
+</blockquote>
+<p>Could you elaborate more on any reasons in particular (e.g. performance, readability, etc.)? I just tried it and I did not know that <code>pairs(my_vector)</code> gives a nice indexing similar to <code>enumerate</code>. So thank you for that!</p>
+
+
+
+<a name="251921688"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Check%20if%20loop%20is%20at%20end%20of%20vector%20idiomatically/near/251921688" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kim Paolo Laberinto <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Check.20if.20loop.20is.20at.20end.20of.20vector.20idiomatically.html#251921688">(Sep 03 2021 at 18:14)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="359035">rocco sprmnt21</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Check.20if.20loop.20is.20at.20end.20of.20vector.20idiomatically/near/251832138">said</a>:</p>
+<blockquote>
+<p>Isn't it preferable in terms of performance to treat <em>your_vector [1: end-1]</em> and <em>your_vector [end</em>] separately?</p>
+<div class="codehilite"><pre><span></span><code>for (index, element) in enumerate(my_vector[1:end-1])
+    do_stuff(element)
+end
+do_more_stuff(my_vector[end])
+</code></pre></div>
+
+</blockquote>
+<p>I'm actually really not sure! Do you know why that might be the case?</p>
+
+
+
+<a name="251921847"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Check%20if%20loop%20is%20at%20end%20of%20vector%20idiomatically/near/251921847" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kim Paolo Laberinto <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Check.20if.20loop.20is.20at.20end.20of.20vector.20idiomatically.html#251921847">(Sep 03 2021 at 18:15)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="284959">Andrés Riedemann</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Check.20if.20loop.20is.20at.20end.20of.20vector.20idiomatically/near/251826204">said</a>:</p>
+<blockquote>
+<p>you could iterate on a view of that vector , <code>@view(vector[begin:end-1])</code></p>
+</blockquote>
+<p>Oh interesting! Thank you. What's the advantage of iterating on a view?</p>
+
+
+
+<a name="251922237"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Check%20if%20loop%20is%20at%20end%20of%20vector%20idiomatically/near/251922237" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Check.20if.20loop.20is.20at.20end.20of.20vector.20idiomatically.html#251922237">(Sep 03 2021 at 18:18)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="297159">Kim Paolo Laberinto</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Check.20if.20loop.20is.20at.20end.20of.20vector.20idiomatically/near/251921568">said</a>:</p>
+<blockquote>
+<p><span class="user-mention silent" data-user-id="272771">Andrey Oskin</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Check.20if.20loop.20is.20at.20end.20of.20vector.20idiomatically/near/251841077">said</a>:</p>
+<blockquote>
+<p>You better use <code>pairs</code> instead of <code>enumerate</code>.</p>
+</blockquote>
+<p>Could you elaborate more on any reasons in particular (e.g. performance, readability, etc.)? I just tried it and I did not know that <code>pairs(my_vector)</code> gives a nice indexing similar to <code>enumerate</code>. So thank you for that!</p>
+</blockquote>
+<p><code>enumerate</code> always counts from <code>1</code>. It doesn't care about special index styles which can lead to bugs</p>
+
+
+
+<a name="251922495"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Check%20if%20loop%20is%20at%20end%20of%20vector%20idiomatically/near/251922495" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Check.20if.20loop.20is.20at.20end.20of.20vector.20idiomatically.html#251922495">(Sep 03 2021 at 18:20)</a>:</h4>
+<p>e.g.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">using</span> <span class="n">OffsetArrays</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">v</span> <span class="o">=</span> <span class="n">OffsetArray</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="mi">5</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="o">:</span><span class="mi">2</span><span class="p">)</span>
+<span class="mi">1</span><span class="o">:</span><span class="mi">5</span> <span class="n">with</span> <span class="n">indices</span> <span class="o">-</span><span class="mi">2</span><span class="o">:</span><span class="mi">2</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">collect</span><span class="p">(</span><span class="n">enumerate</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+<span class="mi">5</span><span class="o">-</span><span class="n">element</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">Tuple</span><span class="p">{</span><span class="kt">Int64</span><span class="p">,</span> <span class="kt">Int64</span><span class="p">}}</span><span class="o">:</span>
+ <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+ <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+ <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+ <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+ <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">collect</span><span class="p">(</span><span class="n">pairs</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+<span class="mi">5</span><span class="o">-</span><span class="n">element</span> <span class="n">OffsetArray</span><span class="p">(</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Pair</span><span class="p">{</span><span class="kt">Int64</span><span class="p">,</span> <span class="kt">Int64</span><span class="p">}},</span> <span class="o">-</span><span class="mi">2</span><span class="o">:</span><span class="mi">2</span><span class="p">)</span> <span class="n">with</span> <span class="n">eltype</span> <span class="kt">Pair</span><span class="p">{</span><span class="kt">Int64</span><span class="p">,</span> <span class="kt">Int64</span><span class="p">}</span> <span class="n">with</span> <span class="n">indices</span> <span class="o">-</span><span class="mi">2</span><span class="o">:</span><span class="mi">2</span><span class="o">:</span>
+ <span class="o">-</span><span class="mi">2</span> <span class="o">=&gt;</span> <span class="mi">1</span>
+ <span class="o">-</span><span class="mi">1</span> <span class="o">=&gt;</span> <span class="mi">2</span>
+  <span class="mi">0</span> <span class="o">=&gt;</span> <span class="mi">3</span>
+  <span class="mi">1</span> <span class="o">=&gt;</span> <span class="mi">4</span>
+  <span class="mi">2</span> <span class="o">=&gt;</span> <span class="mi">5</span>
+</code></pre></div>
+
+
+
+<a name="251922598"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Check%20if%20loop%20is%20at%20end%20of%20vector%20idiomatically/near/251922598" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Check.20if.20loop.20is.20at.20end.20of.20vector.20idiomatically.html#251922598">(Sep 03 2021 at 18:21)</a>:</h4>
+<p>Or more clearly:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">vi</span><span class="p">)</span> <span class="k">in</span> <span class="n">enumerate</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+           <span class="nd">@show</span> <span class="n">vi</span> <span class="o">==</span> <span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+       <span class="k">end</span>
+<span class="n">vi</span> <span class="o">==</span> <span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">false</span>
+<span class="n">vi</span> <span class="o">==</span> <span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">false</span>
+<span class="n">ERROR</span><span class="o">:</span> <span class="kt">BoundsError</span><span class="o">:</span> <span class="n">attempt</span> <span class="n">to</span> <span class="n">access</span> <span class="mi">5</span><span class="o">-</span><span class="n">element</span> <span class="n">OffsetArray</span><span class="p">(</span><span class="o">::</span><span class="kt">UnitRange</span><span class="p">{</span><span class="kt">Int64</span><span class="p">},</span> <span class="o">-</span><span class="mi">2</span><span class="o">:</span><span class="mi">2</span><span class="p">)</span> <span class="n">with</span> <span class="n">eltype</span> <span class="kt">Int64</span> <span class="n">with</span> <span class="n">indices</span> <span class="o">-</span><span class="mi">2</span><span class="o">:</span><span class="mi">2</span> <span class="n">at</span> <span class="n">index</span> <span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+<span class="n">Stacktrace</span><span class="o">:</span>
+ <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="n">throw_boundserror</span><span class="p">(</span><span class="n">A</span><span class="o">::</span><span class="kt">OffsetVector</span><span class="p">{</span><span class="kt">Int64</span><span class="p">,</span> <span class="kt">UnitRange</span><span class="p">{</span><span class="kt">Int64</span><span class="p">}},</span> <span class="n">I</span><span class="o">::</span><span class="kt">Tuple</span><span class="p">{</span><span class="kt">Int64</span><span class="p">})</span>
+   <span class="err">@</span> <span class="n">Base</span> <span class="o">./</span><span class="n">abstractarray</span><span class="o">.</span><span class="n">jl</span><span class="o">:</span><span class="mi">691</span>
+ <span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="n">checkbounds</span>
+   <span class="err">@</span> <span class="o">./</span><span class="n">abstractarray</span><span class="o">.</span><span class="n">jl</span><span class="o">:</span><span class="mi">656</span> <span class="p">[</span><span class="n">inlined</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="n">getindex</span><span class="p">(</span><span class="n">A</span><span class="o">::</span><span class="kt">OffsetVector</span><span class="p">{</span><span class="kt">Int64</span><span class="p">,</span> <span class="kt">UnitRange</span><span class="p">{</span><span class="kt">Int64</span><span class="p">}},</span> <span class="n">i</span><span class="o">::</span><span class="kt">Int64</span><span class="p">)</span>
+   <span class="err">@</span> <span class="n">OffsetArrays</span> <span class="o">~/.</span><span class="n">julia</span><span class="o">/</span><span class="n">packages</span><span class="o">/</span><span class="n">OffsetArrays</span><span class="o">/</span><span class="n">TKbp1</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">OffsetArrays</span><span class="o">.</span><span class="n">jl</span><span class="o">:</span><span class="mi">424</span>
+ <span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="k">macro</span> <span class="n">expansion</span>
+   <span class="err">@</span> <span class="o">./</span><span class="n">show</span><span class="o">.</span><span class="n">jl</span><span class="o">:</span><span class="mi">1040</span> <span class="p">[</span><span class="n">inlined</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="n">top</span><span class="o">-</span><span class="n">level</span> <span class="n">scope</span>
+   <span class="err">@</span> <span class="o">./</span><span class="n">REPL</span><span class="p">[</span><span class="mi">14</span><span class="p">]</span><span class="o">:</span><span class="mi">2</span>
+</code></pre></div>
+
+
+
+<a name="251924076"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Check%20if%20loop%20is%20at%20end%20of%20vector%20idiomatically/near/251924076" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kim Paolo Laberinto <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Check.20if.20loop.20is.20at.20end.20of.20vector.20idiomatically.html#251924076">(Sep 03 2021 at 18:33)</a>:</h4>
+<p><span class="user-mention" data-user-id="269150">@Mason Protter</span> Thank you!! This really helps my understanding. Then it seems like the method of using <code>enumerate(my_vector)</code> with <code>if index != length(my_vector)</code> is a good enough way of doing things and using <code>pairs</code> might give me something I didn't expect. TIL that <code>enumerate</code> always counts from <code>1</code>, and should be resilient against OffsetArrays. Thank you!!</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">v</span> <span class="o">=</span> <span class="n">OffsetArray</span><span class="p">(</span><span class="mi">101</span><span class="o">:</span><span class="mi">105</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="o">:</span><span class="mi">2</span><span class="p">)</span>
+<span class="mi">101</span><span class="o">:</span><span class="mi">105</span> <span class="n">with</span> <span class="n">indices</span> <span class="o">-</span><span class="mi">2</span><span class="o">:</span><span class="mi">2</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span> <span class="k">in</span> <span class="n">enumerate</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+           <span class="n">print</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="s">" "</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+           <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">length</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+               <span class="n">println</span><span class="p">(</span><span class="s">" not yet at the end"</span><span class="p">)</span>
+           <span class="k">end</span>
+       <span class="k">end</span>
+<span class="mi">1</span> <span class="mi">101</span> <span class="n">not</span> <span class="n">yet</span> <span class="n">at</span> <span class="n">the</span> <span class="k">end</span>
+<span class="mi">2</span> <span class="mi">102</span> <span class="n">not</span> <span class="n">yet</span> <span class="n">at</span> <span class="n">the</span> <span class="k">end</span>
+<span class="mi">3</span> <span class="mi">103</span> <span class="n">not</span> <span class="n">yet</span> <span class="n">at</span> <span class="n">the</span> <span class="k">end</span>
+<span class="mi">4</span> <span class="mi">104</span> <span class="n">not</span> <span class="n">yet</span> <span class="n">at</span> <span class="n">the</span> <span class="k">end</span>
+<span class="mi">5</span> <span class="mi">105</span>
+</code></pre></div>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span> <span class="k">in</span> <span class="n">pairs</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+           <span class="n">print</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="s">" "</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+           <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">length</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+               <span class="n">println</span><span class="p">(</span><span class="s">" not yet at the end"</span><span class="p">)</span>
+           <span class="k">end</span>
+       <span class="k">end</span>
+<span class="o">-</span><span class="mi">2</span> <span class="mi">101</span> <span class="n">not</span> <span class="n">yet</span> <span class="n">at</span> <span class="n">the</span> <span class="k">end</span>
+<span class="o">-</span><span class="mi">1</span> <span class="mi">102</span> <span class="n">not</span> <span class="n">yet</span> <span class="n">at</span> <span class="n">the</span> <span class="k">end</span>
+<span class="mi">0</span> <span class="mi">103</span> <span class="n">not</span> <span class="n">yet</span> <span class="n">at</span> <span class="n">the</span> <span class="k">end</span>
+<span class="mi">1</span> <span class="mi">104</span> <span class="n">not</span> <span class="n">yet</span> <span class="n">at</span> <span class="n">the</span> <span class="k">end</span>
+<span class="mi">2</span> <span class="mi">105</span> <span class="n">not</span> <span class="n">yet</span> <span class="n">at</span> <span class="n">the</span> <span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="251927137"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Check%20if%20loop%20is%20at%20end%20of%20vector%20idiomatically/near/251927137" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Check.20if.20loop.20is.20at.20end.20of.20vector.20idiomatically.html#251927137">(Sep 03 2021 at 18:58)</a>:</h4>
+<p>You could also use the <code>lastindex</code> function with <code>pairs</code>. i.e.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span> <span class="k">in</span> <span class="n">pairs</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+           <span class="n">print</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="s">" "</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+           <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">lastindex</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+               <span class="n">println</span><span class="p">(</span><span class="s">" not yet at the end"</span><span class="p">)</span>
+           <span class="k">end</span>
+       <span class="k">end</span>
+<span class="o">-</span><span class="mi">2</span> <span class="mi">101</span> <span class="n">not</span> <span class="n">yet</span> <span class="n">at</span> <span class="n">the</span> <span class="k">end</span>
+<span class="o">-</span><span class="mi">1</span> <span class="mi">102</span> <span class="n">not</span> <span class="n">yet</span> <span class="n">at</span> <span class="n">the</span> <span class="k">end</span>
+<span class="mi">0</span> <span class="mi">103</span> <span class="n">not</span> <span class="n">yet</span> <span class="n">at</span> <span class="n">the</span> <span class="k">end</span>
+<span class="mi">1</span> <span class="mi">104</span> <span class="n">not</span> <span class="n">yet</span> <span class="n">at</span> <span class="n">the</span> <span class="k">end</span>
+<span class="mi">2</span> <span class="mi">105</span>
+</code></pre></div>
+
+
+
+<a name="251932386"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Check%20if%20loop%20is%20at%20end%20of%20vector%20idiomatically/near/251932386" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> rocco sprmnt21 <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Check.20if.20loop.20is.20at.20end.20of.20vector.20idiomatically.html#251932386">(Sep 03 2021 at 19:42)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="297159">Kim Paolo Laberinto</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Check.20if.20loop.20is.20at.20end.20of.20vector.20idiomatically/near/251921688">said</a>:</p>
+<blockquote>
+<p><span class="user-mention silent" data-user-id="359035">rocco sprmnt21</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Check.20if.20loop.20is.20at.20end.20of.20vector.20idiomatically/near/251832138">said</a>:</p>
+<blockquote>
+<p>Isn't it preferable in terms of performance to treat <em>your_vector [1: end-1]</em> and <em>your_vector [end</em>] separately?</p>
+<div class="codehilite"><pre><span></span><code>for (index, element) in enumerate(my_vector[1:end-1])
+    do_stuff(element)
+end
+do_more_stuff(my_vector[end])
+</code></pre></div>
+
+</blockquote>
+<p>I'm actually really not sure! Do you know why that might be the case?</p>
+</blockquote>
+<p>Because as I suggest, you avoid checking each iteration if you have reached the last index in order to apply the specific function of the case.<br>
+If you are not convinced run the following tests, perhaps adapting them to your specific case and let us know. </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">my_vector</span><span class="o">=</span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="o">^</span><span class="mi">6</span>
+<span class="n">do_stuff</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">=</span><span class="n">e</span>
+<span class="n">do_more_stuff</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">=</span><span class="n">e</span><span class="o">*</span><span class="mi">10</span>
+
+<span class="k">function</span> <span class="n">f</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">element</span><span class="p">)</span> <span class="k">in</span> <span class="n">enumerate</span><span class="p">(</span><span class="n">arr</span><span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="k">end</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">do_stuff</span><span class="p">(</span><span class="n">element</span><span class="p">)</span>
+<span class="k">end</span>
+    <span class="n">do_more_stuff</span><span class="p">(</span><span class="n">arr</span><span class="p">[</span><span class="k">end</span><span class="p">])</span>
+
+<span class="k">end</span>
+
+
+<span class="k">function</span> <span class="n">g</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">in</span> <span class="n">pairs</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span>
+    <span class="n">do_stuff</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">lastindex</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">do_more_stuff</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="k">end</span>
+<span class="k">end</span>
+<span class="k">end</span>
+<span class="n">g</span><span class="p">(</span><span class="n">my_vector</span><span class="p">)</span><span class="o">==</span><span class="n">f</span><span class="p">(</span><span class="n">my_vector</span><span class="p">)</span>
+
+
+<span class="k">using</span> <span class="n">BenchmarkTools</span>
+<span class="nd">@btime</span> <span class="n">g</span><span class="p">(</span><span class="n">my_vector</span><span class="p">)</span>
+<span class="nd">@btime</span> <span class="n">f</span><span class="p">(</span><span class="n">my_vector</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="251933042"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Check%20if%20loop%20is%20at%20end%20of%20vector%20idiomatically/near/251933042" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kim Paolo Laberinto <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Check.20if.20loop.20is.20at.20end.20of.20vector.20idiomatically.html#251933042">(Sep 03 2021 at 19:48)</a>:</h4>
+<p>Oh I see what you mean now <span class="user-mention" data-user-id="359035">@rocco sprmnt21</span> ! That makes sense to me intuitively: instead of doing a conditional check during the for loop for every single element, just do the unique behavior at the end so that the checks don't need to happen. Thank you!</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

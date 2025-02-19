@@ -1,0 +1,152 @@
+[
+    {
+        "content": "<p>Anyone familiar with running benchmarks for a package in CI? Possibly using PkgBenchmark, open to custom solutions</p>",
+        "id": 261529991,
+        "sender_full_name": "Sukera",
+        "timestamp": 1636997185
+    },
+    {
+        "content": "<p>alternatively, in which environment am I supposed to install PkgBenchmark? I don't really want to make it a dependency for my package and giving it its own (sub-)environment seems to break things.</p>",
+        "id": 261530243,
+        "sender_full_name": "Sukera",
+        "timestamp": 1636997287
+    },
+    {
+        "content": "<p>also, does it play well with unregistered dependencies?</p>",
+        "id": 261530319,
+        "sender_full_name": "Sukera",
+        "timestamp": 1636997320
+    },
+    {
+        "content": "<p>You should have it in a separate environment: <a href=\"https://github.com/JuliaPhysics/Measurements.jl/tree/ba56443c23bed16fc6e4e8e87c3b12c835f00edb/benchmark\">https://github.com/JuliaPhysics/Measurements.jl/tree/ba56443c23bed16fc6e4e8e87c3b12c835f00edb/benchmark</a> it works for me also with unregistered packages.</p>\n<p>My only problem is that results are often totally unreliable, I tend to blame github actions machines, but the performance reports I get are usually garbage</p>",
+        "id": 261590612,
+        "sender_full_name": "Mosè Giordano",
+        "timestamp": 1637030042
+    },
+    {
+        "content": "<p>That's correct, you need separate environment, and may be tweak your yml configs, for it to run properly. Results are mostly garbage, that's also true :-)</p>\n<p>Here is our setup, which uses <a href=\"https://github.com/search?q=BenchmarkCI.jl&amp;type=Repositories\">BenchmarkCI.jl</a></p>\n<p><a href=\"https://github.com/PyDataBlog/ParallelKMeans.jl/tree/master/benchmark\">https://github.com/PyDataBlog/ParallelKMeans.jl/tree/master/benchmark</a></p>",
+        "id": 261597534,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1637037895
+    },
+    {
+        "content": "<p>If CI is not reliable due to machine differences, that's fine for me - having a way to not have PkgBenchmark/BenchmarkCI in the main dependencies is the main concern, thank you both!</p>",
+        "id": 261607801,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637049545
+    },
+    {
+        "content": "<p>so presumably, if I run the benchmarks on my/a custom fixed machine, the benchmarks should be more reliable</p>",
+        "id": 261608346,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637049936
+    },
+    {
+        "content": "<p>FWIW, I'm now shifted to only running smoke tests for benchmarks in newer projects.</p>\n<p>I reduce the number of evaluations as much as possible for \"smoke run\"<br>\n<a href=\"https://github.com/JuliaConcurrent/ConcurrentCollections.jl/blob/7c3d94b24a36506e2d84161648b95ecf116312bb/benchmark/ConcurrentCollectionsBenchmarks/src/ConcurrentCollectionsBenchmarks.jl#L23-L43\">https://github.com/JuliaConcurrent/ConcurrentCollections.jl/blob/7c3d94b24a36506e2d84161648b95ecf116312bb/benchmark/ConcurrentCollectionsBenchmarks/src/ConcurrentCollectionsBenchmarks.jl#L23-L43</a></p>\n<p>...and then run it via test suite<br>\n<a href=\"https://github.com/JuliaConcurrent/ConcurrentCollections.jl/blob/master/test/ConcurrentCollectionsTests/src/test_bench_smoke.jl#L6-L14\">https://github.com/JuliaConcurrent/ConcurrentCollections.jl/blob/master/test/ConcurrentCollectionsTests/src/test_bench_smoke.jl#L6-L14</a></p>",
+        "id": 261715903,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1637101386
+    },
+    {
+        "content": "<p>yeah I expect my benchmarks to be fairly long running (think ms-s range per evaluation)</p>",
+        "id": 261716216,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637101551
+    },
+    {
+        "content": "<p>if it turns out to be super unstable, I don't mind running them on a machine I control</p>",
+        "id": 261716302,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637101579
+    },
+    {
+        "content": "<p>thanks for that idea though, may be helpful!</p>",
+        "id": 261716356,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637101607
+    },
+    {
+        "content": "<p>I want to make benchmarks more reliable on CI, though. I've been wanting to look into Cachegrind for a reliable benchmark CI <a href=\"https://pythonspeed.com/articles/consistent-benchmarking-in-ci/\">https://pythonspeed.com/articles/consistent-benchmarking-in-ci/</a> I wonder if anyone looked into it?</p>",
+        "id": 261716363,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1637101614
+    },
+    {
+        "content": "<p>I didn't even think of cachegrind, that's a good idea</p>",
+        "id": 261716983,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637101906
+    },
+    {
+        "content": "<p>probably not suited to julia as-is though, as valgrind requires some setup iirc</p>",
+        "id": 261717054,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637101924
+    },
+    {
+        "content": "<p><a href=\"https://docs.julialang.org/en/v1/devdocs/valgrind/\">https://docs.julialang.org/en/v1/devdocs/valgrind/</a></p>",
+        "id": 261717078,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637101937
+    },
+    {
+        "content": "<p>however, we may be able to use llvm-mca for a similar effect</p>",
+        "id": 261717158,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637101979
+    },
+    {
+        "content": "<p>it doesn't know about caches though :/</p>",
+        "id": 261717211,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637102002
+    },
+    {
+        "content": "<p>another possible problem may be variance in how the CI machine actually looks CPU and cache-wise</p>",
+        "id": 261717338,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637102048
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"p\">[</span><span class=\"n\">sukera</span><span class=\"nd\">@tempman</span> <span class=\"o\">~</span><span class=\"p\">]</span><span class=\"o\">$</span> <span class=\"n\">valgrind</span> <span class=\"o\">--</span><span class=\"n\">smc</span><span class=\"o\">-</span><span class=\"n\">check</span><span class=\"o\">=</span><span class=\"n\">all</span><span class=\"o\">-</span><span class=\"n\">non</span><span class=\"o\">-</span><span class=\"n\">file</span> <span class=\"o\">--</span><span class=\"n\">tool</span><span class=\"o\">=</span><span class=\"n\">cachegrind</span> <span class=\"n\">julia</span> <span class=\"o\">-</span><span class=\"n\">e</span> <span class=\"err\">'</span><span class=\"k\">for</span> <span class=\"n\">_</span> <span class=\"k\">in</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">10</span> <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"nb\">stdout</span><span class=\"p\">,</span> <span class=\"s\">\"hello\"</span><span class=\"p\">)</span> <span class=\"k\">end</span><span class=\"o\">'</span>\n<span class=\"o\">==</span><span class=\"mi\">337656</span><span class=\"o\">==</span> <span class=\"n\">Cachegrind</span><span class=\"p\">,</span> <span class=\"n\">a</span> <span class=\"n\">cache</span> <span class=\"n\">and</span> <span class=\"n\">branch</span><span class=\"o\">-</span><span class=\"n\">prediction</span> <span class=\"n\">profiler</span>\n<span class=\"o\">==</span><span class=\"mi\">337656</span><span class=\"o\">==</span> <span class=\"n\">Copyright</span> <span class=\"p\">(</span><span class=\"n\">C</span><span class=\"p\">)</span> <span class=\"mi\">2002</span><span class=\"o\">-</span><span class=\"mi\">2017</span><span class=\"p\">,</span> <span class=\"n\">and</span> <span class=\"n\">GNU</span> <span class=\"n\">GPL</span><span class=\"o\">'</span><span class=\"n\">d</span><span class=\"p\">,</span> <span class=\"n\">by</span> <span class=\"n\">Nicholas</span> <span class=\"n\">Nethercote</span> <span class=\"n\">et</span> <span class=\"n\">al</span><span class=\"o\">.</span>\n<span class=\"o\">==</span><span class=\"mi\">337656</span><span class=\"o\">==</span> <span class=\"n\">Using</span> <span class=\"n\">Valgrind</span><span class=\"o\">-</span><span class=\"mf\">3.17.0</span> <span class=\"n\">and</span> <span class=\"n\">LibVEX</span><span class=\"p\">;</span> <span class=\"n\">rerun</span> <span class=\"n\">with</span> <span class=\"o\">-</span><span class=\"n\">h</span> <span class=\"k\">for</span> <span class=\"n\">copyright</span> <span class=\"n\">info</span>\n<span class=\"o\">==</span><span class=\"mi\">337656</span><span class=\"o\">==</span> <span class=\"n\">Command</span><span class=\"o\">:</span> <span class=\"n\">julia</span> <span class=\"o\">-</span><span class=\"n\">e</span> <span class=\"k\">for</span><span class=\"o\">\\</span> <span class=\"n\">_</span><span class=\"o\">\\</span> <span class=\"k\">in</span><span class=\"o\">\\</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">10</span><span class=\"o\">\\</span> <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"nb\">stdout</span><span class=\"p\">,</span><span class=\"o\">\\</span> <span class=\"s\">\"hello\"</span><span class=\"p\">)</span><span class=\"o\">\\</span> <span class=\"k\">end</span>\n<span class=\"o\">==</span><span class=\"mi\">337656</span><span class=\"o\">==</span>\n<span class=\"o\">--</span><span class=\"mi\">337656</span><span class=\"o\">--</span> <span class=\"n\">warning</span><span class=\"o\">:</span> <span class=\"n\">L3</span> <span class=\"n\">cache</span> <span class=\"n\">found</span><span class=\"p\">,</span> <span class=\"k\">using</span> <span class=\"n\">its</span> <span class=\"n\">data</span> <span class=\"k\">for</span> <span class=\"n\">the</span> <span class=\"n\">LL</span> <span class=\"n\">simulation</span><span class=\"o\">.</span>\n<span class=\"n\">ERROR</span><span class=\"o\">:</span> <span class=\"n\">Unable</span> <span class=\"n\">to</span> <span class=\"n\">find</span> <span class=\"n\">compatible</span> <span class=\"n\">target</span> <span class=\"k\">in</span> <span class=\"n\">system</span> <span class=\"n\">image</span><span class=\"o\">.</span>\n<span class=\"o\">==</span><span class=\"mi\">337656</span><span class=\"o\">==</span>\n<span class=\"o\">==</span><span class=\"mi\">337656</span><span class=\"o\">==</span> <span class=\"n\">I</span>   <span class=\"n\">refs</span><span class=\"o\">:</span>      <span class=\"mi\">102</span><span class=\"p\">,</span><span class=\"mi\">539</span><span class=\"p\">,</span><span class=\"mi\">492</span>\n<span class=\"o\">==</span><span class=\"mi\">337656</span><span class=\"o\">==</span> <span class=\"n\">I1</span>  <span class=\"n\">misses</span><span class=\"o\">:</span>         <span class=\"mi\">18</span><span class=\"p\">,</span><span class=\"mi\">030</span>\n<span class=\"o\">==</span><span class=\"mi\">337656</span><span class=\"o\">==</span> <span class=\"n\">LLi</span> <span class=\"n\">misses</span><span class=\"o\">:</span>         <span class=\"mi\">14</span><span class=\"p\">,</span><span class=\"mi\">960</span>\n<span class=\"o\">==</span><span class=\"mi\">337656</span><span class=\"o\">==</span> <span class=\"n\">I1</span>  <span class=\"n\">miss</span> <span class=\"n\">rate</span><span class=\"o\">:</span>        <span class=\"mf\">0.02</span><span class=\"o\">%</span>\n<span class=\"o\">==</span><span class=\"mi\">337656</span><span class=\"o\">==</span> <span class=\"n\">LLi</span> <span class=\"n\">miss</span> <span class=\"n\">rate</span><span class=\"o\">:</span>        <span class=\"mf\">0.01</span><span class=\"o\">%</span>\n<span class=\"o\">==</span><span class=\"mi\">337656</span><span class=\"o\">==</span>\n<span class=\"o\">==</span><span class=\"mi\">337656</span><span class=\"o\">==</span> <span class=\"n\">D</span>   <span class=\"n\">refs</span><span class=\"o\">:</span>       <span class=\"mi\">32</span><span class=\"p\">,</span><span class=\"mi\">186</span><span class=\"p\">,</span><span class=\"mi\">907</span>  <span class=\"p\">(</span><span class=\"mi\">23</span><span class=\"p\">,</span><span class=\"mi\">929</span><span class=\"p\">,</span><span class=\"mi\">774</span> <span class=\"n\">rd</span>   <span class=\"o\">+</span> <span class=\"mi\">8</span><span class=\"p\">,</span><span class=\"mi\">257</span><span class=\"p\">,</span><span class=\"mi\">133</span> <span class=\"n\">wr</span><span class=\"p\">)</span>\n<span class=\"o\">==</span><span class=\"mi\">337656</span><span class=\"o\">==</span> <span class=\"n\">D1</span>  <span class=\"n\">misses</span><span class=\"o\">:</span>        <span class=\"mi\">780</span><span class=\"p\">,</span><span class=\"mi\">973</span>  <span class=\"p\">(</span>   <span class=\"mi\">709</span><span class=\"p\">,</span><span class=\"mi\">078</span> <span class=\"n\">rd</span>   <span class=\"o\">+</span>    <span class=\"mi\">71</span><span class=\"p\">,</span><span class=\"mi\">895</span> <span class=\"n\">wr</span><span class=\"p\">)</span>\n<span class=\"o\">==</span><span class=\"mi\">337656</span><span class=\"o\">==</span> <span class=\"n\">LLd</span> <span class=\"n\">misses</span><span class=\"o\">:</span>        <span class=\"mi\">190</span><span class=\"p\">,</span><span class=\"mi\">592</span>  <span class=\"p\">(</span>   <span class=\"mi\">131</span><span class=\"p\">,</span><span class=\"mi\">846</span> <span class=\"n\">rd</span>   <span class=\"o\">+</span>    <span class=\"mi\">58</span><span class=\"p\">,</span><span class=\"mi\">746</span> <span class=\"n\">wr</span><span class=\"p\">)</span>\n<span class=\"o\">==</span><span class=\"mi\">337656</span><span class=\"o\">==</span> <span class=\"n\">D1</span>  <span class=\"n\">miss</span> <span class=\"n\">rate</span><span class=\"o\">:</span>         <span class=\"mf\">2.4</span><span class=\"o\">%</span> <span class=\"p\">(</span>       <span class=\"mf\">3.0</span><span class=\"o\">%</span>     <span class=\"o\">+</span>       <span class=\"mf\">0.9</span><span class=\"o\">%</span>  <span class=\"p\">)</span>\n<span class=\"o\">==</span><span class=\"mi\">337656</span><span class=\"o\">==</span> <span class=\"n\">LLd</span> <span class=\"n\">miss</span> <span class=\"n\">rate</span><span class=\"o\">:</span>         <span class=\"mf\">0.6</span><span class=\"o\">%</span> <span class=\"p\">(</span>       <span class=\"mf\">0.6</span><span class=\"o\">%</span>     <span class=\"o\">+</span>       <span class=\"mf\">0.7</span><span class=\"o\">%</span>  <span class=\"p\">)</span>\n<span class=\"o\">==</span><span class=\"mi\">337656</span><span class=\"o\">==</span>\n<span class=\"o\">==</span><span class=\"mi\">337656</span><span class=\"o\">==</span> <span class=\"n\">LL</span> <span class=\"n\">refs</span><span class=\"o\">:</span>           <span class=\"mi\">799</span><span class=\"p\">,</span><span class=\"mi\">003</span>  <span class=\"p\">(</span>   <span class=\"mi\">727</span><span class=\"p\">,</span><span class=\"mi\">108</span> <span class=\"n\">rd</span>   <span class=\"o\">+</span>    <span class=\"mi\">71</span><span class=\"p\">,</span><span class=\"mi\">895</span> <span class=\"n\">wr</span><span class=\"p\">)</span>\n<span class=\"o\">==</span><span class=\"mi\">337656</span><span class=\"o\">==</span> <span class=\"n\">LL</span> <span class=\"n\">misses</span><span class=\"o\">:</span>         <span class=\"mi\">205</span><span class=\"p\">,</span><span class=\"mi\">552</span>  <span class=\"p\">(</span>   <span class=\"mi\">146</span><span class=\"p\">,</span><span class=\"mi\">806</span> <span class=\"n\">rd</span>   <span class=\"o\">+</span>    <span class=\"mi\">58</span><span class=\"p\">,</span><span class=\"mi\">746</span> <span class=\"n\">wr</span><span class=\"p\">)</span>\n<span class=\"o\">==</span><span class=\"mi\">337656</span><span class=\"o\">==</span> <span class=\"n\">LL</span> <span class=\"n\">miss</span> <span class=\"n\">rate</span><span class=\"o\">:</span>          <span class=\"mf\">0.2</span><span class=\"o\">%</span> <span class=\"p\">(</span>       <span class=\"mf\">0.1</span><span class=\"o\">%</span>     <span class=\"o\">+</span>       <span class=\"mf\">0.7</span><span class=\"o\">%</span>  <span class=\"p\">)</span>\n</code></pre></div>\n<p>haha nope, I don't think julia likes the virtual CPU cachgrind presents <span aria-label=\"laughter tears\" class=\"emoji emoji-1f602\" role=\"img\" title=\"laughter tears\">:laughter_tears:</span></p>",
+        "id": 261717878,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637102350
+    },
+    {
+        "content": "<p>Yeah, CPU detection in Julia feels like a big maze to me.</p>",
+        "id": 261724176,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1637106012
+    },
+    {
+        "content": "<p>I wonder if you can use <code>julia --cpu-target=...</code> to get around this though?</p>",
+        "id": 261724260,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1637106034
+    },
+    {
+        "content": "<p>what to use as <code>--cpu-target</code> though?</p>",
+        "id": 261724322,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637106061
+    },
+    {
+        "content": "<p>hm, simply setting it so <code>skylake</code> (my CPU) didn't work, same result</p>",
+        "id": 261724448,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637106137
+    },
+    {
+        "content": "<p>Maybe <code>haswell</code>? I guess we'd want to specify x86-64-v3 but it looks like it's not in the list of LLVM.</p>",
+        "id": 261725289,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1637106452
+    },
+    {
+        "content": "<p>well I checked with <code>--cpu-target=help</code> first to see if <code>skylake</code> was valid</p>",
+        "id": 261725310,
+        "sender_full_name": "Sukera",
+        "timestamp": 1637106477
+    }
+]

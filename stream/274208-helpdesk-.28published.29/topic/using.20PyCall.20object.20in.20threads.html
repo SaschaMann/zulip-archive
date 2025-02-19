@@ -1,0 +1,221 @@
+<html>
+<head><meta charset="utf-8"><title>using PyCall object in threads · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/using.20PyCall.20object.20in.20threads.html">using PyCall object in threads</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="241491971"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/using%20PyCall%20object%20in%20threads/near/241491971" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rein Zustand <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/using.20PyCall.20object.20in.20threads.html#241491971">(Jun 04 2021 at 05:10)</a>:</h4>
+<p>The following code fails with segmentation faults</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">import</span> <span class="n">PyCall</span>
+
+<span class="n">so</span> <span class="o">=</span> <span class="n">PyCall</span><span class="o">.</span><span class="n">pyimport</span><span class="p">(</span><span class="s">"scipy.optimize"</span><span class="p">)</span>
+
+<span class="k">function</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">x</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span><span class="o">^</span><span class="mi">2</span>
+<span class="k">end</span>
+
+<span class="k">function</span> <span class="n">do_optimize</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">so</span><span class="o">.</span><span class="n">minimize_scalar</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="k">let</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">Any</span><span class="p">}(</span><span class="nb">undef</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+    <span class="n">Threads</span><span class="o">.</span><span class="nd">@threads</span> <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="mi">20</span>
+        <span class="n">println</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+        <span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">do_optimize</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>What should be the proper way to do this? If it is not possible, do I have to use multi-processing with <code>Distributed</code> instead?</p>
+<p>I have also found an unresolved question (<a href="https://discourse.julialang.org/t/using-pycall-from-threads/32742">https://discourse.julialang.org/t/using-pycall-from-threads/32742</a>) from the internet.</p>
+
+
+
+<a name="241492094"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/using%20PyCall%20object%20in%20threads/near/241492094" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/using.20PyCall.20object.20in.20threads.html#241492094">(Jun 04 2021 at 05:13)</a>:</h4>
+<p>Python doesn't have mulithreading, so none of it's datastructures are threadsafe</p>
+
+
+
+<a name="241492159"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/using%20PyCall%20object%20in%20threads/near/241492159" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/using.20PyCall.20object.20in.20threads.html#241492159">(Jun 04 2021 at 05:14)</a>:</h4>
+<p>Spinning up multiple julia instances won't help I think, instead, you need to have multiple <em>python</em> instances that you're sending data to</p>
+
+
+
+<a name="241492239"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/using%20PyCall%20object%20in%20threads/near/241492239" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rein Zustand <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/using.20PyCall.20object.20in.20threads.html#241492239">(Jun 04 2021 at 05:16)</a>:</h4>
+<p>I see. Looks like the only way to do it is to use Python's own <code>multiprocessing</code> module, which technically spawn independent processes (with identical setups)?</p>
+
+
+
+<a name="241492242"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/using%20PyCall%20object%20in%20threads/near/241492242" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/using.20PyCall.20object.20in.20threads.html#241492242">(Jun 04 2021 at 05:16)</a>:</h4>
+<p>yep</p>
+
+
+
+<a name="241492258"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/using%20PyCall%20object%20in%20threads/near/241492258" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/using.20PyCall.20object.20in.20threads.html#241492258">(Jun 04 2021 at 05:16)</a>:</h4>
+<p>PyCall might have it's own way to spawn multiple pythons but I don't know</p>
+
+
+
+<a name="241492315"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/using%20PyCall%20object%20in%20threads/near/241492315" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rein Zustand <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/using.20PyCall.20object.20in.20threads.html#241492315">(Jun 04 2021 at 05:18)</a>:</h4>
+<p>Thank you! I will investigate whether PyCall can spawn multiple Pythons.</p>
+
+
+
+<a name="241493385"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/using%20PyCall%20object%20in%20threads/near/241493385" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rein Zustand <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/using.20PyCall.20object.20in.20threads.html#241493385">(Jun 04 2021 at 05:43)</a>:</h4>
+<p>I tried Python's <code>multiprocessing</code>, and still got segmentation fault, and caused my laptop to slow down. I managed to recover by <code>pkill julia</code> in a non-X terminal (ctrl-alt-F6).</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">import</span> <span class="n">PyCall</span>
+
+<span class="n">so</span> <span class="o">=</span> <span class="n">PyCall</span><span class="o">.</span><span class="n">pyimport</span><span class="p">(</span><span class="s">"scipy.optimize"</span><span class="p">)</span>
+<span class="n">mp</span> <span class="o">=</span> <span class="n">PyCall</span><span class="o">.</span><span class="n">pyimport</span><span class="p">(</span><span class="s">"multiprocessing"</span><span class="p">)</span>
+
+<span class="k">function</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">x</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span><span class="o">^</span><span class="mi">2</span>
+<span class="k">end</span>
+
+<span class="k">function</span> <span class="n">do_optimize</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">so</span><span class="o">.</span><span class="n">minimize_scalar</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="k">let</span>
+    <span class="n">procs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="mi">20</span>
+        <span class="n">println</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">proc</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">Process</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">f</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">())</span>
+        <span class="n">proc</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="n">push!</span><span class="p">(</span><span class="n">procs</span><span class="p">,</span> <span class="n">proc</span><span class="p">)</span>
+    <span class="k">end</span>
+    <span class="k">for</span> <span class="n">p</span> <span class="k">in</span> <span class="n">procs</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+    <span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>My hypothesis is that the <code>proc</code> object gets duplicated indefinitely when passed over to Julia?</p>
+
+
+
+<a name="241493451"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/using%20PyCall%20object%20in%20threads/near/241493451" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rein Zustand <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/using.20PyCall.20object.20in.20threads.html#241493451">(Jun 04 2021 at 05:44)</a>:</h4>
+<p>^ I didn't even use the <code>do_optimize</code> function.</p>
+
+
+
+<a name="241496792"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/using%20PyCall%20object%20in%20threads/near/241496792" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rein Zustand <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/using.20PyCall.20object.20in.20threads.html#241496792">(Jun 04 2021 at 06:49)</a>:</h4>
+<p>EDIT: I forgot to add -t2 to the julia argument. The code below failed with segmentation fault as well!<br>
+<del>This solution works:</del></p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">import</span> <span class="n">PyCall</span>
+
+<span class="n">so</span> <span class="o">=</span> <span class="n">PyCall</span><span class="o">.</span><span class="n">pyimport</span><span class="p">(</span><span class="s">"scipy.optimize"</span><span class="p">)</span>
+
+<span class="k">function</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">x</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span><span class="o">^</span><span class="mi">2</span>
+<span class="k">end</span>
+
+<span class="k">let</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">Any</span><span class="p">}(</span><span class="nb">undef</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+    <span class="n">Threads</span><span class="o">.</span><span class="nd">@threads</span> <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="mi">20</span>
+        <span class="k">function</span> <span class="n">do_optimize</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">so</span><span class="o">.</span><span class="n">minimize_scalar</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
+        <span class="k">end</span>
+
+        <span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">do_optimize</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="k">end</span>
+    <span class="n">println</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>Not sure why.</p>
+
+
+
+<a name="241496989"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/using%20PyCall%20object%20in%20threads/near/241496989" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rein Zustand <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/using.20PyCall.20object.20in.20threads.html#241496989">(Jun 04 2021 at 06:53)</a>:</h4>
+<p>EDIT: I forgot to add -t2 to the <code>julia</code> argument. The code below failed with segmentation fault as well!<br>
+<del>This also works:</del></p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">import</span> <span class="n">PyCall</span>
+
+<span class="n">so</span> <span class="o">=</span> <span class="n">PyCall</span><span class="o">.</span><span class="n">pyimport</span><span class="p">(</span><span class="s">"scipy.optimize"</span><span class="p">)</span>
+
+<span class="k">function</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">x</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span><span class="o">^</span><span class="mi">2</span>
+<span class="k">end</span>
+
+<span class="k">function</span> <span class="n">do_optimize</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">so</span><span class="o">.</span><span class="n">minimize_scalar</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="k">let</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">Any</span><span class="p">}(</span><span class="nb">undef</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+    <span class="n">Threads</span><span class="o">.</span><span class="nd">@threads</span> <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="mi">20</span>
+        <span class="n">_do_optimize</span> <span class="o">=</span> <span class="n">do_optimize</span>
+
+        <span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">_do_optimize</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="k">end</span>
+    <span class="n">println</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="241519314"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/using%20PyCall%20object%20in%20threads/near/241519314" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rein Zustand <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/using.20PyCall.20object.20in.20threads.html#241519314">(Jun 04 2021 at 10:58)</a>:</h4>
+<p>I have tested that using Python multiprocessing, running a Python script that calls Julia functions also result in segfault. Looks like my only viable path is to either go full Julia or stay full Python. Too bad that the only Python function I need is the LBFGSB code from scipy.optimize.</p>
+
+
+
+<a name="241525074"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/using%20PyCall%20object%20in%20threads/near/241525074" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/using.20PyCall.20object.20in.20threads.html#241525074">(Jun 04 2021 at 12:02)</a>:</h4>
+<p>why don't you use a native lbfgs implementation?</p>
+
+
+
+<a name="241526036"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/using%20PyCall%20object%20in%20threads/near/241526036" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rein Zustand <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/using.20PyCall.20object.20in.20threads.html#241526036">(Jun 04 2021 at 12:11)</a>:</h4>
+<p>LBFGS isn't bounded. It has to use a generic <code>Optim.Fminbox</code> and so is less efficient than LBFGSB I think. See <a href="https://discourse.julialang.org/t/optim-jl-vs-scipy-optimize-once-again/61661/35">https://discourse.julialang.org/t/optim-jl-vs-scipy-optimize-once-again/61661/35</a></p>
+
+
+
+<a name="241526840"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/using%20PyCall%20object%20in%20threads/near/241526840" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/using.20PyCall.20object.20in.20threads.html#241526840">(Jun 04 2021 at 12:19)</a>:</h4>
+<p>cool, I didn't know about lbfgs-B :)</p>
+
+
+
+<a name="242965400"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/using%20PyCall%20object%20in%20threads/near/242965400" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Paulito Palmes <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/using.20PyCall.20object.20in.20threads.html#242965400">(Jun 17 2021 at 02:12)</a>:</h4>
+<p>@distributed with pycall should work</p>
+
+
+
+<a name="242965486"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/using%20PyCall%20object%20in%20threads/near/242965486" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Paulito Palmes <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/using.20PyCall.20object.20in.20threads.html#242965486">(Jun 17 2021 at 02:15)</a>:</h4>
+<p>just add @everywhere stubs in loading packages and function defs</p>
+
+
+
+<a name="242995804"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/using%20PyCall%20object%20in%20threads/near/242995804" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rein Zustand <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/using.20PyCall.20object.20in.20threads.html#242995804">(Jun 17 2021 at 10:01)</a>:</h4>
+<p><span class="user-mention" data-user-id="306337">@Paulito Palmes</span> yes I confirm that <code>@distributed</code> with PyCall works. Though by now I have already used <a href="https://github.com/search?q=LBFGSB.jl&amp;type=Repositories">LBFGSB.jl</a>.</p>
+
+
+
+<a name="242999054"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/using%20PyCall%20object%20in%20threads/near/242999054" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rein Zustand <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/using.20PyCall.20object.20in.20threads.html#242999054">(Jun 17 2021 at 10:36)</a>:</h4>
+<p>Using <a href="https://github.com/search?q=LBFGSB.jl&amp;type=Repositories">LBFGSB.jl</a> results in fewer allocations that using Scipy's LBFGSB.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

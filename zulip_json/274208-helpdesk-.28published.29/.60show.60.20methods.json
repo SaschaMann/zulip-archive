@@ -1,0 +1,80 @@
+[
+    {
+        "content": "<p>About 90% of the time, if I bother writing a <code>show</code> method, its just to get something far less verbose than the default method.  Very often, I start this with <code>show(io, typeof(arg))</code>.  However, if my argument has a ton of type parameters, even this is verbose.  I could just do <code>show(io, \"NameOfStruct\")</code> but this loses some of the niceties of the built in method, in particular, it does not prepend the module name if the struct is unexported.</p>\n<p>Any advice for how to easily get this behavior, or more general advice for defining more compact show methods?  Much to my disappointment, <code>IOContext(io, :compact=&gt;true)</code> almost always seems useless.</p>",
+        "id": 227308075,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1614016090
+    },
+    {
+        "content": "<p>I have a similar problem for MCMC samples. I'm approaching it by having a <code>summarize</code> method and defining and propagating methods as I go. For example for named-tuple samples it's something like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"p\">(</span><span class=\"n\">σ</span> <span class=\"o\">=</span> <span class=\"mf\">0.76</span><span class=\"n\">±0</span><span class=\"o\">.</span><span class=\"mi\">0</span><span class=\"p\">,</span> <span class=\"n\">α</span> <span class=\"o\">=</span> <span class=\"mf\">2.3</span><span class=\"n\">±0</span><span class=\"o\">.</span><span class=\"mi\">0</span><span class=\"p\">,</span> <span class=\"n\">β</span> <span class=\"o\">=</span> <span class=\"p\">[</span><span class=\"mf\">0.51</span><span class=\"n\">±0</span><span class=\"o\">.</span><span class=\"mi\">0</span><span class=\"p\">,</span> <span class=\"o\">-</span><span class=\"mf\">0.94</span><span class=\"n\">±0</span><span class=\"o\">.</span><span class=\"mi\">0</span><span class=\"p\">,</span> <span class=\"o\">-</span><span class=\"mf\">0.43</span><span class=\"n\">±0</span><span class=\"o\">.</span><span class=\"mi\">0</span><span class=\"p\">,</span> <span class=\"mf\">0.25</span><span class=\"n\">±0</span><span class=\"o\">.</span><span class=\"mi\">0</span><span class=\"p\">,</span> <span class=\"o\">-</span><span class=\"mf\">0.39</span><span class=\"n\">±0</span><span class=\"o\">.</span><span class=\"mi\">0</span><span class=\"p\">])</span>\n</code></pre></div>",
+        "id": 227308706,
+        "sender_full_name": "Chad Scherrer",
+        "timestamp": 1614016323
+    },
+    {
+        "content": "<p>Well that's just one sample, it's what happened to be in my REPL <span aria-label=\"smile\" class=\"emoji emoji-1f642\" role=\"img\" title=\"smile\">:smile:</span></p>",
+        "id": 227308787,
+        "sender_full_name": "Chad Scherrer",
+        "timestamp": 1614016350
+    },
+    {
+        "content": "<p>Very much a work in progress, buy here's the rough idea:<br>\n<a href=\"https://github.com/cscherrer/NestedTuples.jl/blob/dev/src/summarize.jl\">https://github.com/cscherrer/NestedTuples.jl/blob/dev/src/summarize.jl</a></p>",
+        "id": 227309120,
+        "sender_full_name": "Chad Scherrer",
+        "timestamp": 1614016470
+    },
+    {
+        "content": "<p>Yeah, most of the time what I do is something like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">show</span><span class=\"p\">(</span><span class=\"n\">io</span><span class=\"o\">::</span><span class=\"kt\">IO</span><span class=\"p\">,</span> <span class=\"n\">s</span><span class=\"o\">::</span><span class=\"n\">SomeStruct</span><span class=\"p\">)</span>\n    <span class=\"n\">show</span><span class=\"p\">(</span><span class=\"n\">io</span><span class=\"p\">,</span> <span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"p\">))</span>\n    <span class=\"n\">show</span><span class=\"p\">(</span><span class=\"n\">io</span><span class=\"p\">,</span> <span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">=</span><span class=\"n\">s</span><span class=\"o\">.</span><span class=\"n\">a</span><span class=\"p\">,</span> <span class=\"n\">b</span><span class=\"o\">=</span><span class=\"n\">s</span><span class=\"o\">.</span><span class=\"n\">b</span><span class=\"p\">))</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>which works <em>kind of</em> ok, but the named tuple is even more verbose than I'd like, for example I really don't want the spaces around the <code>=</code> if it makes it too verbose.</p>",
+        "id": 227309200,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1614016507
+    },
+    {
+        "content": "<p>but like I said, the above gets ruined if <code>SomeStruct</code> has a ton of elaborate type parameters, in that case I have to do <code>show(io, \"SomeStruct\")</code> but run into the problems I mentioned above</p>",
+        "id": 227309295,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1614016543
+    },
+    {
+        "content": "<p>Yeah it would be great to have a nice composable solution to this, but I don't know of anything</p>",
+        "id": 227309431,
+        "sender_full_name": "Chad Scherrer",
+        "timestamp": 1614016586
+    },
+    {
+        "content": "<p>In the long run the solution is probably to have much more useful behavior from <code>IOContext(io, :compact=&gt;true)</code>, possible with more options.</p>",
+        "id": 227309507,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1614016617
+    },
+    {
+        "content": "<p>Yep the default still has a silly number of decimal places, and an easy way to adjust it would be really great</p>",
+        "id": 227309659,
+        "sender_full_name": "Chad Scherrer",
+        "timestamp": 1614016673
+    },
+    {
+        "content": "<p>Unfortunately it can't be easily extended without type piracy, so to do this in a demo package would take re-implementing <code>IOContext</code>.  Might be a good little project to copy in paste it with the intention of eventually adding the re-worked version to <code>Base</code>.  The fact that <code>:compact=&gt;true</code> seems useless to me might suggest that it's used in some context I'm just completely missing.</p>",
+        "id": 227309909,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1614016761
+    },
+    {
+        "content": "<p>It does make output shorter, just not short enough in many cases</p>",
+        "id": 227311219,
+        "sender_full_name": "Chad Scherrer",
+        "timestamp": 1614017283
+    },
+    {
+        "content": "<p>I have a hack in one of my packages, maybe this helps:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">show_type_name</span><span class=\"p\">(</span><span class=\"n\">io</span><span class=\"p\">,</span> <span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"p\">)</span><span class=\"o\">.</span><span class=\"n\">name</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 227311605,
+        "sender_full_name": "Rafael Fourquet",
+        "timestamp": 1614017440
+    },
+    {
+        "content": "<p>even Base sort of has this problem: <a href=\"https://github.com/JuliaLang/julia/issues/36263\">https://github.com/JuliaLang/julia/issues/36263</a></p>",
+        "id": 227375980,
+        "sender_full_name": "Gustavo Goretkin",
+        "timestamp": 1614049164
+    }
+]

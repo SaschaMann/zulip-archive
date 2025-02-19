@@ -1,0 +1,132 @@
+<html>
+<head><meta charset="utf-8"><title>Index Matching + List Comprehension · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Index.20Matching.20.2B.20List.20Comprehension.html">Index Matching + List Comprehension</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="229263774"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Index%20Matching%20%2B%20List%20Comprehension/near/229263774" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Index.20Matching.20.2B.20List.20Comprehension.html#229263774">(Mar 08 2021 at 08:31)</a>:</h4>
+<p>Hello Coders: </p>
+<p>I have two tables. Table 1: </p>
+<p>T1.A = [1,2,3,4,5]<br>
+T1.B = ["Fri", "Sat", "Wed", "Fri", "Mon"]</p>
+<p>And Table 2:</p>
+<p>T2.A = ["Monday", "Tuesday", "Wednesday", <br>
+              "Thursday", "Friday", "Saturday", "Sunday"]<br>
+T2.B = [0.25, 0.35, 0.50, 0.15, 0.30, 0.75, 0.65]</p>
+<p>How can I create a new column in T1 as T1.C that <br>
+is populated with T2.B values where T1.B matches?</p>
+<p>The general <a href="https://github.com/search?q=Query.jl&amp;type=Repositories">Query.jl</a> approach might be: </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">T1</span><span class="o">.</span><span class="n">C</span> <span class="o">=</span> <span class="nd">@from</span> <span class="n">i</span> <span class="kp">in</span> <span class="n">T1</span> <span class="k">begin</span>
+              <span class="nd">@join</span> <span class="n">j</span> <span class="kp">in</span> <span class="n">T2</span> <span class="n">on</span> <span class="n">i</span><span class="o">.</span><span class="n">a</span> <span class="n">T1</span><span class="o">.</span><span class="n">B</span>  <span class="n">equals</span> <span class="n">startswith</span><span class="p">(</span><span class="n">T2</span><span class="o">.</span><span class="n">A</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="o">:</span><span class="mi">3</span><span class="p">)</span>
+              <span class="nd">@select</span> <span class="p">{</span><span class="n">T1</span><span class="o">.</span><span class="n">A</span><span class="p">,</span><span class="n">T1</span><span class="o">.</span><span class="n">B</span><span class="p">,</span><span class="n">T2</span><span class="o">.</span><span class="n">A</span><span class="p">,</span><span class="n">T2</span><span class="o">.</span><span class="n">B</span><span class="p">}</span>
+              <span class="nd">@collect</span> <span class="n">Dataframe</span>
+</code></pre></div>
+<p>Is there a way to execute this using DataFrames<br>
+and or some higher-order function? </p>
+<p>Thank you,</p>
+
+
+
+<a name="229273790"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Index%20Matching%20%2B%20List%20Comprehension/near/229273790" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Index.20Matching.20.2B.20List.20Comprehension.html#229273790">(Mar 08 2021 at 10:03)</a>:</h4>
+<p>Best way to proceed is to build temporary  column and join on it.</p>
+<p>DataFrames documentation do not have information about joining with random conditions. And it is considered bad practice anyway, since it generates nested loops.</p>
+
+
+
+<a name="229311186"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Index%20Matching%20%2B%20List%20Comprehension/near/229311186" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Index.20Matching.20.2B.20List.20Comprehension.html#229311186">(Mar 08 2021 at 14:55)</a>:</h4>
+<p>Thank you for this <span class="user-mention" data-user-id="272771">@Andrey Oskin</span> . <br>
+Did you examine the <a href="https://github.com/search?q=Query.jl&amp;type=Repositories">Query.jl</a> SQL-LINQ <br>
+code I provided?</p>
+
+
+
+<a name="229312113"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Index%20Matching%20%2B%20List%20Comprehension/near/229312113" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Index.20Matching.20.2B.20List.20Comprehension.html#229312113">(Mar 08 2021 at 15:01)</a>:</h4>
+<p>Nope, but I suppose they went cross-join + filter road. It's not much you can do, if you have no information about keys.</p>
+
+
+
+<a name="229312310"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Index%20Matching%20%2B%20List%20Comprehension/near/229312310" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Index.20Matching.20.2B.20List.20Comprehension.html#229312310">(Mar 08 2021 at 15:02)</a>:</h4>
+<p>Standard way to join is sorting over keys with the following double cursor iteration.</p>
+
+
+
+<a name="229312348"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Index%20Matching%20%2B%20List%20Comprehension/near/229312348" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Index.20Matching.20.2B.20List.20Comprehension.html#229312348">(Mar 08 2021 at 15:02)</a>:</h4>
+<p>So it is <code>O(n log(n))</code></p>
+
+
+
+<a name="229312497"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Index%20Matching%20%2B%20List%20Comprehension/near/229312497" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Index.20Matching.20.2B.20List.20Comprehension.html#229312497">(Mar 08 2021 at 15:03)</a>:</h4>
+<p>If you do not know anything in advance, then you have to take all possible pairs and it is <code>O(n^2)</code> operations (assuming that dataframes has roughly the same size).</p>
+
+
+
+<a name="229312648"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Index%20Matching%20%2B%20List%20Comprehension/near/229312648" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Index.20Matching.20.2B.20List.20Comprehension.html#229312648">(Mar 08 2021 at 15:04)</a>:</h4>
+<p>So it is either speed or convenience.</p>
+
+
+
+<a name="229314776"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Index%20Matching%20%2B%20List%20Comprehension/near/229314776" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Index.20Matching.20.2B.20List.20Comprehension.html#229314776">(Mar 08 2021 at 15:17)</a>:</h4>
+<p>So, you can do something like this</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span> <span class="n">DataFrames</span>
+<span class="k">using</span> <span class="n">Chain</span>
+
+<span class="n">T1</span> <span class="o">=</span> <span class="n">DataFrame</span><span class="p">(</span><span class="s">"A"</span> <span class="o">=&gt;</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">],</span> <span class="s">"B"</span> <span class="o">=&gt;</span> <span class="p">[</span><span class="s">"Fri"</span><span class="p">,</span> <span class="s">"Sat"</span><span class="p">,</span> <span class="s">"Wed"</span><span class="p">,</span> <span class="s">"Fri"</span><span class="p">,</span> <span class="s">"Mon"</span><span class="p">])</span>
+<span class="n">T2</span> <span class="o">=</span> <span class="n">DataFrame</span><span class="p">(</span><span class="s">"A"</span> <span class="o">=&gt;</span> <span class="p">[</span><span class="s">"Monday"</span><span class="p">,</span> <span class="s">"Tuesday"</span><span class="p">,</span> <span class="s">"Wednesday"</span><span class="p">,</span> <span class="s">"Thursday"</span><span class="p">,</span> <span class="s">"Friday"</span><span class="p">,</span> <span class="s">"Saturday"</span><span class="p">,</span> <span class="s">"Sunday"</span><span class="p">],</span> <span class="s">"B"</span> <span class="o">=&gt;</span> <span class="p">[</span><span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.35</span><span class="p">,</span> <span class="mf">0.50</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">,</span> <span class="mf">0.30</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">,</span> <span class="mf">0.65</span><span class="p">])</span>
+
+<span class="nd">@chain</span> <span class="n">T2</span> <span class="k">begin</span>
+    <span class="n">transform</span><span class="p">(</span><span class="o">:</span><span class="n">A</span> <span class="o">=&gt;</span> <span class="p">(</span><span class="n">y</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">x</span> <span class="o">-&gt;</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">3</span><span class="p">])</span><span class="o">.</span><span class="p">(</span><span class="n">y</span><span class="p">))</span> <span class="o">=&gt;</span> <span class="o">:</span><span class="n">A3</span><span class="p">)</span>
+    <span class="n">innerjoin</span><span class="p">(</span><span class="n">T1</span><span class="p">,</span> <span class="n">on</span> <span class="o">=</span> <span class="p">[</span><span class="o">:</span><span class="n">A3</span> <span class="o">=&gt;</span> <span class="o">:</span><span class="n">B</span><span class="p">],</span> <span class="n">makeunique</span> <span class="o">=</span> <span class="kc">true</span><span class="p">)</span>
+    <span class="n">select</span><span class="p">([</span><span class="s">"A_1"</span><span class="p">,</span> <span class="s">"A3"</span><span class="p">,</span> <span class="s">"A"</span><span class="p">,</span> <span class="s">"B"</span><span class="p">])</span>
+    <span class="n">rename</span><span class="p">(</span><span class="s">"A_1"</span> <span class="o">=&gt;</span> <span class="s">"T1A"</span><span class="p">,</span> <span class="s">"A3"</span> <span class="o">=&gt;</span> <span class="s">"T1B"</span><span class="p">,</span> <span class="s">"A"</span> <span class="o">=&gt;</span> <span class="s">"T2A"</span><span class="p">,</span> <span class="s">"B"</span> <span class="o">=&gt;</span> <span class="s">"T2B"</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="mi">5</span><span class="n">×4</span> <span class="n">DataFrame</span>
+ <span class="n">Row</span> <span class="n">│</span> <span class="n">T1A</span>    <span class="n">T1B</span>     <span class="n">T2A</span>        <span class="n">T2B</span>
+     <span class="n">│</span> <span class="kt">Int64</span>  <span class="n">String</span>  <span class="n">String</span>     <span class="kt">Float64</span>
+<span class="n">─────┼───────────────────────────────────</span>
+   <span class="mi">1</span> <span class="n">│</span>     <span class="mi">5</span>  <span class="n">Mon</span>     <span class="n">Monday</span>        <span class="mf">0.25</span>
+   <span class="mi">2</span> <span class="n">│</span>     <span class="mi">3</span>  <span class="n">Wed</span>     <span class="n">Wednesday</span>     <span class="mf">0.5</span>
+   <span class="mi">3</span> <span class="n">│</span>     <span class="mi">1</span>  <span class="n">Fri</span>     <span class="n">Friday</span>        <span class="mf">0.3</span>
+   <span class="mi">4</span> <span class="n">│</span>     <span class="mi">4</span>  <span class="n">Fri</span>     <span class="n">Friday</span>        <span class="mf">0.3</span>
+   <span class="mi">5</span> <span class="n">│</span>     <span class="mi">2</span>  <span class="n">Sat</span>     <span class="n">Saturday</span>      <span class="mf">0.75</span>
+</code></pre></div>
+
+
+
+<a name="229348765"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Index%20Matching%20%2B%20List%20Comprehension/near/229348765" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Index.20Matching.20.2B.20List.20Comprehension.html#229348765">(Mar 08 2021 at 18:24)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="272771">Andrey Oskin</span> <a href="#narrow/stream/274208-helpdesk-(published)/topic/Index.20Matching.20.2B.20List.20Comprehension/near/229312113">said</a>:</p>
+<blockquote>
+<p>Nope, but I suppose they went cross-join + filter road. It's not much you can do, if you have no information about keys.</p>
+</blockquote>
+<p>Yes -- this was my code. However,  the startswith() method does not work <br>
+in its current placement. I am glad to some level it could convey the issue.</p>
+
+
+
+<a name="229349389"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Index%20Matching%20%2B%20List%20Comprehension/near/229349389" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Index.20Matching.20.2B.20List.20Comprehension.html#229349389">(Mar 08 2021 at 18:28)</a>:</h4>
+<p>Yes -- this is excellent <span class="user-mention" data-user-id="272771">@Andrey Oskin</span> .  <br>
+Thank you.</p>
+<p><span class="user-mention" data-user-id="272771">@Andrey Oskin</span> <br>
+In this example, what does the @transform line do?</p>
+<p>And how did A mutate to A_1?</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

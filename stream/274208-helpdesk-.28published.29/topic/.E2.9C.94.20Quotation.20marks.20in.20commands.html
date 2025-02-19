@@ -1,0 +1,237 @@
+<html>
+<head><meta charset="utf-8"><title>✔ Quotation marks in commands · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html">✔ Quotation marks in commands</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="289508456"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289508456" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289508456">(Jul 13 2022 at 19:25)</a>:</h4>
+<p>I want to run <code>exiv2</code> from Julia, but the command I need has very weird syntax: <code>exiv2 -M"set ..."</code>. Julia transforms this to <code>exiv2 '-M"set ..."'</code>, which fails to run.</p>
+<p>Is there a way to force Julia not to quote those quotation marks?</p>
+
+
+
+<a name="289523584"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289523584" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289523584">(Jul 13 2022 at 21:29)</a>:</h4>
+<p>raw string literal?</p>
+
+
+
+<a name="289524205"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289524205" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289524205">(Jul 13 2022 at 21:34)</a>:</h4>
+<p>Nope -- still inserts the <code>'</code>.</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="n">rsl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sa">r</span><span class="sr">"""-M</span><span class="err">"</span><span class="sr">set ...</span><span class="err">"</span><span class="sr"> """</span><span class="w"></span>
+<span class="go">r"-M\"set ...\" "</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">cmd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sb">`exiv2 </span><span class="si">$rsl</span><span class="sb">`</span><span class="w"></span>
+<span class="go">`exiv2 'r"-M\"set ...\" "'`</span>
+</code></pre></div>
+
+
+
+<a name="289524396"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289524396" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289524396">(Jul 13 2022 at 21:36)</a>:</h4>
+<p>You can use single quotes if there is nothing for the shell to interpolate</p>
+
+
+
+<a name="289524658"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289524658" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289524658">(Jul 13 2022 at 21:39)</a>:</h4>
+<p>You could also check how Julia itself parses its own flags, since it has <code>julia -C"native,..."</code></p>
+
+
+
+<a name="289524994"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289524994" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289524994">(Jul 13 2022 at 21:42)</a>:</h4>
+<p>Single quotes don't work here; if I use them, Julia inserts double quotes. I'm not sure seeing how Julia parses those is useful here, since the problem is declaring the command, not parsing it.</p>
+
+
+
+<a name="289525099"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289525099" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289525099">(Jul 13 2022 at 21:43)</a>:</h4>
+<p>I see. My only thought is to construct a valid command in your shell, write the string to a file, and inspect the bytes to reproduce it in Julia.</p>
+
+
+
+<a name="289525105"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289525105" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289525105">(Jul 13 2022 at 21:43)</a>:</h4>
+<p>with a hex editor</p>
+
+
+
+<a name="289525219"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289525219" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289525219">(Jul 13 2022 at 21:44)</a>:</h4>
+<p>That's a good idea, thanks!</p>
+
+
+
+<a name="289525303"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289525303" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289525303">(Jul 13 2022 at 21:45)</a>:</h4>
+<p>But I wonder if I'm missing something, or if this is a limitation of Julia's command declaration syntax and opening an issue is warranted.</p>
+
+
+
+<a name="289525319"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289525319" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289525319">(Jul 13 2022 at 21:45)</a>:</h4>
+<p>No idea how useful that would be, but it may at least give you an idea of where the bytes differ and give some insight on how to correct them</p>
+
+
+
+<a name="289525836"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289525836" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289525836">(Jul 13 2022 at 21:50)</a>:</h4>
+<p>Which OS are you on?</p>
+
+
+
+<a name="289526348"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289526348" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289526348">(Jul 13 2022 at 21:55)</a>:</h4>
+<p>Linux.</p>
+
+
+
+<a name="289527658"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289527658" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289527658">(Jul 13 2022 at 22:09)</a>:</h4>
+<p>Best I could come up with as a newbie:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">run</span><span class="p">(</span><span class="n">setenv</span><span class="p">(</span><span class="sb">`sh -c "echo </span><span class="se">\$</span><span class="sb">TEST"`</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="s">"TEST"</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">"exiv2 -M</span><span class="se">\"</span><span class="s">set foo</span><span class="se">\"</span><span class="s">"</span><span class="p">,)));</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="289527742"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289527742" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289527742">(Jul 13 2022 at 22:10)</a>:</h4>
+<p>that will at least echo what you want using a shell subprocess</p>
+
+
+
+<a name="289527749"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289527749" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289527749">(Jul 13 2022 at 22:10)</a>:</h4>
+<p>No idea how to remove the envar</p>
+
+
+
+<a name="289527959"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289527959" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289527959">(Jul 13 2022 at 22:13)</a>:</h4>
+<p>Thanks for giving it a shot!</p>
+
+
+
+<a name="289528817"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289528817" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289528817">(Jul 13 2022 at 22:23)</a>:</h4>
+<p>Hm, <code>exiv2</code> is not doing what it's supposed to do when I run it like this. Everything looks fine, though.</p>
+
+
+
+<a name="289528907"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289528907" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289528907">(Jul 13 2022 at 22:24)</a>:</h4>
+<p>Anyway, I found a workaround (I can write the command to a temporary file and point <code>exiv2</code> to it). I think I'll open an issue, though; Julia should be able to handle this syntax.</p>
+
+
+
+<a name="289529087"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289529087" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289529087">(Jul 13 2022 at 22:26)</a>:</h4>
+<p>I see your frustration</p>
+
+
+
+<a name="289529103"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289529103" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289529103">(Jul 13 2022 at 22:26)</a>:</h4>
+<p><code>Cmd(["exiv2 -M\"set Xmp.dc.title lang=en-US Hello\" /home/mfiano/Temp/test.png"])</code></p>
+
+
+
+<a name="289529119"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289529119" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289529119">(Jul 13 2022 at 22:26)</a>:</h4>
+<p>I mean those damn single quotes</p>
+
+
+
+<a name="289530625"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289530625" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289530625">(Jul 13 2022 at 22:45)</a>:</h4>
+<p>I just spent a half hour trying to figure it out. It seems Julia is trying to be too clever with its interpolation. Inserting a backslash to escape a double quote automatically places the whole string in single quotes, which is not a valid command.</p>
+
+
+
+<a name="289533343"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289533343" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289533343">(Jul 13 2022 at 23:16)</a>:</h4>
+<p>Yep, that's it.</p>
+
+
+
+<a name="289570047"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289570047" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289570047">(Jul 14 2022 at 09:37)</a>:</h4>
+<p>Please file an issue!</p>
+
+
+
+<a name="289579618"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289579618" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sebastian Pfitzner <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289579618">(Jul 14 2022 at 11:29)</a>:</h4>
+<p>FWIW, in this specific case you can also call <code>exiv2</code> with</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">run</span><span class="p">(</span><span class="sb">`exiv2 "-Mset Exif.Photo.UserComment My Photo 333" transport.png`</span><span class="p">)</span><span class="w"></span>
+<span class="n">Process</span><span class="p">(</span><span class="sb">`exiv2 '-Mset Exif.Photo.UserComment My Photo 333' transport.png`</span><span class="p">,</span><span class="w"> </span><span class="n">ProcessExited</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span><span class="w"></span>
+
+<span class="n">shell</span><span class="o">&gt;</span><span class="w"> </span><span class="n">exiv2</span><span class="w"> </span><span class="n">transport</span><span class="o">.</span><span class="n">png</span><span class="w"></span>
+<span class="o">...</span><span class="w"></span>
+<span class="n">Exif</span><span class="w"> </span><span class="n">comment</span><span class="w">    </span><span class="o">:</span><span class="w"> </span><span class="n">My</span><span class="w"> </span><span class="n">Photo</span><span class="w"> </span><span class="mi">333</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="289579764"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289579764" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sebastian Pfitzner <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289579764">(Jul 14 2022 at 11:30)</a>:</h4>
+<p>actually, what's the command that's failing for you?</p>
+
+
+
+<a name="289579785"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289579785" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sebastian Pfitzner <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289579785">(Jul 14 2022 at 11:31)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">run</span><span class="p">(</span><span class="sb">`exiv2 -M"set Exif.Photo.UserComment My Photo3" transport.png`</span><span class="p">)</span><span class="w"></span>
+<span class="n">Process</span><span class="p">(</span><span class="sb">`exiv2 '-Mset Exif.Photo.UserComment My Photo3' transport.png`</span><span class="p">,</span><span class="w"> </span><span class="n">ProcessExited</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span><span class="w"></span>
+</code></pre></div>
+<p>also works fine for me</p>
+
+
+
+<a name="289595283"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289595283" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289595283">(Jul 14 2022 at 13:58)</a>:</h4>
+<p>I think I was confused by Julia eliding the <code>"</code>s:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="sb">`exiv2 -M"set Exif.Photo.UserComment My Photo3" image.jpg`</span><span class="w"></span>
+<span class="go">`exiv2 '-Mset Exif.Photo.UserComment My Photo3' image.jpg`</span>
+</code></pre></div>
+<p>I assumed this would fail. So I tried this:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="n">run</span><span class="p">(</span><span class="sb">`exiv2 -M\"set Exif.Photo.UserComment My Photo3\" image.jpg`</span><span class="p">)</span><span class="w"></span>
+<span class="go">-M option 1: Invalid command line:</span>
+<span class="go">exiv2: Error parsing -M option arguments</span>
+<span class="go">Usage: exiv2 [ options ] [ action ] file ...</span>
+
+<span class="go">Manipulate the Exif metadata of images.</span>
+<span class="gr">ERROR: failed process: Process(`exiv2 '-M"set' Exif.Photo.UserComment My 'Photo3"' image.jpg`, ProcessExited(1)) [1]</span>
+</code></pre></div>
+<p>and I think from here I went down a rabbit hole instead of just doing the simplest thing, running the original command <span aria-label="sweat smile" class="emoji emoji-1f605" role="img" title="sweat smile">:sweat_smile:</span></p>
+
+
+
+<a name="289595363"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289595363" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sebastian Pfitzner <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289595363">(Jul 14 2022 at 13:59)</a>:</h4>
+<p>yeah, Cmd printing is very confusing</p>
+
+
+
+<a name="289595380"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289595380" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sebastian Pfitzner <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289595380">(Jul 14 2022 at 13:59)</a>:</h4>
+<p>Julia tries to be too smart for its own good</p>
+
+
+
+<a name="289595450"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Quotation%20marks%20in%20commands/near/289595450" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Quotation.20marks.20in.20commands.html#289595450">(Jul 14 2022 at 13:59)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="345789">mbaz</span> has marked this topic as resolved.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

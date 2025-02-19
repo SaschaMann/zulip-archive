@@ -1,0 +1,67 @@
+<html>
+<head><meta charset="utf-8"><title>✔ dev local package from another package fails github act... · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20dev.20local.20package.20from.20another.20package.20fails.20github.20act.2E.2E.2E.html">✔ dev local package from another package fails github act...</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="313027254"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20dev%20local%20package%20from%20another%20package%20fails%20github%20act.../near/313027254" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brynjar Smári Bjarnason <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20dev.20local.20package.20from.20another.20package.20fails.20github.20act.2E.2E.2E.html#313027254">(Nov 30 2022 at 10:29)</a>:</h4>
+<p>Hey.<br>
+I have created a package ABC that is on Github and it runs Github actions for building and testing the code and everything works.</p>
+<p>I have another package XYZ that I am developing which requires me to make changes to ABC as well. In XYZ i did a <code>dev ~/projects/ABC</code> which brought the local package to my XYZ and changes to ABC show up in XYZ.</p>
+<p>Now I have committed the changes to ABC and pushed to Github, it builds and passes the tests on Github actions.</p>
+<p>When I commit and push XYZ it refers to my local ABC and Github actions fail.</p>
+<p>Should I add the ABC package in some other way to XYZ?</p>
+
+
+
+<a name="313034917"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20dev%20local%20package%20from%20another%20package%20fails%20github%20act.../near/313034917" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rik Huijzer <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20dev.20local.20package.20from.20another.20package.20fails.20github.20act.2E.2E.2E.html#313034917">(Nov 30 2022 at 11:13)</a>:</h4>
+<p>Are you committing the Manifest.toml for XYZ as well? Without it, the package should use the registered version from the registry. If you plan to publish the package, it is generally advised to not commit the Manifest.toml</p>
+<p>What you also can do to fix it is to explicitly install the ABC package in XYZ via something like</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">steps</span><span class="o">:</span><span class="w"></span>
+<span class="w">    </span><span class="p">[</span><span class="o">...</span><span class="p">]</span><span class="w"></span>
+<span class="w">    </span><span class="o">-</span><span class="w"> </span><span class="n">julia</span><span class="w"> </span><span class="o">--</span><span class="n">project</span><span class="w"> </span><span class="o">-</span><span class="n">e</span><span class="w"> </span><span class="err">'</span><span class="k">using</span><span class="w"> </span><span class="n">Pkg</span><span class="p">;</span><span class="w"> </span><span class="n">Pkg</span><span class="o">.</span><span class="n">add</span><span class="p">(;</span><span class="w"> </span><span class="n">url</span><span class="o">=</span><span class="s">"https://github.com/&lt;username&gt;/ABC.jl"</span><span class="p">)</span><span class="o">'</span><span class="w"></span>
+<span class="w">    </span><span class="o">-</span><span class="w"> </span><span class="n">julia</span><span class="o">-</span><span class="n">actions</span><span class="o">/</span><span class="n">julia</span><span class="o">-</span><span class="n">runtest</span><span class="nd">@v1</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="313036724"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20dev%20local%20package%20from%20another%20package%20fails%20github%20act.../near/313036724" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brynjar Smári Bjarnason <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20dev.20local.20package.20from.20another.20package.20fails.20github.20act.2E.2E.2E.html#313036724">(Nov 30 2022 at 11:23)</a>:</h4>
+<p>Thanks!<br>
+I am committing the Manifest. I'll look into removing that. <br>
+Aha so you install ABC in the Github action before installing the rest of the packages? That would work!</p>
+
+
+
+<a name="313039477"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20dev%20local%20package%20from%20another%20package%20fails%20github%20act.../near/313039477" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Fredrik Ekre <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20dev.20local.20package.20from.20another.20package.20fails.20github.20act.2E.2E.2E.html#313039477">(Nov 30 2022 at 11:39)</a>:</h4>
+<p>You can add ABC by URL instead of tracking the local path.</p>
+
+
+
+<a name="313218720"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20dev%20local%20package%20from%20another%20package%20fails%20github%20act.../near/313218720" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brynjar Smári Bjarnason <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20dev.20local.20package.20from.20another.20package.20fails.20github.20act.2E.2E.2E.html#313218720">(Dec 01 2022 at 07:32)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="272644">Fredrik Ekre</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/dev.20local.20package.20from.20another.20package.20fails.20github.20actions/near/313039477">said</a>:</p>
+<blockquote>
+<p>You can add ABC by URL instead of tracking the local path.</p>
+</blockquote>
+<p>Well then i can't develop XYZ without pushing ABC to GitHub. I want local changes to be available in XYZ while developing.</p>
+<p><span class="user-mention" data-user-id="431304">@Rik Huijzer</span> solution works! Thanks a lot.</p>
+
+
+
+<a name="313218771"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20dev%20local%20package%20from%20another%20package%20fails%20github%20act.../near/313218771" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20dev.20local.20package.20from.20another.20package.20fails.20github.20act.2E.2E.2E.html#313218771">(Dec 01 2022 at 07:33)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="461850">Brynjar Smári Bjarnason</span> has marked this topic as resolved.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

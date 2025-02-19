@@ -1,0 +1,43 @@
+<html>
+<head><meta charset="utf-8"><title>@turbo macro trouble · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.40turbo.20macro.20trouble.html">@turbo macro trouble</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="280136946"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%40turbo%20macro%20trouble/near/280136946" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jack C <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.40turbo.20macro.20trouble.html#280136946">(Apr 25 2022 at 22:17)</a>:</h4>
+<p>Why might this application of the turbo macro fail and fall back to inbounds and simd? We're trying to do <code>mul!(y, A, x[:, col])</code>, but without copying the column of x.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">matmul_column!</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">col</span><span class="p">)</span>
+    <span class="nd">@turbo</span> <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="n">axes</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">yi</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="k">in</span> <span class="n">axes</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+            <span class="n">yi</span> <span class="o">+=</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">col</span><span class="p">]</span>
+        <span class="k">end</span>
+        <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">yi</span>
+    <span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="280207706"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%40turbo%20macro%20trouble/near/280207706" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.40turbo.20macro.20trouble.html#280207706">(Apr 26 2022 at 13:13)</a>:</h4>
+<p>What are the element types?<br>
+Note that <code>@view(x[:,col])</code> should also let you avoid copying the column of <code>x</code>.</p>
+
+
+
+<a name="280379427"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%40turbo%20macro%20trouble/near/280379427" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jack C <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.40turbo.20macro.20trouble.html#280379427">(Apr 27 2022 at 16:59)</a>:</h4>
+<p>Turns out the element types were <code>SVectors</code>, no wonder it wasn't working. Reshaping things to be a 3d <code>SArray</code> rather than a <code>SMatrix{SVector}</code> fixed it.</p>
+<p>The matrix <code>x</code> is tiny enough that I don't want the overhead of the <code>@view</code>, but that's something I should measure too.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

@@ -1,0 +1,140 @@
+[
+    {
+        "content": "<p>How can I enable/disable printing of @debug?<br>\nApparently I need to set <code>JULIA_DEBUG</code>, but I can't find what to set it to.</p>\n<p>Update: I think I got it; it's set to the module name where debug messages are activated.</p>",
+        "id": 240400603,
+        "sender_full_name": "mbaz",
+        "timestamp": 1622068638
+    },
+    {
+        "content": "<p>You can also use <code>global_logger</code></p>",
+        "id": 240422149,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1622093451
+    },
+    {
+        "content": "<p>Just create logger with the needed level and make it active with <code>global_logger</code> command</p>",
+        "id": 240422181,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1622093502
+    },
+    {
+        "content": "<p>The documentation on logging badly needs an example or two. I find it impossible to understand.</p>",
+        "id": 240464863,
+        "sender_full_name": "mbaz",
+        "timestamp": 1622121299
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span> <span class=\"n\">Logging</span>\n\n<span class=\"c\"># Create logger with Debug level printing to stderr</span>\n<span class=\"n\">debuglogger</span> <span class=\"o\">=</span> <span class=\"n\">ConsoleLogger</span><span class=\"p\">(</span><span class=\"nb\">stderr</span><span class=\"p\">,</span> <span class=\"n\">Logging</span><span class=\"o\">.</span><span class=\"n\">Debug</span><span class=\"p\">)</span>\n\n<span class=\"c\"># Set this logger as the global logger</span>\n<span class=\"n\">global_logger</span><span class=\"p\">(</span><span class=\"n\">debuglogger</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 240465084,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1622121381
+    },
+    {
+        "content": "<p>Thanks! I kind of see how it works, but:<br>\n1) <code>Logging.Debug</code> is not in the docs as far as I can see<br>\n2) What does it mean for a logger to be \"global\"? If I run this in my module, will it enable debug messages in other modules?<br>\n3) How do I turn it off? Do I need to create a <code>NullLogger</code> and set it as global?<br>\n4) Will <code>debuglogger</code> ignore <code>@info</code> messages?</p>",
+        "id": 240466074,
+        "sender_full_name": "mbaz",
+        "timestamp": 1622121823
+    },
+    {
+        "content": "<ol>\n<li>Please contribute!</li>\n<li>Global to that Julia session. This is inherited by all tasks. To use a logger locally you can use e.g.</li>\n</ol>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">with_logger</span><span class=\"p\">(</span><span class=\"n\">debuglogger</span><span class=\"p\">)</span> <span class=\"k\">do</span>\n      <span class=\"c\"># do stuff</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<ol start=\"3\">\n<li>The default logger is <code>ConsoleLogger(stderr, Logging.Info)</code> (the current logger is also returned from <code>global_logger</code>, so the code above could be <code>oldlogger = global_logger(debuglogger)</code> and then <code>global_logger(oldlogger)</code> to return to the previous state.</li>\n<li>No, the level you give is the minimal level, so anything above <code>Logging.Debug</code> will go through.</li>\n</ol>",
+        "id": 240466895,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1622122114
+    },
+    {
+        "content": "<p>I recommend having a look at <a href=\"https://github.com/oxinabox/LoggingExtras.jl\">LoggingExtras.jl</a>, in particular the README which includes a lot of useful information.</p>",
+        "id": 240467089,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1622122194
+    },
+    {
+        "content": "<ol>\n<li><a href=\"https://docs.julialang.org/en/v1/stdlib/Logging/#Log-event-structure\">https://docs.julialang.org/en/v1/stdlib/Logging/#Log-event-structure</a></li>\n</ol>\n<p>But it can be better, probably.</p>",
+        "id": 240467228,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1622122232
+    },
+    {
+        "content": "<p>I mean, it is written \"There are several standard levels of type LogLevel; user-defined levels are also possible. Each is distinct in purpose:\" and key words after that.</p>\n<p>But maybe it would be better to write <code>Logging.Debug</code> instead of just <code>Debug</code>, since it is not exported anyway.</p>",
+        "id": 240467384,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1622122301
+    },
+    {
+        "content": "<p>The standard log levels could have their own docstrings, which would help in search I bet.</p>",
+        "id": 240467524,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1622122364
+    },
+    {
+        "content": "<p>If I can figure this stuff out, I'll certainly contribute to the docs. I'll also take a look at LoggingExtras.<br>\nMore questions:<br>\n1) The default logger has level <code>Logging.Info</code>, but only <code>@debug</code> is ignored; <code>@info</code>, <code>@warn</code> and <code>@error</code> all produce messages. How does this work?<br>\n2) I have a large module with <code>@debug</code>s scattered around. There may even be <code>@debug</code>s, <code>@info</code>s and <code>@warn</code>s in the same function/block of code. How do I turn <code>@debug</code> on/off without affecting the others, using the Logging module functions? I can do this with <code>JULIA_DEBUG</code>, so it must be possible, but I don't see how.</p>",
+        "id": 240468308,
+        "sender_full_name": "mbaz",
+        "timestamp": 1622122689
+    },
+    {
+        "content": "<ol>\n<li>Because the level is the minum: info, warn, and error levels are all larger or equal to that level so the messages are displayed</li>\n</ol>",
+        "id": 240469273,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1622123073
+    },
+    {
+        "content": "<ol start=\"2\">\n<li>You can not really do that with the Logging stdlib only so you need <a href=\"https://github.com/search?q=LoggingExtras.jl&amp;type=Repositories\">LoggingExtras.jl</a>. There is an example in the README for filtering out everything from <a href=\"https://github.com/search?q=HTTP.jl&amp;type=Repositories\">HTTP.jl</a> (<a href=\"https://github.com/oxinabox/LoggingExtras.jl#filterout-any-messages-from-http\">https://github.com/oxinabox/LoggingExtras.jl#filterout-any-messages-from-http</a>)</li>\n</ol>",
+        "id": 240469365,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1622123115
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"272771\">Andrey Oskin</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Enabling.20.40debug/near/240467384\">said</a>:</p>\n<blockquote>\n<p>I mean, it is written \"There are several standard levels of type LogLevel; user-defined levels are also possible. Each is distinct in purpose:\" and key words after that.</p>\n<p>But maybe it would be better to write <code>Logging.Debug</code> instead of just <code>Debug</code>, since it is not exported anyway.</p>\n</blockquote>\n<p>Maybe it's just me, but I feel like the docs could be more explicit, or simply show a couple of examples to clarify.  It was not obvious to me that <code>Debug</code> is meant to be used as <code>Logging.Debug</code> and that it corresponds to a number. The docs also imply that the level are ordered, but the order is not made explicit (although it makes sense to assume it is <code>Info&lt;Debug&lt;Warn&lt;Error</code>).</p>",
+        "id": 240469539,
+        "sender_full_name": "mbaz",
+        "timestamp": 1622123189
+    },
+    {
+        "content": "<p>Oh! So <code>Debug &lt; Info</code>. That is the piece I was missing.</p>",
+        "id": 240469656,
+        "sender_full_name": "mbaz",
+        "timestamp": 1622123244
+    },
+    {
+        "content": "<p>Thanks a lot, Frederik and Andrey <span aria-label=\"smile\" class=\"emoji emoji-1f642\" role=\"img\" title=\"smile\">:smile:</span></p>",
+        "id": 240470113,
+        "sender_full_name": "mbaz",
+        "timestamp": 1622123444
+    },
+    {
+        "content": "<p>But it's <br>\n<code>Debug &lt; Info &lt; Warn &lt; Error</code></p>",
+        "id": 240472583,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1622124403
+    },
+    {
+        "content": "<p>Just for the reference</p>\n<p><a href=\"https://github.com/JuliaLang/julia/blob/master/base/logging.jl#L135-L140\">https://github.com/JuliaLang/julia/blob/master/base/logging.jl#L135-L140</a></p>",
+        "id": 240473749,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1622124840
+    },
+    {
+        "content": "<p>Yeah -- just figured it out <span aria-label=\"sunglasses\" class=\"emoji emoji-1f60e\" role=\"img\" title=\"sunglasses\">:sunglasses:</span></p>",
+        "id": 240473769,
+        "sender_full_name": "mbaz",
+        "timestamp": 1622124844
+    },
+    {
+        "content": "<p><a href=\"https://github.com/JuliaLang/julia/pull/40979\">https://github.com/JuliaLang/julia/pull/40979</a></p>",
+        "id": 240576864,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1622191805
+    },
+    {
+        "content": "<p><a href=\"https://github.com/JuliaLang/julia/pull/40980\">https://github.com/JuliaLang/julia/pull/40980</a></p>",
+        "id": 240578007,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1622192433
+    },
+    {
+        "content": "<p>Thanks <span class=\"user-mention\" data-user-id=\"272644\">@Fredrik Ekre</span> , those additions are great.</p>",
+        "id": 240601393,
+        "sender_full_name": "mbaz",
+        "timestamp": 1622207388
+    }
+]

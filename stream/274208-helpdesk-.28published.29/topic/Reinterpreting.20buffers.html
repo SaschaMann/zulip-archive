@@ -1,0 +1,148 @@
+<html>
+<head><meta charset="utf-8"><title>Reinterpreting buffers · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reinterpreting.20buffers.html">Reinterpreting buffers</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="279078485"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reinterpreting%20buffers/near/279078485" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reinterpreting.20buffers.html#279078485">(Apr 15 2022 at 13:08)</a>:</h4>
+<p>Is there an idiom in Julia for taking a chunk of memory and reinterpreting it as  a given struct?</p>
+<p>For example, suppose I have a parametric type:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="kt">Foo</span><span class="p">{</span><span class="kt">T</span><span class="p">}</span>
+  <span class="n">a</span><span class="o">::</span><span class="kt">T</span>
+  <span class="n">b</span><span class="o">::</span><span class="kt">Int</span>
+<span class="k">end</span>
+
+<span class="n">foo</span> <span class="o">=</span> <span class="n">Foo</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+</code></pre></div>
+<p>How can I "dump" this object into a memory chunk and then later reinterpret this memory chunk as a <code>Foo{T}</code>?</p>
+
+
+
+<a name="279079087"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reinterpreting%20buffers/near/279079087" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Chad Scherrer <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reinterpreting.20buffers.html#279079087">(Apr 15 2022 at 13:16)</a>:</h4>
+<p>Do you mean like this?</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">buf</span> <span class="o">=</span> <span class="n">reinterpret</span><span class="p">(</span><span class="n">reshape</span><span class="p">,</span> <span class="kt">Float64</span><span class="p">,</span> <span class="p">[</span><span class="n">foo</span><span class="p">])</span>
+<span class="mi">2</span><span class="o">×</span><span class="mi">1</span> <span class="n">reinterpret</span><span class="p">(</span><span class="n">reshape</span><span class="p">,</span> <span class="kt">Float64</span><span class="p">,</span> <span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Foo</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}})</span> <span class="n">with</span> <span class="n">eltype</span> <span class="kt">Float64</span><span class="o">:</span>
+ <span class="mf">1.0</span>
+ <span class="mf">1.0e-323</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">reinterpret</span><span class="p">(</span><span class="kt">Foo</span><span class="p">{</span><span class="kt">Float64</span><span class="p">},</span> <span class="n">buf</span><span class="p">)</span>
+<span class="mi">1</span><span class="o">×</span><span class="mi">1</span> <span class="n">reinterpret</span><span class="p">(</span><span class="kt">Foo</span><span class="p">{</span><span class="kt">Float64</span><span class="p">},</span> <span class="n">reinterpret</span><span class="p">(</span><span class="n">reshape</span><span class="p">,</span> <span class="kt">Float64</span><span class="p">,</span> <span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Foo</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}}))</span><span class="o">:</span>
+ <span class="kt">Foo</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="279079765"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reinterpreting%20buffers/near/279079765" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reinterpreting.20buffers.html#279079765">(Apr 15 2022 at 13:25)</a>:</h4>
+<p>Probably <span class="user-mention" data-user-id="286004">@Chad Scherrer</span> <span aria-label="smile" class="emoji emoji-1f642" role="img" title="smile">:smile:</span> I wonder why we need the reshape and Float64 in the first reinterpret call, will read the docstring...</p>
+
+
+
+<a name="279143896"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reinterpreting%20buffers/near/279143896" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reinterpreting.20buffers.html#279143896">(Apr 16 2022 at 03:10)</a>:</h4>
+<p><code>reshape</code> is nice so that you have 1 column per <code>foo</code>, with rows corresponding to the data of <code>foo</code>.</p>
+
+
+
+<a name="279161690"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reinterpreting%20buffers/near/279161690" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Júlio Hoffimann <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reinterpreting.20buffers.html#279161690">(Apr 16 2022 at 10:47)</a>:</h4>
+<p>To be honest I find it a bit strange that reshape is an argument to the function. Maybe it would be more intuitive to introduce a keyword reshape=true or ascolumns=true in future releases? Can reinterpret accept other functions that are not reshape?</p>
+
+
+
+<a name="279168769"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reinterpreting%20buffers/near/279168769" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Chad Scherrer <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reinterpreting.20buffers.html#279168769">(Apr 16 2022 at 13:34)</a>:</h4>
+<p>Not sure. Yeah, the <code>reshape</code> argument is weird to me too</p>
+
+
+
+<a name="279173442"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reinterpreting%20buffers/near/279173442" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reinterpreting.20buffers.html#279173442">(Apr 16 2022 at 15:36)</a>:</h4>
+<p>If you don't like the reshape you don't have to use it</p>
+
+
+
+<a name="279173445"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reinterpreting%20buffers/near/279173445" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reinterpreting.20buffers.html#279173445">(Apr 16 2022 at 15:36)</a>:</h4>
+<p>You can just reinterpret it as bools or UInt8s or whatever you like</p>
+
+
+
+<a name="279173470"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reinterpreting%20buffers/near/279173470" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reinterpreting.20buffers.html#279173470">(Apr 16 2022 at 15:37)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">buf</span> <span class="o">=</span> <span class="n">reinterpret</span><span class="p">(</span><span class="kt">UInt8</span><span class="p">,</span> <span class="p">[</span><span class="n">Foo</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">Foo</span><span class="p">(</span><span class="mf">3.0</span><span class="p">,</span> <span class="mi">4</span><span class="p">)])</span>
+<span class="mi">32</span><span class="o">-</span><span class="n">element</span> <span class="n">reinterpret</span><span class="p">(</span><span class="kt">UInt8</span><span class="p">,</span> <span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Foo</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}})</span><span class="o">:</span>
+ <span class="mh">0x00</span>
+ <span class="mh">0x00</span>
+ <span class="mh">0x00</span>
+ <span class="mh">0x00</span>
+ <span class="mh">0x00</span>
+ <span class="mh">0x00</span>
+ <span class="mh">0xf0</span>
+ <span class="mh">0x3f</span>
+ <span class="mh">0x02</span>
+ <span class="mh">0x00</span>
+ <span class="mh">0x00</span>
+ <span class="mh">0x00</span>
+ <span class="mh">0x00</span>
+    <span class="o">⋮</span>
+ <span class="mh">0x00</span>
+ <span class="mh">0x00</span>
+ <span class="mh">0x00</span>
+ <span class="mh">0x08</span>
+ <span class="mh">0x40</span>
+ <span class="mh">0x04</span>
+ <span class="mh">0x00</span>
+ <span class="mh">0x00</span>
+ <span class="mh">0x00</span>
+ <span class="mh">0x00</span>
+ <span class="mh">0x00</span>
+ <span class="mh">0x00</span>
+ <span class="mh">0x00</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">buf</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mh">0x01</span>
+<span class="mh">0x01</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">reinterpret</span><span class="p">(</span><span class="kt">Foo</span><span class="p">{</span><span class="kt">Float64</span><span class="p">},</span> <span class="n">buf</span><span class="p">)</span>
+<span class="mi">2</span><span class="o">-</span><span class="n">element</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">Foo</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}}</span><span class="o">:</span>
+ <span class="kt">Foo</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}(</span><span class="mf">1.0000000000000002</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+ <span class="kt">Foo</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}(</span><span class="mf">3.0</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="279179488"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Reinterpreting%20buffers/near/279179488" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Reinterpreting.20buffers.html#279179488">(Apr 16 2022 at 18:06)</a>:</h4>
+<p>Another option is to load a pointer of the given type from the memory. This is more efficient than creating a reinterpreted buffer, but it's not exactly idiomatic.<br>
+Something like:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span> <span class="k">struct</span> <span class="kt">Foo</span>
+           <span class="n">x</span><span class="o">::</span><span class="kt">UInt32</span>
+           <span class="n">y</span><span class="o">::</span><span class="kt">Char</span>
+           <span class="n">z</span><span class="o">::</span><span class="kt">Int64</span>
+       <span class="k">end</span>
+
+<span class="gp">julia&gt;</span> <span class="n">x</span> <span class="o">=</span> <span class="p">(</span><span class="mi">55</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+<span class="go">(55, 1.0)</span>
+
+<span class="gp">julia&gt;</span> <span class="n">unsafe_load</span><span class="p">(</span><span class="kt">Ptr</span><span class="p">{</span><span class="kt">Foo</span><span class="p">}(</span><span class="n">pointer_from_objref</span><span class="p">(</span><span class="kt">Ref</span><span class="p">(</span><span class="n">x</span><span class="p">))))</span>
+<span class="go">Foo(0x00000037, '\0', 4607182418800017408)</span>
+</code></pre></div>
+<p>If you use <code>Ref</code> + <code>unsafe_load</code>, the allocation will optimize away and it will be a no-op.<br>
+Of course you need to be a bit careful with this:</p>
+<ul>
+<li>Use <code>GC.@preserve</code> judiciously to prevent the GC from messing up your pointers</li>
+<li>This technique can circumvent inner constructors, which can make your code unsound if invalid instances are being created</li>
+<li>Any padding in your structs will also be loaded, which can also create invalid instances</li>
+</ul>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

@@ -1,0 +1,122 @@
+<html>
+<head><meta charset="utf-8"><title>✔ Non-polluting `@auto` macro · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Non-polluting.20.60.40auto.60.20macro.html">✔ Non-polluting `@auto` macro</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="277467593"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Non-polluting%20%60%40auto%60%20macro/near/277467593" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mosè Giordano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Non-polluting.20.60.40auto.60.20macro.html#277467593">(Apr 01 2022 at 19:28)</a>:</h4>
+<p><code>auto</code> is everyone's favourite (modern) C++ keyword.  Now that we have typed globals, it'd be cool to be able to type <code>@auto x = 2</code> to get the expression <code>x::Int = 2</code>.  Probably not much useful here, but it may be useful in cases where the right-hand side has a much more complex type.</p>
+<p>I quickly cooked this macro:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">macro</span> <span class="n">auto</span><span class="p">(</span><span class="n">ex</span><span class="p">)</span>
+    <span class="n">ex</span><span class="o">.</span><span class="n">head</span> <span class="o">!==</span> <span class="o">:</span><span class="p">(</span><span class="o">=</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="n">throw</span><span class="p">(</span><span class="kt">ArgumentError</span><span class="p">(</span><span class="s">"@auto: `</span><span class="si">$</span><span class="p">(</span><span class="n">ex</span><span class="p">)</span><span class="s">` is not an assigment expression."</span><span class="p">))</span>
+    <span class="k">return</span> <span class="o">:</span><span class="p">(</span> <span class="n">x</span> <span class="o">=</span> <span class="o">$</span><span class="p">(</span><span class="n">esc</span><span class="p">(</span><span class="n">ex</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">2</span><span class="p">]));</span> <span class="o">$</span><span class="p">(</span><span class="n">esc</span><span class="p">(</span><span class="n">ex</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span><span class="o">::</span><span class="n">typeof</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">x</span> <span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>but it has the issue that it pollutes the current scope with a gensym'ed variable (<code>x</code> in the body of the macro).  if you're wondering why doing </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="o">$</span><span class="p">(</span><span class="n">esc</span><span class="p">(</span><span class="n">ex</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">2</span><span class="p">]));</span> <span class="o">$</span><span class="p">(</span><span class="n">esc</span><span class="p">(</span><span class="n">ex</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span><span class="o">::</span><span class="n">typeof</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">x</span>
+</code></pre></div>
+<p>instead of</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="o">$</span><span class="p">(</span><span class="n">esc</span><span class="p">(</span><span class="n">ex</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span><span class="o">::</span><span class="n">typeof</span><span class="p">(</span><span class="o">$</span><span class="p">(</span><span class="n">esc</span><span class="p">(</span><span class="n">ex</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">2</span><span class="p">])))</span> <span class="o">=</span> <span class="o">$</span><span class="p">(</span><span class="n">esc</span><span class="p">(</span><span class="n">ex</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+</code></pre></div>
+<p>that's to avoid evaluating twice the right-hand side of the assignment expression, which may be costly and/or have side effects.</p>
+<p>is there a way to avoid avoid polluting the namespace with the extra name?  I thought about doing</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">let</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="o">$</span><span class="p">(</span><span class="n">esc</span><span class="p">(</span><span class="n">ex</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+    <span class="k">global</span> <span class="o">$</span><span class="p">(</span><span class="n">esc</span><span class="p">(</span><span class="n">ex</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span><span class="o">::</span><span class="n">typeof</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">x</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>but that wouldn't work in local scope (like inside a function), which would be nice to retain.</p>
+<p>I feel like someone else may have done this macro before</p>
+
+
+
+<a name="277468211"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Non-polluting%20%60%40auto%60%20macro/near/277468211" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Non-polluting.20.60.40auto.60.20macro.html#277468211">(Apr 01 2022 at 19:35)</a>:</h4>
+<p>What's the problem with polluting the namespace with <code>gensym</code>ed variable names?</p>
+<p>I'd been meaning to write a version of this macro that walks the following expression, applying the assert to all assignments.<br>
+Would be nice to write <code>@auto function</code>, for example.</p>
+
+
+
+<a name="277470719"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Non-polluting%20%60%40auto%60%20macro/near/277470719" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Non-polluting.20.60.40auto.60.20macro.html#277470719">(Apr 01 2022 at 20:00)</a>:</h4>
+<p>In Julia I'd like a more specific name than <code>auto</code> since, unlike in C++, the pre-identifier position isn't assumed to be a type. eg <code>@infertype</code>, <code>@infer</code>, ...</p>
+
+
+
+<a name="277472995"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Non-polluting%20%60%40auto%60%20macro/near/277472995" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Non-polluting.20.60.40auto.60.20macro.html#277472995">(Apr 01 2022 at 20:22)</a>:</h4>
+<p>I like <code>@stable</code></p>
+
+
+
+<a name="277473002"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Non-polluting%20%60%40auto%60%20macro/near/277473002" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rowley <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Non-polluting.20.60.40auto.60.20macro.html#277473002">(Apr 01 2022 at 20:22)</a>:</h4>
+<p>Is</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="n">foo</span><span class="p">()</span>
+<span class="n">x</span><span class="o">::</span><span class="n">typeof</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</code></pre></div>
+<p>valid Julia (I'm on my phone)?</p>
+
+
+
+<a name="277473133"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Non-polluting%20%60%40auto%60%20macro/near/277473133" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Non-polluting.20.60.40auto.60.20macro.html#277473133">(Apr 01 2022 at 20:22)</a>:</h4>
+<p>Yes,  but that's just an assert, not a promise that the type won't change</p>
+
+
+
+<a name="277473335"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Non-polluting%20%60%40auto%60%20macro/near/277473335" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Christopher Rowley <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Non-polluting.20.60.40auto.60.20macro.html#277473335">(Apr 01 2022 at 20:24)</a>:</h4>
+<p>Or</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="n">foo</span><span class="p">()</span>
+<span class="n">x</span><span class="o">::</span><span class="n">typeof</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">x</span>
+</code></pre></div>
+<p>?</p>
+
+
+
+<a name="277473597"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Non-polluting%20%60%40auto%60%20macro/near/277473597" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Non-polluting.20.60.40auto.60.20macro.html#277473597">(Apr 01 2022 at 20:26)</a>:</h4>
+<p><span class="user-mention" data-user-id="269186">@Mosè Giordano</span> </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">macro</span> <span class="n">auto</span><span class="p">(</span><span class="n">ex</span><span class="p">)</span>
+           <span class="n">ex</span><span class="o">.</span><span class="n">head</span> <span class="o">!==</span> <span class="o">:</span><span class="p">(</span><span class="o">=</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="n">throw</span><span class="p">(</span><span class="kt">ArgumentError</span><span class="p">(</span><span class="s">"@auto: `</span><span class="si">$</span><span class="p">(</span><span class="n">ex</span><span class="p">)</span><span class="s">` is not an assigment expression."</span><span class="p">))</span>
+           <span class="k">quote</span>
+               <span class="k">local</span> <span class="n">x</span> <span class="o">=</span> <span class="o">$</span><span class="p">(</span><span class="n">esc</span><span class="p">(</span><span class="n">ex</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+               <span class="o">$</span><span class="p">(</span><span class="n">esc</span><span class="p">(</span><span class="n">ex</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span><span class="o">::</span><span class="n">typeof</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">x</span>
+           <span class="k">end</span>
+       <span class="k">end</span>
+</code></pre></div>
+<p>The <code>local</code> keyword is what you want I think</p>
+
+
+
+<a name="277479564"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Non-polluting%20%60%40auto%60%20macro/near/277479564" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mosè Giordano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Non-polluting.20.60.40auto.60.20macro.html#277479564">(Apr 01 2022 at 21:24)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="284680">chriselrod</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Non-polluting.20.60.40auto.60.20macro/near/277468211">said</a>:</p>
+<blockquote>
+<p>What's the problem with polluting the namespace with <code>gensym</code>ed variable names?</p>
+</blockquote>
+<p>it isn't a <em>huge</em> deal, but it's still nice to avoid introducing extra variables if possible at all.  I've got bitten by tests in <code>Base</code> which check the number of names before and after calling a macro <span aria-label="smile" class="emoji emoji-1f642" role="img" title="smile">:smile:</span> </p>
+<p><span class="user-mention silent" data-user-id="269150">Mason Protter</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Non-polluting.20.60.40auto.60.20macro/near/277473597">said</a>:</p>
+<blockquote>
+<p>The <code>local</code> keyword is what you want I think</p>
+</blockquote>
+<p>oh yes, that was it, thanks!</p>
+
+
+
+<a name="277479570"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Non-polluting%20%60%40auto%60%20macro/near/277479570" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Non-polluting.20.60.40auto.60.20macro.html#277479570">(Apr 01 2022 at 21:24)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269186">Mosè Giordano</span> has marked this topic as resolved.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

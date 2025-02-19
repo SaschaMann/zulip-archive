@@ -1,0 +1,50 @@
+[
+    {
+        "content": "<p>This seems trivial but I haven't found a way to do it. I have range of floating numbers</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">ts</span><span class=\"w\"></span>\n<span class=\"go\">10000.0:1.0:20000.0</span>\n</code></pre></div>\n<p>and I would like to convert it to a range of integers to use it to index an array, ie I would like to get <code>10000:1:20000</code>. The closest I come is with</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">floor</span><span class=\"o\">.</span><span class=\"p\">(</span><span class=\"kt\">Int</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">ts</span><span class=\"p\">)</span><span class=\"w\"></span>\n</code></pre></div>\n<p>but this returns an array not a range. The array works fine for indexing but I wonder if there is a more julian way of doing this.</p>",
+        "id": 313950598,
+        "sender_full_name": "Andreas",
+        "timestamp": 1670242747
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">ts</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mf\">1e5</span><span class=\"o\">:</span><span class=\"mf\">1.0</span><span class=\"o\">:</span><span class=\"mf\">2e5</span><span class=\"w\"></span>\n<span class=\"go\">100000.0:1.0:200000.0</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">dump</span><span class=\"p\">(</span><span class=\"n\">ts</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"go\">StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}</span>\n<span class=\"go\">  ref: Base.TwicePrecision{Float64}</span>\n<span class=\"go\">    hi: Float64 100000.0</span>\n<span class=\"go\">    lo: Float64 0.0</span>\n<span class=\"go\">  step: Base.TwicePrecision{Float64}</span>\n<span class=\"go\">    hi: Float64 1.0</span>\n<span class=\"go\">    lo: Float64 0.0</span>\n<span class=\"go\">  len: Int64 100001</span>\n<span class=\"go\">  offset: Int64 1</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">range</span><span class=\"p\">(</span><span class=\"kt\">Int</span><span class=\"p\">(</span><span class=\"n\">ts</span><span class=\"o\">.</span><span class=\"n\">ref</span><span class=\"o\">.</span><span class=\"n\">hi</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">step</span><span class=\"o\">=</span><span class=\"kt\">Int</span><span class=\"p\">(</span><span class=\"n\">ts</span><span class=\"o\">.</span><span class=\"n\">step</span><span class=\"o\">.</span><span class=\"n\">hi</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">length</span><span class=\"o\">=</span><span class=\"n\">ts</span><span class=\"o\">.</span><span class=\"n\">len</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"go\">100000:1:200000</span>\n</code></pre></div>",
+        "id": 313951876,
+        "sender_full_name": "Jack Shannon",
+        "timestamp": 1670243193
+    },
+    {
+        "content": "<p><span aria-label=\"star struck\" class=\"emoji emoji-1f929\" role=\"img\" title=\"star struck\">:star_struck:</span>  I had no idea that a range was a struct with fields you can access. Thank you <span aria-label=\"smile\" class=\"emoji emoji-1f642\" role=\"img\" title=\"smile\">:smile:</span></p>",
+        "id": 313952246,
+        "sender_full_name": "Andreas",
+        "timestamp": 1670243331
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"390284\">Andreas</span> has marked this topic as resolved.</p>",
+        "id": 313952262,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1670243338
+    },
+    {
+        "content": "<p>the fields are not API, so it's better to write this as</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">ts</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mf\">1e5</span><span class=\"o\">:</span><span class=\"mf\">1.0</span><span class=\"o\">:</span><span class=\"mf\">2e5</span><span class=\"w\"></span>\n<span class=\"mf\">100000.0</span><span class=\"o\">:</span><span class=\"mf\">1.0</span><span class=\"o\">:</span><span class=\"mf\">200000.0</span><span class=\"w\"></span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"kt\">Int</span><span class=\"p\">(</span><span class=\"n\">first</span><span class=\"p\">(</span><span class=\"n\">ts</span><span class=\"p\">))</span><span class=\"o\">:</span><span class=\"kt\">Int</span><span class=\"p\">(</span><span class=\"n\">step</span><span class=\"p\">(</span><span class=\"n\">ts</span><span class=\"p\">))</span><span class=\"o\">:</span><span class=\"kt\">Int</span><span class=\"p\">(</span><span class=\"n\">last</span><span class=\"p\">(</span><span class=\"n\">ts</span><span class=\"p\">))</span><span class=\"w\"></span>\n<span class=\"mi\">100000</span><span class=\"o\">:</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">200000</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 313954459,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670244112
+    },
+    {
+        "content": "<p>Makes sense. I should have thought of that</p>",
+        "id": 313954933,
+        "sender_full_name": "Andreas",
+        "timestamp": 1670244273
+    },
+    {
+        "content": "<p>crucially, that'll also work with other kinds of ranges, like this one:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">ts</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mi\">10</span><span class=\"o\">^</span><span class=\"mi\">5</span><span class=\"o\">:</span><span class=\"mi\">2</span><span class=\"o\">*</span><span class=\"mi\">10</span><span class=\"o\">^</span><span class=\"mi\">5</span><span class=\"w\"></span>\n<span class=\"mi\">100000</span><span class=\"o\">:</span><span class=\"mi\">200000</span><span class=\"w\"></span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"n\">ts</span><span class=\"o\">.</span><span class=\"n\">step</span><span class=\"w\"></span>\n<span class=\"n\">ERROR</span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"n\">type</span><span class=\"w\"> </span><span class=\"kt\">UnitRange</span><span class=\"w\"> </span><span class=\"n\">has</span><span class=\"w\"> </span><span class=\"n\">no</span><span class=\"w\"> </span><span class=\"n\">field</span><span class=\"w\"> </span><span class=\"n\">step</span><span class=\"w\"></span>\n<span class=\"n\">Stacktrace</span><span class=\"o\">:</span><span class=\"w\"></span>\n<span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"n\">getproperty</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">UnitRange</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">},</span><span class=\"w\"> </span><span class=\"n\">f</span><span class=\"o\">::</span><span class=\"kt\">Symbol</span><span class=\"p\">)</span><span class=\"w\"></span>\n<span class=\"w\">   </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"w\"> </span><span class=\"o\">./</span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">37</span><span class=\"w\"></span>\n<span class=\"w\"> </span><span class=\"p\">[</span><span class=\"mi\">2</span><span class=\"p\">]</span><span class=\"w\"> </span><span class=\"n\">top</span><span class=\"o\">-</span><span class=\"n\">level</span><span class=\"w\"> </span><span class=\"n\">scope</span><span class=\"w\"></span>\n<span class=\"w\">   </span><span class=\"err\">@</span><span class=\"w\"> </span><span class=\"n\">REPL</span><span class=\"p\">[</span><span class=\"mi\">5</span><span class=\"p\">]</span><span class=\"o\">:</span><span class=\"mi\">1</span><span class=\"w\"></span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span><span class=\"w\"> </span><span class=\"kt\">Int</span><span class=\"p\">(</span><span class=\"n\">first</span><span class=\"p\">(</span><span class=\"n\">ts</span><span class=\"p\">))</span><span class=\"o\">:</span><span class=\"kt\">Int</span><span class=\"p\">(</span><span class=\"n\">step</span><span class=\"p\">(</span><span class=\"n\">ts</span><span class=\"p\">))</span><span class=\"o\">:</span><span class=\"kt\">Int</span><span class=\"p\">(</span><span class=\"n\">last</span><span class=\"p\">(</span><span class=\"n\">ts</span><span class=\"p\">))</span><span class=\"w\"></span>\n<span class=\"mi\">100000</span><span class=\"o\">:</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">200000</span><span class=\"w\"></span>\n</code></pre></div>",
+        "id": 313956596,
+        "sender_full_name": "Sukera",
+        "timestamp": 1670244834
+    },
+    {
+        "content": "<p>Great, thank you <span aria-label=\"smile\" class=\"emoji emoji-1f642\" role=\"img\" title=\"smile\">:smile:</span></p>",
+        "id": 313960576,
+        "sender_full_name": "Andreas",
+        "timestamp": 1670246074
+    }
+]

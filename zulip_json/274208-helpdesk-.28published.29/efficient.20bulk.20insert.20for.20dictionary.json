@@ -1,0 +1,32 @@
+[
+    {
+        "content": "<p>Is there a method for efficiently inserting a large number of elements into a dictionary?</p>",
+        "id": 225177836,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1612453882
+    },
+    {
+        "content": "<p>I think your best bet is <code>merge</code>:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">d2</span> <span class=\"o\">=</span> <span class=\"kt\">Dict</span><span class=\"p\">(</span><span class=\"mi\">900</span><span class=\"o\">:</span><span class=\"mi\">1100</span> <span class=\"o\">.=&gt;</span> <span class=\"n\">rand</span><span class=\"o\">.</span><span class=\"p\">());</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">push!</span><span class=\"p\">(</span><span class=\"n\">d1</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">d2</span><span class=\"o\">...</span><span class=\"p\">)</span> <span class=\"n\">setup</span><span class=\"o\">=</span><span class=\"p\">(</span><span class=\"n\">d1</span> <span class=\"o\">=</span> <span class=\"kt\">Dict</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">1000</span> <span class=\"o\">.=&gt;</span> <span class=\"n\">rand</span><span class=\"o\">.</span><span class=\"p\">()));</span>\n  <span class=\"mf\">456.000</span> <span class=\"n\">μs</span> <span class=\"p\">(</span><span class=\"mi\">10716</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mf\">496.19</span> <span class=\"n\">KiB</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">merge!</span><span class=\"p\">(</span><span class=\"n\">d1</span><span class=\"p\">,</span> <span class=\"o\">$</span><span class=\"n\">d2</span><span class=\"p\">)</span> <span class=\"n\">setup</span><span class=\"o\">=</span><span class=\"p\">(</span><span class=\"n\">d1</span> <span class=\"o\">=</span> <span class=\"kt\">Dict</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">1000</span> <span class=\"o\">.=&gt;</span> <span class=\"n\">rand</span><span class=\"o\">.</span><span class=\"p\">()));</span>\n  <span class=\"mf\">2.711</span> <span class=\"n\">μs</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 225208310,
+        "sender_full_name": "Alex Ames",
+        "timestamp": 1612466297
+    },
+    {
+        "content": "<p>Unless I'm missing something here, I think the problem is that this requires you to build a second dictionary.  I'm not entirely sure what happens on dictionary creation, but it probably is doing unnecessary work building that second dicitonary.  What I'm looking for is a mass insertion of unhashed stuff without constructing an extra dict</p>",
+        "id": 225208626,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1612466457
+    },
+    {
+        "content": "<p>I think looping through <code>d[k] = v</code> is your best bet. The time to insert a single element is ~10 ns, and I'm not sure there's any way to escape linear scaling on the number of inserted elements.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">function</span> <span class=\"n\">mergepairs!</span><span class=\"p\">(</span><span class=\"n\">d</span><span class=\"p\">,</span> <span class=\"n\">p</span><span class=\"p\">)</span>\n           <span class=\"k\">for</span> <span class=\"p\">(</span><span class=\"n\">k</span><span class=\"p\">,</span> <span class=\"n\">v</span><span class=\"p\">)</span> <span class=\"kp\">in</span> <span class=\"n\">p</span>\n               <span class=\"n\">d</span><span class=\"p\">[</span><span class=\"n\">k</span><span class=\"p\">]</span> <span class=\"o\">=</span> <span class=\"n\">v</span>\n           <span class=\"k\">end</span>\n       <span class=\"k\">end</span>\n<span class=\"n\">mergepairs!</span> <span class=\"p\">(</span><span class=\"n\">generic</span> <span class=\"k\">function</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">d3</span> <span class=\"o\">=</span> <span class=\"mi\">900</span><span class=\"o\">:</span><span class=\"mi\">1100</span> <span class=\"o\">.=&gt;</span> <span class=\"n\">rand</span><span class=\"o\">.</span><span class=\"p\">();</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">mergepairs!</span><span class=\"p\">(</span><span class=\"n\">d1</span><span class=\"p\">,</span> <span class=\"n\">d3</span><span class=\"p\">)</span> <span class=\"n\">setup</span><span class=\"o\">=</span><span class=\"p\">(</span><span class=\"n\">d1</span> <span class=\"o\">=</span> <span class=\"kt\">Dict</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">1000</span> <span class=\"o\">.=&gt;</span> <span class=\"n\">rand</span><span class=\"o\">.</span><span class=\"p\">()));</span>\n  <span class=\"mf\">2.256</span> <span class=\"n\">μs</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 225214260,
+        "sender_full_name": "Alex Ames",
+        "timestamp": 1612468856
+    },
+    {
+        "content": "<p>Yes I'm pretty sure there is no optimised routine implemented in <code>Base</code> for bulk insertion. And I'm not sure what that would look like... maybe doing better when multiple keys hash the same but it's not clear to me that the resulting book-keeping would be better than sequential insert.</p>",
+        "id": 225458763,
+        "sender_full_name": "Rafael Fourquet",
+        "timestamp": 1612696379
+    }
+]

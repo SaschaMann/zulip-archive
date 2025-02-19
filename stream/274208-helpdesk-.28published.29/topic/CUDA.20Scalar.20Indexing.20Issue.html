@@ -1,0 +1,104 @@
+<html>
+<head><meta charset="utf-8"><title>CUDA Scalar Indexing Issue · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/CUDA.20Scalar.20Indexing.20Issue.html">CUDA Scalar Indexing Issue</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="249312666"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/CUDA%20Scalar%20Indexing%20Issue/near/249312666" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/CUDA.20Scalar.20Indexing.20Issue.html#249312666">(Aug 13 2021 at 01:27)</a>:</h4>
+<p>Any idea why this would be causing a scalar indexing problem?</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">begin</span>
+    <span class="k">for</span> <span class="n">n</span> <span class="k">in</span> <span class="mi">4</span><span class="o">:</span><span class="mi">6</span>
+        <span class="n">x4</span> <span class="o">=</span> <span class="n">CuArray</span><span class="p">(</span><span class="n">rand</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+        <span class="n">sz</span> <span class="o">=</span> <span class="n">size</span><span class="p">(</span><span class="n">x4</span><span class="p">)</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">CUDA</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="kt">Float32</span><span class="p">,</span> <span class="n">sz</span><span class="p">),</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">CUDA</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="kt">Int64</span><span class="p">,</span> <span class="n">sz</span><span class="p">),</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">CUDA</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="kt">Float32</span><span class="p">,</span> <span class="n">sz</span> <span class="o">.+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">Scalar</span> <span class="n">indexing</span> <span class="n">is</span> <span class="n">disallowed</span><span class="o">.</span>
+
+<span class="n">Invocation</span> <span class="n">of</span> <span class="n">getindex</span> <span class="n">resulted</span> <span class="k">in</span> <span class="n">scalar</span> <span class="n">indexing</span> <span class="n">of</span> <span class="n">a</span> <span class="n">GPU</span> <span class="n">array</span><span class="o">.</span>
+
+<span class="n">This</span> <span class="n">is</span> <span class="n">typically</span> <span class="n">caused</span> <span class="n">by</span> <span class="n">calling</span> <span class="n">an</span> <span class="n">iterating</span> <span class="n">implementation</span> <span class="n">of</span> <span class="n">a</span> <span class="n">method</span><span class="o">.</span>
+
+<span class="n">Such</span> <span class="n">implementations</span> <span class="o">*</span><span class="k">do</span> <span class="n">not</span><span class="o">*</span> <span class="n">execute</span> <span class="n">on</span> <span class="n">the</span> <span class="n">GPU</span><span class="p">,</span> <span class="n">but</span> <span class="n">very</span> <span class="n">slowly</span> <span class="n">on</span> <span class="n">the</span> <span class="n">CPU</span><span class="p">,</span>
+
+<span class="n">and</span> <span class="n">therefore</span> <span class="n">are</span> <span class="n">only</span> <span class="n">permitted</span> <span class="n">from</span> <span class="n">the</span> <span class="n">REPL</span> <span class="k">for</span> <span class="n">prototyping</span> <span class="n">purposes</span><span class="o">.</span>
+
+<span class="n">If</span> <span class="n">you</span> <span class="n">did</span> <span class="n">intend</span> <span class="n">to</span> <span class="n">index</span> <span class="n">this</span> <span class="n">array</span><span class="p">,</span> <span class="n">annotate</span> <span class="n">the</span> <span class="n">caller</span> <span class="n">with</span> <span class="nd">@allowscalar</span><span class="o">.</span>
+
+<span class="n">error</span><span class="p">(</span><span class="o">::</span><span class="kt">String</span><span class="p">)</span><span class="nd">@error</span><span class="o">.</span><span class="n">jl</span><span class="o">:</span><span class="mi">33</span>
+<span class="n">assertscalar</span><span class="p">(</span><span class="o">::</span><span class="kt">String</span><span class="p">)</span><span class="nd">@indexing</span><span class="o">.</span><span class="n">jl</span><span class="o">:</span><span class="mi">53</span>
+<span class="n">getindex</span><span class="p">(</span><span class="o">::</span><span class="kt">CUDA</span><span class="o">.</span><span class="kt">CuArray</span><span class="p">{</span><span class="kt">Float32</span><span class="p">,</span> <span class="mi">2</span><span class="p">},</span> <span class="o">::</span><span class="kt">Int64</span><span class="p">)</span><span class="nd">@indexing</span><span class="o">.</span><span class="n">jl</span><span class="o">:</span><span class="mi">86</span>
+<span class="n">iterate</span><span class="nd">@abstractarray</span><span class="o">.</span><span class="n">jl</span><span class="o">:</span><span class="mi">1096</span><span class="p">[</span><span class="n">inlined</span><span class="p">]</span>
+<span class="n">iterate</span><span class="nd">@abstractarray</span><span class="o">.</span><span class="n">jl</span><span class="o">:</span><span class="mi">1094</span><span class="p">[</span><span class="n">inlined</span><span class="p">]</span>
+<span class="n">indexed_iterate</span><span class="p">(</span><span class="o">::</span><span class="kt">CUDA</span><span class="o">.</span><span class="kt">CuArray</span><span class="p">{</span><span class="kt">Float32</span><span class="p">,</span> <span class="mi">2</span><span class="p">},</span> <span class="o">::</span><span class="kt">Int64</span><span class="p">)</span><span class="nd">@tuple</span><span class="o">.</span><span class="n">jl</span><span class="o">:</span><span class="mi">89</span>
+<span class="n">top</span><span class="o">-</span><span class="n">level</span> <span class="n">scope</span><span class="nd">@Local</span><span class="o">:</span> <span class="mi">5</span>
+</code></pre></div>
+
+
+
+<a name="249483900"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/CUDA%20Scalar%20Indexing%20Issue/near/249483900" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/CUDA.20Scalar.20Indexing.20Issue.html#249483900">(Aug 15 2021 at 00:18)</a>:</h4>
+<p>Not sure why, but removing the <code>[0, 1]</code> from <code>rand</code> fixes the problem</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">begin</span>
+    <span class="k">for</span> <span class="n">n</span> <span class="k">in</span> <span class="mi">4</span><span class="o">:</span><span class="mi">6</span>
+        <span class="n">x4</span> <span class="o">=</span> <span class="n">CuArray</span><span class="p">(</span><span class="n">rand</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+        <span class="n">sz</span> <span class="o">=</span> <span class="n">size</span><span class="p">(</span><span class="n">x4</span><span class="p">)</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">CUDA</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="kt">Float32</span><span class="p">,</span> <span class="n">sz</span><span class="p">),</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">CUDA</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="kt">Int64</span><span class="p">,</span> <span class="n">sz</span><span class="p">),</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">CUDA</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="kt">Float32</span><span class="p">,</span> <span class="n">sz</span> <span class="o">.+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="249542084"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/CUDA%20Scalar%20Indexing%20Issue/near/249542084" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kyle Daruwalla <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/CUDA.20Scalar.20Indexing.20Issue.html#249542084">(Aug 16 2021 at 02:21)</a>:</h4>
+<p>Maybe has to do with CUDA support for replacing Base intrinsics automatically. Stuff like <code>sin</code> or <code>rand</code> used to require calling <code>CUDA.sin</code>/<code>CUDA.rand</code>. Now CUDA will automatically replace those calls with CUDA equivalents when you are using <code>CuArray</code>s. So here you actually ended up calling <code>CUDA.rand</code> and sampling from <code>[0, 1]</code> will scalar index that vector.</p>
+
+
+
+<a name="249542132"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/CUDA%20Scalar%20Indexing%20Issue/near/249542132" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kyle Daruwalla <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/CUDA.20Scalar.20Indexing.20Issue.html#249542132">(Aug 16 2021 at 02:22)</a>:</h4>
+<p>Maybe <code>cu(Base.rand([0, 1], n, n))</code> will work?</p>
+
+
+
+<a name="249542145"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/CUDA%20Scalar%20Indexing%20Issue/near/249542145" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kyle Daruwalla <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/CUDA.20Scalar.20Indexing.20Issue.html#249542145">(Aug 16 2021 at 02:22)</a>:</h4>
+<p><a href="https://juliagpu.org/post/2021-04-09-cuda_3.0/">https://juliagpu.org/post/2021-04-09-cuda_3.0/</a> for more info</p>
+
+
+
+<a name="249542685"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/CUDA%20Scalar%20Indexing%20Issue/near/249542685" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Abbott <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/CUDA.20Scalar.20Indexing.20Issue.html#249542685">(Aug 16 2021 at 02:37)</a>:</h4>
+<p>I think  your problem is the stray commas.  <code>dt = zeros(sz), v = ones(sz), z = zeros(sz)</code> is parsed as... some kind of unpacking like this:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">CUDA</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">ERROR</span><span class="o">:</span> <span class="n">Scalar</span> <span class="n">indexing</span> <span class="n">is</span> <span class="n">disallowed</span><span class="o">.</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">sz</span> <span class="o">=</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
+<span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">dt</span> <span class="o">=</span> <span class="n">CUDA</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="kt">Float32</span><span class="p">,</span> <span class="n">sz</span><span class="p">),</span> <span class="n">v</span> <span class="o">=</span> <span class="n">CUDA</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="kt">Int64</span><span class="p">,</span> <span class="n">sz</span><span class="p">),</span> <span class="n">z</span> <span class="o">=</span> <span class="n">CUDA</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="kt">Float32</span><span class="p">,</span> <span class="n">sz</span> <span class="o">.+</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">ERROR</span><span class="o">:</span> <span class="n">Scalar</span> <span class="n">indexing</span> <span class="n">is</span> <span class="n">disallowed</span><span class="o">.</span>
+</code></pre></div>
+
+
+
+<a name="249549444"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/CUDA%20Scalar%20Indexing%20Issue/near/249549444" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/CUDA.20Scalar.20Indexing.20Issue.html#249549444">(Aug 16 2021 at 05:03)</a>:</h4>
+<p>Oh, I didn't even notice the commas before. That could've been the problem too, hmm</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

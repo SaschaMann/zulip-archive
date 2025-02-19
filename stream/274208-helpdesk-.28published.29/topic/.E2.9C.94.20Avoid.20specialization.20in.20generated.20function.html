@@ -1,0 +1,62 @@
+<html>
+<head><meta charset="utf-8"><title>✔ Avoid specialization in generated function · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Avoid.20specialization.20in.20generated.20function.html">✔ Avoid specialization in generated function</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="378973022"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Avoid%20specialization%20in%20generated%20function/near/378973022" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Avoid.20specialization.20in.20generated.20function.html#378973022">(Jul 27 2023 at 00:38)</a>:</h4>
+<p>Not sure if this shows what I think it does, but is is possible to only generate the following function for unique values of `N?</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">let</span>
+<span class="w"> </span><span class="n">cnt</span><span class="o">=</span><span class="w"> </span><span class="kt">Ref</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="w"> </span><span class="nd">@generated</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">nexprtest</span><span class="p">(</span><span class="n">x</span><span class="o">::</span><span class="kt">Tuple</span><span class="p">{</span><span class="kt">Vararg</span><span class="p">{</span><span class="kt">Any</span><span class="p">,</span><span class="w"> </span><span class="kt">N</span><span class="p">}},</span><span class="w"> </span><span class="nd">@nospecialize</span><span class="p">(</span><span class="n">m</span><span class="p">))</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="kt">N</span><span class="w"> </span><span class="c">#@nospecialize does not seem to help here</span>
+<span class="w">   </span><span class="n">xis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ntuple</span><span class="p">(</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="kt">Symbol</span><span class="p">(</span><span class="ss">:x_</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="kt">Val</span><span class="p">(</span><span class="n">N</span><span class="p">))</span>
+<span class="w">   </span><span class="n">cnt</span><span class="p">[]</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">   </span><span class="k">quote</span>
+<span class="w">    </span><span class="nd">@nexprs</span><span class="w"> </span><span class="o">$</span><span class="n">N</span><span class="w"> </span><span class="n">j</span><span class="o">-&gt;</span><span class="p">((</span><span class="n">x_j</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">],</span><span class="w"> </span><span class="n">m</span><span class="o">+</span><span class="n">m</span><span class="p">))</span>
+<span class="w">    </span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">tuple</span><span class="p">(</span><span class="o">$</span><span class="p">(</span><span class="n">xis</span><span class="o">...</span><span class="p">))</span>
+<span class="w">   </span><span class="k">end</span>
+<span class="w"> </span><span class="k">end</span>
+<span class="nd">@show</span><span class="w"> </span><span class="n">nexprtest</span><span class="p">((</span><span class="mf">3.0</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">),</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="c"># Generate the first time for N = 2 :)</span>
+<span class="nd">@show</span><span class="w"> </span><span class="n">cnt</span><span class="p">[]</span>
+<span class="nd">@show</span><span class="w"> </span><span class="n">nexprtest</span><span class="p">((</span><span class="mf">4.0</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">),</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="c"># Will not generate :)</span>
+<span class="nd">@show</span><span class="w"> </span><span class="n">cnt</span><span class="p">[]</span>
+<span class="nd">@show</span><span class="w"> </span><span class="n">nexprtest</span><span class="p">((</span><span class="mf">3.0</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">),</span><span class="w"> </span><span class="mf">4.0</span><span class="p">)</span><span class="w"> </span><span class="c"># Does generate since last arg has different type :(</span>
+<span class="nd">@show</span><span class="w"> </span><span class="n">cnt</span><span class="p">[]</span>
+<span class="nd">@show</span><span class="w"> </span><span class="n">nexprtest</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">),</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="c"># Does generate since first arg has different type :(</span>
+<span class="nd">@show</span><span class="w"> </span><span class="n">cnt</span><span class="p">[]</span>
+<span class="k">end</span>
+
+<span class="c"># Output:</span>
+<span class="n">nexprtest</span><span class="p">((</span><span class="mf">3.0</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">),</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mf">6.0</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">))</span>
+<span class="n">cnt</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="n">nexprtest</span><span class="p">((</span><span class="mf">4.0</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">),</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mf">8.0</span><span class="p">,</span><span class="w"> </span><span class="mi">6</span><span class="p">))</span>
+<span class="n">cnt</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="n">nexprtest</span><span class="p">((</span><span class="mf">3.0</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">),</span><span class="w"> </span><span class="mf">4.0</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mf">16.0</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mf">6.0</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">))</span>
+<span class="n">cnt</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span>
+<span class="n">nexprtest</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">),</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">))</span>
+<span class="n">cnt</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span>
+<span class="mi">3</span>
+</code></pre></div>
+
+
+
+<a name="378984306"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Avoid%20specialization%20in%20generated%20function/near/378984306" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Avoid.20specialization.20in.20generated.20function.html#378984306">(Jul 27 2023 at 02:34)</a>:</h4>
+<p>Yeah, generated functions <strong>always</strong> generate for the specific args</p>
+
+
+
+<a name="379060783"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Avoid%20specialization%20in%20generated%20function/near/379060783" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Avoid.20specialization.20in.20generated.20function.html#379060783">(Jul 27 2023 at 08:48)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="300483">DrChainsaw</span> has marked this topic as resolved.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

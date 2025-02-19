@@ -1,0 +1,170 @@
+[
+    {
+        "content": "<p>Does anybody knows if it's possible to somehow dispatch with <a href=\"https://github.com/search?q=ScientificTypes.jl&amp;type=Repositories\">ScientificTypes.jl</a>?  I mean, I wanted to do something like <code>function dosomething(x::Continuous)</code>, which does not work.</p>",
+        "id": 269161513,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1643053186
+    },
+    {
+        "content": "<p>It is possible and we use it in downstream packages. What exactly are you trying to achieve with dispatch?</p>",
+        "id": 269161846,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1643053326
+    },
+    {
+        "content": "<p>You can find examples of dispatch in <a href=\"https://github.com/search?q=TableDistances.jl&amp;type=Repositories\">TableDistances.jl</a>: <a href=\"https://github.com/JuliaML/TableDistances.jl/blob/deaf10257ce1de34137ad7829391b8bf22817746/src/distances.jl#L27-L32\">https://github.com/JuliaML/TableDistances.jl/blob/deaf10257ce1de34137ad7829391b8bf22817746/src/distances.jl#L27-L32</a></p>",
+        "id": 269161945,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1643053369
+    },
+    {
+        "content": "<p>You can do it with separate arguments, e.g.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">Continuous</span><span class=\"p\">},</span> <span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">Real</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n\n<span class=\"k\">function</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">Count</span><span class=\"p\">},</span> <span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">Real</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n\n\n<span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">elscitype</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"p\">),</span> <span class=\"n\">v</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">])</span>\n</code></pre></div>",
+        "id": 269162037,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1643053421
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"273172\">Júlio Hoffimann</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Dispatching.20on.20ScientificTypes/near/269161846\">said</a>:</p>\n<blockquote>\n<p>It is possible and we use it in downstream packages. What exactly are you trying to achieve with dispatch?</p>\n</blockquote>\n<p>I'm coding a plotting package, and I was using it to infer the datatype as Ordinal, Continuous or Nominal (per VegaLite standards.</p>",
+        "id": 269162351,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1643053530
+    },
+    {
+        "content": "<p>Would love to see plot recipes all taking scitypes into account. That has been a dream of mine for a while.</p>",
+        "id": 269162482,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1643053573
+    },
+    {
+        "content": "<p>This is known as trait based dispatch.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span> <span class=\"n\">ScientificTypes</span>\n\n<span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">scitype</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">),</span> <span class=\"n\">x</span><span class=\"p\">)</span>\n\n<span class=\"n\">f</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">Continuous</span><span class=\"p\">},</span> <span class=\"n\">x</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">x</span> <span class=\"o\">+</span> <span class=\"mi\">1</span>\n<span class=\"n\">f</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">Count</span><span class=\"p\">},</span> <span class=\"n\">x</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">x</span> <span class=\"o\">-</span> <span class=\"mi\">1</span>\n</code></pre></div>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"mf\">1.0</span><span class=\"p\">)</span>\n<span class=\"go\">2.0</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">)</span>\n<span class=\"go\">0</span>\n</code></pre></div>",
+        "id": 269162498,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1643053578
+    },
+    {
+        "content": "<p>The whole idea of scientific types is that the implementation type does not fully specify the domain of the argument, so you should not expect to be able to dispatch on scientific types based on on the argument alone.  It might be nice to combine or incorporate it in other packages that try to specify the domain of arguments, such as <a href=\"https://github.com/search?q=Unitful.jl&amp;type=Repositories\">Unitful.jl</a>.</p>",
+        "id": 269162589,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1643053614
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Dispatching.20on.20ScientificTypes/near/269162498\">said</a>:</p>\n<blockquote>\n<p>This is known as trait based dispatch.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span> <span class=\"n\">ScientificTypes</span>\n\n<span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">scitype</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">),</span> <span class=\"n\">x</span><span class=\"p\">)</span>\n\n<span class=\"n\">f</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">Continuous</span><span class=\"p\">},</span> <span class=\"n\">x</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">x</span> <span class=\"o\">+</span> <span class=\"mi\">1</span>\n<span class=\"n\">f</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">Count</span><span class=\"p\">},</span> <span class=\"n\">x</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">x</span> <span class=\"o\">-</span> <span class=\"mi\">1</span>\n</code></pre></div>\n<p><div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"mf\">1.0</span><span class=\"p\">)</span>\n<span class=\"go\">2.0</span>\n\n<span class=\"gp\">julia&gt;</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">)</span>\n<span class=\"go\">0</span>\n</code></pre></div><br>\n</p>\n</blockquote>\n<p>This is very nice... When I thought I new \"everything\" on Multiple Dispatch...</p>",
+        "id": 269162669,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1643053640
+    },
+    {
+        "content": "<p>This is yet another case where better trait support would be nice to have</p>",
+        "id": 269162694,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1643053654
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269446\">Expanding Man</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Dispatching.20on.20ScientificTypes/near/269162589\">said</a>:</p>\n<blockquote>\n<p>The whole idea of scientific types is that the implementation type does not fully specify the domain of the argument, so you should not expect to be able to dispatch on scientific types based on on the argument alone.  It might be nice to combine or incorporate it in other packages that try to specify the domain of arguments, such as <a href=\"https://github.com/search?q=Unitful.jl&amp;type=Repositories\">Unitful.jl</a>.</p>\n</blockquote>\n<p>Since it's for plotting, I don't think I'd actually need the units... At least not if I consider the GG standard from VegaLite.</p>",
+        "id": 269162846,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1643053698
+    },
+    {
+        "content": "<p>I'd think plotting would be a really good place to integrate with <a href=\"https://github.com/search?q=Unitful.jl&amp;type=Repositories\">Unitful.jl</a>, I think some of that has been done already?  You ought to be able to infer ScientificTypes from units</p>",
+        "id": 269162974,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1643053750
+    },
+    {
+        "content": "<p>The downside of the trick I showed above is that you can't add methods like that to functions you don't own without  type piracy. E.g. I couldn't add a method like that to <code>Base.sin</code> without potentially causing a lot of breakage.</p>",
+        "id": 269162984,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1643053752
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269446\">Expanding Man</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Dispatching.20on.20ScientificTypes/near/269162974\">said</a>:</p>\n<blockquote>\n<p>I'd think plotting would be a really good place to integrate with <a href=\"https://github.com/search?q=Unitful.jl&amp;type=Repositories\">Unitful.jl</a>, I think some of that has been done already?  You ought to be able to infer ScientificTypes from units</p>\n</blockquote>\n<p>Needs a bit of glue, but could be done.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">using</span> <span class=\"n\">Unitful</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">scitype</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"sa\">u</span><span class=\"s\">\"eV\"</span><span class=\"p\">)</span>\n<span class=\"n\">Unknown</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">ScientificTypes</span><span class=\"o\">.</span><span class=\"n\">scitype</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">Quantity</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">scitype</span><span class=\"p\">(</span><span class=\"n\">ustrip</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">))</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">scitype</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"sa\">u</span><span class=\"s\">\"eV\"</span><span class=\"p\">)</span>\n<span class=\"n\">Count</span>\n</code></pre></div>",
+        "id": 269163352,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1643053894
+    },
+    {
+        "content": "<p>I think it'd definitely be a good idea if ScientificTypes were unit aware.</p>",
+        "id": 269163446,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1643053927
+    },
+    {
+        "content": "<p>Sorry, I didn't mean to imply that I thought it was already implemented, just that it could be unambiguously in principle.</p>",
+        "id": 269163463,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1643053936
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269446\">Expanding Man</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Dispatching.20on.20ScientificTypes/near/269162974\">said</a>:</p>\n<blockquote>\n<p>I'd think plotting would be a really good place to integrate with <a href=\"https://github.com/search?q=Unitful.jl&amp;type=Repositories\">Unitful.jl</a>, I think some of that has been done already?  You ought to be able to infer ScientificTypes from units</p>\n</blockquote>\n<p>Really? I'd love to see some examples of plotting packages using <a href=\"https://github.com/search?q=Unitful.jl&amp;type=Repositories\">Unitful.jl</a>. I'm mean, for sure incorporating Unitful would be nice, but for a plot I dont \"need\" to know the unit, only if it's continuous, ordered and so on. But of course, if I knew the unit, I could reverse that. I just don't want to burden the user too much having to specify everything</p>",
+        "id": 269163562,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1643053990
+    },
+    {
+        "content": "<p>I thought <a href=\"https://github.com/search?q=Plots.jl&amp;type=Repositories\">Plots.jl</a> had some kind of integration?  I could be wrong.</p>",
+        "id": 269163596,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1643054008
+    },
+    {
+        "content": "<p><a href=\"https://github.com/jw3126/UnitfulRecipes.jl\">https://github.com/jw3126/UnitfulRecipes.jl</a></p>",
+        "id": 269163624,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1643054018
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Dispatching.20on.20ScientificTypes/near/269163624\">said</a>:</p>\n<blockquote>\n<p><a href=\"https://github.com/jw3126/UnitfulRecipes.jl\">https://github.com/jw3126/UnitfulRecipes.jl</a></p>\n</blockquote>\n<p>Very nice. But this seems more like an extra. I mean, ScientificType would be more of a tool to inspect the datatypes. In VegaLite, one has to provide the datatype explicitly as <code>:Quantitative</code>, <code>Ordinal</code> or <code>Nominal</code>. This is what I'm trying to \"replicate\" with ScietificType.</p>",
+        "id": 269163947,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1643054118
+    },
+    {
+        "content": "<p>I feel that <a href=\"https://github.com/search?q=ScientificTypes.jl&amp;type=Repositories\">ScientificTypes.jl</a> and <a href=\"https://github.com/search?q=Unitful.jl&amp;type=Repositories\">Unitful.jl</a> are somewhat orthogonal, but it is indeed a shame that we don't have traits to accomodate both concepts simultaneously with ease.</p>",
+        "id": 269164260,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1643054276
+    },
+    {
+        "content": "<p>I feel that the former concept is extremely underused in Julia ecosystem. Hopefully it will get fixed in  the future.</p>",
+        "id": 269164415,
+        "sender_full_name": "Júlio Hoffimann",
+        "timestamp": 1643054339
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"358317\">Davi Sales Barreira</span> has marked this topic as resolved.</p>",
+        "id": 269164749,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1643054465
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"273172\">Júlio Hoffimann</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Dispatching.20on.20ScientificTypes/near/269164415\">said</a>:</p>\n<blockquote>\n<p>I feel that the former concept is extremely underused in Julia ecosystem. Hopefully it will get fixed in  the future.</p>\n</blockquote>\n<p>I think it needs better language trait support for that to happen</p>",
+        "id": 269172652,
+        "sender_full_name": "Ari Katz",
+        "timestamp": 1643058279
+    },
+    {
+        "content": "<p>Off the main topic, but <span class=\"user-mention\" data-user-id=\"358317\">@Davi Sales Barreira</span> would you mind posting a link to this scitypes + vega integration if/when it's operational? As a somewhat frequent vega lite user, the idea sounds wonderful!</p>",
+        "id": 269175970,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1643060003
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"278065\">@Brian Chen</span> , I'm actually not working on VegaLite. I'm working on a separate package, but I was a heavy vegalite user, and I quite like the design for generating the visualizations</p>",
+        "id": 269176480,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1643060267
+    },
+    {
+        "content": "<p>So I'm taking it as inspiration. Specially the grammar. But it's not at all related :X</p>",
+        "id": 269176586,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1643060311
+    },
+    {
+        "content": "<p>But once I have a beta for my package, I for sure intend to share it with the community.</p>",
+        "id": 269176608,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1643060331
+    }
+]

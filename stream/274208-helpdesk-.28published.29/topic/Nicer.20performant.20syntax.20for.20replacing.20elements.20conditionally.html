@@ -1,0 +1,155 @@
+<html>
+<head><meta charset="utf-8"><title>Nicer performant syntax for replacing elements conditionally · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nicer.20performant.20syntax.20for.20replacing.20elements.20conditionally.html">Nicer performant syntax for replacing elements conditionally</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="411352733"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nicer%20performant%20syntax%20for%20replacing%20elements%20conditionally/near/411352733" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nicer.20performant.20syntax.20for.20replacing.20elements.20conditionally.html#411352733">(Jan 05 2024 at 11:28)</a>:</h4>
+<p>Is there a way to get something as nice as</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">x</span><span class="p">[</span><span class="n">x</span><span class="w"> </span><span class="o">.&lt;=</span><span class="w"> </span><span class="n">maximum</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">/</span><span class="mi">4</span><span class="p">]</span><span class="w"> </span><span class="o">.=</span><span class="w"> </span><span class="mf">0.0</span>
+</code></pre></div>
+<p>with the same performance as</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">cutoff</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">maximum</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">/</span><span class="mi">4</span>
+<span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">eachindex</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">cutoff</span>
+<span class="w">        </span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0</span>
+<span class="w">    </span><span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>?</p>
+<p>I see about a 2x performance hit from the first and 3 allocations (which surprised me, I was expecting one from the comparison)</p>
+
+
+
+<a name="411356299"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nicer%20performant%20syntax%20for%20replacing%20elements%20conditionally/near/411356299" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nicer.20performant.20syntax.20for.20replacing.20elements.20conditionally.html#411356299">(Jan 05 2024 at 11:56)</a>:</h4>
+<p>I don't think the dots fuse across indexing like that</p>
+
+
+
+<a name="411356319"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nicer%20performant%20syntax%20for%20replacing%20elements%20conditionally/near/411356319" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nicer.20performant.20syntax.20for.20replacing.20elements.20conditionally.html#411356319">(Jan 05 2024 at 11:56)</a>:</h4>
+<p>so might be resolved with a <code>@views</code></p>
+
+
+
+<a name="411356358"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nicer%20performant%20syntax%20for%20replacing%20elements%20conditionally/near/411356358" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nicer.20performant.20syntax.20for.20replacing.20elements.20conditionally.html#411356358">(Jan 05 2024 at 11:56)</a>:</h4>
+<p>the result of the comparison will still be allocated though</p>
+
+
+
+<a name="411362394"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nicer%20performant%20syntax%20for%20replacing%20elements%20conditionally/near/411362394" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nicer.20performant.20syntax.20for.20replacing.20elements.20conditionally.html#411362394">(Jan 05 2024 at 12:33)</a>:</h4>
+<p>I'm actually kinda surprised that julia doesn't support a generator as an index</p>
+
+
+
+<a name="411362561"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nicer%20performant%20syntax%20for%20replacing%20elements%20conditionally/near/411362561" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nicer.20performant.20syntax.20for.20replacing.20elements.20conditionally.html#411362561">(Jan 05 2024 at 12:34)</a>:</h4>
+<p>then you could write this as something like</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">x</span><span class="p">[(</span><span class="n">i</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">eachindex</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">maximum</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">/</span><span class="mi">4</span><span class="p">)]</span><span class="w"> </span><span class="o">.=</span><span class="w"> </span><span class="mf">0.0</span>
+</code></pre></div>
+
+
+
+<a name="411364146"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nicer%20performant%20syntax%20for%20replacing%20elements%20conditionally/near/411364146" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nicer.20performant.20syntax.20for.20replacing.20elements.20conditionally.html#411364146">(Jan 05 2024 at 12:46)</a>:</h4>
+<p>I think the both cleanest(?) and most performant way to do this would be</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">x</span><span class="w"> </span><span class="o">.=</span><span class="w"> </span><span class="n">ifelse</span><span class="o">.</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">.&lt;=</span><span class="w"> </span><span class="n">maximum</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">/</span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mf">0.0</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="411364266"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nicer%20performant%20syntax%20for%20replacing%20elements%20conditionally/near/411364266" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nicer.20performant.20syntax.20for.20replacing.20elements.20conditionally.html#411364266">(Jan 05 2024 at 12:47)</a>:</h4>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="n">f1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">[</span><span class="n">x</span><span class="w"> </span><span class="o">.&lt;=</span><span class="w"> </span><span class="n">maximum</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">/</span><span class="mi">4</span><span class="p">]</span><span class="w"> </span><span class="o">.=</span><span class="w"> </span><span class="mf">0.0</span><span class="p">;</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">f2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">let</span><span class="w"> </span><span class="n">cutoff</span><span class="o">=</span><span class="n">maximum</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">/</span><span class="mi">4</span>
+<span class="w">           </span><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">eachindex</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">cutoff</span>
+<span class="w">                   </span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0</span>
+<span class="w">               </span><span class="k">end</span>
+<span class="w">           </span><span class="k">end</span>
+<span class="w">           </span><span class="n">x</span>
+<span class="w">       </span><span class="k">end</span><span class="p">;</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">f3</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">.=</span><span class="w"> </span><span class="n">ifelse</span><span class="o">.</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">.&lt;=</span><span class="w"> </span><span class="n">maximum</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">/</span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mf">0.0</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">);</span>
+</code></pre></div>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">N</span><span class="w"> </span><span class="o">∈</span><span class="w"> </span><span class="p">(</span><span class="mi">100</span><span class="p">,</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span><span class="w"> </span><span class="mi">10000</span><span class="p">)</span>
+<span class="w">           </span><span class="nd">@show</span><span class="w"> </span><span class="n">N</span>
+<span class="w">           </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
+<span class="w">           </span><span class="n">print</span><span class="p">(</span><span class="s">"f1  "</span><span class="p">);</span><span class="w"> </span><span class="nd">@btime</span><span class="w"> </span><span class="n">f1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="n">setup</span><span class="o">=</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="o">$</span><span class="n">N</span><span class="p">))</span><span class="w"> </span><span class="n">evals</span><span class="o">=</span><span class="mi">1</span>
+<span class="w">           </span><span class="n">print</span><span class="p">(</span><span class="s">"f2  "</span><span class="p">);</span><span class="w"> </span><span class="nd">@btime</span><span class="w"> </span><span class="n">f2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="n">setup</span><span class="o">=</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="o">$</span><span class="n">N</span><span class="p">))</span><span class="w"> </span><span class="n">evals</span><span class="o">=</span><span class="mi">1</span>
+<span class="w">           </span><span class="n">print</span><span class="p">(</span><span class="s">"f3  "</span><span class="p">);</span><span class="w"> </span><span class="nd">@btime</span><span class="w"> </span><span class="n">f3</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="n">setup</span><span class="o">=</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="o">$</span><span class="n">N</span><span class="p">))</span><span class="w"> </span><span class="n">evals</span><span class="o">=</span><span class="mi">1</span>
+<span class="w">       </span><span class="k">end</span>
+<span class="go">N = 100</span>
+<span class="go">f1    290.000 ns (3 allocations: 256 bytes)</span>
+<span class="go">f2    130.000 ns (0 allocations: 0 bytes)</span>
+<span class="go">f3    110.000 ns (0 allocations: 0 bytes)</span>
+<span class="go">N = 1000</span>
+<span class="go">f1    1.012 μs (4 allocations: 6.17 KiB)</span>
+<span class="go">f2    671.000 ns (0 allocations: 0 bytes)</span>
+<span class="go">f3    401.000 ns (0 allocations: 0 bytes)</span>
+<span class="go">N = 10000</span>
+<span class="go">f1    6.723 μs (5 allocations: 23.53 KiB)</span>
+<span class="go">f2    4.799 μs (0 allocations: 0 bytes)</span>
+<span class="go">f3    2.174 μs (0 allocations: 0 bytes)</span>
+</code></pre></div>
+
+
+
+<a name="411370120"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nicer%20performant%20syntax%20for%20replacing%20elements%20conditionally/near/411370120" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nicer.20performant.20syntax.20for.20replacing.20elements.20conditionally.html#411370120">(Jan 05 2024 at 13:34)</a>:</h4>
+<p>Oh wow, how is that <code>ifelse</code> thing faster?</p>
+
+
+
+<a name="411370561"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nicer%20performant%20syntax%20for%20replacing%20elements%20conditionally/near/411370561" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nicer.20performant.20syntax.20for.20replacing.20elements.20conditionally.html#411370561">(Jan 05 2024 at 13:37)</a>:</h4>
+<p>Fwiw I don't see a speedup, so might be CPU dependent - in any case it's at least as fast and shorter and cleaner, so wins all round, thank you!</p>
+
+
+
+<a name="411371776"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nicer%20performant%20syntax%20for%20replacing%20elements%20conditionally/near/411371776" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nicer.20performant.20syntax.20for.20replacing.20elements.20conditionally.html#411371776">(Jan 05 2024 at 13:46)</a>:</h4>
+<p>yeah, the relative performance of <code>ifelse</code> versus actual branching can be very CPU dependant</p>
+
+
+
+<a name="411372176"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nicer%20performant%20syntax%20for%20replacing%20elements%20conditionally/near/411372176" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nicer.20performant.20syntax.20for.20replacing.20elements.20conditionally.html#411372176">(Jan 05 2024 at 13:49)</a>:</h4>
+<p><code>ifelse</code> tends to be easier to make work with SIMD, but the branch-predictor can make branching more efficient</p>
+
+
+
+<a name="411372279"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nicer%20performant%20syntax%20for%20replacing%20elements%20conditionally/near/411372279" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nicer.20performant.20syntax.20for.20replacing.20elements.20conditionally.html#411372279">(Jan 05 2024 at 13:49)</a>:</h4>
+<p>could also be julia-version dependant, since it'll depend a lot on various low-level optimizations LLVM may or may not make</p>
+
+
+
+<a name="411384404"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nicer%20performant%20syntax%20for%20replacing%20elements%20conditionally/near/411384404" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nicer.20performant.20syntax.20for.20replacing.20elements.20conditionally.html#411384404">(Jan 05 2024 at 15:08)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269150">Mason Protter</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Nicer.20performant.20syntax.20for.20replacing.20elements.20conditionally/near/411372279">said</a>:</p>
+<blockquote>
+<p>could also be julia-version dependant, since it'll depend a lot on various low-level optimizations LLVM may or may not make</p>
+</blockquote>
+<p>Yeah, for me <code>f2</code> and <code>f3</code> perform about the same, both of them SIMDing thanks to LLVM.</p>
+
+
+
+<a name="411394508"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Nicer%20performant%20syntax%20for%20replacing%20elements%20conditionally/near/411394508" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> AMJ <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Nicer.20performant.20syntax.20for.20replacing.20elements.20conditionally.html#411394508">(Jan 05 2024 at 16:14)</a>:</h4>
+<p>On my machine, if I am understanding correctly(which is a big if), f3 creates 2 main branches which both are heavily SIMDed, while f2 has one SIMDed branch with fewer instructions. So probably a better vectorization plus a better branch prediction pattern?</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

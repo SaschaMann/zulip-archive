@@ -1,0 +1,147 @@
+<html>
+<head><meta charset="utf-8"><title>Identifying what is causing increase in memory. · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Identifying.20what.20is.20causing.20increase.20in.20memory.2E.html">Identifying what is causing increase in memory.</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="281182907"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Identifying%20what%20is%20causing%20increase%20in%20memory./near/281182907" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Davi Sales Barreira <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Identifying.20what.20is.20causing.20increase.20in.20memory.2E.html#281182907">(May 04 2022 at 16:40)</a>:</h4>
+<p>Friends, I've encapsulated a series of data transformations in functions and created a pipe to perform the transformations. By the end of the pipe, I get the final dataframe. Now, I'm running this code in a notebook (for testing and tweaking). For some reason, everytime I run the pipe, the memory used by the notebook is increasing. I don't understand why is that so. From what I thought, since everything was in functions, it should be taking space in the memory once the code ran. Here is the code:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">importmovements</span><span class="p">()</span>
+    <span class="n">movements</span> <span class="o">=</span> <span class="n">CSV</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">datadir</span><span class="p">(</span><span class="s">"exp_pro"</span><span class="p">)</span> <span class="o">*</span> <span class="s">"/csvs/movements.csv"</span><span class="p">,</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">header</span> <span class="o">=</span> <span class="nb">false</span><span class="p">,</span> <span class="n">ntasks</span> <span class="o">=</span> <span class="n">ntasks</span><span class="p">)</span>
+    <span class="n">colsmovement</span> <span class="o">=</span> <span class="p">[</span><span class="s">"number"</span><span class="p">,</span> <span class="s">"date"</span><span class="p">,</span> <span class="s">"title"</span><span class="p">,</span> <span class="s">"text"</span><span class="p">]</span>
+    <span class="n">rename!</span><span class="p">(</span><span class="n">movements</span><span class="p">,</span> <span class="n">colsmovement</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">movements</span>
+<span class="k">end</span>
+<span class="k">function</span> <span class="n">adicionarid!</span><span class="p">(</span><span class="n">movements</span><span class="p">)</span>
+    <span class="n">movements</span><span class="p">[</span><span class="o">!</span><span class="p">,</span><span class="ss">:id</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="o">:</span><span class="n">size</span><span class="p">(</span><span class="n">movements</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">movements</span>
+<span class="k">end</span>
+
+<span class="k">function</span> <span class="n">adicionaretapasiniciofim!</span><span class="p">(</span><span class="n">movements</span><span class="p">)</span>
+    <span class="n">movinit</span> <span class="o">=</span> <span class="n">combine</span><span class="p">(</span><span class="n">groupby</span><span class="p">(</span><span class="n">movements</span><span class="p">,</span> <span class="ss">:number</span><span class="p">),</span>
+        <span class="p">[</span><span class="ss">:date</span><span class="p">,</span> <span class="ss">:title</span><span class="p">,</span> <span class="ss">:text</span><span class="p">,</span> <span class="ss">:id</span><span class="p">]</span> <span class="o">.=&gt;</span> <span class="n">last</span><span class="p">,</span>
+        <span class="n">renamecols</span> <span class="o">=</span> <span class="nb">false</span><span class="p">)</span>
+    <span class="n">movinit</span><span class="p">[</span><span class="o">!</span><span class="p">,</span> <span class="ss">:etapa</span><span class="p">]</span> <span class="o">.=</span> <span class="s">"inicio"</span>
+    <span class="n">movinit</span><span class="p">[</span><span class="o">!</span><span class="p">,</span> <span class="ss">:subetapa</span><span class="p">]</span> <span class="o">.=</span> <span class="s">"inicio"</span>
+
+
+    <span class="n">combine</span><span class="p">(</span><span class="n">groupby</span><span class="p">(</span><span class="n">movinit</span><span class="p">,</span> <span class="ss">:title</span><span class="p">),</span> <span class="n">nrow</span> <span class="o">=&gt;</span> <span class="ss">:count</span><span class="p">)</span>
+    <span class="n">movements</span> <span class="o">=</span> <span class="n">antijoin</span><span class="p">(</span><span class="n">movements</span><span class="p">,</span> <span class="n">movinit</span><span class="p">,</span> <span class="n">on</span> <span class="o">=</span> <span class="p">[</span><span class="ss">:number</span><span class="p">,</span> <span class="ss">:date</span><span class="p">,</span> <span class="ss">:title</span><span class="p">])</span>
+    <span class="n">movements</span> <span class="o">=</span> <span class="n">vcat</span><span class="p">(</span><span class="n">movements</span><span class="p">,</span> <span class="n">movinit</span><span class="p">)</span>
+    <span class="n">filter!</span><span class="p">(</span><span class="n">row</span> <span class="o">-&gt;</span> <span class="o">!</span><span class="n">ismissing</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="ss">:etapa</span><span class="p">]),</span> <span class="n">movements</span><span class="p">)</span>
+    <span class="n">sort!</span><span class="p">(</span><span class="n">movements</span><span class="p">,</span> <span class="p">[</span><span class="ss">:id</span><span class="p">,</span> <span class="ss">:number</span><span class="p">,</span> <span class="ss">:date</span><span class="p">],</span> <span class="n">rev</span> <span class="o">=</span> <span class="nb">true</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">movements</span>
+<span class="k">end</span>
+
+
+<span class="k">function</span> <span class="n">runpipemovement</span><span class="p">()</span>
+    <span class="nd">@pipe</span> <span class="n">importmovements</span><span class="p">()</span> <span class="o">|&gt;</span> <span class="n">unique!</span><span class="p">(</span><span class="n">_</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">adicionarid!</span><span class="p">(</span><span class="n">_</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">formatardata!</span><span class="p">(</span><span class="n">_</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">adicionaretapasiniciofim!</span><span class="p">(</span><span class="n">_</span><span class="p">)</span> <span class="p">;</span>
+<span class="k">end</span>
+
+<span class="n">runpipemovement</span><span class="p">()</span>
+</code></pre></div>
+
+
+
+<a name="281183186"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Identifying%20what%20is%20causing%20increase%20in%20memory./near/281183186" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Giovanni <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Identifying.20what.20is.20causing.20increase.20in.20memory.2E.html#281183186">(May 04 2022 at 16:42)</a>:</h4>
+<p>Are you using Pluto notebooks?</p>
+
+
+
+<a name="281183199"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Identifying%20what%20is%20causing%20increase%20in%20memory./near/281183199" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Davi Sales Barreira <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Identifying.20what.20is.20causing.20increase.20in.20memory.2E.html#281183199">(May 04 2022 at 16:42)</a>:</h4>
+<p>Jupyter</p>
+
+
+
+<a name="281184182"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Identifying%20what%20is%20causing%20increase%20in%20memory./near/281184182" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Giovanni <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Identifying.20what.20is.20causing.20increase.20in.20memory.2E.html#281184182">(May 04 2022 at 16:49)</a>:</h4>
+<p>Then I have no clue :)</p>
+
+
+
+<a name="281185541"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Identifying%20what%20is%20causing%20increase%20in%20memory./near/281185541" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Identifying.20what.20is.20causing.20increase.20in.20memory.2E.html#281185541">(May 04 2022 at 16:58)</a>:</h4>
+<p>It’s probably because you’re printing the data frame each time</p>
+
+
+
+<a name="281185581"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Identifying%20what%20is%20causing%20increase%20in%20memory./near/281185581" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Identifying.20what.20is.20causing.20increase.20in.20memory.2E.html#281185581">(May 04 2022 at 16:58)</a>:</h4>
+<p>jupyter stores the output of each evaluation in a dictionary called <code>Out</code></p>
+
+
+
+<a name="281185618"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Identifying%20what%20is%20causing%20increase%20in%20memory./near/281185618" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Identifying.20what.20is.20causing.20increase.20in.20memory.2E.html#281185618">(May 04 2022 at 16:59)</a>:</h4>
+<p>you can do <code>empty!(Out)</code> to free up that memory</p>
+
+
+
+<a name="281187233"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Identifying%20what%20is%20causing%20increase%20in%20memory./near/281187233" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Davi Sales Barreira <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Identifying.20what.20is.20causing.20increase.20in.20memory.2E.html#281187233">(May 04 2022 at 17:09)</a>:</h4>
+<p><span class="user-mention" data-user-id="269150">@Mason Protter</span> , I just run <code>empty!(Out)</code> in any cell? I've tried here, but the memory is still high.</p>
+
+
+
+<a name="281187307"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Identifying%20what%20is%20causing%20increase%20in%20memory./near/281187307" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Identifying.20what.20is.20causing.20increase.20in.20memory.2E.html#281187307">(May 04 2022 at 17:09)</a>:</h4>
+<p>You’ll probably need to wait for the GC to run</p>
+
+
+
+<a name="281187496"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Identifying%20what%20is%20causing%20increase%20in%20memory./near/281187496" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Davi Sales Barreira <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Identifying.20what.20is.20causing.20increase.20in.20memory.2E.html#281187496">(May 04 2022 at 17:10)</a>:</h4>
+<p>I've checked the notebook file. An it's not storing the dataframe.</p>
+
+
+
+<a name="281188657"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Identifying%20what%20is%20causing%20increase%20in%20memory./near/281188657" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Giovanni <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Identifying.20what.20is.20causing.20increase.20in.20memory.2E.html#281188657">(May 04 2022 at 17:18)</a>:</h4>
+<p>just an idea but did you check without using @pipe?</p>
+
+
+
+<a name="281188904"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Identifying%20what%20is%20causing%20increase%20in%20memory./near/281188904" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Davi Sales Barreira <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Identifying.20what.20is.20causing.20increase.20in.20memory.2E.html#281188904">(May 04 2022 at 17:19)</a>:</h4>
+<p>No. I'll try.</p>
+
+
+
+<a name="281189697"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Identifying%20what%20is%20causing%20increase%20in%20memory./near/281189697" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Giovanni <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Identifying.20what.20is.20causing.20increase.20in.20memory.2E.html#281189697">(May 04 2022 at 17:25)</a>:</h4>
+<p>The very last thing I would try is copying movements at end of  <code>adicionaretasinitiofim</code> and see if that solves the problem the only other thing you seem to create is <code>movinit</code>, in case it is carried out of the function somehow but essentially brainstorming here :)</p>
+
+
+
+<a name="281190887"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Identifying%20what%20is%20causing%20increase%20in%20memory./near/281190887" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Identifying.20what.20is.20causing.20increase.20in.20memory.2E.html#281190887">(May 04 2022 at 17:32)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="358317">Davi Sales Barreira</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Identifying.20what.20is.20causing.20increase.20in.20memory.2E/near/281187496">said</a>:</p>
+<blockquote>
+<p>I've checked the notebook file. An it's not storing the dataframe.</p>
+</blockquote>
+<p>It’s not in the notebook file itself</p>
+
+
+
+<a name="281190937"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Identifying%20what%20is%20causing%20increase%20in%20memory./near/281190937" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Identifying.20what.20is.20causing.20increase.20in.20memory.2E.html#281190937">(May 04 2022 at 17:32)</a>:</h4>
+<p>It’s an object in the jupyter kernel session</p>
+
+
+
+<a name="281193382"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Identifying%20what%20is%20causing%20increase%20in%20memory./near/281193382" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Davi Sales Barreira <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Identifying.20what.20is.20causing.20increase.20in.20memory.2E.html#281193382">(May 04 2022 at 17:49)</a>:</h4>
+<p>Oh, ok. Thanks, I'll try again. BTW, any tools to inspect his sort of thing? I've tried <a href="https://github.com/search?q=ProfileSVG.jl&amp;type=Repositories">ProfileSVG.jl</a>, but didn't quite understood the output.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

@@ -1,0 +1,191 @@
+<html>
+<head><meta charset="utf-8"><title>Working with Huge Matrices · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Working.20with.20Huge.20Matrices.html">Working with Huge Matrices</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="240128047"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Working%20with%20Huge%20Matrices/near/240128047" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Davi Sales Barreira <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Working.20with.20Huge.20Matrices.html#240128047">(May 24 2021 at 23:57)</a>:</h4>
+<p>In some code that I'm writing, I have to calculate a distance matrix comparing 60k images. This results in a 60k by 60k matrix, which is too large to store in memory. I was wondering what would be an appropriate way to handle this types of situations. Is there a datatype which I should save the data to? Also, this matrix will be passed on to another function, which will perform dimensionality reduction... Any ideas on how to make this work?</p>
+
+
+
+<a name="240131218"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Working%20with%20Huge%20Matrices/near/240131218" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Benoit Pasquier <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Working.20with.20Huge.20Matrices.html#240131218">(May 25 2021 at 00:48)</a>:</h4>
+<p>Could you instead of a matrix use a lazy approach, e.g., just use a function of the indices? Otherwise, in your distance matrix, which is important to you?  the large distances or the sort ones? If you are looking for similar images, maybe you are more interested in the inverse of the distance, and then you could discard all the values below a certain threshold and store only the large inverse distances as a sparse matrix?</p>
+
+
+
+<a name="241081721"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Working%20with%20Huge%20Matrices/near/241081721" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> brett knoss <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Working.20with.20Huge.20Matrices.html#241081721">(Jun 01 2021 at 22:05)</a>:</h4>
+<p>Can you use a dataframe?</p>
+
+
+
+<a name="241081964"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Working%20with%20Huge%20Matrices/near/241081964" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Working.20with.20Huge.20Matrices.html#241081964">(Jun 01 2021 at 22:08)</a>:</h4>
+<p>You may want to look into a spatially chunked array format that transparently spills to disk. <a href="https://github.com/JuliaIO/HDF5.jl">https://github.com/JuliaIO/HDF5.jl</a> and <a href="https://github.com/meggart/Zarr.jl">https://github.com/meggart/Zarr.jl</a> would be good candidates, perhaps <a href="https://github.com/JuliaGeo/NetCDF.jl">https://github.com/JuliaGeo/NetCDF.jl</a> as well.</p>
+
+
+
+<a name="241082605"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Working%20with%20Huge%20Matrices/near/241082605" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Working.20with.20Huge.20Matrices.html#241082605">(Jun 01 2021 at 22:15)</a>:</h4>
+<p>There's also <a href="https://docs.julialang.org/en/v1/stdlib/Mmap/#Mmap.mmap">https://docs.julialang.org/en/v1/stdlib/Mmap/#Mmap.mmap</a> and <a href="https://docs.julialang.org/en/v1/stdlib/SharedArrays/">https://docs.julialang.org/en/v1/stdlib/SharedArrays/</a>. Might be worth trying one of these first.</p>
+
+
+
+<a name="241082929"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Working%20with%20Huge%20Matrices/near/241082929" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Working.20with.20Huge.20Matrices.html#241082929">(Jun 01 2021 at 22:20)</a>:</h4>
+<p>A DataFrame surely wouldn’t help, they’re all in memory right?</p>
+
+
+
+<a name="241087350"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Working%20with%20Huge%20Matrices/near/241087350" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Working.20with.20Huge.20Matrices.html#241087350">(Jun 01 2021 at 23:12)</a>:</h4>
+<p>Here's something you can do, which is essentially what <span class="user-mention" data-user-id="269255">@Benoit Pasquier</span> suggests I think:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">using</span> <span class="n">LinearMaps</span><span class="p">,</span> <span class="n">Arpack</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@time</span> <span class="k">let</span> <span class="n">N</span> <span class="o">=</span> <span class="mi">10_000</span>
+           <span class="n">i1</span> <span class="o">=</span> <span class="n">sin</span><span class="o">.</span><span class="p">(</span><span class="n">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="nb">π</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">N</span><span class="p">))</span>
+           <span class="n">i2</span> <span class="o">=</span> <span class="n">exp</span><span class="o">.</span><span class="p">(</span><span class="n">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="nb">π</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">N</span><span class="p">))</span>
+           <span class="k">function</span> <span class="n">lazy_distance_kernel</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+               <span class="nd">@assert</span> <span class="n">size</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="n">N</span><span class="p">,)</span>
+               <span class="n">map</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="n">N</span><span class="p">)</span> <span class="k">do</span> <span class="n">i</span>
+                   <span class="n">sum</span><span class="p">(</span><span class="n">j</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">i1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">i2</span><span class="p">[</span><span class="n">j</span><span class="p">])</span> <span class="o">*</span> <span class="n">v</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="mi">1</span><span class="o">:</span><span class="n">N</span><span class="p">)</span>
+               <span class="k">end</span>
+           <span class="k">end</span>
+           <span class="k">function</span> <span class="n">lazy_distance_kernel_tr</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+               <span class="nd">@assert</span> <span class="n">size</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="n">N</span><span class="p">,)</span>
+               <span class="n">map</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="n">N</span><span class="p">)</span> <span class="k">do</span> <span class="n">i</span>
+                  <span class="n">sum</span><span class="p">(</span><span class="n">j</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">i1</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">i2</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">*</span> <span class="n">v</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="mi">1</span><span class="o">:</span><span class="n">N</span><span class="p">)</span>
+               <span class="k">end</span>
+           <span class="k">end</span>
+           <span class="n">M</span> <span class="o">=</span> <span class="n">LinearMap</span><span class="p">(</span><span class="n">lazy_distance_kernel</span><span class="p">,</span> <span class="n">lazy_distance_kernel_tr</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span>
+           <span class="n">U</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">V</span> <span class="o">=</span> <span class="n">svds</span><span class="p">(</span><span class="n">M</span><span class="p">;</span> <span class="n">nsv</span><span class="o">=</span><span class="mi">4</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+
+           <span class="n">S</span>
+       <span class="k">end</span>
+  <span class="mf">7.158159</span> <span class="n">seconds</span> <span class="p">(</span><span class="mf">2.43</span> <span class="n">M</span> <span class="n">allocations</span><span class="o">:</span> <span class="mf">150.013</span> <span class="n">MiB</span><span class="p">,</span> <span class="mf">0.58</span><span class="o">%</span> <span class="n">gc</span> <span class="n">time</span><span class="p">,</span> <span class="mf">17.93</span><span class="o">%</span> <span class="n">compilation</span> <span class="n">time</span><span class="p">)</span>
+<span class="mi">4</span><span class="o">-</span><span class="n">element</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}</span><span class="o">:</span>
+    <span class="mf">1.510995769332172e6</span>
+ <span class="mf">5843.092821965402</span>
+    <span class="mf">0.0</span>
+    <span class="mf">0.0</span>
+</code></pre></div>
+<p>So here, I defined a lazy version of a distance matrix using <a href="https://github.com/search?q=LinearMaps.jl&amp;type=Repositories">LinearMaps.jl</a>, and then just stuck it in <code>Arpack.svds</code> and got the singular value decomposition of the matrix truncated to 4 singular values.</p>
+
+
+
+<a name="241087377"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Working%20with%20Huge%20Matrices/near/241087377" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Working.20with.20Huge.20Matrices.html#241087377">(Jun 01 2021 at 23:13)</a>:</h4>
+<p>This is able to act without ever actually instantiating the big matrix, so it's at least memory efficient.</p>
+
+
+
+<a name="241088180"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Working%20with%20Huge%20Matrices/near/241088180" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Working.20with.20Huge.20Matrices.html#241088180">(Jun 01 2021 at 23:24)</a>:</h4>
+<p>And of course, if we want to get better performance, we should do things in-place and make use of <a href="https://github.com/search?q=LoopVectorization.jl&amp;type=Repositories">LoopVectorization.jl</a>:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@time</span> <span class="k">let</span> <span class="n">N</span> <span class="o">=</span> <span class="mi">10_000</span>
+           <span class="n">i1</span> <span class="o">=</span> <span class="n">sin</span><span class="o">.</span><span class="p">(</span><span class="n">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="nb">π</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">N</span><span class="p">))</span>
+           <span class="n">i2</span> <span class="o">=</span> <span class="n">exp</span><span class="o">.</span><span class="p">(</span><span class="n">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="nb">π</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">N</span><span class="p">))</span>
+           <span class="k">function</span> <span class="n">lazy_distance_kernel</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+               <span class="nd">@assert</span> <span class="n">size</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="n">N</span><span class="p">,)</span>
+               <span class="nd">@tturbo</span> <span class="k">for</span> <span class="n">i</span> <span class="o">∈</span> <span class="mi">1</span><span class="o">:</span><span class="n">N</span>
+                   <span class="n">ui</span> <span class="o">=</span> <span class="mf">0.0</span>
+                   <span class="k">for</span> <span class="n">j</span> <span class="o">∈</span> <span class="mi">1</span><span class="o">:</span><span class="n">N</span>
+                       <span class="n">ui</span> <span class="o">+=</span> <span class="p">(</span><span class="n">i1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">i2</span><span class="p">[</span><span class="n">j</span><span class="p">])</span> <span class="o">*</span> <span class="n">v</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+                   <span class="k">end</span>
+                   <span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">ui</span>
+               <span class="k">end</span>
+           <span class="k">end</span>
+           <span class="k">function</span> <span class="n">lazy_distance_kernel_tr</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+               <span class="nd">@assert</span> <span class="n">size</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="n">N</span><span class="p">,)</span>
+               <span class="nd">@tturbo</span> <span class="k">for</span> <span class="n">i</span> <span class="o">∈</span> <span class="mi">1</span><span class="o">:</span><span class="n">N</span>
+                   <span class="n">ui</span> <span class="o">=</span> <span class="mf">0.0</span>
+                   <span class="k">for</span> <span class="n">j</span> <span class="o">∈</span> <span class="mi">1</span><span class="o">:</span><span class="n">N</span>
+                       <span class="n">ui</span> <span class="o">+=</span> <span class="p">(</span><span class="n">i1</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">i2</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">*</span> <span class="n">v</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+                   <span class="k">end</span>
+                   <span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">ui</span>
+               <span class="k">end</span>
+           <span class="k">end</span>
+           <span class="n">M</span> <span class="o">=</span> <span class="n">LinearMap</span><span class="p">(</span><span class="n">lazy_distance_kernel</span><span class="p">,</span> <span class="n">lazy_distance_kernel_tr</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">ismutating</span><span class="o">=</span><span class="nb">true</span><span class="p">)</span>
+           <span class="n">U</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">V</span> <span class="o">=</span> <span class="n">svds</span><span class="p">(</span><span class="n">M</span><span class="p">;</span> <span class="n">nsv</span><span class="o">=</span><span class="mi">4</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+
+           <span class="n">S</span>
+       <span class="k">end</span>
+  <span class="mf">1.146122</span> <span class="n">seconds</span> <span class="p">(</span><span class="mf">2.07</span> <span class="n">M</span> <span class="n">allocations</span><span class="o">:</span> <span class="mf">122.852</span> <span class="n">MiB</span><span class="p">,</span> <span class="mf">3.97</span><span class="o">%</span> <span class="n">gc</span> <span class="n">time</span><span class="p">,</span> <span class="mf">82.02</span><span class="o">%</span> <span class="n">compilation</span> <span class="n">time</span><span class="p">)</span>
+<span class="mi">4</span><span class="o">-</span><span class="n">element</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}</span><span class="o">:</span>
+    <span class="mf">1.5109957693321719e6</span>
+ <span class="mf">5843.092821965383</span>
+    <span class="mf">0.0</span>
+    <span class="mf">0.0</span>
+</code></pre></div>
+
+
+
+<a name="241088199"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Working%20with%20Huge%20Matrices/near/241088199" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Working.20with.20Huge.20Matrices.html#241088199">(Jun 01 2021 at 23:24)</a>:</h4>
+<p>Here it is on the actual problem size of 60k x 60k:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@time</span> <span class="k">let</span> <span class="n">N</span> <span class="o">=</span> <span class="mi">60_000</span>
+           <span class="n">i1</span> <span class="o">=</span> <span class="n">sin</span><span class="o">.</span><span class="p">(</span><span class="n">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="nb">π</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">N</span><span class="p">))</span>
+           <span class="n">i2</span> <span class="o">=</span> <span class="n">exp</span><span class="o">.</span><span class="p">(</span><span class="n">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="nb">π</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">N</span><span class="p">))</span>
+           <span class="k">function</span> <span class="n">lazy_distance_kernel</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+               <span class="nd">@assert</span> <span class="n">size</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="n">N</span><span class="p">,)</span>
+               <span class="nd">@tturbo</span> <span class="k">for</span> <span class="n">i</span> <span class="o">∈</span> <span class="mi">1</span><span class="o">:</span><span class="n">N</span>
+                   <span class="n">ui</span> <span class="o">=</span> <span class="mf">0.0</span>
+                   <span class="k">for</span> <span class="n">j</span> <span class="o">∈</span> <span class="mi">1</span><span class="o">:</span><span class="n">N</span>
+                       <span class="n">ui</span> <span class="o">+=</span> <span class="p">(</span><span class="n">i1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">i2</span><span class="p">[</span><span class="n">j</span><span class="p">])</span> <span class="o">*</span> <span class="n">v</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+                   <span class="k">end</span>
+                   <span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">ui</span>
+               <span class="k">end</span>
+           <span class="k">end</span>
+           <span class="k">function</span> <span class="n">lazy_distance_kernel_tr</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+               <span class="nd">@assert</span> <span class="n">size</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="n">N</span><span class="p">,)</span>
+               <span class="nd">@tturbo</span> <span class="k">for</span> <span class="n">i</span> <span class="o">∈</span> <span class="mi">1</span><span class="o">:</span><span class="n">N</span>
+                   <span class="n">ui</span> <span class="o">=</span> <span class="mf">0.0</span>
+                   <span class="k">for</span> <span class="n">j</span> <span class="o">∈</span> <span class="mi">1</span><span class="o">:</span><span class="n">N</span>
+                       <span class="n">ui</span> <span class="o">+=</span> <span class="p">(</span><span class="n">i1</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">i2</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">*</span> <span class="n">v</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+                   <span class="k">end</span>
+                   <span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">ui</span>
+               <span class="k">end</span>
+           <span class="k">end</span>
+           <span class="n">M</span> <span class="o">=</span> <span class="n">LinearMap</span><span class="p">(</span><span class="n">lazy_distance_kernel</span><span class="p">,</span> <span class="n">lazy_distance_kernel_tr</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">ismutating</span><span class="o">=</span><span class="nb">true</span><span class="p">)</span>
+           <span class="n">U</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">V</span> <span class="o">=</span> <span class="n">svds</span><span class="p">(</span><span class="n">M</span><span class="p">;</span> <span class="n">nsv</span><span class="o">=</span><span class="mi">4</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+
+           <span class="n">S</span>
+       <span class="k">end</span>
+  <span class="mf">6.174817</span> <span class="n">seconds</span> <span class="p">(</span><span class="mf">2.07</span> <span class="n">M</span> <span class="n">allocations</span><span class="o">:</span> <span class="mf">140.818</span> <span class="n">MiB</span><span class="p">,</span> <span class="mf">0.69</span><span class="o">%</span> <span class="n">gc</span> <span class="n">time</span><span class="p">,</span> <span class="mf">15.12</span><span class="o">%</span> <span class="n">compilation</span> <span class="n">time</span><span class="p">)</span>
+<span class="mi">4</span><span class="o">-</span><span class="n">element</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}</span><span class="o">:</span>
+     <span class="mf">9.063979155608427e6</span>
+ <span class="mf">35059.355544173464</span>
+     <span class="mf">0.0</span>
+     <span class="mf">0.0</span>
+</code></pre></div>
+
+
+
+<a name="241088243"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Working%20with%20Huge%20Matrices/near/241088243" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Working.20with.20Huge.20Matrices.html#241088243">(Jun 01 2021 at 23:25)</a>:</h4>
+<p>Note that 15% of that is compilation overhead (your first run may be worse)</p>
+
+
+
+<a name="241088362"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Working%20with%20Huge%20Matrices/near/241088362" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Working.20with.20Huge.20Matrices.html#241088362">(Jun 01 2021 at 23:27)</a>:</h4>
+<p>Most importantly though, the memory used here never gets anywhere near being problematically large. Does that help at all <span class="user-mention" data-user-id="358317">@Davi Sales Barreira</span>?</p>
+
+
+
+<a name="241088645"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Working%20with%20Huge%20Matrices/near/241088645" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Davi Sales Barreira <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Working.20with.20Huge.20Matrices.html#241088645">(Jun 01 2021 at 23:31)</a>:</h4>
+<p>Awesome, thank!</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

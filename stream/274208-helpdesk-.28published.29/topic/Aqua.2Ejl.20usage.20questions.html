@@ -1,0 +1,488 @@
+<html>
+<head><meta charset="utf-8"><title>Aqua.jl usage questions · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html">Aqua.jl usage questions</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="401162040"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401162040" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401162040">(Nov 09 2023 at 14:03)</a>:</h4>
+<p>I've tried out <a href="https://juliahub.com/ui/Packages/General/Aqua">Aqua.jl</a> for the first time on a package I sometimes contribute to (<code>FixedEffectModels</code>) and ran into a few questions that hopefully someone can help with:</p>
+<ul>
+<li>Is there more documentation anywhere? Explaining e.g. what the project.toml format test actually tests, or how worried I should be about test failures?</li>
+<li>In the Project.toml test, it seems to me that the package I'm testing is failing because the <code>[deps]</code> aren't in alphabetical order? Is that right? Do they have to be? It would be great (although maybe non-trivial) if Aqua could show the diff for what exactly made the test fail</li>
+<li>For <code>test_all</code> it seems that the process stops once any error is detected, is there way to keep going other than setting each failing test to <code>false</code> one by one?</li>
+<li>On the ambiguity tests, is there an option to exclude dependencies?</li>
+</ul>
+<p>I will post some results of the ambiguity tests in the next message, depending on how things go those can be a different thread.</p>
+
+
+
+<a name="401163692"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401163692" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401163692">(Nov 09 2023 at 14:12)</a>:</h4>
+<p>Some ambiguity warnings I don't understand:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">Ambiguity</span><span class="w"> </span><span class="c">#1</span>
+<span class="o">==</span><span class="p">(</span><span class="n">a</span><span class="o">::</span><span class="kt">Integer</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="o">::</span><span class="kt">SentinelArrays</span><span class="o">.</span><span class="n">ChainedVectorIndex</span><span class="p">)</span><span class="w"> </span><span class="err">@</span><span class="w"> </span><span class="n">SentinelArrays</span><span class="w"> </span><span class="n">C</span><span class="o">:\</span><span class="n">Users</span><span class="o">\</span><span class="n">ngudat</span><span class="o">\.</span><span class="n">julia</span><span class="o">\</span><span class="n">packages</span><span class="o">\</span><span class="n">SentinelArrays</span><span class="o">\</span><span class="mi">1</span><span class="n">kRo4</span><span class="o">\</span><span class="n">src</span><span class="o">\</span><span class="n">chainedvector</span><span class="o">.</span><span class="n">jl</span><span class="o">:</span><span class="mi">208</span>
+<span class="o">==</span><span class="p">(</span><span class="n">x</span><span class="o">::</span><span class="kt">BigInt</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="o">::</span><span class="kt">Integer</span><span class="p">)</span><span class="w"> </span><span class="err">@</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">GMP</span><span class="w"> </span><span class="n">gmp</span><span class="o">.</span><span class="n">jl</span><span class="o">:</span><span class="mi">722</span>
+
+<span class="n">Possible</span><span class="w"> </span><span class="n">fix</span><span class="p">,</span><span class="w"> </span><span class="n">define</span>
+<span class="w">  </span><span class="o">==</span><span class="p">(</span><span class="o">::</span><span class="kt">BigInt</span><span class="p">,</span><span class="w"> </span><span class="o">::</span><span class="kt">SentinelArrays</span><span class="o">.</span><span class="n">ChainedVectorIndex</span><span class="p">)</span>
+</code></pre></div>
+<p>I assume this is because</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">FixedEffectModels</span><span class="o">.</span><span class="n">DataFrames</span><span class="o">.</span><span class="n">SentinelArrays</span><span class="o">.</span><span class="kt">ChainedVectorIndex</span><span class="w"> </span><span class="o">&lt;:</span><span class="w"> </span><span class="kt">Integer</span>
+<span class="nb">true</span>
+</code></pre></div>
+<p>and </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="kt">BigInt</span><span class="w"> </span><span class="o">&lt;:</span><span class="w"> </span><span class="kt">Integer</span>
+<span class="nb">true</span>
+</code></pre></div>
+<p>Does this mean that <code>SentinelArrays</code> needs to define <code>==</code> for all subtypes of <code>Integer</code> in Base? And that there would be invalidation if another package that defines a <code>&lt;:Integer</code> type gets loaded?</p>
+<p>Then there is:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">StatsBase</span><span class="o">.</span><span class="n">TestStat</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="w"> </span><span class="err">@</span><span class="w"> </span><span class="n">StatsBase</span><span class="w"> </span><span class="n">C</span><span class="o">:\</span><span class="n">Users</span><span class="o">\</span><span class="n">ngudat</span><span class="o">\.</span><span class="n">julia</span><span class="o">\</span><span class="n">packages</span><span class="o">\</span><span class="n">StatsBase</span><span class="o">\</span><span class="n">WLz8A</span><span class="o">\</span><span class="n">src</span><span class="o">\</span><span class="n">statmodels</span><span class="o">.</span><span class="n">jl</span><span class="o">:</span><span class="mi">80</span>
+<span class="p">(</span><span class="o">::</span><span class="kt">Type</span><span class="p">{</span><span class="kt">T</span><span class="p">})(</span><span class="n">x</span><span class="o">::</span><span class="kt">AbstractChar</span><span class="p">)</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="kt">T</span><span class="o">&lt;:</span><span class="kt">Union</span><span class="p">{</span><span class="kt">AbstractChar</span><span class="p">,</span><span class="w"> </span><span class="kt">Number</span><span class="p">}</span><span class="w"> </span><span class="err">@</span><span class="w"> </span><span class="n">Base</span><span class="w"> </span><span class="n">char</span><span class="o">.</span><span class="n">jl</span><span class="o">:</span><span class="mi">50</span>
+
+<span class="n">Possible</span><span class="w"> </span><span class="n">fix</span><span class="p">,</span><span class="w"> </span><span class="n">define</span>
+<span class="w">  </span><span class="n">StatsBase</span><span class="o">.</span><span class="n">TestStat</span><span class="p">(</span><span class="o">::</span><span class="kt">AbstractChar</span><span class="p">)</span>
+</code></pre></div>
+<p>So the <code>StatsBase.TestStat</code> method is completely unconstrained, and would presumably always be less specific? I don't understand the ambiguity here at all. There's a similar one </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">StatsBase</span><span class="o">.</span><span class="n">TestStat</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="w"> </span><span class="err">@</span><span class="w"> </span><span class="n">StatsBase</span><span class="w"> </span><span class="n">C</span><span class="o">:\</span><span class="n">Users</span><span class="o">\</span><span class="n">ngudat</span><span class="o">\.</span><span class="n">julia</span><span class="o">\</span><span class="n">packages</span><span class="o">\</span><span class="n">StatsBase</span><span class="o">\</span><span class="n">WLz8A</span><span class="o">\</span><span class="n">src</span><span class="o">\</span><span class="n">statmodels</span><span class="o">.</span><span class="n">jl</span><span class="o">:</span><span class="mi">80</span>
+<span class="p">(</span><span class="o">::</span><span class="kt">Type</span><span class="p">{</span><span class="kt">T</span><span class="p">})(</span><span class="n">z</span><span class="o">::</span><span class="kt">Complex</span><span class="p">)</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="kt">T</span><span class="o">&lt;:</span><span class="kt">Real</span><span class="w"> </span><span class="err">@</span><span class="w"> </span><span class="n">Base</span><span class="w"> </span><span class="n">complex</span><span class="o">.</span><span class="n">jl</span><span class="o">:</span><span class="mi">44</span>
+
+<span class="n">Possible</span><span class="w"> </span><span class="n">fix</span><span class="p">,</span><span class="w"> </span><span class="n">define</span>
+<span class="w">  </span><span class="n">StatsBase</span><span class="o">.</span><span class="n">TestStat</span><span class="p">(</span><span class="o">::</span><span class="kt">Complex</span><span class="p">)</span>
+</code></pre></div>
+<p>I don't really understand most of the reported ambiguity but I think understanding those two will get me there for most of the others, so I'll leave it here.</p>
+
+
+
+<a name="401164200"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401164200" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401164200">(Nov 09 2023 at 14:14)</a>:</h4>
+<p>Not familiar with <code>StatsBase</code>, but my gut tells me <code>TestStat &lt;: Real</code>, and hence there's an ambiguity</p>
+
+
+
+<a name="401164440"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401164440" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401164440">(Nov 09 2023 at 14:15)</a>:</h4>
+<p>yup, there it is</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="p">[</span><span class="n">sukera</span><span class="nd">@tower</span><span class="w"> </span><span class="n">StatsBase</span><span class="o">.</span><span class="n">jl</span><span class="p">]</span><span class="o">$</span><span class="w"> </span><span class="n">rg</span><span class="w"> </span><span class="n">TestStat</span>
+<span class="n">src</span><span class="o">/</span><span class="n">statmodels</span><span class="o">.</span><span class="n">jl</span>
+<span class="mi">79</span><span class="o">:</span><span class="k">struct</span> <span class="kt">TestStat</span><span class="w"> </span><span class="o">&lt;:</span><span class="w"> </span><span class="kt">Real</span>
+</code></pre></div>
+
+
+
+<a name="401164963"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401164963" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401164963">(Nov 09 2023 at 14:18)</a>:</h4>
+<p>the ambiguity comes in when you try to call e.g. <code>TestStat(Complex(4.5))</code>:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">StatsBase</span><span class="o">.</span><span class="n">TestStat</span><span class="p">(</span><span class="kt">Complex</span><span class="p">(</span><span class="mf">4.5</span><span class="p">))</span>
+<span class="n">ERROR</span><span class="o">:</span><span class="w"> </span><span class="kt">MethodError</span><span class="o">:</span><span class="w"> </span><span class="n">StatsBase</span><span class="o">.</span><span class="n">TestStat</span><span class="p">(</span><span class="o">::</span><span class="kt">ComplexF64</span><span class="p">)</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">ambiguous</span><span class="o">.</span>
+
+<span class="n">Candidates</span><span class="o">:</span>
+<span class="w">  </span><span class="n">StatsBase</span><span class="o">.</span><span class="n">TestStat</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+<span class="w">    </span><span class="err">@</span><span class="w"> </span><span class="n">StatsBase</span><span class="w"> </span><span class="o">~/.</span><span class="n">julia</span><span class="o">/</span><span class="n">packages</span><span class="o">/</span><span class="n">StatsBase</span><span class="o">/</span><span class="n">WLz8A</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">statmodels</span><span class="o">.</span><span class="n">jl</span><span class="o">:</span><span class="mi">80</span>
+<span class="w">  </span><span class="p">(</span><span class="o">::</span><span class="kt">Type</span><span class="p">{</span><span class="kt">T</span><span class="p">})(</span><span class="n">z</span><span class="o">::</span><span class="kt">Complex</span><span class="p">)</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="kt">T</span><span class="o">&lt;:</span><span class="kt">Real</span>
+<span class="w">    </span><span class="err">@</span><span class="w"> </span><span class="n">Base</span><span class="w"> </span><span class="n">complex</span><span class="o">.</span><span class="n">jl</span><span class="o">:</span><span class="mi">44</span>
+
+<span class="n">Possible</span><span class="w"> </span><span class="n">fix</span><span class="p">,</span><span class="w"> </span><span class="n">define</span>
+<span class="w">  </span><span class="n">StatsBase</span><span class="o">.</span><span class="n">TestStat</span><span class="p">(</span><span class="o">::</span><span class="kt">Complex</span><span class="p">)</span>
+
+<span class="n">Stacktrace</span><span class="o">:</span>
+<span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="n">top</span><span class="o">-</span><span class="n">level</span><span class="w"> </span><span class="n">scope</span>
+<span class="w">   </span><span class="err">@</span><span class="w"> </span><span class="n">REPL</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">:</span><span class="mi">1</span>
+</code></pre></div>
+
+
+
+<a name="401165013"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401165013" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401165013">(Nov 09 2023 at 14:18)</a>:</h4>
+<p>whether that makes sense to do in the first place, I don't know <span aria-label="shrug" class="emoji emoji-1f937" role="img" title="shrug">:shrug:</span></p>
+
+
+
+<a name="401165305"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401165305" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401165305">(Nov 09 2023 at 14:20)</a>:</h4>
+<p>oh the ambiguity comes from a default constructor <span aria-label="thinking" class="emoji emoji-1f914" role="img" title="thinking">:thinking:</span></p>
+
+
+
+<a name="401166620"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401166620" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401166620">(Nov 09 2023 at 14:26)</a>:</h4>
+<p>Ah people have reported this already: <a href="https://github.com/JuliaStats/StatsBase.jl/issues/861">https://github.com/JuliaStats/StatsBase.jl/issues/861</a> and there's a PR to fix it: <a href="https://github.com/JuliaStats/StatsBase.jl/pull/866">https://github.com/JuliaStats/StatsBase.jl/pull/866</a> but no consensus on how or even whether to do this. People seem to be uncertain about whether these ambiguities should be resolved at all if there are no reported problems with them - what's the situation here? </p>
+<p>It feels to me that if there's no real need to address these than that test in Aqua becomes pretty meaningless for any non-trivial package as it will report dozens of ambiguities from dependencies.</p>
+
+
+
+<a name="401166891"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401166891" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401166891">(Nov 09 2023 at 14:27)</a>:</h4>
+<p>IMO <code>TestStat</code> just shouldn't <code>&lt;: Real</code> <span aria-label="shrug" class="emoji emoji-1f937" role="img" title="shrug">:shrug:</span></p>
+
+
+
+<a name="401167477"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401167477" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401167477">(Nov 09 2023 at 14:30)</a>:</h4>
+<p>Yes that's an option that the maintainers seem to consider, but more widely how worried should one be about ambiguities? I was under the impression that they introduce latency issues and therefore it would be an ecosystem win if everyone tidied them up in their own packages?</p>
+
+
+
+<a name="401167742"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401167742" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401167742">(Nov 09 2023 at 14:32)</a>:</h4>
+<p><a href="https://discourse.julialang.org/t/aqua-jl-finds-many-ambiguities-in-core-base/103963?u=sukera">https://discourse.julialang.org/t/aqua-jl-finds-many-ambiguities-in-core-base/103963?u=sukera</a></p>
+
+
+
+<a name="401167833"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401167833" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401167833">(Nov 09 2023 at 14:32)</a>:</h4>
+<p>an ambiguity that isn't ever a call candidate is not bad IMO</p>
+
+
+
+<a name="401168128"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401168128" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401168128">(Nov 09 2023 at 14:33)</a>:</h4>
+<p>that said, I think having <code>TestStat &lt;: Real</code> still doesn't make sense, there is no <code>+</code> or <code>*</code> defined either</p>
+
+
+
+<a name="401168245"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401168245" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401168245">(Nov 09 2023 at 14:34)</a>:</h4>
+<p>and <code>Real</code> certainly doesn't mean "partially ordered"</p>
+
+
+
+<a name="401168456"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401168456" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401168456">(Nov 09 2023 at 14:35)</a>:</h4>
+<p>Are you agreeing with Tim Holy there that I should be calling <code>Test.detect_ambiguities</code> and ignore the Aqua ambiguity tests?</p>
+
+
+
+<a name="401168477"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401168477" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401168477">(Nov 09 2023 at 14:35)</a>:</h4>
+<p>yeah</p>
+
+
+
+<a name="401168617"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401168617" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401168617">(Nov 09 2023 at 14:35)</a>:</h4>
+<p>That's a bit unfortunate then that one of the core Julia packages meant to improve code quality and standards across the ecosystem starts off on a meaningless test that should be ignored :D</p>
+
+
+
+<a name="401168890"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401168890" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401168890">(Nov 09 2023 at 14:36)</a>:</h4>
+<p>Next one (maybe I should have one thread per test?) is this:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Aqua</span><span class="o">.</span><span class="n">test_all</span><span class="p">(</span><span class="n">FixedEffectModels</span><span class="p">;</span><span class="w"> </span><span class="n">ambiguities</span><span class="o">=</span><span class="nb">false</span><span class="p">)</span>
+<span class="n">Test</span><span class="w"> </span><span class="n">Summary</span><span class="o">:</span><span class="w">    </span><span class="o">|</span><span class="n">Time</span>
+<span class="kt">Method</span><span class="w"> </span><span class="n">ambiguity</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">None</span><span class="w">  </span><span class="mf">0.0</span><span class="n">s</span>
+<span class="n">Unbound</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="n">parameters</span><span class="w"> </span><span class="n">detected</span><span class="o">:</span>
+<span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="n">FixedEffectModels</span><span class="o">.</span><span class="n">Combination</span><span class="p">(</span><span class="n">A</span><span class="o">::</span><span class="kt">AbstractVecOrMat</span><span class="p">{</span><span class="kt">T</span><span class="p">}</span><span class="o">...</span><span class="p">)</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="kt">T</span><span class="w"> </span><span class="err">@</span><span class="w"> </span><span class="n">FixedEffectModels</span><span class="w"> </span><span class="n">C</span><span class="o">:\</span><span class="n">Users</span><span class="o">\</span><span class="n">ngudat</span><span class="o">\.</span><span class="n">julia</span><span class="o">\</span><span class="n">packages</span><span class="o">\</span><span class="n">FixedEffectModels</span><span class="o">\</span><span class="mi">1</span><span class="n">EZ6p</span><span class="o">\</span><span class="n">src</span><span class="o">\</span><span class="n">utils</span><span class="o">\</span><span class="n">basecol</span><span class="o">.</span><span class="n">jl</span><span class="o">:</span><span class="mi">12</span>
+</code></pre></div>
+<p>What's the problem with unbound type parameters? How bad is it? What should be done about it?</p>
+
+
+
+<a name="401169000"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401169000" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401169000">(Nov 09 2023 at 14:37)</a>:</h4>
+<p>(I have read the Aqua docs and the <code>h(x)</code> example in this section but I don't feel confident enough in my understanding to change the package based on this)</p>
+
+
+
+<a name="401169276"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401169276" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401169276">(Nov 09 2023 at 14:38)</a>:</h4>
+<p>that parameter is unbound if you call <code>FixedEffectModels.Combination()</code></p>
+
+
+
+<a name="401169289"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401169289" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401169289">(Nov 09 2023 at 14:38)</a>:</h4>
+<p>i.e., in the zero-arg method</p>
+
+
+
+<a name="401169429"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401169429" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401169429">(Nov 09 2023 at 14:39)</a>:</h4>
+<p>in this case, it indicates that you assume the vararg means "at least one of this type", but in reality it means "0 or more of this type"</p>
+
+
+
+<a name="401169588"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401169588" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401169588">(Nov 09 2023 at 14:40)</a>:</h4>
+<p>Ok I'm not sure I see how a parameters that doesn't exist can be unbounded, but I'll accept it. Is this a real problem or can it be ignored? If it is a real problem, is the fix to define the zero-arg method implicitly?</p>
+
+
+
+<a name="401169648"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401169648" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401169648">(Nov 09 2023 at 14:40)</a>:</h4>
+<p>and if there are no arguments passed, the <code>T</code> isn't bound to anything, since there are no arguments it could be bound from</p>
+
+
+
+<a name="401169718"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401169718" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401169718">(Nov 09 2023 at 14:40)</a>:</h4>
+<p>how to fix it depends on the rest of your code - does it make sense to call this with 0 arguments?</p>
+
+
+
+<a name="401169805"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401169805" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401169805">(Nov 09 2023 at 14:41)</a>:</h4>
+<p>to illustrate the issue:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">T</span><span class="p">}</span><span class="o">...</span><span class="p">)</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="kt">T</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">T</span>
+<span class="n">f</span><span class="w"> </span><span class="p">(</span><span class="n">generic</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">f</span><span class="p">()</span>
+<span class="n">ERROR</span><span class="o">:</span><span class="w"> </span><span class="kt">UndefVarError</span><span class="o">:</span><span class="w"> </span><span class="sb">`T`</span><span class="w"> </span><span class="n">not</span><span class="w"> </span><span class="n">defined</span>
+<span class="n">Stacktrace</span><span class="o">:</span>
+<span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="n">f</span><span class="p">()</span>
+<span class="w">   </span><span class="err">@</span><span class="w"> </span><span class="n">Main</span><span class="w"> </span><span class="o">./</span><span class="n">REPL</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">:</span><span class="mi">1</span>
+<span class="w"> </span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="w"> </span><span class="n">top</span><span class="o">-</span><span class="n">level</span><span class="w"> </span><span class="n">scope</span>
+<span class="w">   </span><span class="err">@</span><span class="w"> </span><span class="n">REPL</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">:</span><span class="mi">1</span>
+</code></pre></div>
+
+
+
+<a name="401169955"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401169955" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401169955">(Nov 09 2023 at 14:42)</a>:</h4>
+<p>I can't see how - this is a package for regression modelling where <code>Combination</code> is the combination of two or more variables in the data set. Arguably even a one-argument version doesn't make sense.</p>
+
+
+
+<a name="401170090"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401170090" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401170090">(Nov 09 2023 at 14:42)</a>:</h4>
+<p>then I'd write this as <code>f(a, b, c...)</code> and combine the 2+ arguments accordingly in the method</p>
+
+
+
+<a name="401170105"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401170105" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401170105">(Nov 09 2023 at 14:42)</a>:</h4>
+<p>But presumably changing to <code>Combination(x::AbstractVecOrMat{T}, y::AbstractVecOrMat{S}...) where T where S</code> would have the same problem?</p>
+
+
+
+<a name="401170186"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401170186" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401170186">(Nov 09 2023 at 14:43)</a>:</h4>
+<p>no, there <code>T</code> is always bound, because the <code>T</code> comes from the first argument</p>
+
+
+
+<a name="401170292"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401170292" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401170292">(Nov 09 2023 at 14:43)</a>:</h4>
+<p>an "unbound type variable" means that there is no type that could possibly be assigned, not even <code>Any</code>, because there is no place the type can come from - and it needs to come from somewhere</p>
+
+
+
+<a name="401170447"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401170447" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401170447">(Nov 09 2023 at 14:44)</a>:</h4>
+<p>But wouldn't the <code>S</code> be unbound there if it's called with one arg?</p>
+
+
+
+<a name="401170573"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401170573" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401170573">(Nov 09 2023 at 14:44)</a>:</h4>
+<p>presumably you'd use the same type parameter for both of these, no?</p>
+
+
+
+<a name="401170604"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401170604" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401170604">(Nov 09 2023 at 14:45)</a>:</h4>
+<p>that would match your existing method</p>
+
+
+
+<a name="401170662"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401170662" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401170662">(Nov 09 2023 at 14:45)</a>:</h4>
+<p>No, a combination could be a vector of strings and a vector of floats</p>
+
+
+
+<a name="401170671"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401170671" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401170671">(Nov 09 2023 at 14:45)</a>:</h4>
+<p>in the example with <code>S</code>, yes that would be unbound too in the 1-arg case</p>
+
+
+
+<a name="401170700"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401170700" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401170700">(Nov 09 2023 at 14:45)</a>:</h4>
+<p>But you're right that must be a different method currently</p>
+
+
+
+<a name="401170877"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401170877" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401170877">(Nov 09 2023 at 14:46)</a>:</h4>
+<p>this is a bit similar to how <code>all(&lt;any predicate you want&gt;, []) == true</code>, because there is no counterexample that you can produce from <code>[]</code></p>
+
+
+
+<a name="401171018"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401171018" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401171018">(Nov 09 2023 at 14:47)</a>:</h4>
+<p>Regarding <code>Project.toml</code>, that test was removed recently: <a href="https://github.com/JuliaTesting/Aqua.jl/issues/208">https://github.com/JuliaTesting/Aqua.jl/issues/208</a> <a href="https://github.com/JuliaTesting/Aqua.jl/pull/209">https://github.com/JuliaTesting/Aqua.jl/pull/209</a></p>
+
+
+
+<a name="401176114"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401176114" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401176114">(Nov 09 2023 at 15:11)</a>:</h4>
+<p>I don't really understand the unbound args error when looking at the package code. The relevant code is <a href="https://github.com/FixedEffects/FixedEffectModels.jl/commits/master/src/utils/basecol.jl">here</a>:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="kt">Combination</span><span class="p">{</span><span class="kt">T</span><span class="p">}</span><span class="w"> </span><span class="o">&lt;:</span><span class="w"> </span><span class="kt">AbstractMatrix</span><span class="p">{</span><span class="kt">T</span><span class="p">}</span>
+<span class="w">    </span><span class="n">A</span><span class="o">::</span><span class="kt">Tuple</span>
+<span class="w">    </span><span class="n">cumlength</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Int</span><span class="p">}</span>
+<span class="k">end</span>
+
+<span class="k">function</span><span class="w"> </span><span class="n">Combination</span><span class="p">(</span><span class="n">A</span><span class="o">::</span><span class="kt">Union</span><span class="p">{</span><span class="kt">AbstractVector</span><span class="p">{</span><span class="kt">T</span><span class="p">},</span><span class="w"> </span><span class="kt">AbstractMatrix</span><span class="p">{</span><span class="kt">T</span><span class="p">}}</span><span class="o">...</span><span class="p">)</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="p">{</span><span class="kt">T</span><span class="p">}</span>
+<span class="w">    </span><span class="kt">Combination</span><span class="p">{</span><span class="kt">T</span><span class="p">}(</span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="n">cumsum</span><span class="p">([</span><span class="n">size</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">A</span><span class="p">]))</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>So that already is the two arg version (indeed with the same type parameter as suggested), where does the error come from?</p>
+
+
+
+<a name="401178705"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401178705" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401178705">(Nov 09 2023 at 15:23)</a>:</h4>
+<p>that is a 0+ arg version</p>
+
+
+
+<a name="401178726"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401178726" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401178726">(Nov 09 2023 at 15:23)</a>:</h4>
+<p><code>A</code> is typed <code>Union</code></p>
+
+
+
+<a name="401179000"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401179000" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401179000">(Nov 09 2023 at 15:25)</a>:</h4>
+<p>Ah I misread, sorry!</p>
+
+
+
+<a name="401179453"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401179453" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401179453">(Nov 09 2023 at 15:27)</a>:</h4>
+<p>Would a workaround be to just define a 0-arg version explicitly or is that just ambiguous?</p>
+
+
+
+<a name="401180042"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401180042" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401180042">(Nov 09 2023 at 15:29)</a>:</h4>
+<p>that would override this method</p>
+
+
+
+<a name="401180129"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401180129" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401180129">(Nov 09 2023 at 15:29)</a>:</h4>
+<p>or rather, the 0-arg method defined there</p>
+
+
+
+<a name="401180242"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401180242" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401180242">(Nov 09 2023 at 15:30)</a>:</h4>
+<p>it should work, but again, it depends on your type whether that makes sense</p>
+
+
+
+<a name="401180378"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401180378" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401180378">(Nov 09 2023 at 15:30)</a>:</h4>
+<p>Yes I mean just doing </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">Combination</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">error</span><span class="p">(</span><span class="s">"`Combination` needs to have at least one argument"</span><span class="p">)</span>
+</code></pre></div>
+<p>or something like that</p>
+
+
+
+<a name="401180458"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401180458" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401180458">(Nov 09 2023 at 15:31)</a>:</h4>
+<p>What is the issue with these unbound type parameters in practice? Is this something I should be worried about or another Aqua test that can be ignored?</p>
+
+
+
+<a name="401180647"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401180647" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401180647">(Nov 09 2023 at 15:32)</a>:</h4>
+<p>it can't be ignored, since you use <code>T</code> in the method</p>
+
+
+
+<a name="401180744"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401180744" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401180744">(Nov 09 2023 at 15:32)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">Combination</span><span class="p">()</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="p">{</span><span class="kt">T</span><span class="p">}</span>
+<span class="w">    </span><span class="kt">Combination</span><span class="p">{</span><span class="kt">T</span><span class="p">}(</span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="n">cumsum</span><span class="p">([</span><span class="n">size</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">A</span><span class="p">]))</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>This is what the compiler sees for the 0-arg method</p>
+
+
+
+<a name="401180764"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401180764" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401180764">(Nov 09 2023 at 15:32)</a>:</h4>
+<p>what should <code>T</code> be in this case?</p>
+
+
+
+<a name="401180816"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401180816" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401180816">(Nov 09 2023 at 15:33)</a>:</h4>
+<p>mind you, there is no <code>A</code> to get that <code>T</code> from</p>
+
+
+
+<a name="401180880"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401180880" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401180880">(Nov 09 2023 at 15:33)</a>:</h4>
+<p>so sooner or later, this code _will_ error</p>
+
+
+
+<a name="401180905"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401180905" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401180905">(Nov 09 2023 at 15:33)</a>:</h4>
+<p>(probably sooner)</p>
+
+
+
+<a name="401181021"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401181021" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401181021">(Nov 09 2023 at 15:34)</a>:</h4>
+<p>the issue is, the compiler can't know when this happens - so it must lug that <code>T</code> around, inserting <code>UndefVarError</code>s everywhere that <code>T</code> is used</p>
+
+
+
+<a name="401181115"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401181115" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401181115">(Nov 09 2023 at 15:34)</a>:</h4>
+<p>that's a lot of work that could be prevented from happening by always making sure the <code>T</code> is bound to something</p>
+
+
+
+<a name="401182009"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401182009" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401182009">(Nov 09 2023 at 15:38)</a>:</h4>
+<p>And this compiler work happens even though <code>Combination()</code> will never be called anywhere, ever?</p>
+
+
+
+<a name="401183045"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401183045" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401183045">(Nov 09 2023 at 15:44)</a>:</h4>
+<p>So I've confirmed that both:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">Combination</span><span class="p">(</span><span class="n">A</span><span class="o">::</span><span class="kt">Union</span><span class="p">{</span><span class="kt">AbstractVector</span><span class="p">{</span><span class="kt">T</span><span class="p">},</span><span class="w"> </span><span class="kt">AbstractMatrix</span><span class="p">{</span><span class="kt">T</span><span class="p">}},</span>
+<span class="w">    </span><span class="n">B</span><span class="o">::</span><span class="kt">Union</span><span class="p">{</span><span class="kt">AbstractVector</span><span class="p">{</span><span class="kt">T</span><span class="p">},</span><span class="w"> </span><span class="kt">AbstractMatrix</span><span class="p">{</span><span class="kt">T</span><span class="p">}}</span><span class="o">...</span><span class="p">)</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="p">{</span><span class="kt">T</span><span class="p">}</span>
+<span class="w">    </span><span class="kt">Combination</span><span class="p">{</span><span class="kt">T</span><span class="p">}((</span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="n">B</span><span class="o">...</span><span class="p">),</span><span class="w"> </span><span class="n">cumsum</span><span class="p">([</span><span class="n">size</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">);</span><span class="w"> </span><span class="p">[</span><span class="n">size</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">B</span><span class="p">]]))</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>and leaving the defintion untouched but doing:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">Combination</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">error</span><span class="p">(</span><span class="s">"`Combination` requires at least one argument"</span><span class="p">)</span>
+</code></pre></div>
+<p>make the Aqua test pass. Is there one thing that's preferable from a compiler/latency perspective (assuming that I'm ambivalent between them from a "what makes sense for this use case" perspective)?</p>
+
+
+
+<a name="401183264"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401183264" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401183264">(Nov 09 2023 at 15:45)</a>:</h4>
+<p>no, both are fine</p>
+
+
+
+<a name="401183290"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401183290" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401183290">(Nov 09 2023 at 15:45)</a>:</h4>
+<p>one results in your custom error message, the other results in a <code>MethodError</code></p>
+
+
+
+<a name="401183319"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Aqua.jl%20usage%20questions/near/401183319" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Aqua.2Ejl.20usage.20questions.html#401183319">(Nov 09 2023 at 15:46)</a>:</h4>
+<p>from a UX perspective, the custom error message is preferable</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

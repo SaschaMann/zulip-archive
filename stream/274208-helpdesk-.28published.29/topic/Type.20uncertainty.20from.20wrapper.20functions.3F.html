@@ -1,0 +1,218 @@
+<html>
+<head><meta charset="utf-8"><title>Type uncertainty from wrapper functions? · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Type.20uncertainty.20from.20wrapper.20functions.3F.html">Type uncertainty from wrapper functions?</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="230125917"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Type%20uncertainty%20from%20wrapper%20functions%3F/near/230125917" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Robbie Rosati <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Type.20uncertainty.20from.20wrapper.20functions.3F.html#230125917">(Mar 13 2021 at 01:51)</a>:</h4>
+<p>I have a project where I generate a lot of functions at runtime, use <a href="https://github.com/search?q=RuntimeGeneratedFunctions.jl&amp;type=Repositories">RuntimeGeneratedFunctions.jl</a> on them, and store them in a dict for easy access. Then I wrote small wrapper functions to make typing them out easier.</p>
+<p>I was benchmarking and it looks like this organization scheme creates a lot of allocations on every function call.</p>
+<p>I checked <code>@code_warntype</code>, and sure enough some of the wrapper functions I made generated type uncertainty. Here's a quick demo:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">a</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">x</span><span class="o">^</span><span class="mi">2</span>
+
+<span class="n">dict</span> <span class="o">=</span> <span class="kt">Dict</span><span class="p">(</span><span class="s">"a"</span> <span class="o">=&gt;</span> <span class="n">a</span><span class="p">)</span>
+
+<span class="nd">@code_warntype</span> <span class="n">dict</span><span class="p">[</span><span class="s">"a"</span><span class="p">](</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="c"># no type uncertainty:</span>
+<span class="c">#</span>
+<span class="c"># Variables</span>
+<span class="c">#  #self#::Core.Compiler.Const(a, false)</span>
+<span class="c">#  x::Float64</span>
+<span class="c">#</span>
+<span class="c">#Body::Float64</span>
+<span class="c">#1 ─ %1 = Core.apply_type(Base.Val, 2)::Core.Compiler.Const(Val{2}, false)</span>
+<span class="c">#│   %2 = (%1)()::Core.Compiler.Const(Val{2}(), false)</span>
+<span class="c">#│   %3 = Base.literal_pow(Main.:^, x, %2)::Float64</span>
+<span class="c">#└──      return %3</span>
+
+<span class="n">b</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">dict</span><span class="p">[</span><span class="s">"a"</span><span class="p">](</span><span class="n">x</span><span class="p">)</span>
+<span class="nd">@code_warntype</span> <span class="n">b</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="c"># type uncertainty!</span>
+<span class="c"># Variables</span>
+<span class="c">#  #self#::Core.Compiler.Const(b, false)</span>
+<span class="c">#  x::Float64</span>
+<span class="c">#</span>
+<span class="c">#Body::Any</span>
+<span class="c">#1 ─ %1 = Base.getindex(Main.dict, "a")::Any</span>
+<span class="c">#│   %2 = (%1)(x)::Any</span>
+<span class="c">#└──      return %2</span>
+</code></pre></div>
+<p>Is there a way to reduce the type uncertainty of <code>b</code>, or swap it for another notationally convenient object without type uncertainty?</p>
+
+
+
+<a name="230325504"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Type%20uncertainty%20from%20wrapper%20functions%3F/near/230325504" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Frederik Banning <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Type.20uncertainty.20from.20wrapper.20functions.3F.html#230325504">(Mar 15 2021 at 10:56)</a>:</h4>
+<p>Do you constantly add key-value pairs dynamically in your use case? If not (i.e. if you can previously assume the amount of generated functions), I think you could just use a NamedTuple instead of a Dict.</p>
+<p>(Quick disclaimer: I have no experience with functions generated at runtime.)</p>
+
+
+
+<a name="230329198"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Type%20uncertainty%20from%20wrapper%20functions%3F/near/230329198" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Type.20uncertainty.20from.20wrapper.20functions.3F.html#230329198">(Mar 15 2021 at 11:27)</a>:</h4>
+<p>This example mask the problem, because type instability in this case originates from the fact that <code>dict</code> is a global variable. So if you use <code>const dict = Dict("a" =&gt; a)</code> then you'll see no type instabilities.</p>
+<p>But real problem is different and can be seen if we are introduce more functions:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">a1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">x</span><span class="o">^</span><span class="mi">2</span>
+<span class="n">a2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">x</span><span class="o">^</span><span class="mi">3</span>
+<span class="n">a3</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">x</span><span class="o">^</span><span class="mi">4</span>
+<span class="n">a4</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">x</span><span class="o">^</span><span class="mi">5</span>
+<span class="n">a5</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">x</span><span class="o">^</span><span class="mi">6</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="kd">const</span> <span class="n">dict</span> <span class="o">=</span> <span class="kt">Dict</span><span class="p">(</span><span class="s">"a1"</span> <span class="o">=&gt;</span> <span class="n">a1</span><span class="p">,</span> <span class="s">"a2"</span> <span class="o">=&gt;</span> <span class="n">a2</span><span class="p">,</span> <span class="s">"a3"</span> <span class="o">=&gt;</span> <span class="n">a3</span><span class="p">,</span> <span class="s">"a4"</span> <span class="o">=&gt;</span> <span class="n">a4</span><span class="p">,</span> <span class="s">"a5"</span> <span class="o">=&gt;</span> <span class="n">a5</span><span class="p">)</span>
+  <span class="kt">Dict</span><span class="p">{</span><span class="n">String</span><span class="p">,</span> <span class="kt">Function</span><span class="p">}</span> <span class="n">with</span> <span class="mi">5</span> <span class="n">entries</span><span class="o">:</span>
+</code></pre></div>
+<p>In this case, <code>dict</code> is a dict of functions and their types can't be predicted at compile time.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">b</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">dict</span><span class="p">[</span><span class="s">"a1"</span><span class="p">](</span><span class="n">x</span><span class="p">)</span>
+<span class="n">b</span> <span class="p">(</span><span class="n">generic</span> <span class="k">function</span> <span class="n">with</span> <span class="mi">1</span> <span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@code_warntype</span> <span class="n">b</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="n">MethodInstance</span> <span class="k">for</span> <span class="n">b</span><span class="p">(</span><span class="o">::</span><span class="kt">Float64</span><span class="p">)</span>
+  <span class="n">from</span> <span class="n">b</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="kp">in</span> <span class="n">Main</span> <span class="n">at</span> <span class="n">REPL</span><span class="p">[</span><span class="mi">13</span><span class="p">]</span><span class="o">:</span><span class="mi">1</span>
+<span class="n">Arguments</span>
+  <span class="c">#self#::Core.Const(b)</span>
+  <span class="n">x</span><span class="o">::</span><span class="kt">Float64</span>
+<span class="n">Body</span><span class="o">::</span><span class="kt">Any</span>
+<span class="mi">1</span> <span class="n">─</span> <span class="o">%</span><span class="mi">1</span> <span class="o">=</span> <span class="n">Base</span><span class="o">.</span><span class="n">getindex</span><span class="p">(</span><span class="n">Main</span><span class="o">.</span><span class="n">dict</span><span class="p">,</span> <span class="s">"a1"</span><span class="p">)</span><span class="o">::</span><span class="kt">Function</span>
+<span class="n">│</span>   <span class="o">%</span><span class="mi">2</span> <span class="o">=</span> <span class="p">(</span><span class="o">%</span><span class="mi">1</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span><span class="o">::</span><span class="kt">Any</span>
+<span class="n">└──</span>      <span class="k">return</span> <span class="o">%</span><span class="mi">2</span>
+</code></pre></div>
+<p>This is reasonable, since compiler can't got through all functions and infer type for each possible function and possible argument type.</p>
+<p>You can help it by using type annotations</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">b</span><span class="p">(</span><span class="n">x</span><span class="o">::</span><span class="n">T</span><span class="p">)</span> <span class="n">where</span> <span class="n">T</span> <span class="o">=</span> <span class="n">dict</span><span class="p">[</span><span class="s">"a1"</span><span class="p">](</span><span class="n">x</span><span class="p">)</span><span class="o">::</span><span class="n">T</span>
+<span class="n">b</span> <span class="p">(</span><span class="n">generic</span> <span class="k">function</span> <span class="n">with</span> <span class="mi">1</span> <span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@code_warntype</span> <span class="n">b</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="n">MethodInstance</span> <span class="k">for</span> <span class="n">b</span><span class="p">(</span><span class="o">::</span><span class="kt">Float64</span><span class="p">)</span>
+  <span class="n">from</span> <span class="n">b</span><span class="p">(</span><span class="n">x</span><span class="o">::</span><span class="n">T</span><span class="p">)</span> <span class="n">where</span> <span class="n">T</span> <span class="kp">in</span> <span class="n">Main</span> <span class="n">at</span> <span class="n">REPL</span><span class="p">[</span><span class="mi">15</span><span class="p">]</span><span class="o">:</span><span class="mi">1</span>
+<span class="n">Static</span> <span class="n">Parameters</span>
+  <span class="n">T</span> <span class="o">=</span> <span class="kt">Float64</span>
+<span class="n">Arguments</span>
+  <span class="c">#self#::Core.Const(b)</span>
+  <span class="n">x</span><span class="o">::</span><span class="kt">Float64</span>
+<span class="n">Body</span><span class="o">::</span><span class="kt">Float64</span>
+<span class="mi">1</span> <span class="n">─</span> <span class="o">%</span><span class="mi">1</span> <span class="o">=</span> <span class="n">Base</span><span class="o">.</span><span class="n">getindex</span><span class="p">(</span><span class="n">Main</span><span class="o">.</span><span class="n">dict</span><span class="p">,</span> <span class="s">"a1"</span><span class="p">)</span><span class="o">::</span><span class="kt">Function</span>
+<span class="n">│</span>   <span class="o">%</span><span class="mi">2</span> <span class="o">=</span> <span class="p">(</span><span class="o">%</span><span class="mi">1</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span><span class="o">::</span><span class="kt">Any</span>
+<span class="n">│</span>   <span class="o">%</span><span class="mi">3</span> <span class="o">=</span> <span class="n">Core</span><span class="o">.</span><span class="n">typeassert</span><span class="p">(</span><span class="o">%</span><span class="mi">2</span><span class="p">,</span> <span class="o">$</span><span class="p">(</span><span class="kt">Expr</span><span class="p">(</span><span class="o">:</span><span class="n">static_parameter</span><span class="p">,</span> <span class="mi">1</span><span class="p">)))</span><span class="o">::</span><span class="kt">Float64</span>
+<span class="n">└──</span>      <span class="k">return</span> <span class="o">%</span><span class="mi">3</span>
+</code></pre></div>
+<p>So compiler will add runtime check of the return type, and it will slow down tight loops, but at least it remove type instability.</p>
+
+
+
+<a name="230356804"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Type%20uncertainty%20from%20wrapper%20functions%3F/near/230356804" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Robbie Rosati <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Type.20uncertainty.20from.20wrapper.20functions.3F.html#230356804">(Mar 15 2021 at 14:50)</a>:</h4>
+<p>Thanks for the replies. <span class="user-mention" data-user-id="303259">@Frederik Banning</span>  is right that I just generate this dict once, so a NamedTuple would work equally well.  And <span class="user-mention" data-user-id="272771">@Andrey Oskin</span> is right that type annotations do help in my case.</p>
+<p>Instead of using wrapper functions, could macros help? I was thinking something like this:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">a1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">x</span><span class="o">^</span><span class="mi">2</span>
+<span class="n">a2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">x</span><span class="o">^</span><span class="mi">3</span>
+
+<span class="kd">const</span> <span class="n">ntup</span> <span class="o">=</span> <span class="nd">@NamedTuple</span><span class="p">{</span><span class="n">a1</span><span class="p">,</span><span class="n">a2</span><span class="p">}([</span><span class="n">a1</span><span class="p">,</span><span class="n">a2</span><span class="p">])</span>
+
+<span class="n">b1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">ntup</span><span class="o">.</span><span class="n">a1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+<span class="k">macro</span> <span class="n">b2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">return</span> <span class="o">:</span><span class="p">(</span><span class="n">ntup</span><span class="o">.</span><span class="n">a2</span><span class="p">(</span><span class="o">$</span><span class="n">x</span><span class="p">))</span>
+<span class="k">end</span>
+
+<span class="n">println</span><span class="p">(</span><span class="nd">@b2</span><span class="p">(</span><span class="mf">1.0</span><span class="p">))</span>
+</code></pre></div>
+<p>From what I can tell there's no type instability or performance hit in <code>b2</code> vs <code>b1</code>.</p>
+
+
+
+<a name="230357160"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Type%20uncertainty%20from%20wrapper%20functions%3F/near/230357160" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Type.20uncertainty.20from.20wrapper.20functions.3F.html#230357160">(Mar 15 2021 at 14:52)</a>:</h4>
+<p>Then you need the same amount of macros  as you have original functions.<br>
+In this case why not just use functions themselves? This macro is more or less equivalent to</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="kd">const</span> <span class="n">b2</span> <span class="o">=</span> <span class="n">a2</span>
+</code></pre></div>
+
+
+
+<a name="230357202"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Type%20uncertainty%20from%20wrapper%20functions%3F/near/230357202" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Type.20uncertainty.20from.20wrapper.20functions.3F.html#230357202">(Mar 15 2021 at 14:52)</a>:</h4>
+<p>It's just aliasing.</p>
+
+
+
+<a name="230357288"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Type%20uncertainty%20from%20wrapper%20functions%3F/near/230357288" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Type.20uncertainty.20from.20wrapper.20functions.3F.html#230357288">(Mar 15 2021 at 14:52)</a>:</h4>
+<p>If your functions are known at compile time, you gain nothing.<br>
+And if they are unknown in compile time, you can't use macros.</p>
+
+
+
+<a name="230361101"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Type%20uncertainty%20from%20wrapper%20functions%3F/near/230361101" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Robbie Rosati <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Type.20uncertainty.20from.20wrapper.20functions.3F.html#230361101">(Mar 15 2021 at 15:12)</a>:</h4>
+<p>Ah thanks. How many functions I'll have and their names are known at compile time, the only thing generated at runtime are the exact expressions inside the functions.</p>
+<p>Now that I think more about it I guess I was also looking for a cost-free way to alias a more complicated function call. In practice to call one of my functions directly is (using a dict) like this <code>funcs["H"](sol(t)...,vals...)</code> where <code>vals</code> are global constants and <code>sol</code> is an ODE solution object. I had written <code>H(t) = funcs["H"](sol(t)...,vals...)</code> to save keystrokes later on, but that introduced the type instability we've been looking at. So it sounds like a macro would remove the type instability from the second step, since it's just an alias. And hopefully a NamedTuple removes some of the type instability from the first step. This way of using the <code>ODESolution</code> object actually has some as well, but type annotations might help.</p>
+
+
+
+<a name="230361810"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Type%20uncertainty%20from%20wrapper%20functions%3F/near/230361810" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Type.20uncertainty.20from.20wrapper.20functions.3F.html#230361810">(Mar 15 2021 at 15:16)</a>:</h4>
+<p>If it's just an alias, I would recommend to just use <code>const H = my_long_and_hard_to_type_function_name</code> and not introduce extra mechanisms/macros that you have to fight with later.</p>
+
+
+
+<a name="230361843"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Type%20uncertainty%20from%20wrapper%20functions%3F/near/230361843" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Type.20uncertainty.20from.20wrapper.20functions.3F.html#230361843">(Mar 15 2021 at 15:17)</a>:</h4>
+<p>It's recommended way, I suppose.</p>
+
+
+
+<a name="230362077"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Type%20uncertainty%20from%20wrapper%20functions%3F/near/230362077" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Type.20uncertainty.20from.20wrapper.20functions.3F.html#230362077">(Mar 15 2021 at 15:18)</a>:</h4>
+<p>It's the same as write <code>const Float64Q = Union{Nothing, Float64}</code> to deal with long type names.</p>
+
+
+
+<a name="230362203"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Type%20uncertainty%20from%20wrapper%20functions%3F/near/230362203" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Type.20uncertainty.20from.20wrapper.20functions.3F.html#230362203">(Mar 15 2021 at 15:18)</a>:</h4>
+<p>As long as you do not export them it's fine.</p>
+
+
+
+<a name="230362804"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Type%20uncertainty%20from%20wrapper%20functions%3F/near/230362804" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Robbie Rosati <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Type.20uncertainty.20from.20wrapper.20functions.3F.html#230362804">(Mar 15 2021 at 15:20)</a>:</h4>
+<p>So just to be clear, you're suggesting something like <code>const H(t) = funcs["H"](sol(t)...,vals...)</code>?</p>
+
+
+
+<a name="230363940"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Type%20uncertainty%20from%20wrapper%20functions%3F/near/230363940" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Type.20uncertainty.20from.20wrapper.20functions.3F.html#230363940">(Mar 15 2021 at 15:27)</a>:</h4>
+<p>Ahhh....<br>
+No, I don't :-) In this case you can just define <code>H(t) = &lt;initial_long_and_hard_to_type_function_name&gt;(sol(t)..., vals...)</code></p>
+<p><code>const</code> is needed when you are aliasing function names with the same signature. But here you create new function, so no <code>const</code> is needed.</p>
+
+
+
+<a name="230364077"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Type%20uncertainty%20from%20wrapper%20functions%3F/near/230364077" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Type.20uncertainty.20from.20wrapper.20functions.3F.html#230364077">(Mar 15 2021 at 15:28)</a>:</h4>
+<p>But main idea is to avoid <code>funcs["H"]</code> in the first place if possible.</p>
+
+
+
+<a name="230364261"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Type%20uncertainty%20from%20wrapper%20functions%3F/near/230364261" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Type.20uncertainty.20from.20wrapper.20functions.3F.html#230364261">(Mar 15 2021 at 15:29)</a>:</h4>
+<p>You can write macro here, btw, which would do something like</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="nd">@bind</span> <span class="n">alias</span> <span class="n">long_and_hard_to_type_function_name</span>
+</code></pre></div>
+<p>and it will execute the line that I wrote before.</p>
+
+
+
+<a name="230366864"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Type%20uncertainty%20from%20wrapper%20functions%3F/near/230366864" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Robbie Rosati <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Type.20uncertainty.20from.20wrapper.20functions.3F.html#230366864">(Mar 15 2021 at 15:44)</a>:</h4>
+<p>Ah I see. But <code>H(t) = &lt;initial_long_and_hard_to_type_function_name&gt;(sol(t)..., vals...)</code> is what I currently have and what seems to introduce type instability. If I type the whole thing out, I get less. I guess there's always <code>@bind H funcs["H"]</code> to save a few keystrokes.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

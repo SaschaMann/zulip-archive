@@ -1,0 +1,57 @@
+<html>
+<head><meta charset="utf-8"><title>Create a new instance of a type after indexing · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Create.20a.20new.20instance.20of.20a.20type.20after.20indexing.html">Create a new instance of a type after indexing</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="251007842"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Create%20a%20new%20instance%20of%20a%20type%20after%20indexing/near/251007842" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Alex Knudson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Create.20a.20new.20instance.20of.20a.20type.20after.20indexing.html#251007842">(Aug 27 2021 at 23:08)</a>:</h4>
+<p>Let's say that I have a type defined as </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="kt">MyVectorType</span><span class="p">{</span><span class="kt">T</span><span class="p">}</span> <span class="o">&lt;:</span> <span class="kt">AbstractVector</span><span class="p">{</span><span class="kt">T</span><span class="p">}</span>
+    <span class="n">x</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">T</span><span class="p">}</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>I would like to be able to define <code>getindex</code> such that when I do</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">A</span> <span class="o">=</span> <span class="n">MyVectorType</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">8</span><span class="p">])</span>
+<span class="n">A</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+</code></pre></div>
+<p>I get <code>2</code>, and if I do</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">A</span><span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">]]</span>
+<span class="n">A</span><span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">3</span><span class="p">]</span>
+</code></pre></div>
+<p>I'll get <code>MyVectorType([1,2,5])</code> and <code>MyVectorType([1,1,2])</code>, i.e. a new instance of <code>MyVectorType</code>.</p>
+
+
+
+<a name="251079249"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Create%20a%20new%20instance%20of%20a%20type%20after%20indexing/near/251079249" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gunnar Farnebäck <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Create.20a.20new.20instance.20of.20a.20type.20after.20indexing.html#251079249">(Aug 28 2021 at 20:10)</a>:</h4>
+<p>You mean something like this?</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">Base</span><span class="o">.</span><span class="n">getindex</span><span class="p">(</span><span class="n">x</span><span class="o">::</span><span class="kt">MyVectorType</span><span class="p">,</span> <span class="n">i</span><span class="o">::</span><span class="kt">AbstractVector</span><span class="p">)</span> <span class="o">=</span> <span class="n">MyVectorType</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+<span class="n">Base</span><span class="o">.</span><span class="n">getindex</span><span class="p">(</span><span class="n">x</span><span class="o">::</span><span class="kt">MyVectorType</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+</code></pre></div>
+
+
+
+<a name="251330291"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Create%20a%20new%20instance%20of%20a%20type%20after%20indexing/near/251330291" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Alex Knudson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Create.20a.20new.20instance.20of.20a.20type.20after.20indexing.html#251330291">(Aug 31 2021 at 04:29)</a>:</h4>
+<p>Unfortunately I've already tried something similar to this and it doesn't work. I get an error</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">ERROR</span><span class="o">:</span> <span class="kt">LoadError</span><span class="o">:</span> <span class="kt">MethodError</span><span class="o">:</span> <span class="n">Cannot</span> <span class="sb">`convert`</span> <span class="n">an</span> <span class="n">object</span> <span class="n">of</span> <span class="n">type</span>
+  <span class="kt">Int64</span> <span class="n">to</span> <span class="n">an</span> <span class="n">object</span> <span class="n">of</span> <span class="n">type</span>
+  <span class="n">MyVectorType</span>
+</code></pre></div>
+
+
+
+<a name="251350067"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Create%20a%20new%20instance%20of%20a%20type%20after%20indexing/near/251350067" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gunnar Farnebäck <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Create.20a.20new.20instance.20of.20a.20type.20after.20indexing.html#251350067">(Aug 31 2021 at 08:32)</a>:</h4>
+<p>I can't guess what you did to get there. Can you give a complete example that reproduces it?</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

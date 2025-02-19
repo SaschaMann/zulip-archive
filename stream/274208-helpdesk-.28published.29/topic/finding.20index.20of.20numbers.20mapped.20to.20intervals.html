@@ -1,0 +1,100 @@
+<html>
+<head><meta charset="utf-8"><title>finding index of numbers mapped to intervals · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/finding.20index.20of.20numbers.20mapped.20to.20intervals.html">finding index of numbers mapped to intervals</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="277118954"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/finding%20index%20of%20numbers%20mapped%20to%20intervals/near/277118954" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gerhard Dorn <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/finding.20index.20of.20numbers.20mapped.20to.20intervals.html#277118954">(Mar 30 2022 at 09:47)</a>:</h4>
+<p>I have a vector (or an array) of random numbers<br>
+<code>x = [0.2, 3.4, 1.2, 3, 2.2]</code><br>
+and would like to find the position of those numbers (get a Cartesian Index)<br>
+for a given regular grid / range of intervals <br>
+<code>y = -1:0.5:4</code> <br>
+so to get the index set<br>
+<code>ix = [3, 9, 5, 9, 7]</code><br>
+with <code>y[ix[j]] &lt;= x[j] &lt; y[ix[j]+1]</code><br>
+(e.g. for <code> j = 1</code>: <code>0 &lt;= 0.2 &lt; 0.5</code>)<br>
+<strong>Is there an efficient build-in function in Julia or StatsBase for this mapping to intervals?</strong></p>
+<p>(I know to use<br>
+<code>Int(ceil((x .- y[1]) ./ (y[2] - y[1])))</code><br>
+but I would like to get CartesianCoordinates for a 3d grid <br>
+(for the irregular spacing case: I guess some sorting would help))</p>
+
+
+
+<a name="277291233"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/finding%20index%20of%20numbers%20mapped%20to%20intervals/near/277291233" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sundar R <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/finding.20index.20of.20numbers.20mapped.20to.20intervals.html#277291233">(Mar 31 2022 at 14:37)</a>:</h4>
+<p>For the 1D case, you can use <code>searchsortedlast</code> as mentioned in this <a href="https://stackoverflow.com/a/37380914/8127">SO answer</a>. Here the usage would be something like </p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span> <span class="n">searchsortedlast</span><span class="o">.</span><span class="p">(</span><span class="kt">Ref</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="n">x</span><span class="p">)</span>
+<span class="go">5-element Vector{Int64}:</span>
+<span class="go"> 3</span>
+<span class="go"> 9</span>
+<span class="go"> 5</span>
+<span class="go"> 9</span>
+<span class="go"> 7</span>
+</code></pre></div>
+
+
+
+<a name="277291449"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/finding%20index%20of%20numbers%20mapped%20to%20intervals/near/277291449" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sundar R <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/finding.20index.20of.20numbers.20mapped.20to.20intervals.html#277291449">(Mar 31 2022 at 14:39)</a>:</h4>
+<p>I'm not sure I understand the 3D grid part though. What do x and y actually look like in that case, as a MWE?</p>
+
+
+
+<a name="277350066"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/finding%20index%20of%20numbers%20mapped%20to%20intervals/near/277350066" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Benoit Pasquier <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/finding.20index.20of.20numbers.20mapped.20to.20intervals.html#277350066">(Mar 31 2022 at 22:46)</a>:</h4>
+<p>I often have to do similar things and depending on the case I used either <code>searrchsortedfirst</code>/<code>searchsortedlast</code>, <a href="https://github.com/search?q=Interpolations.jl&amp;type=Repositories">Interpolations.jl</a>, or <a href="https://github.com/search?q=NearestNeighbours.jl&amp;type=Repositories">NearestNeighbours.jl</a>. In the 3D case when I can't use the built-ins, I interpolate/nearestneighbour-search the <code>LinearIndex</code>.</p>
+
+
+
+<a name="277350257"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/finding%20index%20of%20numbers%20mapped%20to%20intervals/near/277350257" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Benoit Pasquier <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/finding.20index.20of.20numbers.20mapped.20to.20intervals.html#277350257">(Mar 31 2022 at 22:48)</a>:</h4>
+<p>For me the fastest is if you can get away with <code>searchsorted</code>, and the most accurate is to use nearestneighbors (because then you can use any distance, which is useful, e.g., for lat,lon,altitude coordinates on the earth).</p>
+
+
+
+<a name="277350643"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/finding%20index%20of%20numbers%20mapped%20to%20intervals/near/277350643" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Benoit Pasquier <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/finding.20index.20of.20numbers.20mapped.20to.20intervals.html#277350643">(Mar 31 2022 at 22:52)</a>:</h4>
+<p>Importantly if your grid is <a href="https://en.wikipedia.org/wiki/Regular_grid">regular</a> and rectangular — that is if you can index into it with <code>(i,j,k)</code>— and if you can deal with each dimension 1 by 1, then you should be able to just use <code>searchsorted</code> on each dimension to get a fast answer</p>
+
+
+
+<a name="277392245"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/finding%20index%20of%20numbers%20mapped%20to%20intervals/near/277392245" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gunnar Farnebäck <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/finding.20index.20of.20numbers.20mapped.20to.20intervals.html#277392245">(Apr 01 2022 at 09:43)</a>:</h4>
+<p>For a regular grid, directly computing the index from the coordinate is much faster than <code>searchsorted</code>. For 3D, do this coordinate by coordinate, possibly with broadcasting, and wrap the indices into a <code>CartesianIndex</code>.</p>
+
+
+
+<a name="277678843"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/finding%20index%20of%20numbers%20mapped%20to%20intervals/near/277678843" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Benoit Pasquier <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/finding.20index.20of.20numbers.20mapped.20to.20intervals.html#277678843">(Apr 04 2022 at 03:52)</a>:</h4>
+<p>Ah yes! Good catch! I was confused and meant to say "recitlinear"... So:</p>
+
+
+
+<a name="277678856"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/finding%20index%20of%20numbers%20mapped%20to%20intervals/near/277678856" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Benoit Pasquier <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/finding.20index.20of.20numbers.20mapped.20to.20intervals.html#277678856">(Apr 04 2022 at 03:52)</a>:</h4>
+<ul>
+<li>regular: compute the indices "by hand"<br>
+<a href="/user_uploads/7178/773Z11EHLdE5l-TL9nVzjr61/image.png">image.png</a><div class="message_inline_image"><a href="/user_uploads/7178/773Z11EHLdE5l-TL9nVzjr61/image.png" title="image.png"><img src="/user_uploads/7178/773Z11EHLdE5l-TL9nVzjr61/image.png"></a></div></li>
+</ul>
+
+
+
+<a name="277678865"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/finding%20index%20of%20numbers%20mapped%20to%20intervals/near/277678865" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Benoit Pasquier <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/finding.20index.20of.20numbers.20mapped.20to.20intervals.html#277678865">(Apr 04 2022 at 03:53)</a>:</h4>
+<ul>
+<li>rectilinear: <code>searchsortedXXXX</code><br>
+<a href="/user_uploads/7178/BlrzYJom3fhPBvW3UaiejfoP/image.png">image.png</a><div class="message_inline_image"><a href="/user_uploads/7178/BlrzYJom3fhPBvW3UaiejfoP/image.png" title="image.png"><img src="/user_uploads/7178/BlrzYJom3fhPBvW3UaiejfoP/image.png"></a></div></li>
+</ul>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

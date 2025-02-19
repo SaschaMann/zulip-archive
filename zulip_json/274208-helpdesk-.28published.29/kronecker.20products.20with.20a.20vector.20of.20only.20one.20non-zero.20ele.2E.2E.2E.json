@@ -1,0 +1,56 @@
+[
+    {
+        "content": "<p>I have something like <code>kron(h, A)</code>, <code>A</code> is some matrix. The silly problem is that <code>h</code> is all zeros except for one index. So I write something like this</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">l</span>  <span class=\"o\">=</span> <span class=\"mi\">100</span><span class=\"p\">;</span>   <span class=\"c\"># some large number</span>\n<span class=\"n\">h</span> <span class=\"o\">=</span> <span class=\"n\">zeros</span><span class=\"p\">(</span><span class=\"n\">l</span><span class=\"p\">);</span>\n<span class=\"n\">h</span><span class=\"p\">[</span><span class=\"n\">k</span><span class=\"p\">]</span> <span class=\"o\">=</span> <span class=\"mi\">1</span><span class=\"p\">;</span>\n</code></pre></div>\n<p>Is there a better one-liner for this?<br>\nSo far, I came up with <code>h(l,k)=1.0*(k .== (1:l))</code></p>",
+        "id": 237877531,
+        "sender_full_name": "Dominic Guri",
+        "timestamp": 1620415677
+    },
+    {
+        "content": "<p>The multiplication by <code>1.0</code> shouldn't be necessary</p>",
+        "id": 237879099,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1620416362
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">A</span> <span class=\"o\">=</span> <span class=\"n\">reshape</span><span class=\"p\">(</span><span class=\"mf\">1.0</span><span class=\"o\">:</span><span class=\"mf\">4.0</span><span class=\"p\">,</span> <span class=\"mi\">2</span><span class=\"p\">,</span> <span class=\"mi\">2</span><span class=\"p\">)</span>\n<span class=\"mi\">2</span><span class=\"n\">×2</span> <span class=\"n\">reshape</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"n\">StepRangeLen</span><span class=\"p\">{</span><span class=\"kt\">Float64</span><span class=\"p\">,</span> <span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">TwicePrecision</span><span class=\"p\">{</span><span class=\"kt\">Float64</span><span class=\"p\">},</span> <span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">TwicePrecision</span><span class=\"p\">{</span><span class=\"kt\">Float64</span><span class=\"p\">}},</span> <span class=\"mi\">2</span><span class=\"p\">,</span> <span class=\"mi\">2</span><span class=\"p\">)</span> <span class=\"n\">with</span> <span class=\"n\">eltype</span> <span class=\"kt\">Float64</span><span class=\"o\">:</span>\n <span class=\"mf\">1.0</span>  <span class=\"mf\">3.0</span>\n <span class=\"mf\">2.0</span>  <span class=\"mf\">4.0</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">h</span> <span class=\"o\">=</span> <span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">4</span><span class=\"p\">)</span> <span class=\"o\">.==</span> <span class=\"mi\">3</span>\n<span class=\"mi\">4</span><span class=\"o\">-</span><span class=\"n\">element</span> <span class=\"kt\">BitVector</span><span class=\"o\">:</span>\n <span class=\"mi\">0</span>\n <span class=\"mi\">0</span>\n <span class=\"mi\">1</span>\n <span class=\"mi\">0</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">kron</span><span class=\"p\">(</span><span class=\"n\">A</span><span class=\"p\">,</span> <span class=\"n\">h</span><span class=\"p\">)</span>\n<span class=\"mi\">8</span><span class=\"n\">×2</span> <span class=\"kt\">Matrix</span><span class=\"p\">{</span><span class=\"kt\">Float64</span><span class=\"p\">}</span><span class=\"o\">:</span>\n <span class=\"mf\">0.0</span>  <span class=\"mf\">0.0</span>\n <span class=\"mf\">0.0</span>  <span class=\"mf\">0.0</span>\n <span class=\"mf\">1.0</span>  <span class=\"mf\">3.0</span>\n <span class=\"mf\">0.0</span>  <span class=\"mf\">0.0</span>\n <span class=\"mf\">0.0</span>  <span class=\"mf\">0.0</span>\n <span class=\"mf\">0.0</span>  <span class=\"mf\">0.0</span>\n <span class=\"mf\">2.0</span>  <span class=\"mf\">4.0</span>\n <span class=\"mf\">0.0</span>  <span class=\"mf\">0.0</span>\n</code></pre></div>",
+        "id": 237879544,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1620416550
+    },
+    {
+        "content": "<p>If you want <code>h</code> as a matrix, one thing you can do it a pattern like this:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">Iterators</span><span class=\"o\">.</span><span class=\"n\">product</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">3</span><span class=\"p\">,</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">3</span><span class=\"p\">)</span> <span class=\"o\">.==</span> <span class=\"p\">((</span><span class=\"mi\">3</span><span class=\"p\">,</span> <span class=\"mi\">2</span><span class=\"p\">),)</span>\n<span class=\"mi\">3</span><span class=\"n\">×3</span> <span class=\"kt\">BitMatrix</span><span class=\"o\">:</span>\n <span class=\"mi\">0</span>  <span class=\"mi\">0</span>  <span class=\"mi\">0</span>\n <span class=\"mi\">0</span>  <span class=\"mi\">0</span>  <span class=\"mi\">0</span>\n <span class=\"mi\">0</span>  <span class=\"mi\">1</span>  <span class=\"mi\">0</span>\n</code></pre></div>",
+        "id": 237879943,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1620416738
+    },
+    {
+        "content": "<p>Do you mind if I move this topic to <a class=\"stream\" data-stream-id=\"225542\" href=\"/#narrow/stream/225542-helpdesk\">#helpdesk</a>  or <a class=\"stream\" data-stream-id=\"274208\" href=\"/#narrow/stream/274208-helpdesk-.28published.29\">#helpdesk (published)</a> ?</p>",
+        "id": 237879968,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1620416753
+    },
+    {
+        "content": "<p>Sure, move it whichever channel is the best fit. I just thought it was an annoyance more than problem :)</p>",
+        "id": 237883874,
+        "sender_full_name": "Dominic Guri",
+        "timestamp": 1620418482
+    },
+    {
+        "content": "<p>I think it's a good question <span aria-label=\"smile\" class=\"emoji emoji-1f642\" role=\"img\" title=\"smile\">:smile:</span></p>",
+        "id": 237886503,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1620419771
+    },
+    {
+        "content": "<p>This topic was moved here from <a class=\"stream-topic\" data-stream-id=\"225582\" href=\"/#narrow/stream/225582-random/topic/kronecker.20products.20with.20a.20vector.20of.20only.20one.20non-zero.20ele.2E.2E.2E\">#random &gt; kronecker products with a vector of only one non-zero ele...</a> by <span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span></p>",
+        "id": 237886587,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1620419830
+    },
+    {
+        "content": "<p>If you do weird kronecker products, then I have a package you may like:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">using</span> <span class=\"n\">TensorCast</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@cast</span> <span class=\"n\">B</span><span class=\"p\">[(</span><span class=\"n\">i</span><span class=\"p\">,</span><span class=\"n\">k</span><span class=\"p\">),</span><span class=\"n\">j</span><span class=\"p\">]</span> <span class=\"o\">:=</span> <span class=\"p\">(</span><span class=\"n\">k</span><span class=\"o\">==</span><span class=\"mi\">2</span><span class=\"p\">)</span> <span class=\"o\">*</span> <span class=\"n\">A</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">,</span><span class=\"n\">j</span><span class=\"p\">]</span>   <span class=\"p\">(</span><span class=\"n\">k</span> <span class=\"kp\">in</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">3</span><span class=\"p\">)</span>\n<span class=\"mi\">6</span><span class=\"n\">×2</span> <span class=\"kt\">Matrix</span><span class=\"p\">{</span><span class=\"kt\">Float64</span><span class=\"p\">}</span><span class=\"o\">:</span>\n <span class=\"mf\">0.0</span>  <span class=\"mf\">0.0</span>\n <span class=\"mf\">0.0</span>  <span class=\"mf\">0.0</span>\n <span class=\"mf\">1.0</span>  <span class=\"mf\">3.0</span>\n <span class=\"mf\">2.0</span>  <span class=\"mf\">4.0</span>\n <span class=\"mf\">0.0</span>  <span class=\"mf\">0.0</span>\n <span class=\"mf\">0.0</span>  <span class=\"mf\">0.0</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@cast</span> <span class=\"n\">B</span><span class=\"p\">[(</span><span class=\"n\">i</span><span class=\"p\">,</span><span class=\"n\">k</span><span class=\"p\">),</span><span class=\"n\">j</span><span class=\"p\">]</span> <span class=\"o\">:=</span> <span class=\"n\">k</span><span class=\"o\">==</span><span class=\"mi\">2</span> <span class=\"o\">?</span> <span class=\"n\">A</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">,</span><span class=\"n\">j</span><span class=\"p\">]</span> <span class=\"o\">:</span> <span class=\"mi\">0</span>  <span class=\"p\">(</span><span class=\"n\">k</span> <span class=\"kp\">in</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"mi\">3</span><span class=\"p\">)</span>   <span class=\"c\"># 0.0 would be better</span>\n<span class=\"mi\">6</span><span class=\"n\">×2</span> <span class=\"kt\">Matrix</span><span class=\"p\">{</span><span class=\"kt\">Real</span><span class=\"p\">}</span><span class=\"o\">:</span>\n <span class=\"mi\">0</span>    <span class=\"mi\">0</span>\n <span class=\"mi\">0</span>    <span class=\"mi\">0</span>\n <span class=\"mf\">1.0</span>  <span class=\"mf\">3.0</span>\n <span class=\"mf\">2.0</span>  <span class=\"mf\">4.0</span>\n <span class=\"mi\">0</span>    <span class=\"mi\">0</span>\n <span class=\"mi\">0</span>    <span class=\"mi\">0</span>\n</code></pre></div>",
+        "id": 238011996,
+        "sender_full_name": "Michael Abbott",
+        "timestamp": 1620540053
+    }
+]

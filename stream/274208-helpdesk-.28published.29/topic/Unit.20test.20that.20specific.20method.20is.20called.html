@@ -1,0 +1,79 @@
+<html>
+<head><meta charset="utf-8"><title>Unit test that specific method is called · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unit.20test.20that.20specific.20method.20is.20called.html">Unit test that specific method is called</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="241519902"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unit%20test%20that%20specific%20method%20is%20called/near/241519902" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rasmus Henningsson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unit.20test.20that.20specific.20method.20is.20called.html#241519902">(Jun 04 2021 at 11:05)</a>:</h4>
+<p>Is there any convenient way to unit test whether a specific method is called?<br>
+The context is <a href="https://github.com/search?q=ThreadedSparseArrays.jl&amp;type=Repositories">ThreadedSparseArrays.jl</a>, that adds threading for sparse*dense multiplications.<br>
+I would like to make a unit test to check that a multiplication: <code>A*B</code> ends up calling the correct <code>mul!</code> method down the line.</p>
+
+
+
+<a name="241534508"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unit%20test%20that%20specific%20method%20is%20called/near/241534508" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mosè Giordano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unit.20test.20that.20specific.20method.20is.20called.html#241534508">(Jun 04 2021 at 13:28)</a>:</h4>
+<p>Code coverage?</p>
+
+
+
+<a name="241534657"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unit%20test%20that%20specific%20method%20is%20called/near/241534657" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mosè Giordano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unit.20test.20that.20specific.20method.20is.20called.html#241534657">(Jun 04 2021 at 13:29)</a>:</h4>
+<p>With code coverage you see whether a line of your package was hit at all during the tests, but you don't see the code path</p>
+
+
+
+<a name="241540002"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unit%20test%20that%20specific%20method%20is%20called/near/241540002" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rasmus Henningsson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unit.20test.20that.20specific.20method.20is.20called.html#241540002">(Jun 04 2021 at 14:07)</a>:</h4>
+<p>That's a good point! Don't make it harder than it is. <span aria-label="grinning face with smiling eyes" class="emoji emoji-1f601" role="img" title="grinning face with smiling eyes">:grinning_face_with_smiling_eyes:</span><span aria-label="grinning face with smiling eyes" class="emoji emoji-1f601" role="img" title="grinning face with smiling eyes">:grinning_face_with_smiling_eyes:</span></p>
+
+
+
+<a name="241570676"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unit%20test%20that%20specific%20method%20is%20called/near/241570676" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rasmus Henningsson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unit.20test.20that.20specific.20method.20is.20called.html#241570676">(Jun 04 2021 at 17:48)</a>:</h4>
+<p>Actually, I couldn't help but making it a bit harder. <span aria-label="wink" class="emoji emoji-1f609" role="img" title="wink">:wink:</span> Because not everyone really pays attention to read coverage changes, it might be covered by some test code but not in every situation I want it to, and it's nice to get a clear error message.</p>
+<p>So I exploit that the function I want to check will throw an <code>Exception</code> for incorrect matrix sizes and check which function and file the exception is thrown from.<br>
+With this:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">match_exception</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="o">::</span><span class="kt">Type</span><span class="p">{</span><span class="kt">T</span><span class="p">}</span><span class="o">=</span><span class="kt">DimensionMismatch</span><span class="p">,</span> <span class="n">func</span><span class="o">=</span><span class="ss">:mul!</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="s">"ThreadedSparseArrays.jl"</span><span class="p">)</span> <span class="k">where</span> <span class="kt">T</span>
+    <span class="k">try</span>
+        <span class="n">f</span><span class="p">()</span>
+    <span class="k">catch</span> <span class="n">ex</span>
+        <span class="n">st</span> <span class="o">=</span> <span class="n">stacktrace</span><span class="p">(</span><span class="n">catch_backtrace</span><span class="p">())[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">splitpath</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">p2</span> <span class="o">=</span> <span class="n">splitpath</span><span class="p">(</span><span class="n">string</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">file</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">ex</span> <span class="k">isa</span> <span class="n">T</span> <span class="o">&amp;&amp;</span> <span class="n">st</span><span class="o">.</span><span class="n">func</span> <span class="o">==</span> <span class="n">func</span> <span class="o">&amp;&amp;</span> <span class="n">p</span><span class="o">==</span><span class="n">p2</span><span class="p">[</span><span class="n">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="k">end</span><span class="o">-</span><span class="n">length</span><span class="p">(</span><span class="n">p</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">:</span><span class="k">end</span><span class="p">]</span>
+    <span class="k">end</span>
+    <span class="nb">false</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>I can test it like this:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">A</span> <span class="o">=</span> <span class="n">ThreadedSparseMatrixCSC</span><span class="p">(</span><span class="n">spzeros</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span>
+<span class="n">B</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="nd">@test</span> <span class="n">match_exception</span><span class="p">(()</span><span class="o">-&gt;</span><span class="n">A</span><span class="o">*</span><span class="n">B</span><span class="p">)</span>
+<span class="nd">@test</span> <span class="n">match_exception</span><span class="p">(()</span><span class="o">-&gt;</span><span class="n">A</span><span class="o">'</span><span class="n">B</span><span class="p">)</span>
+<span class="o">...</span>
+</code></pre></div>
+
+
+
+<a name="241595859"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unit%20test%20that%20specific%20method%20is%20called/near/241595859" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Patrick Toche <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unit.20test.20that.20specific.20method.20is.20called.html#241595859">(Jun 04 2021 at 21:35)</a>:</h4>
+<p>I'm no expert and I mostly read these threads to learn, but one thing I've read lately is that <code>try/catch</code> is expensive.</p>
+<p>Edit. I probably read it there: <a href="https://discourse.julialang.org/t/is-there-a-better-way-to-do-error-handling-on-julia-than-try-catch/21716/6">https://discourse.julialang.org/t/is-there-a-better-way-to-do-error-handling-on-julia-than-try-catch/21716/6</a></p>
+
+
+
+<a name="241701401"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unit%20test%20that%20specific%20method%20is%20called/near/241701401" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rasmus Henningsson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unit.20test.20that.20specific.20method.20is.20called.html#241701401">(Jun 06 2021 at 17:25)</a>:</h4>
+<p>I think you are right that it can be expensive, and I wouldn't use <code>throw</code>in performance critical code like an inner loop. But this is just for a couple of unit tests so it should be fine. And the code that might throw the exception needs to be there because we want the exact same behavior as the corresponding methods in <code>SparseArrays</code>.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

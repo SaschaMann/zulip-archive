@@ -1,0 +1,165 @@
+<html>
+<head><meta charset="utf-8"><title>dataframe to matrix · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/dataframe.20to.20matrix.html">dataframe to matrix</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="277345144"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/dataframe%20to%20matrix/near/277345144" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/dataframe.20to.20matrix.html#277345144">(Mar 31 2022 at 21:55)</a>:</h4>
+<p>Suppose I have a dataframe like this:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">map</span><span class="p">(</span><span class="n">Iterators</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="sc">'a'</span><span class="o">:</span><span class="sc">'c'</span><span class="p">,</span> <span class="mi">1</span><span class="o">:</span><span class="mi">3</span><span class="p">))</span> <span class="k">do</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+           <span class="p">(;</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="n">rand</span><span class="p">())</span>
+       <span class="k">end</span><span class="p">[</span><span class="o">:</span><span class="p">]</span> <span class="o">|&gt;</span> <span class="n">DataFrame</span>
+<span class="mi">9</span><span class="o">×</span><span class="mi">3</span> <span class="n">DataFrame</span>
+ <span class="n">Row</span> <span class="n">│</span> <span class="n">x</span>     <span class="n">y</span>      <span class="n">z</span>
+     <span class="n">│</span> <span class="kt">Char</span>  <span class="kt">Int64</span>  <span class="kt">Float64</span>
+<span class="n">─────┼────────────────────────</span>
+   <span class="mi">1</span> <span class="n">│</span> <span class="n">a</span>         <span class="mi">1</span>  <span class="mf">0.74997</span>
+   <span class="mi">2</span> <span class="n">│</span> <span class="n">b</span>         <span class="mi">1</span>  <span class="mf">0.828512</span>
+   <span class="mi">3</span> <span class="n">│</span> <span class="n">c</span>         <span class="mi">1</span>  <span class="mf">0.840793</span>
+   <span class="mi">4</span> <span class="n">│</span> <span class="n">a</span>         <span class="mi">2</span>  <span class="mf">0.97316</span>
+   <span class="mi">5</span> <span class="n">│</span> <span class="n">b</span>         <span class="mi">2</span>  <span class="mf">0.329049</span>
+   <span class="mi">6</span> <span class="n">│</span> <span class="n">c</span>         <span class="mi">2</span>  <span class="mf">0.963159</span>
+   <span class="mi">7</span> <span class="n">│</span> <span class="n">a</span>         <span class="mi">3</span>  <span class="mf">0.263909</span>
+   <span class="mi">8</span> <span class="n">│</span> <span class="n">b</span>         <span class="mi">3</span>  <span class="mf">0.0101475</span>
+   <span class="mi">9</span> <span class="n">│</span> <span class="n">c</span>         <span class="mi">3</span>  <span class="mf">0.162562</span>
+</code></pre></div>
+<p>Is there a natural way to kinda disaggregate this back into a matrix? I.e. I want one dimension of the array to correspond to the unique values of the <code>x</code> column, another dimension to correspond to the unique values of the <code>y</code> column, and then entries of the matrix would be the corresponding entries in the dataframe</p>
+
+
+
+<a name="277345421"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/dataframe%20to%20matrix/near/277345421" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/dataframe.20to.20matrix.html#277345421">(Mar 31 2022 at 21:58)</a>:</h4>
+<p>I could do this like so:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">map</span><span class="p">(</span><span class="n">Iterators</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="n">unique</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">x</span><span class="p">),</span> <span class="n">unique</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">y</span><span class="p">)))</span> <span class="k">do</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+           <span class="n">row</span> <span class="o">=</span> <span class="n">only</span><span class="p">(</span><span class="n">filter</span><span class="p">(</span><span class="n">row</span> <span class="o">-&gt;</span> <span class="n">row</span><span class="o">.</span><span class="n">x</span> <span class="o">==</span> <span class="n">x</span> <span class="o">&amp;&amp;</span> <span class="n">row</span><span class="o">.</span><span class="n">y</span> <span class="o">==</span> <span class="n">y</span><span class="p">,</span> <span class="n">df</span><span class="p">))</span>
+           <span class="n">row</span><span class="o">.</span><span class="n">z</span>
+       <span class="k">end</span>
+<span class="mi">3</span><span class="o">×</span><span class="mi">3</span> <span class="kt">Matrix</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}</span><span class="o">:</span>
+ <span class="mf">0.71842</span>   <span class="mf">0.992283</span>   <span class="mf">0.102177</span>
+ <span class="mf">0.901056</span>  <span class="mf">0.481119</span>   <span class="mf">0.835783</span>
+ <span class="mf">0.921512</span>  <span class="mf">0.0621665</span>  <span class="mf">0.822107</span>
+</code></pre></div>
+<p>but this is very inefficient, and I suspect there's a smart way to do this that I'm not seeing</p>
+
+
+
+<a name="277348332"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/dataframe%20to%20matrix/near/277348332" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Abbott <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/dataframe.20to.20matrix.html#277348332">(Mar 31 2022 at 22:27)</a>:</h4>
+<p>Here is one way:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">using</span> <span class="n">DataFrames</span><span class="p">,</span> <span class="n">AxisKeys</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">df</span> <span class="o">=</span> <span class="n">map</span><span class="p">(</span><span class="n">Iterators</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="sc">'a'</span><span class="o">:</span><span class="sc">'c'</span><span class="p">,</span> <span class="mi">1</span><span class="o">:</span><span class="mi">3</span><span class="p">))</span> <span class="k">do</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+                  <span class="p">(;</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="n">rand</span><span class="p">())</span>
+              <span class="k">end</span><span class="p">[</span><span class="o">:</span><span class="p">]</span> <span class="o">|&gt;</span> <span class="n">DataFrame</span>
+<span class="mi">9</span><span class="o">×</span><span class="mi">3</span> <span class="n">DataFrame</span>
+ <span class="n">Row</span> <span class="n">│</span> <span class="n">x</span>     <span class="n">y</span>      <span class="n">z</span>
+     <span class="n">│</span> <span class="kt">Char</span>  <span class="kt">Int64</span>  <span class="kt">Float64</span>
+<span class="n">─────┼────────────────────────</span>
+   <span class="mi">1</span> <span class="n">│</span> <span class="n">a</span>         <span class="mi">1</span>  <span class="mf">0.972967</span>
+   <span class="mi">2</span> <span class="n">│</span> <span class="n">b</span>         <span class="mi">1</span>  <span class="mf">0.255974</span>
+   <span class="mi">3</span> <span class="n">│</span> <span class="n">c</span>         <span class="mi">1</span>  <span class="mf">0.0945194</span>
+   <span class="mi">4</span> <span class="n">│</span> <span class="n">a</span>         <span class="mi">2</span>  <span class="mf">0.621327</span>
+   <span class="mi">5</span> <span class="n">│</span> <span class="n">b</span>         <span class="mi">2</span>  <span class="mf">0.0908171</span>
+   <span class="mi">6</span> <span class="n">│</span> <span class="n">c</span>         <span class="mi">2</span>  <span class="mf">0.763769</span>
+   <span class="mi">7</span> <span class="n">│</span> <span class="n">a</span>         <span class="mi">3</span>  <span class="mf">0.342196</span>
+   <span class="mi">8</span> <span class="n">│</span> <span class="n">b</span>         <span class="mi">3</span>  <span class="mf">0.187913</span>
+   <span class="mi">9</span> <span class="n">│</span> <span class="n">c</span>         <span class="mi">3</span>  <span class="mf">0.972685</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">wrapdims</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="ss">:z</span><span class="p">,</span> <span class="ss">:x</span><span class="p">,</span> <span class="ss">:y</span><span class="p">)</span>
+<span class="mi">2</span><span class="o">-</span><span class="n">dimensional</span> <span class="n">KeyedArray</span><span class="p">(</span><span class="n">NamedDimsArray</span><span class="p">(</span><span class="o">...</span><span class="p">))</span> <span class="n">with</span> <span class="n">keys</span><span class="o">:</span>
+<span class="o">↓</span>   <span class="n">x</span> <span class="o">∈</span> <span class="mi">3</span><span class="o">-</span><span class="n">element</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">Char</span><span class="p">}</span>
+<span class="o">→</span>   <span class="n">y</span> <span class="o">∈</span> <span class="mi">3</span><span class="o">-</span><span class="n">element</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">Int64</span><span class="p">}</span>
+<span class="n">And</span> <span class="n">data</span><span class="p">,</span> <span class="mi">3</span><span class="o">×</span><span class="mi">3</span> <span class="kt">Matrix</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}</span><span class="o">:</span>
+         <span class="p">(</span><span class="mi">1</span><span class="p">)</span>          <span class="p">(</span><span class="mi">2</span><span class="p">)</span>          <span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+  <span class="p">(</span><span class="sc">'a'</span><span class="p">)</span>    <span class="mf">0.972967</span>     <span class="mf">0.621327</span>     <span class="mf">0.342196</span>
+  <span class="p">(</span><span class="sc">'b'</span><span class="p">)</span>    <span class="mf">0.255974</span>     <span class="mf">0.0908171</span>    <span class="mf">0.187913</span>
+  <span class="p">(</span><span class="sc">'c'</span><span class="p">)</span>    <span class="mf">0.0945194</span>    <span class="mf">0.763769</span>     <span class="mf">0.972685</span>
+</code></pre></div>
+<p>But am far from an expert at these things. I don't know if this is efficient or not.</p>
+
+
+
+<a name="277348526"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/dataframe%20to%20matrix/near/277348526" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/dataframe.20to.20matrix.html#277348526">(Mar 31 2022 at 22:29)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="p">(</span><span class="n">df</span> <span class="o">=</span> <span class="n">map</span><span class="p">(</span><span class="n">Iterators</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="sc">'a'</span><span class="o">:</span><span class="sc">'c'</span><span class="p">,</span> <span class="mi">1</span><span class="o">:</span><span class="mi">3</span><span class="p">))</span> <span class="k">do</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+                  <span class="p">(;</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+              <span class="k">end</span><span class="p">[</span><span class="o">:</span><span class="p">]</span> <span class="o">|&gt;</span> <span class="n">DataFrame</span><span class="p">);</span> <span class="n">df</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="mi">1</span><span class="o">:</span><span class="mi">9</span><span class="p">;</span><span class="n">df</span>
+<span class="mi">9</span><span class="o">×</span><span class="mi">3</span> <span class="n">DataFrame</span>
+ <span class="n">Row</span> <span class="n">│</span> <span class="n">x</span>     <span class="n">y</span>      <span class="n">z</span>
+     <span class="n">│</span> <span class="kt">Char</span>  <span class="kt">Int64</span>  <span class="kt">Int64</span>
+<span class="n">─────┼────────────────────</span>
+   <span class="mi">1</span> <span class="n">│</span> <span class="n">a</span>         <span class="mi">1</span>      <span class="mi">1</span>
+   <span class="mi">2</span> <span class="n">│</span> <span class="n">b</span>         <span class="mi">1</span>      <span class="mi">2</span>
+   <span class="mi">3</span> <span class="n">│</span> <span class="n">c</span>         <span class="mi">1</span>      <span class="mi">3</span>
+   <span class="mi">4</span> <span class="n">│</span> <span class="n">a</span>         <span class="mi">2</span>      <span class="mi">4</span>
+   <span class="mi">5</span> <span class="n">│</span> <span class="n">b</span>         <span class="mi">2</span>      <span class="mi">5</span>
+   <span class="mi">6</span> <span class="n">│</span> <span class="n">c</span>         <span class="mi">2</span>      <span class="mi">6</span>
+   <span class="mi">7</span> <span class="n">│</span> <span class="n">a</span>         <span class="mi">3</span>      <span class="mi">7</span>
+   <span class="mi">8</span> <span class="n">│</span> <span class="n">b</span>         <span class="mi">3</span>      <span class="mi">8</span>
+   <span class="mi">9</span> <span class="n">│</span> <span class="n">c</span>         <span class="mi">3</span>      <span class="mi">9</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">select</span><span class="p">(</span><span class="n">unstack</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="ss">:x</span><span class="p">,</span><span class="ss">:y</span><span class="p">,</span><span class="ss">:z</span><span class="p">),</span> <span class="n">Not</span><span class="p">(</span><span class="ss">:x</span><span class="p">))</span>
+<span class="mi">3</span><span class="o">×</span><span class="mi">3</span> <span class="n">DataFrame</span>
+ <span class="n">Row</span> <span class="n">│</span> <span class="mi">1</span>       <span class="mi">2</span>       <span class="mi">3</span>
+     <span class="n">│</span> <span class="kt">Int64</span><span class="o">?</span>  <span class="kt">Int64</span><span class="o">?</span>  <span class="kt">Int64</span><span class="o">?</span>
+<span class="n">─────┼────────────────────────</span>
+   <span class="mi">1</span> <span class="n">│</span>      <span class="mi">1</span>       <span class="mi">4</span>       <span class="mi">7</span>
+   <span class="mi">2</span> <span class="n">│</span>      <span class="mi">2</span>       <span class="mi">5</span>       <span class="mi">8</span>
+   <span class="mi">3</span> <span class="n">│</span>      <span class="mi">3</span>       <span class="mi">6</span>       <span class="mi">9</span>
+</code></pre></div>
+
+
+
+<a name="277349535"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/dataframe%20to%20matrix/near/277349535" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/dataframe.20to.20matrix.html#277349535">(Mar 31 2022 at 22:41)</a>:</h4>
+<p>Nice, thanks guys. AxisKeys is a very slick solution. It's about an order of magnitude slower than <span class="user-mention" data-user-id="326776">@jar</span>'s solution, but also an order of magnitude faster than my attempt with <code>filter</code>.</p>
+
+
+
+<a name="277349643"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/dataframe%20to%20matrix/near/277349643" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/dataframe.20to.20matrix.html#277349643">(Mar 31 2022 at 22:42)</a>:</h4>
+<p>My problem with Jar's solution though is that it's not a dense matrix at the end, but rather a collection of vectors</p>
+
+
+
+<a name="277349689"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/dataframe%20to%20matrix/near/277349689" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/dataframe.20to.20matrix.html#277349689">(Mar 31 2022 at 22:42)</a>:</h4>
+<p>The fastest method I've fouind so far is</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">let</span> <span class="n">arr</span> <span class="o">=</span> <span class="kt">Matrix</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}(</span><span class="nb">undef</span><span class="p">,</span> <span class="n">length</span><span class="p">(</span><span class="n">unique</span><span class="p">(</span><span class="o">$</span><span class="n">df</span><span class="o">.</span><span class="n">x</span><span class="p">)),</span> <span class="n">length</span><span class="p">(</span><span class="n">unique</span><span class="p">(</span><span class="o">$</span><span class="n">df</span><span class="o">.</span><span class="n">y</span><span class="p">)))</span>
+    <span class="n">gdf</span> <span class="o">=</span> <span class="n">groupby</span><span class="p">(</span><span class="o">$</span><span class="n">df</span><span class="p">,</span> <span class="ss">:x</span><span class="p">)</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">sdf</span><span class="p">)</span> <span class="o">∈</span> <span class="n">enumerate</span><span class="p">(</span><span class="n">gdf</span><span class="p">)</span>
+        <span class="n">arr</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="o">:</span><span class="p">]</span> <span class="o">.=</span> <span class="n">sdf</span><span class="o">.</span><span class="n">z</span>
+    <span class="k">end</span>
+    <span class="n">arr</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>but it's ugly and not very generic</p>
+
+
+
+<a name="277349858"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/dataframe%20to%20matrix/near/277349858" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Abbott <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/dataframe.20to.20matrix.html#277349858">(Mar 31 2022 at 22:44)</a>:</h4>
+<p>How does something like <code>Matrix{Float64}(unstack(df, :x,:y,:z)[:, 2:end])</code> perform?</p>
+
+
+
+<a name="277350129"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/dataframe%20to%20matrix/near/277350129" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/dataframe.20to.20matrix.html#277350129">(Mar 31 2022 at 22:47)</a>:</h4>
+<p>Seems about as fast as Jar's solution</p>
+
+
+
+<a name="277351535"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/dataframe%20to%20matrix/near/277351535" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/dataframe.20to.20matrix.html#277351535">(Mar 31 2022 at 23:02)</a>:</h4>
+<p>Thanks guys!</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

@@ -1,0 +1,76 @@
+<html>
+<head><meta charset="utf-8"><title>forward finite differences · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20finite.20differences.html">forward finite differences</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="252943749"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20finite%20differences/near/252943749" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20finite.20differences.html#252943749">(Sep 11 2021 at 23:47)</a>:</h4>
+<p>Is this the proper way of computing a simple forward difference algorithm in the x-direction in Julia, given <code>h=1</code> on a 2D array/image?</p>
+<p><a href="/user_uploads/7178/15l1bRYfR8ZjKfoJesxQz-ll/image.png">image.png</a> </p>
+<div class="message_inline_image"><a href="/user_uploads/7178/15l1bRYfR8ZjKfoJesxQz-ll/image.png" title="image.png"><img src="/user_uploads/7178/15l1bRYfR8ZjKfoJesxQz-ll/image.png"></a></div><div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">forward_diff_i</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="n">∇ᵢ₊</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">j</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="n">size</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="n">size</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">∇ᵢ₊</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+    <span class="k">end</span>
+
+    <span class="c"># Compute backward diff for edge case</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="n">size</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">∇ᵢ₊</span><span class="p">[</span><span class="k">end</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="k">end</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">f</span><span class="p">[</span><span class="k">end</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+    <span class="k">end</span>
+
+    <span class="k">return</span> <span class="n">∇ᵢ₊</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>If so, what's the recommended way to account for the edge?</p>
+
+
+
+<a name="252944595"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20finite%20differences/near/252944595" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sundar R <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20finite.20differences.html#252944595">(Sep 12 2021 at 00:04)</a>:</h4>
+<p>have you looked at the <code>diff</code>function in base Julia?</p>
+
+
+
+<a name="252944807"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20finite%20differences/near/252944807" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20finite.20differences.html#252944807">(Sep 12 2021 at 00:09)</a>:</h4>
+<p>Oh no I hadn't actually. Looks like it's performing a similar operation and the results are similar on my end. Thanks</p>
+
+
+
+<a name="252945703"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20finite%20differences/near/252945703" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20finite.20differences.html#252945703">(Sep 12 2021 at 00:26)</a>:</h4>
+<p>Here is what I have decided on, in case this is at all useful</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">forward_diff_i</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="n">∇ᵢ₊</span> <span class="o">=</span> <span class="n">padarray</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">Pad</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">j</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="n">size</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="n">size</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">∇ᵢ₊</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">∇ᵢ₊</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">∇ᵢ₊</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+    <span class="k">end</span>
+
+    <span class="k">return</span> <span class="n">parent</span><span class="p">(</span><span class="n">∇ᵢ₊</span><span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="k">end</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="o">:</span><span class="k">end</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="255020160"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20finite%20differences/near/255020160" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Simon Christ <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20finite.20differences.html#255020160">(Sep 27 2021 at 09:43)</a>:</h4>
+<p>I'd consider renaming this topic to "forward differences" to not confuse it with forward mode automatic differentiation like implemented in <a href="https://github.com/search?q=ForwardDiff.jl&amp;type=Repositories">ForwardDiff.jl</a></p>
+
+
+
+<a name="255063102"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20finite%20differences/near/255063102" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20finite.20differences.html#255063102">(Sep 27 2021 at 15:00)</a>:</h4>
+<p>Done</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

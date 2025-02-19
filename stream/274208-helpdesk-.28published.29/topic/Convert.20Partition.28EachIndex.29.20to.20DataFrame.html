@@ -1,0 +1,59 @@
+<html>
+<head><meta charset="utf-8"><title>Convert Partition(EachIndex) to DataFrame · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Convert.20Partition.28EachIndex.29.20to.20DataFrame.html">Convert Partition(EachIndex) to DataFrame</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="246483259"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Convert%20Partition%28EachIndex%29%20to%20DataFrame/near/246483259" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Convert.20Partition.28EachIndex.29.20to.20DataFrame.html#246483259">(Jul 19 2021 at 17:10)</a>:</h4>
+<p>Hello Everyone: </p>
+<p>I have performed a test,train split using: </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">train</span><span class="p">,</span> <span class="n">test</span> <span class="o">=</span> <span class="n">partition</span><span class="p">(</span><span class="n">eachindex</span><span class="p">(</span><span class="n">Ponies</span><span class="p">),</span> <span class="mf">0.8</span><span class="p">,</span> <span class="n">shuffle</span> <span class="o">=</span> <span class="nb">true</span><span class="p">)</span>
+</code></pre></div>
+<p>Then, when I attempt to run a LinearRegressor as: </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">fm</span> <span class="o">=</span> <span class="nd">@formula</span><span class="p">(</span><span class="n">Ponies</span> <span class="o">~</span> <span class="n">Headshots</span> <span class="o">+</span> <span class="n">Triples</span> <span class="o">+</span> <span class="n">Doubles</span><span class="p">)</span>
+<span class="n">linearRegressor</span> <span class="o">=</span> <span class="n">lm</span><span class="p">(</span><span class="n">fm</span><span class="p">,</span> <span class="n">train</span><span class="p">)</span>
+</code></pre></div>
+<p>I am getting the following error: </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="kt">ArgumentError</span><span class="o">:</span> <span class="n">expected</span> <span class="n">data</span> <span class="k">in</span> <span class="n">a</span> <span class="n">Table</span><span class="p">,</span> <span class="n">got</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">Int64</span><span class="p">}</span>
+</code></pre></div>
+<p>The answer is not a simple 'convert(DataFrame, MagicalCreatureHeadshotDF)'<br>
+or DataFrame(MagicalCreatureHeadshotDF)</p>
+<p>What I created after after train, test instructions looks like: </p>
+<p><a href="/user_uploads/7178/505Dkohei2hk9dLJXVaRl516/image.png">image.png</a></p>
+<div class="message_inline_image"><a href="/user_uploads/7178/505Dkohei2hk9dLJXVaRl516/image.png" title="image.png"><img src="/user_uploads/7178/505Dkohei2hk9dLJXVaRl516/image.png"></a></div><p>Is there a way to convert this structure to a dataframe?<br>
+Something like, MagicalCreatureHeadshotDF.reset_index()?</p>
+<p>Thank you,</p>
+
+
+
+<a name="246697015"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Convert%20Partition%28EachIndex%29%20to%20DataFrame/near/246697015" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Convert.20Partition.28EachIndex.29.20to.20DataFrame.html#246697015">(Jul 21 2021 at 09:30)</a>:</h4>
+<p>Well I don't know what <code>Ponies</code> is, but <code>train</code> should be a DataFrame with the columns <code>Ponies</code>, <code>Headshots</code>, <code>Triples</code>, and <code>Doubles</code> for your call to <code>lm</code> to work.</p>
+
+
+
+<a name="246713140"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Convert%20Partition%28EachIndex%29%20to%20DataFrame/near/246713140" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> QuBit <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Convert.20Partition.28EachIndex.29.20to.20DataFrame.html#246713140">(Jul 21 2021 at 12:41)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269318">Nils</span> </p>
+<p>Let's say, Ponies = rand(1: 0.01:15)</p>
+<p>I agree -- however, the partition(eachindex(Ponies),  0.8, shuffle = true)<br>
+creates an array with two sub-indices (see image). How can I convert<br>
+these to a Table?</p>
+
+
+
+<a name="246792069"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Convert%20Partition%28EachIndex%29%20to%20DataFrame/near/246792069" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Colin Caine <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Convert.20Partition.28EachIndex.29.20to.20DataFrame.html#246792069">(Jul 21 2021 at 23:09)</a>:</h4>
+<p>table = DataFrame(Ponies=rand(10), Headshots=rand(10))</p>
+<p>And then partition the DataFrame.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

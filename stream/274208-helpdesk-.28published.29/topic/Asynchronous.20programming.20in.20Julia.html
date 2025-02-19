@@ -1,0 +1,78 @@
+<html>
+<head><meta charset="utf-8"><title>Asynchronous programming in Julia · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Asynchronous.20programming.20in.20Julia.html">Asynchronous programming in Julia</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="283116076"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Asynchronous%20programming%20in%20Julia/near/283116076" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Davi Sales Barreira <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Asynchronous.20programming.20in.20Julia.html#283116076">(May 20 2022 at 19:29)</a>:</h4>
+<p>I'm starting to learn how to do asynchronous programming in Julia, yet, the topic is brand new to me and Julia's Documentation is kind of terse in the subject. In the code below, I download a bunch of files using the <code>@async</code> macro, and then I do some processing. The thing is, I wish to only the the processing once the files have been downloaded...</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">parsedocuments</span><span class="p">()</span><span class="w"></span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">11</span><span class="p">,</span><span class="w"> </span><span class="mi">21</span><span class="p">]</span><span class="w"></span>
+<span class="w">        </span><span class="n">downloadbatch</span><span class="p">(</span><span class="n">documents</span><span class="p">[</span><span class="n">b</span><span class="o">:</span><span class="n">b</span><span class="o">+</span><span class="mi">9</span><span class="p">,</span><span class="o">:</span><span class="p">])</span><span class="w"></span>
+<span class="w">        </span><span class="n">Threads</span><span class="o">.</span><span class="nd">@threads</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">b</span><span class="o">:</span><span class="p">(</span><span class="n">b</span><span class="o">+</span><span class="mi">9</span><span class="p">)</span><span class="w"></span>
+<span class="w">            </span><span class="k">try</span><span class="w"></span>
+<span class="w">                </span><span class="nd">@suppress</span><span class="w"> </span><span class="n">parsedocument</span><span class="p">(</span><span class="n">documents</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="o">:</span><span class="p">])</span><span class="w"></span>
+<span class="w">            </span><span class="k">catch</span><span class="w"></span>
+<span class="w">                </span><span class="k">continue</span><span class="w"></span>
+<span class="w">            </span><span class="k">end</span><span class="w"></span>
+<span class="w">        </span><span class="k">end</span><span class="w"></span>
+<span class="w">    </span><span class="k">end</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+
+<span class="k">function</span><span class="w"> </span><span class="n">downloadbatch</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">datadir</span><span class="p">()</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="s">"/temp/"</span><span class="w"></span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">row</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">eachrow</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="nd">@async</span><span class="w"> </span><span class="n">run</span><span class="p">(</span><span class="sb">`aws s3 cp </span><span class="si">$</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="ss">:pasta</span><span class="p">])</span><span class="sb"> </span><span class="si">$</span><span class="p">(</span><span class="n">output</span><span class="p">)</span><span class="sb">`</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">end</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+<p>I haven't been able to figure out how to do this... I mean, the code for <code>parsedocument</code> starts running before the download has finished.</p>
+
+
+
+<a name="283116452"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Asynchronous%20programming%20in%20Julia/near/283116452" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brenhin Keller <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Asynchronous.20programming.20in.20Julia.html#283116452">(May 20 2022 at 19:33)</a>:</h4>
+<p>Two separate loops? You may also want a <code>@sync</code> in there somewhere..</p>
+
+
+
+<a name="283122505"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Asynchronous%20programming%20in%20Julia/near/283122505" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Davi Sales Barreira <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Asynchronous.20programming.20in.20Julia.html#283122505">(May 20 2022 at 20:31)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="293896">Brenhin Keller</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Asynchronous.20programming.20in.20Julia/near/283116452">said</a>:</p>
+<blockquote>
+<p>Two separate loops? You may also want a <code>@sync</code> in there somewhere..</p>
+</blockquote>
+<p>Tried adding a <code>@sync</code>, but it did not work.</p>
+
+
+
+<a name="283127053"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Asynchronous%20programming%20in%20Julia/near/283127053" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Maarten <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Asynchronous.20programming.20in.20Julia.html#283127053">(May 20 2022 at 21:10)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="nd">@sync</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">row</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">eachrow</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="nd">@async</span><span class="w"> </span><span class="n">run</span><span class="p">(</span><span class="sb">`aws s3 cp </span><span class="si">$</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="ss">:pasta</span><span class="p">])</span><span class="sb"> </span><span class="si">$</span><span class="p">(</span><span class="n">output</span><span class="p">)</span><span class="sb">`</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">end</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="283319842"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Asynchronous%20programming%20in%20Julia/near/283319842" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Asynchronous.20programming.20in.20Julia.html#283319842">(May 23 2022 at 13:38)</a>:</h4>
+<p>You should read tkf blog about async patterns, it is extremely useful.</p>
+<p>Or just use his packages, like <a href="https://github.com/search?q=FLoops.jl&amp;type=Repositories">FLoops.jl</a> and <a href="https://github.com/search?q=ThreadsX.jl&amp;type=Repositories">ThreadsX.jl</a></p>
+
+
+
+<a name="283319963"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Asynchronous%20programming%20in%20Julia/near/283319963" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Asynchronous.20programming.20in.20Julia.html#283319963">(May 23 2022 at 13:39)</a>:</h4>
+<p><a href="https://discourse.julialang.org/t/tutorial-concurrency-patterns-for-controlled-parallelisms/62651">https://discourse.julialang.org/t/tutorial-concurrency-patterns-for-controlled-parallelisms/62651</a></p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

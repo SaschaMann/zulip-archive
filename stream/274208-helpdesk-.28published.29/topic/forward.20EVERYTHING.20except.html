@@ -1,0 +1,288 @@
+<html>
+<head><meta charset="utf-8"><title>forward EVERYTHING except · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html">forward EVERYTHING except</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="324145478"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/324145478" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#324145478">(Jan 27 2023 at 20:13)</a>:</h4>
+<p>There are some functions and packages here and there </p>
+<ul>
+<li><a href="https://github.com/JeffreySarnoff/TypedDelegation.jl">https://github.com/JeffreySarnoff/TypedDelegation.jl</a></li>
+<li><a href="https://github.com/FluxML/MacroTools.jl/blob/master/src/examples/forward.jl">https://github.com/FluxML/MacroTools.jl/blob/master/src/examples/forward.jl</a>)</li>
+<li><a href="https://discourse.julialang.org/t/forward-all-methods-of-a-structure/11783/2?u=filchristou">https://discourse.julialang.org/t/forward-all-methods-of-a-structure/11783/2?u=filchristou</a></li>
+<li><a href="https://github.com/MikeInnes/Lazy.jl/blob/6705a0aa95b2d479e4ca5b5593313b0d6a857966/src/macros.jl#L293">https://github.com/MikeInnes/Lazy.jl/blob/6705a0aa95b2d479e4ca5b5593313b0d6a857966/src/macros.jl#L293</a><br>
+(and probably more..)<br>
+that forward struct fields to other functions.</li>
+</ul>
+<p>And there also some packages offering an OOP experience like</p>
+<ul>
+<li><a href="https://github.com/search?q=ObjectedOriented.jl&amp;type=Repositories">ObjectedOriented.jl</a></li>
+<li><a href="https://github.com/search?q=Classes.jl&amp;type=Repositories">Classes.jl</a></li>
+</ul>
+<p>However I don't want to handpick which functions to forward neither care about how many variables there are or in what position is the field I want to forward.<br>
+I would like to forward everything everywhere all at once. <span aria-label="eye" class="emoji emoji-1f441" role="img" title="eye">:eye:</span> <br>
+And just handpick which functions I don't want to forward so that I can implement them.</p>
+<p>e.g. let's say I want to define my own <code>SimpleGraph</code> variance that just adds vertices in my own funny way.</p>
+<p>I would like to do something like (pseudocode)</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">Graphs</span><span class="w"></span>
+
+<span class="c"># same subtyping and parameters as SimpleGraph</span><span class="w"></span>
+<span class="k">struct</span> <span class="kt">MyFunnySimpleGraph</span><span class="p">{</span><span class="kt">T</span><span class="w"> </span><span class="o">&lt;:</span><span class="w"> </span><span class="kt">Integer</span><span class="p">}</span><span class="w"> </span><span class="o">&lt;:</span><span class="w"> </span><span class="kt">AbstractSimpleGraph</span><span class="p">{</span><span class="kt">T</span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="n">sg</span><span class="o">::</span><span class="kt">SimpleGraph</span><span class="p">{</span><span class="kt">T</span><span class="p">}</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+
+<span class="nd">@forwardeverythingeverywhereallatonce</span><span class="w"> </span><span class="n">MyFunnySimpleGraph</span><span class="o">.</span><span class="n">sg</span><span class="w"> </span><span class="n">except</span><span class="w"></span>
+<span class="w">  </span><span class="n">Graphs</span><span class="o">.</span><span class="n">add_vertex!</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+
+<span class="k">function</span><span class="w"> </span><span class="n">Graphs</span><span class="o">.</span><span class="n">add_vertex!</span><span class="p">(</span><span class="n">mfsg</span><span class="o">::</span><span class="kt">MyFunnySimpleGraph</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="c"># hilarious code</span><span class="w"></span>
+<span class="w">  </span><span class="c"># ...</span><span class="w"></span>
+<span class="w">  </span><span class="c"># end hilarious code</span><span class="w"></span>
+<span class="w">  </span><span class="n">add_vertex!</span><span class="p">(</span><span class="n">mfsg</span><span class="o">.</span><span class="n">sg</span><span class="p">)</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+<p>so I would expect even a random function defined like</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">random_function_from_random_package</span><span class="p">(</span><span class="n">x</span><span class="o">::</span><span class="kt">T</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="o">::</span><span class="kt">R</span><span class="p">)</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="p">{</span><span class="kt">T</span><span class="p">,</span><span class="kt">R</span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="c"># code</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+<p>when called with <code>random_function_from_random_package(10, mfsg)</code> (without use of macro)<br>
+to actually expand to <br>
+<code>random_function_from_random_package(10, mfsg.sg)</code></p>
+<p>is this even possible ?</p>
+
+
+
+<a name="324164678"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/324164678" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rik Huijzer <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#324164678">(Jan 27 2023 at 22:21)</a>:</h4>
+<p>So to understand the question, it’s a bit like the <code>pub</code> idea in OOP where methods in a class are made public and available to the consumer when the object holding the methods is in scope?</p>
+<p>Maybe adding an <code>export myfun</code> below the function would solve your issue? Or write a macro to allow <code>@export function myfun() … end</code>, but that doesn’t sound like the best idea. Best would probably to bite the bullet and manually define exports so that the code is easiest to understand.</p>
+
+
+
+<a name="324178207"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/324178207" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#324178207">(Jan 27 2023 at 23:15)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="425512">Filippos Christou</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except/near/324145478">said</a>:</p>
+<blockquote>
+<p>is this even possible ?</p>
+</blockquote>
+<p>No, though I wish it was. One good reason to not have it is that the semantics get messy when you consider multiple dispatch and being able to dynamically add methods.</p>
+
+
+
+<a name="324179145"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/324179145" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#324179145">(Jan 27 2023 at 23:18)</a>:</h4>
+<p>If something like <a href="https://docs.ruby-lang.org/en/3.2/BasicObject.html#method-i-method_missing"><code>method_missing</code></a> could be made to work well in Julia, that would be quite interesting</p>
+
+
+
+<a name="324537411"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/324537411" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#324537411">(Jan 30 2023 at 07:06)</a>:</h4>
+<p>I just realized this post actually wishes for of a solution to a bigger gripe, expressed also here <a href="https://viralinstruction.com/posts/badjulia/#the_type_system_works_poorly">https://viralinstruction.com/posts/badjulia/#the_type_system_works_poorly</a>.</p>
+
+
+
+<a name="324537637"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/324537637" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#324537637">(Jan 30 2023 at 07:08)</a>:</h4>
+<p><span class="user-mention" data-user-id="431304">@Rik Huijzer</span> <br>
+If I were to put it in OOP terms, I would just say subtyping structs. However knowing that this is impossible in julia I had some hopes for compositions and forwarding mechanisms, since partial solutions are already available.</p>
+
+
+
+<a name="324538163"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/324538163" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#324538163">(Jan 30 2023 at 07:12)</a>:</h4>
+<p><span class="user-mention" data-user-id="278065">@Brian Chen</span> <br>
+interesting to see how Ruby approaches this. I think there are 2 separate discussions here: <br>
+<strong>i)</strong> should there be such functionality ? <br>
+<strong>ii)</strong> how would this be implemented or what should be added in the language in order for an implementation to be possible ?</p>
+
+
+
+<a name="324538653"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/324538653" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#324538653">(Jan 30 2023 at 07:17)</a>:</h4>
+<p>arguing about <code>i)</code> I agree that it might lead into shady territories, complicated patterns and hard-to-diagnose errors. However, programming is complicated and some times this is needed. Also, favoring code repetition and e.g. copying all <code>SimpleGraph</code> methods and substituting the type with <code>MyFunnnySimpleGraph</code> is a bigger programmatic sin.</p>
+
+
+
+<a name="324538825"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/324538825" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#324538825">(Jan 30 2023 at 07:18)</a>:</h4>
+<p>So, I don't know what the exact repercussions would be, but I am sure it solves a big problem and a gripe for the language. At the same time it holds onto its principle of composition over inheritance.</p>
+
+
+
+<a name="324539640"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/324539640" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#324539640">(Jan 30 2023 at 07:24)</a>:</h4>
+<p>Regarding <code>ii)</code>, I had the impression metaprogramming was strong enough to get us wherever we wanted. I mean, using this, packages like <code>OnjectOriented.jl</code> were built that provide a OOP experience. But I can see the challenge in this one. Ruby's <code>method_missing</code> could be implemented right away with a <code>try-catch</code>block, but it will be slow and bulky.</p>
+
+
+
+<a name="324540070"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/324540070" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#324540070">(Jan 30 2023 at 07:27)</a>:</h4>
+<p>Then, I though maybe a traits mentality could get us out of this problem. After all (never used, from what I hear) Rust is only using traits to do its business. However I failed to find a trait pattern that implements such functionality.</p>
+
+
+
+<a name="324547765"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/324547765" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Rik Huijzer <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#324547765">(Jan 30 2023 at 08:18)</a>:</h4>
+<p>If you want Julia to be OOP, then that’s asking for a painful experience. Julia is not OOP.</p>
+
+
+
+<a name="324548616"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/324548616" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#324548616">(Jan 30 2023 at 08:21)</a>:</h4>
+<p>I don't want julia to be OOP. I just want the composition over inheritance experience to be easier. Merely an extension of the well known and widely used <a href="https://github.com/MikeInnes/Lazy.jl/blob/6705a0aa95b2d479e4ca5b5593313b0d6a857966/src/macros.jl#L293"><code>Lazy.@forward</code></a>.</p>
+
+
+
+<a name="324601892"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/324601892" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#324601892">(Jan 30 2023 at 13:08)</a>:</h4>
+<p>I also often wish for some 'substitute struct X  for struct Y except when I say so' type of magic. </p>
+<p>A workaround I have used a couple of times is to have and <code>abstract type DecoratingX</code> which forwards all method involving an <code>x::DecoratingX</code> to <code>wrapped(x)</code>. Only practically useful when there is a small number of methods but I believe this is more of a fundamental limitation to composability/reuse (e.g. it becomes more difficult to keep consistent behaviour the more you violate SRP or something). Obviously doesn't work on types where you can't rearrange the inheritance hierarchy.</p>
+
+
+
+<a name="324602091"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/324602091" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#324602091">(Jan 30 2023 at 13:09)</a>:</h4>
+<p>if you're accessing object properties directly, you're setting yourself up for a world of pain imo</p>
+
+
+
+<a name="324602231"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/324602231" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#324602231">(Jan 30 2023 at 13:10)</a>:</h4>
+<p>field access should always happen through functions and you want to have an abstract supertype in almost all cases, least of which to make testing easier</p>
+
+
+
+<a name="324602352"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/324602352" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#324602352">(Jan 30 2023 at 13:11)</a>:</h4>
+<p>what you can do when you do have an abstract super type and use functions is that you can quite easily define a "do nothing" subtype for testing, that can return whatever you need, while still dispatching just like the "true" object</p>
+
+
+
+<a name="324602515"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/324602515" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#324602515">(Jan 30 2023 at 13:12)</a>:</h4>
+<p>of course none of that matters when it's not your package, at which point you're at the mercy of the package dev to know about software engineering practices.. which we sorely lack, as a mostly scientific community</p>
+
+
+
+<a name="324602938"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/324602938" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#324602938">(Jan 30 2023 at 13:14)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="306754">Sukera</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except/near/324602091">said</a>:</p>
+<blockquote>
+<p>if you're accessing object properties directly, you're setting yourself up for a world of pain imo</p>
+</blockquote>
+<p>Yup, accessing through functions is pretty much a prerequisite for the pattern to work.</p>
+
+
+
+<a name="324603004"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/324603004" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#324603004">(Jan 30 2023 at 13:14)</a>:</h4>
+<p>yeah, I dislike dot-access with a passion</p>
+
+
+
+<a name="324603170"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/324603170" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#324603170">(Jan 30 2023 at 13:15)</a>:</h4>
+<p>you can sort-of fix it by writing custom <code>getproperty</code> for all your testing subtypes, but that too is a world of unnecessary pain when the true interface (just write a damn function) is already there</p>
+
+
+
+<a name="324603272"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/324603272" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#324603272">(Jan 30 2023 at 13:15)</a>:</h4>
+<p>not to mention that you may be bound to some other interface due to that field being concretely typed at definition, so you can't replace internals...</p>
+
+
+
+<a name="324733298"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/324733298" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#324733298">(Jan 30 2023 at 17:16)</a>:</h4>
+<p>yeah. if all the codebase belongs to me, then all problems are easily solved. The hard part starts when I want to use a different source. I wish this was easy to solve.</p>
+
+
+
+<a name="324733812"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/324733812" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#324733812">(Jan 30 2023 at 17:18)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="300483">DrChainsaw</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except/near/324601892">said</a>:</p>
+<blockquote>
+<p>I also often wish for some 'substitute struct X  for struct Y except when I say so' type of magic. </p>
+</blockquote>
+<p>I've asked about how to get these "phantom" types working on Slack before, but didn't get any bites. They would really useful for array wrappers.</p>
+
+
+
+<a name="324733858"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/324733858" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#324733858">(Jan 30 2023 at 17:18)</a>:</h4>
+<p>Maybe an issue on Base would help carry the discussion forward</p>
+
+
+
+<a name="324739435"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/324739435" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Cédric Belmant <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#324739435">(Jan 30 2023 at 17:44)</a>:</h4>
+<p>One issue I see with such a forwarding is that it is not clear oftentimes whether you want to return the wrapped field, or the original structure. Say if you have an array wrapper, how would you define <code>empty!</code> on it? Typically, <code>empty!</code> returns the emptied collection, in this case it should be the wrapper, but with forwarding it will return the result of <code>empty!</code> called on the wrapped array, and so, the wrapped array will be returned. Same story for algebraic operations, where e.g. adding two array wrappers should return an array wrapper, not the addition of the wrapped arrays which are a different type. But there, you don't want to return one of the original arguments (as you would with <code>empty!</code>), but actually rewrap the result into a new array wrapper. Then you have also problems with method ambiguities, where if you declare <code>f(t::MyType, args...; kwargs...) = f(t.inner, args...; kwargs...)</code>, you may run into dispatch issues depending on what methods are defined for <code>f</code> and specifically what was the type signature on <code>args</code>: say <code>f(::Any, ::Integer, ::Integer)</code> was defined, you'd need to actually define <code>f(::MyType, ::Integer, ::Integer)</code>. I believe the list of issues and corner cases may go on for a while, the conclusion being that such a generic forward wrapping is either not well defined or faces significant implementation challenges.</p>
+
+
+
+<a name="324740174"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/324740174" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Cédric Belmant <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#324740174">(Jan 30 2023 at 17:48)</a>:</h4>
+<p>So I think explicitly forwarding methods (and not implicitly as suggested by the title of this thread) makes more sense because then you can actually be clear about the expected behavior (and even define a few <code>@forward</code> macro variants or options to rewrap the result at the end, or return the original argument, that kind of stuff).</p>
+
+
+
+<a name="324842618"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/324842618" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#324842618">(Jan 31 2023 at 07:23)</a>:</h4>
+<p>The real fun starts when you realize that re-wrapping the result of an operation may break the semantics/invariants imposed by the wrapper :) Sometimes you really do need to have the same object be mutated</p>
+
+
+
+<a name="325628586"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/325628586" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#325628586">(Feb 03 2023 at 13:23)</a>:</h4>
+<p>yeah. that's a very good point.<br>
+I guess you shouldn't forward as a non-brainer.</p>
+<p>Could this kind of wrapping though be used as a non-brainer ?</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="kt">MyWrapperType</span><span class="w"></span>
+<span class="w">  </span><span class="n">wrapped</span><span class="o">::</span><span class="kt">AnotherType</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+<span class="n">wrapper</span><span class="p">(</span><span class="n">mwt</span><span class="o">::</span><span class="kt">MyWrapperType</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mwt</span><span class="o">.</span><span class="n">wrapped</span><span class="w"></span>
+
+<span class="n">everyfunctionoutthere</span><span class="p">(</span><span class="n">mwr</span><span class="o">::</span><span class="kt">MyWrapperType</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">everyfunctionoutthere</span><span class="p">(</span><span class="n">wrapped</span><span class="p">(</span><span class="n">mwr</span><span class="p">))</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">identityorwrapped</span><span class="p">(</span><span class="n">result</span><span class="p">)</span><span class="w"></span>
+
+<span class="n">identityorwrapped</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"></span>
+<span class="n">identityorwrapped</span><span class="p">(</span><span class="n">x</span><span class="o">::</span><span class="kt">AnotherType</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MyWrapperType</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="325628647"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/325628647" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#325628647">(Feb 03 2023 at 13:23)</a>:</h4>
+<p>Probably not always... Verdict: you need a brain to code.</p>
+
+
+
+<a name="325629398"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/325629398" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#325629398">(Feb 03 2023 at 13:26)</a>:</h4>
+<p>As a trivial counterexample, you could have a type that checks the backtrace in every function implemented for it for whether there is a direct chain of dispatch from the first dispatch down to the current call, using exactly that type. If there are two such blocks in the backtrace, the type knows that it's been wrapped and throws. Et voila, you have a type that is unwrappable!</p>
+
+
+
+<a name="325629559"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/325629559" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#325629559">(Feb 03 2023 at 13:27)</a>:</h4>
+<p>The only way out of that mess is to have a proper outside-extensible trait system, which we don't have :)</p>
+
+
+
+<a name="325631741"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/forward%20EVERYTHING%20except/near/325631741" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/forward.20EVERYTHING.20except.html#325631741">(Feb 03 2023 at 13:36)</a>:</h4>
+<p>I played a bit with <a href="https://github.com/search?q=SimpleTraits.jl&amp;type=Repositories">SimpleTraits.jl</a> and <a href="https://github.com/search?q=WhereTraits.jl&amp;type=Repositories">WhereTraits.jl</a>, but indeed they both seem to require modification of original code to do what this post desires...and that's a deal breaker.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

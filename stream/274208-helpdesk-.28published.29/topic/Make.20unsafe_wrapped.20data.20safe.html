@@ -1,0 +1,315 @@
+<html>
+<head><meta charset="utf-8"><title>Make unsafe_wrapped data safe · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html">Make unsafe_wrapped data safe</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="357626441"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357626441" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357626441">(May 11 2023 at 15:32)</a>:</h4>
+<p>What is the correct/fastest way to make an Array which is created though unsafe_wrap safe? It seems that both <code>collect</code> and <code>copy</code> works, but is there some way which is the best way?</p>
+<p>Here is the code which I need to fix for reference (which is not safe and segfaults): <a href="https://github.com/apache/arrow-julia/pull/436/files">https://github.com/apache/arrow-julia/pull/436/files</a></p>
+
+
+
+<a name="357631514"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357631514" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357631514">(May 11 2023 at 15:48)</a>:</h4>
+<p>Depends on where that pointer came from</p>
+
+
+
+<a name="357631577"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357631577" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357631577">(May 11 2023 at 15:48)</a>:</h4>
+<p>Are you sure it's not being freed under your nose somewhere?</p>
+
+
+
+<a name="357644089"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357644089" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357644089">(May 11 2023 at 16:31)</a>:</h4>
+<p><a href="https://github.com/apache/arrow-julia/pull/436/files#diff-64d309c6bd8f2c1071594eabed6d5d4bfdfbd63c7b4fcbb056c7a2432128d5d3R511">https://github.com/apache/arrow-julia/pull/436/files#diff-64d309c6bd8f2c1071594eabed6d5d4bfdfbd63c7b4fcbb056c7a2432128d5d3R511</a></p>
+
+
+
+<a name="357644243"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357644243" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357644243">(May 11 2023 at 16:32)</a>:</h4>
+<p>If you arent protecting <code>batch.bytes</code> from garbage collection you’re in for a bad time</p>
+
+
+
+<a name="357646714"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357646714" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357646714">(May 11 2023 at 16:42)</a>:</h4>
+<p>One thing I really like to do is use <a href="https://github.com/search?q=StrideArrays.jl&amp;type=Repositories">StrideArrays.jl</a> for this kind of thing. </p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">StrideArrays</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="k">let</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">]</span>
+<span class="w">           </span><span class="n">pA</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PtrArray</span><span class="p">(</span><span class="n">pointer</span><span class="p">(</span><span class="n">A</span><span class="p">),</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">A</span><span class="p">))</span>
+<span class="w">           </span><span class="n">sA</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">StrideArray</span><span class="p">(</span><span class="n">pA</span><span class="p">,</span><span class="w"> </span><span class="n">A</span><span class="p">)</span>
+<span class="w">       </span><span class="k">end</span>
+<span class="go">5-element StrideArray{Int64, 1, (1,), Tuple{Int64}, Tuple{Nothing}, Tuple{StaticInt{1}}, Vector{Int64}}:</span>
+<span class="go"> 1</span>
+<span class="go"> 2</span>
+<span class="go"> 3</span>
+<span class="go"> 4</span>
+<span class="go"> 5</span>
+</code></pre></div>
+<p>the object <code>pA</code> is an abstract array that just has the pointer to <code>A</code> and information about it's size, and the object <code>sA</code> is also an abstractarray, but it stores <code>pA</code> and a reference to where the original data from <code>pA</code>'s pointer came from. Since <code>sA</code> carries this reference around, it will be safe from garbage collection</p>
+
+
+
+<a name="357650934"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357650934" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357650934">(May 11 2023 at 17:00)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269150">Mason Protter</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe/near/357644243">said</a>:</p>
+<blockquote>
+<p>If you arent protecting <code>batch.bytes</code> from garbage collection you’re in for a bad time</p>
+</blockquote>
+<p>Yeah exactly. It was a hipshot pr and I didn't read carefully what unsafe_wrap did (although the use of <code>wrap</code> name should have triggered an alarm). </p>
+<p>Since the normal case allocates a new array for the result, I'm sure that allocating a new array also for the uncompressed case is fine as well. I was more after if there is some idiomatic way to do it. I'm not sure the devs would like a new dependency just to handle this edge case.</p>
+
+
+
+<a name="357651698"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357651698" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357651698">(May 11 2023 at 17:03)</a>:</h4>
+<p>I guess they'd also prefer if the function was type stable, but maybe one can use a StridedArray also for the compressed case.</p>
+
+
+
+<a name="357652531"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357652531" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357652531">(May 11 2023 at 17:06)</a>:</h4>
+<p><span class="user-mention" data-user-id="306754">@Sukera</span> It absolutely is being freed under my nose, so I need to move it over to some safe array. Sorry if my question was unclear. I was trying to ask what is an idiomatic  way to do it.</p>
+
+
+
+<a name="357655114"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357655114" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357655114">(May 11 2023 at 17:17)</a>:</h4>
+<p>The most idiomatic thing I guess would be to not do the pointer gymnastics in the first place, but failing that, I'd change the <code>else</code> block in <code>buildbitmap</code> to something like</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="w">    </span><span class="k">else</span>
+<span class="w">        </span><span class="c"># compressed</span>
+<span class="w">        </span><span class="n">ptr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pointer</span><span class="p">(</span><span class="n">batch</span><span class="o">.</span><span class="n">bytes</span><span class="p">,</span><span class="w"> </span><span class="n">voff</span><span class="p">)</span>
+<span class="w">        </span><span class="n">GC</span><span class="o">.</span><span class="nd">@preserve</span><span class="w"> </span><span class="n">batch</span><span class="w"> </span><span class="k">begin</span>
+<span class="w">            </span><span class="n">_</span><span class="p">,</span><span class="w"> </span><span class="n">_decodedbytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">uncompress</span><span class="p">(</span><span class="n">ptr</span><span class="p">,</span><span class="w"> </span><span class="n">buffer</span><span class="p">,</span><span class="w"> </span><span class="n">rb</span><span class="o">.</span><span class="n">compression</span><span class="p">)</span>
+<span class="w">            </span><span class="n">decodedbytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">collect</span><span class="p">(</span><span class="n">_decodedbytes</span><span class="p">)</span>
+<span class="w">        </span><span class="k">end</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">ValidityBitmap</span><span class="p">(</span><span class="n">decodedbytes</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">node</span><span class="o">.</span><span class="n">length</span><span class="p">,</span><span class="w"> </span><span class="n">node</span><span class="o">.</span><span class="n">null_count</span><span class="p">)</span>
+<span class="w">    </span><span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="357655397"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357655397" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357655397">(May 11 2023 at 17:18)</a>:</h4>
+<p>or you could change <code>uncompress</code> to  take <code>batch</code> or <code>batch.bytes</code> as an argument and do the <code>GC.@preserve</code> and <code>collect</code> in there.</p>
+
+
+
+<a name="357655560"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357655560" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357655560">(May 11 2023 at 17:19)</a>:</h4>
+<p>And yeah, <code>copy</code> or <code>collect</code> should be fine. I guess <code>copy</code> is a more more clear here?</p>
+
+
+
+<a name="357656732"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357656732" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357656732">(May 11 2023 at 17:24)</a>:</h4>
+<p>I was also thinking that <code>Vector{UInt8}(encodedbytes)</code> might be even more clear,  e.g. in case <code>copy</code> would someday return some other type than <code>Vector</code>.</p>
+
+
+
+<a name="357663741"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357663741" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357663741">(May 11 2023 at 17:55)</a>:</h4>
+<blockquote>
+<p>the use of wrap name should have triggered an alarm</p>
+</blockquote>
+<p>the use of <code>unsafe_*</code> should have triggered an alarm <span aria-label="eyes" class="emoji emoji-1f440" role="img" title="eyes">:eyes:</span> I agree with Mason - if you reach for pointers without something in an FFI interopt requring that, you're willingly walking over a sea of knives.</p>
+<p><code>copy</code> is perfectly good to use here.</p>
+
+
+
+<a name="357664802"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357664802" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357664802">(May 11 2023 at 18:00)</a>:</h4>
+<p>It’s not immediately obvious to me that <code>Vector{UInt8}(encodedbytes)</code> actually makes a copy, so I wouldn’t use that one personally</p>
+
+
+
+<a name="357665533"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357665533" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357665533">(May 11 2023 at 18:03)</a>:</h4>
+<p>I agree - I wouldn't expect <code>copy</code> to return a different type entirely.</p>
+
+
+
+<a name="357672214"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357672214" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357672214">(May 11 2023 at 18:36)</a>:</h4>
+<p><span class="user-mention" data-user-id="300483">@DrChainsaw</span> I don't think this change <a href="https://github.com/apache/arrow-julia/pull/436/commits/5dec5f8353c26af5d017cbda5989cdfd026435b3">https://github.com/apache/arrow-julia/pull/436/commits/5dec5f8353c26af5d017cbda5989cdfd026435b3</a> is sufficient</p>
+
+
+
+<a name="357672273"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357672273" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357672273">(May 11 2023 at 18:37)</a>:</h4>
+<p>You also need to protect <code>batch.bytes</code> from the GC while you do these operations on it</p>
+
+
+
+<a name="357672951"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357672951" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357672951">(May 11 2023 at 18:40)</a>:</h4>
+<p>That's why I suggested <code>GC.@preserve</code> here:</p>
+<p><span class="user-mention silent" data-user-id="269150">Mason Protter</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe/near/357655114">said</a>:</p>
+<blockquote>
+<p>The most idiomatic thing I guess would be to not do the pointer gymnastics in the first place, but failing that, I'd change the <code>else</code> block in <code>buildbitmap</code> to something like</p>
+<p><div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="w">    </span><span class="k">else</span>
+<span class="w">        </span><span class="c"># compressed</span>
+<span class="w">        </span><span class="n">ptr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pointer</span><span class="p">(</span><span class="n">batch</span><span class="o">.</span><span class="n">bytes</span><span class="p">,</span><span class="w"> </span><span class="n">voff</span><span class="p">)</span>
+<span class="w">        </span><span class="n">GC</span><span class="o">.</span><span class="nd">@preserve</span><span class="w"> </span><span class="n">batch</span><span class="w"> </span><span class="k">begin</span>
+<span class="w">            </span><span class="n">_</span><span class="p">,</span><span class="w"> </span><span class="n">_decodedbytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">uncompress</span><span class="p">(</span><span class="n">ptr</span><span class="p">,</span><span class="w"> </span><span class="n">buffer</span><span class="p">,</span><span class="w"> </span><span class="n">rb</span><span class="o">.</span><span class="n">compression</span><span class="p">)</span>
+<span class="w">            </span><span class="n">decodedbytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">collect</span><span class="p">(</span><span class="n">_decodedbytes</span><span class="p">)</span>
+<span class="w">        </span><span class="k">end</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">ValidityBitmap</span><span class="p">(</span><span class="n">decodedbytes</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">node</span><span class="o">.</span><span class="n">length</span><span class="p">,</span><span class="w"> </span><span class="n">node</span><span class="o">.</span><span class="n">null_count</span><span class="p">)</span>
+<span class="w">    </span><span class="k">end</span>
+</code></pre></div><br>
+</p>
+</blockquote>
+
+
+
+<a name="357677260"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357677260" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357677260">(May 11 2023 at 19:04)</a>:</h4>
+<p>Hmm, yeah I agree it looks weird to not have any <code>GC.@preserve</code> near that pointer. Wouldn't pretty much the entire codebase suffer from this since it uses pointers everywhere?</p>
+
+
+
+<a name="357679014"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357679014" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357679014">(May 11 2023 at 19:14)</a>:</h4>
+<p>No idea, I haven't looked at the wider codebase</p>
+
+
+
+<a name="357679163"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357679163" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357679163">(May 11 2023 at 19:15)</a>:</h4>
+<p>but any time you take the pointer from a julia GC tracked object, and then don't have references to that object, but keep your references to the pointer, you're dealing with a non-deterministic  time bomb</p>
+
+
+
+<a name="357680408"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357680408" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357680408">(May 11 2023 at 19:22)</a>:</h4>
+<p>Oh it's a very deterministic time bomb <span aria-label="grinning" class="emoji emoji-1f600" role="img" title="grinning">:grinning:</span> It will fail, the only thing you don't know is when :D</p>
+
+
+
+<a name="357680470"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357680470" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357680470">(May 11 2023 at 19:22)</a>:</h4>
+<p>The cyber security community made a whole industry about issues like that after all</p>
+
+
+
+<a name="357682273"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357682273" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357682273">(May 11 2023 at 19:33)</a>:</h4>
+<blockquote>
+<p>the only thing you don't know is when <span aria-label="grinning" class="emoji emoji-1f600" role="img" title="grinning">:grinning:</span></p>
+</blockquote>
+<p>So non-detereministic <span aria-label="stuck out tongue" class="emoji emoji-1f61b" role="img" title="stuck out tongue">:stuck_out_tongue:</span></p>
+
+
+
+<a name="357682440"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357682440" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357682440">(May 11 2023 at 19:34)</a>:</h4>
+<p>non-deterministic is that you don't know whether something happens or not - this WILL happen, you're just closing your eyes to it <span aria-label="stuck out tongue wink" class="emoji emoji-1f61c" role="img" title="stuck out tongue wink">:stuck_out_tongue_wink:</span></p>
+
+
+
+<a name="357682589"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357682589" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357682589">(May 11 2023 at 19:35)</a>:</h4>
+<p>But when and how it happens is completely non-deterministic</p>
+
+
+
+<a name="357685012"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357685012" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357685012">(May 11 2023 at 19:47)</a>:</h4>
+<p>The answer to those is always "at the most inconvenient times" :P</p>
+
+
+
+<a name="357703572"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357703572" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357703572">(May 11 2023 at 21:43)</a>:</h4>
+<p>There is something here which I think I don't have a firm grasp about.</p>
+<blockquote>
+<p>any time you take the pointer from a julia GC tracked object, and then don't have references to that object, but keep your references to the pointer, you're dealing with a non-deterministic time bomb</p>
+</blockquote>
+<p>This makes perfect sense to me and the first PR commit clearly did this by just returning the wrapped array (and that did indeed blow up in my face). However, the original (and afaik current PR code) seems to always copy over the pointed to data to a new array before the pointed to object (<code>batch.bytes</code>) can go out of scope. I suppose one can complain about the coding style to even have a function which accepts a pointer, but I'm ok with leaving that judgement to the package maintainers.</p>
+<p>However, looking at the the docs of <code>GC.@preserve</code>, the first example seems like redundant use of <code>GC.@preserve</code> since <code>x</code> can't be garbage collected before <code>unsafe_load</code> returns, or can it?</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="go">  julia&gt; let</span>
+<span class="go">             x = Ref{Int}(101)</span>
+<span class="go">             p = Base.unsafe_convert(Ptr{Int}, x)</span>
+<span class="go">             GC.@preserve x unsafe_load(p)</span>
+<span class="go">         end</span>
+</code></pre></div>
+<p>Is this just a simple demonstration of how to use it, or is it a situation where it is needed or else the code will blow up eventually?</p>
+
+
+
+<a name="357703984"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357703984" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357703984">(May 11 2023 at 21:47)</a>:</h4>
+<p>Without a <code>GC.@preserve x</code> that code would blow up.</p>
+
+
+
+<a name="357704001"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357704001" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357704001">(May 11 2023 at 21:47)</a>:</h4>
+<p>It's unlikely to blow up, but it can happen</p>
+
+
+
+<a name="357704273"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357704273" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357704273">(May 11 2023 at 21:49)</a>:</h4>
+<p>If I write</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Ref</span><span class="p">(</span><span class="mi">101</span><span class="p">)</span>
+<span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">unsafe_convert</span><span class="p">(</span><span class="kt">Ptr</span><span class="p">{</span><span class="kt">Int</span><span class="p">},</span><span class="w"> </span><span class="n">x</span><span class="p">)</span>
+<span class="n">unsafe_load</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+</code></pre></div>
+<p>then the runtime is fully allowed to garbage collect <code>x</code> between the second and third lines, i.e.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Ref</span><span class="p">(</span><span class="mi">101</span><span class="p">)</span>
+<span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">unsafe_convert</span><span class="p">(</span><span class="kt">Ptr</span><span class="p">{</span><span class="kt">Int</span><span class="p">},</span><span class="w"> </span><span class="n">x</span><span class="p">)</span>
+<span class="c"># No more references to x, now allowed to free its memory here!!!</span>
+<span class="n">unsafe_load</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="357704566"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357704566" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357704566">(May 11 2023 at 21:51)</a>:</h4>
+<p>So I guess then the code in <a href="https://github.com/search?q=Arrow.jl&amp;type=Repositories">Arrow.jl</a> might work (for now) because <code>batch</code> is accessed later on in the code?</p>
+
+
+
+<a name="357704634"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357704634" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357704634">(May 11 2023 at 21:52)</a>:</h4>
+<p>Probably yeah</p>
+
+
+
+<a name="357704803"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357704803" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357704803">(May 11 2023 at 21:54)</a>:</h4>
+<p>with the <code>Ref</code> example above, it's highly unlikely to blow up on you because the <code>Ref</code> constructed in that way is stack allocated, and in simple examples the compiler wouldn't move the stack frame to corrupt the <code>Ref</code> in the middle of a function's execution</p>
+
+
+
+<a name="357704858"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357704858" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357704858">(May 11 2023 at 21:54)</a>:</h4>
+<p>but it is definitely allowed to do so</p>
+
+
+
+<a name="357704976"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357704976" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357704976">(May 11 2023 at 21:55)</a>:</h4>
+<p>I guess I was assuming that scopes are as important to the compiler as they are to the programmer.</p>
+
+
+
+<a name="357782991"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Make%20unsafe_wrapped%20data%20safe/near/357782991" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Make.20unsafe_wrapped.20data.20safe.html#357782991">(May 12 2023 at 07:49)</a>:</h4>
+<p>(Note that there's no semantic guarantee that the <code>Ref</code> is actually stack allocated! Semantically, it's all just "julia managed memory" - there is no heap nor stack in that model, that's just the reality of computing leaking out from the abstraction)</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

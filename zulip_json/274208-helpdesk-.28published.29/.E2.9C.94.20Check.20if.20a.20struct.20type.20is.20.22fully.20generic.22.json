@@ -1,0 +1,386 @@
+[
+    {
+        "content": "<p>By which I mean it should be possible to construct a new instance with each field set to any type I want. So these would pass the test:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"kt\">S1</span><span class=\"p\">{</span><span class=\"kt\">A</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">B</span><span class=\"p\">}</span>\n<span class=\"w\">  </span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">A</span>\n<span class=\"w\">  </span><span class=\"n\">b</span><span class=\"o\">::</span><span class=\"kt\">B</span>\n<span class=\"k\">end</span>\n\n<span class=\"k\">struct</span> <span class=\"kt\">S2</span><span class=\"p\">{</span><span class=\"kt\">A</span><span class=\"p\">}</span>\n<span class=\"w\">  </span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">A</span>\n<span class=\"w\">  </span><span class=\"n\">b</span><span class=\"o\">::</span><span class=\"kt\">Any</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>But these would not because they put additional constraints on field types:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"kt\">S3</span><span class=\"p\">{</span><span class=\"kt\">A</span><span class=\"p\">}</span>\n<span class=\"w\">  </span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">A</span>\n<span class=\"w\">  </span><span class=\"n\">b</span><span class=\"o\">::</span><span class=\"kt\">A</span>\n<span class=\"k\">end</span>\n\n<span class=\"k\">struct</span> <span class=\"kt\">S4</span><span class=\"p\">{</span><span class=\"kt\">A</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">B</span><span class=\"o\">&lt;:</span><span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">A</span><span class=\"p\">}}</span>\n<span class=\"w\">  </span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">A</span>\n<span class=\"w\">  </span><span class=\"n\">b</span><span class=\"o\">::</span><span class=\"kt\">B</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 327279309,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1676133523
+    },
+    {
+        "content": "<p><code>all(==(Any), fieldtypes(foo))</code> can at least prevent <code>S4</code></p>",
+        "id": 327282567,
+        "sender_full_name": "Sukera",
+        "timestamp": 1676135206
+    },
+    {
+        "content": "<p>I don't think we have an interface for querying whether two fields of a parametrized struct are constrained to be the same type</p>",
+        "id": 327282622,
+        "sender_full_name": "Sukera",
+        "timestamp": 1676135259
+    },
+    {
+        "content": "<p>after all, you can do <code>S3{Any}</code> and still put whatever you want into it, you just lose type stability</p>",
+        "id": 327282755,
+        "sender_full_name": "Sukera",
+        "timestamp": 1676135307
+    },
+    {
+        "content": "<p>Yeah I don’t believe we have a way to do this.</p>",
+        "id": 327289584,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1676138885
+    },
+    {
+        "content": "<p>The <code>fieldtypes</code> trick is a good one. I didn't realize it defaulted to <code>Any</code> for parametric types</p>",
+        "id": 327290209,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1676139234
+    },
+    {
+        "content": "<p>what else should it default to? All field type limitations due to type parameters are just refinements of <code>Any</code> after all</p>",
+        "id": 327290423,
+        "sender_full_name": "Sukera",
+        "timestamp": 1676139340
+    },
+    {
+        "content": "<p>Some custom marker perhaps. Either way, less important since it doesn't cover every case</p>",
+        "id": 327290615,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1676139422
+    },
+    {
+        "content": "<p>Context here is that I'm trying to figure out whether a Ref{Any} containing a NamedTuple, a NamedTuple of Refs or a mutable struct which allows all fields to be independently typed is more efficient</p>",
+        "id": 327290675,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1676139472
+    },
+    {
+        "content": "<p>more efficient for doing what?</p>",
+        "id": 327290793,
+        "sender_full_name": "Sukera",
+        "timestamp": 1676139505
+    },
+    {
+        "content": "<p>Storing accumulated values over time</p>",
+        "id": 327290836,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1676139530
+    },
+    {
+        "content": "<p>my gut says that the raw <code>NamedTuple</code> will be the same as a mutable struct with all types parametrized (that's more or less what it is already)</p>",
+        "id": 327290867,
+        "sender_full_name": "Sukera",
+        "timestamp": 1676139550
+    },
+    {
+        "content": "<p>except less convenient, due to not being able to set individual fields</p>",
+        "id": 327290900,
+        "sender_full_name": "Sukera",
+        "timestamp": 1676139568
+    },
+    {
+        "content": "<p>but storing things continously over time really screams \"struct of vectors\" to me</p>",
+        "id": 327290945,
+        "sender_full_name": "Sukera",
+        "timestamp": 1676139592
+    },
+    {
+        "content": "<p>No history is required, would just be pure memory overhead. This is for accumulating gradients of arbitrary mutable structs</p>",
+        "id": 327291053,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1676139631
+    },
+    {
+        "content": "<p>My main knowledge gap right now is knowing how each type of value is stored. Specifically what and how much is boxed</p>",
+        "id": 327291257,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1676139726
+    },
+    {
+        "content": "<ul>\n<li>If the type of the field is non-concrete -&gt; Box (most of the time, but the refinement is kept so it doesn't fall back to <code>Any</code>)</li>\n<li>If the fieldtype is not <code>isbitstype</code> (or otherwise the object has a size that's not statically inferrable from the type)  -&gt; it's a pointer (also with type safety)</li>\n</ul>",
+        "id": 327291567,
+        "sender_full_name": "Sukera",
+        "timestamp": 1676139923
+    },
+    {
+        "content": "<p>making this work in a generic way is difficult, and with a <em>struct</em> on your end doubly so, since they can't hold a variable number of fields</p>",
+        "id": 327291592,
+        "sender_full_name": "Sukera",
+        "timestamp": 1676139955
+    },
+    {
+        "content": "<p>That's why you repurpose the existing struct. But to do that you need to know whether you can plug the types you want into its fields, hence the original question</p>",
+        "id": 327291724,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1676140018
+    },
+    {
+        "content": "<p>*struct type. We can assume only mutable structs are being considered here</p>",
+        "id": 327291829,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1676140064
+    },
+    {
+        "content": "<p>What's the application for this?</p>",
+        "id": 327295527,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1676142341
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"293896\">@Brenhin Keller</span> I was thinking about whether Zygote's current method for tracking gradients of mutable structs could be improved meaningfully. Right now the mechanism is a NamedTuple wrapped in a <code>Ref{Any}</code>. Any update has to deref the ref, update the NamedTuple out-of-place and write it back. Rampant type instabilities aside, this seems pretty inefficient.</p>",
+        "id": 327309621,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1676153272
+    },
+    {
+        "content": "<p>The problem is that most of the going alternatives seem to have tradeoffs. Using a NamedTuple of Refs like <a href=\"https://github.com/MasonProtter/MutableNamedTuples.jl\">https://github.com/MasonProtter/MutableNamedTuples.jl</a> means <code>O(fields)</code> allocations even as we're trying to get rid of those by removing type instabilities. Creating a copy of the original struct with tangent types instead of primal ones would be great, but that requires knowing if it's safe to do so (hence this thread).</p>",
+        "id": 327309852,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1676153470
+    },
+    {
+        "content": "<p>Currently I'm leaning towards defining an internal type which works like <code>MArray</code> / <a href=\"https://github.com/JuliaLang/julia/pull/35453\">https://github.com/JuliaLang/julia/pull/35453</a>. More complexity but should only require one allocation per instance and not incur double indirects on field reads/writes</p>",
+        "id": 327309994,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1676153600
+    },
+    {
+        "content": "<p>Oh interesting</p>",
+        "id": 327310947,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1676154362
+    },
+    {
+        "content": "<p>Yeah that sounds better</p>",
+        "id": 327311087,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1676154440
+    },
+    {
+        "content": "<p>Why not just do something like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">mutable</span><span class=\"w\"> </span><span class=\"k\">struct</span> <span class=\"kt\">AdjointStruct</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">fields</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">FieldTangentTypes</span><span class=\"p\">}</span>\n<span class=\"w\">    </span><span class=\"n\">fields</span><span class=\"o\">::</span><span class=\"kt\">NamedTuple</span><span class=\"p\">{</span><span class=\"kt\">fields</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">FieldTangentTypes</span><span class=\"p\">}</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>?</p>",
+        "id": 327314137,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1676156704
+    },
+    {
+        "content": "<p>I don't get why you'd want to wrap it in a <code>Ref{Any}</code></p>",
+        "id": 327314276,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1676156846
+    },
+    {
+        "content": "<p>That's basically what I'm proposing</p>",
+        "id": 327315678,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1676157985
+    },
+    {
+        "content": "<p>The Ref{Any} is how things are done <em>now</em></p>",
+        "id": 327315736,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1676158037
+    },
+    {
+        "content": "<p>After looking into this more, it may be dead end because of <a href=\"https://github.com/JuliaArrays/StaticArrays.jl/blob/d6e0fde34e5b3f02a7399d89cbed9c8b6e036831/src/MArray.jl#L37-L39\">https://github.com/JuliaArrays/StaticArrays.jl/blob/d6e0fde34e5b3f02a7399d89cbed9c8b6e036831/src/MArray.jl#L37-L39</a> :(</p>",
+        "id": 328866291,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1676844718
+    },
+    {
+        "content": "<p>Maybe <code>O(fields)</code> small allocations using a MutableNamedTuples-like struct wouldn't be too bad if they happen to be pooled with good locality.</p>",
+        "id": 328867630,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1676845845
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"278065\">@Brian Chen</span>  You can avoid that using something like <a href=\"https://github.com/search?q=Accessors.jl&amp;type=Repositories\">Accessors.jl</a></p>",
+        "id": 328874546,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1676852039
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">Accessors</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">ConstructionBase</span>\n\n<span class=\"k\">mutable</span><span class=\"w\"> </span><span class=\"k\">struct</span> <span class=\"kt\">AdjointStruct</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">fields</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">FieldTangentTypes</span><span class=\"p\">}</span>\n<span class=\"w\">    </span><span class=\"n\">fields</span><span class=\"o\">::</span><span class=\"kt\">NamedTuple</span><span class=\"p\">{</span><span class=\"kt\">fields</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">FieldTangentTypes</span><span class=\"p\">}</span>\n<span class=\"k\">end</span>\n<span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">setproperty!</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"o\">::</span><span class=\"kt\">AdjointStruct</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">fieldnames</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">FTs</span><span class=\"p\">},</span><span class=\"w\"> </span><span class=\"n\">name</span><span class=\"o\">::</span><span class=\"kt\">Symbol</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">where</span><span class=\"w\"> </span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">fieldnames</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">FTs</span><span class=\"p\">}</span>\n<span class=\"w\">    </span><span class=\"n\">fields</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">s</span><span class=\"o\">.</span><span class=\"n\">fields</span>\n<span class=\"w\">    </span><span class=\"n\">newfields</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">set</span><span class=\"p\">(</span><span class=\"n\">fields</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">Accessors</span><span class=\"o\">.</span><span class=\"n\">opticcompose</span><span class=\"p\">((</span><span class=\"n\">PropertyLens</span><span class=\"p\">){</span><span class=\"kt\">name</span><span class=\"p\">}()),</span><span class=\"w\"> </span><span class=\"n\">x</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"n\">setfield!</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"ss\">:fields</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">newfields</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n\n<span class=\"n\">ConstructionBase</span><span class=\"o\">.</span><span class=\"n\">constructorof</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">Type</span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">})</span><span class=\"w\"> </span><span class=\"k\">where</span><span class=\"w\"> </span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"o\">&lt;:</span><span class=\"w\"> </span><span class=\"kt\">AdjointStruct</span><span class=\"p\">}</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">T</span>\n</code></pre></div>",
+        "id": 328874610,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1676852077
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"k\">let</span><span class=\"w\"> </span><span class=\"n\">s</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">AdjointStruct</span><span class=\"p\">{</span><span class=\"kt\">Foo</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"ss\">:x</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"ss\">:y</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"kt\">String</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Symbol</span><span class=\"p\">}}((;</span><span class=\"n\">x</span><span class=\"o\">=</span><span class=\"s\">\"hi\"</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">y</span><span class=\"o\">=</span><span class=\"ss\">:bye</span><span class=\"p\">))</span>\n<span class=\"w\">          </span><span class=\"nd\">@btime</span><span class=\"w\"> </span><span class=\"o\">$</span><span class=\"n\">s</span><span class=\"o\">.</span><span class=\"n\">x</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"s\">\"bye\"</span>\n<span class=\"w\">          </span><span class=\"n\">s</span>\n<span class=\"w\">       </span><span class=\"k\">end</span>\n<span class=\"go\">  1.940 ns (0 allocations: 0 bytes)</span>\n<span class=\"go\">AdjointStruct{Foo, (:x, :y), Tuple{String, Symbol}}((x = \"bye\", y = :bye))</span>\n</code></pre></div>",
+        "id": 328874614,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1676852085
+    },
+    {
+        "content": "<p>Isn't that more or less the Ref approach but with a nicer interface? At least looking at <code>@code_llvm</code>, I see unpacking of every field in <code>s.fields</code> and then re-packing, all for what should be a write to a single field.</p>",
+        "id": 328875825,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1676853102
+    },
+    {
+        "content": "<p>(this is the case for using a type stable Ref as well)</p>",
+        "id": 328875897,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1676853145
+    },
+    {
+        "content": "<p>Perhaps that is unavoidable, but boy would it be nice to have the compiler synthesize an appropriate type like <a href=\"https://github.com/apple/swift/blob/main/docs/DifferentiableProgramming.md#synthesis-conditions\">https://github.com/apple/swift/blob/main/docs/DifferentiableProgramming.md#synthesis-conditions</a>.</p>",
+        "id": 328876116,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1676853344
+    },
+    {
+        "content": "<p>Hm, well it does at least do the right thing for isbits types at least:</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"k\">let</span><span class=\"w\"> </span><span class=\"n\">s</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">AdjointStruct</span><span class=\"p\">{</span><span class=\"kt\">Complex</span><span class=\"p\">{</span><span class=\"kt\">Int</span><span class=\"p\">},</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"ss\">:re</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"ss\">:im</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"kt\">Int</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Int</span><span class=\"p\">}}((;</span><span class=\"n\">re</span><span class=\"o\">=</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"nb\">im</span><span class=\"o\">=</span><span class=\"mi\">2</span><span class=\"p\">))</span>\n<span class=\"w\">           </span><span class=\"n\">code_llvm</span><span class=\"p\">((</span><span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"p\">),))</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"> </span><span class=\"n\">s</span>\n<span class=\"w\">               </span><span class=\"n\">s</span><span class=\"o\">.</span><span class=\"n\">re</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mi\">2</span>\n<span class=\"w\">           </span><span class=\"k\">end</span>\n\n<span class=\"go\">       end</span>\n<span class=\"go\">;  @ REPL[31]:3 within `#7`</span>\n<span class=\"go\">define i64 @\"julia_#7_731\"({}* noundef nonnull align 8 dereferenceable(16) %0) #0 {</span>\n<span class=\"go\">top:</span>\n<span class=\"go\">; ┌ @ REPL[27]:4 within `setproperty!`</span>\n<span class=\"go\">   %1 = bitcast {}* %0 to i64*</span>\n<span class=\"go\">   store i64 2, i64* %1, align 8</span>\n<span class=\"go\">; └</span>\n<span class=\"go\">  ret i64 2</span>\n<span class=\"go\">}</span>\n</code></pre></div>",
+        "id": 328876536,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1676853633
+    },
+    {
+        "content": "<p>I think unpacking and repacking should be relatively cheap compared to <code>O(N)</code> allocations</p>",
+        "id": 328876769,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1676853817
+    },
+    {
+        "content": "<p>Are you on nightly? This is what I see on 1.8.5:</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"k\">let</span><span class=\"w\"> </span><span class=\"n\">s3</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">AdjointStruct</span><span class=\"p\">{</span><span class=\"kt\">Complex</span><span class=\"p\">{</span><span class=\"kt\">Int</span><span class=\"p\">},</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"ss\">:re</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"ss\">:im</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"kt\">Int</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">Int</span><span class=\"p\">}}((;</span><span class=\"n\">re</span><span class=\"o\">=</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"nb\">im</span><span class=\"o\">=</span><span class=\"mi\">2</span><span class=\"p\">))</span>\n<span class=\"w\">                  </span><span class=\"n\">code_llvm</span><span class=\"p\">((</span><span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">s3</span><span class=\"p\">),))</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"> </span><span class=\"n\">s</span>\n<span class=\"w\">                      </span><span class=\"n\">s</span><span class=\"o\">.</span><span class=\"n\">re</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"mi\">2</span>\n<span class=\"w\">                  </span><span class=\"k\">end</span>\n<span class=\"w\">       </span><span class=\"k\">end</span>\n<span class=\"go\">;  @ REPL[34]:3 within `#5`</span>\n<span class=\"go\">define i64 @\"julia_#5_1177\"({}* nonnull align 8 dereferenceable(16) %0) #0 {</span>\n<span class=\"go\">top:</span>\n<span class=\"go\">; ┌ @ REPL[32]:2 within `setproperty!`</span>\n<span class=\"go\">; │┌ @ Base.jl:38 within `getproperty`</span>\n<span class=\"go\">    %1 = bitcast {}* %0 to [2 x i64]*</span>\n<span class=\"go\">    %.elt3 = getelementptr inbounds [2 x i64], [2 x i64]* %1, i64 0, i64 1</span>\n<span class=\"go\">    %.unpack4 = load i64, i64* %.elt3, align 8</span>\n<span class=\"go\">; │└</span>\n<span class=\"go\">; │ @ REPL[32]:4 within `setproperty!`</span>\n<span class=\"go\">   %.repack = bitcast {}* %0 to i64*</span>\n<span class=\"go\">   store i64 2, i64* %.repack, align 8</span>\n<span class=\"go\">   %.repack5 = getelementptr inbounds [2 x i64], [2 x i64]* %1, i64 0, i64 1</span>\n<span class=\"go\">   store i64 %.unpack4, i64* %.repack5, align 8</span>\n<span class=\"go\">; └</span>\n<span class=\"go\">  ret i64 2</span>\n<span class=\"go\">}</span>\n</code></pre></div>",
+        "id": 328878318,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1676855055
+    },
+    {
+        "content": "<p>that was 1.9.0-beta4</p>",
+        "id": 328878478,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1676855245
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Check.20if.20a.20struct.20type.20is.20.22fully.20generic.22/near/328876769\">said</a>:</p>\n<blockquote>\n<p>I think unpacking and repacking should be relatively cheap compared to <code>O(N)</code> allocations</p>\n</blockquote>\n<p>Most likely, though I've seen some monster types out of e.g. certain SciML libraries. At the very least it wouldn't be any worse than the status quo, but I was really hoping to be greedy here and find a way to write directly into fields of the tangent type :)</p>",
+        "id": 328878502,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1676855280
+    },
+    {
+        "content": "<p>It'd be nice if we had <code>@generated struct</code>s or something.</p>",
+        "id": 328878587,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1676855344
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"278065\">Brian Chen</span> has marked this topic as resolved.</p>",
+        "id": 328878731,
+        "sender_full_name": "Notification Bot",
+        "timestamp": 1676855471
+    },
+    {
+        "content": "<p>Very much so! For now, looks like compiler smarts are enough here.</p>",
+        "id": 328878749,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1676855504
+    },
+    {
+        "content": "<p>I think also, if we're talking about performance sensitive applications, then probably people aren't putting non-isbits types inside of mutable containers (at least I'd hope so)</p>",
+        "id": 328885533,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1676861267
+    },
+    {
+        "content": "<p>I see you're not acquainted with <code>Flux.Recur</code> and <code>Flux.BatchNorm</code> <span aria-label=\"laughter tears\" class=\"emoji emoji-1f602\" role=\"img\" title=\"laughter tears\">:laughter_tears:</span>. But yes, the main objective here is to try to improve type stability (which directly affects TTFG in Zygote) while not regressing anywhere else.</p>",
+        "id": 329008779,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1676906829
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"278065\">@Brian Chen</span>  are you still thinking about this?</p>",
+        "id": 343542765,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1679443108
+    },
+    {
+        "content": "<p>Every once in a while, though it's not as high on my priority list as I'd like :)</p>",
+        "id": 343543109,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1679443229
+    },
+    {
+        "content": "<p>I was playing with something related, and realized there's a nice way to update many fields without unpacking and repacking multiple times at least. Basically just</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"nd\">@generated</span><span class=\"w\"> </span><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">copy_with_changes</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"o\">::</span><span class=\"kt\">T</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">vals</span><span class=\"o\">::</span><span class=\"kt\">NamedTuple</span><span class=\"p\">{</span><span class=\"kt\">keys</span><span class=\"p\">})</span><span class=\"w\"> </span><span class=\"k\">where</span><span class=\"w\"> </span><span class=\"p\">{</span><span class=\"kt\">T</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"kt\">keys</span><span class=\"p\">}</span>\n<span class=\"w\">    </span><span class=\"n\">args</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">map</span><span class=\"p\">(</span><span class=\"n\">fieldnames</span><span class=\"p\">(</span><span class=\"n\">T</span><span class=\"p\">))</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"> </span><span class=\"n\">key</span>\n<span class=\"w\">        </span><span class=\"n\">key</span><span class=\"w\"> </span><span class=\"o\">∈</span><span class=\"w\"> </span><span class=\"n\">keys</span><span class=\"w\"> </span><span class=\"o\">?</span><span class=\"w\"> </span><span class=\"o\">:</span><span class=\"p\">(</span><span class=\"n\">vals</span><span class=\"p\">[</span><span class=\"o\">$</span><span class=\"p\">(</span><span class=\"kt\">QuoteNode</span><span class=\"p\">(</span><span class=\"n\">key</span><span class=\"p\">))])</span><span class=\"w\"> </span><span class=\"o\">:</span><span class=\"w\"> </span><span class=\"o\">:</span><span class=\"p\">(</span><span class=\"n\">getfield</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"o\">$</span><span class=\"p\">(</span><span class=\"kt\">QuoteNode</span><span class=\"p\">(</span><span class=\"n\">key</span><span class=\"p\">))))</span>\n<span class=\"w\">    </span><span class=\"k\">end</span>\n<span class=\"w\">    </span><span class=\"kt\">Expr</span><span class=\"p\">(</span><span class=\"ss\">:new</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">T</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">args</span><span class=\"o\">...</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 343543210,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1679443255
+    },
+    {
+        "content": "<p>Interesting. Is this more or less identical to <code>merge</code> when <code>x</code> is a NamedTuple?</p>",
+        "id": 343543849,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1679443490
+    },
+    {
+        "content": "<p>E.g.</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"k\">struct</span> <span class=\"kt\">Foo</span>\n<span class=\"w\">           </span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"kt\">Int</span>\n<span class=\"w\">           </span><span class=\"n\">b</span><span class=\"o\">::</span><span class=\"kt\">Any</span>\n<span class=\"w\">           </span><span class=\"n\">c</span><span class=\"o\">::</span><span class=\"kt\">String</span>\n<span class=\"w\">           </span><span class=\"n\">d</span><span class=\"o\">::</span><span class=\"kt\">Float64</span>\n<span class=\"w\">       </span><span class=\"k\">end</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">code_llvm</span><span class=\"p\">((</span><span class=\"n\">Foo</span><span class=\"p\">,))</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"> </span><span class=\"n\">x</span>\n<span class=\"w\">           </span><span class=\"n\">copy_with_changes</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">=</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">d</span><span class=\"o\">=</span><span class=\"mf\">3.0</span><span class=\"p\">))</span>\n<span class=\"w\">       </span><span class=\"k\">end</span>\n<span class=\"go\">;  @ REPL[11]:2 within `#10`</span>\n<span class=\"go\">define void @\"julia_#10_981\"({ i64, {}*, {}*, double }* noalias nocapture sret({ i64, {}*, {}*, double }) %0, [2 x {}*]* noalias nocapture %1, { i64, {}*, {}*, double }* nocapture nonnull readonly align 8 dereferenceable(32) %2) #0 {</span>\n<span class=\"go\">top:</span>\n<span class=\"go\">; ┌ @ REPL[2]:1 within `copy_with_changes`</span>\n<span class=\"go\">; │┌ @ REPL[2]:1 within `macro expansion`</span>\n<span class=\"go\">    %3 = getelementptr inbounds { i64, {}*, {}*, double }, { i64, {}*, {}*, double }* %2, i64 0, i32 1</span>\n<span class=\"go\">    %4 = load atomic {}*, {}** %3 unordered, align 8</span>\n<span class=\"go\">    %5 = getelementptr inbounds { i64, {}*, {}*, double }, { i64, {}*, {}*, double }* %2, i64 0, i32 2</span>\n<span class=\"go\">    %6 = load atomic {}*, {}** %5 unordered, align 8</span>\n<span class=\"go\">; └└</span>\n<span class=\"go\">  %7 = getelementptr inbounds [2 x {}*], [2 x {}*]* %1, i64 0, i64 0</span>\n<span class=\"go\">  store {}* %4, {}** %7, align 8</span>\n<span class=\"go\">  %8 = getelementptr inbounds [2 x {}*], [2 x {}*]* %1, i64 0, i64 1</span>\n<span class=\"go\">  store {}* %6, {}** %8, align 8</span>\n<span class=\"go\">  %.repack = getelementptr inbounds { i64, {}*, {}*, double }, { i64, {}*, {}*, double }* %0, i64 0, i32 0</span>\n<span class=\"go\">  store i64 2, i64* %.repack, align 8</span>\n<span class=\"go\">  %.repack1 = getelementptr inbounds { i64, {}*, {}*, double }, { i64, {}*, {}*, double }* %0, i64 0, i32 1</span>\n<span class=\"go\">  store {}* %4, {}** %.repack1, align 8</span>\n<span class=\"go\">  %.repack3 = getelementptr inbounds { i64, {}*, {}*, double }, { i64, {}*, {}*, double }* %0, i64 0, i32 2</span>\n<span class=\"go\">  store {}* %6, {}** %.repack3, align 8</span>\n<span class=\"go\">  %.repack5 = getelementptr inbounds { i64, {}*, {}*, double }, { i64, {}*, {}*, double }* %0, i64 0, i32 3</span>\n<span class=\"go\">  store double 3.000000e+00, double* %.repack5, align 8</span>\n<span class=\"go\">  ret void</span>\n<span class=\"go\">}</span>\n</code></pre></div>\n<p>Unfortunately, in the presence of non-isbits stuff you still need to repack the whole struct, but this would avoid doing it multiple times if you need to change multiple fields</p>",
+        "id": 343543982,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1679443518
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"278065\">Brian Chen</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Check.20if.20a.20struct.20type.20is.20.22fully.20generic.22/near/343543849\">said</a>:</p>\n<blockquote>\n<p>Interesting. Is this more or less identical to <code>merge</code> when <code>x</code> is a NamedTuple?</p>\n</blockquote>\n<p>Yep</p>",
+        "id": 343544120,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1679443554
+    },
+    {
+        "content": "<p>The repacking is quite fast: </p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"k\">let</span><span class=\"w\"> </span><span class=\"n\">f</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">Foo</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"s\">\"hi\"</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">4</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">a</span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">Ref</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">d</span><span class=\"o\">=</span><span class=\"kt\">Ref</span><span class=\"p\">(</span><span class=\"mf\">3.0</span><span class=\"p\">)</span>\n<span class=\"w\">           </span><span class=\"nd\">@btime</span><span class=\"w\"> </span><span class=\"n\">copy_with_changes</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">f</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">(;</span><span class=\"n\">a</span><span class=\"o\">=$</span><span class=\"n\">a</span><span class=\"p\">[],</span><span class=\"w\"> </span><span class=\"n\">d</span><span class=\"o\">=$</span><span class=\"n\">d</span><span class=\"p\">[]))</span>\n<span class=\"w\">       </span><span class=\"k\">end</span>\n<span class=\"go\">  2.478 ns (0 allocations: 0 bytes)</span>\n<span class=\"go\">Foo(1, 2, \"hi\", 3.0)</span>\n</code></pre></div>",
+        "id": 343544541,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1679443684
+    },
+    {
+        "content": "<p>As long as you don't have any massive Tuples stored in the struct, I imagine it'll be super quick</p>",
+        "id": 343544726,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1679443754
+    },
+    {
+        "content": "<p>Even then it's pretty tolerable:</p>\n<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"k\">let</span><span class=\"w\"> </span><span class=\"n\">f</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">Foo2</span><span class=\"p\">(</span><span class=\"n\">ntuple</span><span class=\"p\">(</span><span class=\"n\">identity</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">100</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"s\">\"hi\"</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mf\">4.0</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">b</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">Ref</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">d</span><span class=\"o\">=</span><span class=\"kt\">Ref</span><span class=\"p\">(</span><span class=\"mf\">3.0</span><span class=\"p\">)</span>\n<span class=\"w\">           </span><span class=\"nd\">@btime</span><span class=\"w\"> </span><span class=\"n\">copy_with_changes</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">f</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">(;</span><span class=\"n\">b</span><span class=\"o\">=$</span><span class=\"n\">b</span><span class=\"p\">[],</span><span class=\"w\"> </span><span class=\"n\">d</span><span class=\"o\">=$</span><span class=\"n\">d</span><span class=\"p\">[]))</span>\n<span class=\"w\">       </span><span class=\"k\">end</span><span class=\"p\">;</span>\n<span class=\"go\">  22.746 ns (0 allocations: 0 bytes)</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"k\">let</span><span class=\"w\"> </span><span class=\"n\">f</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">Foo2</span><span class=\"p\">(</span><span class=\"n\">ntuple</span><span class=\"p\">(</span><span class=\"n\">identity</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mi\">100</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"s\">\"hi\"</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"mf\">4.0</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">a</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"kt\">Ref</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"o\">.</span><span class=\"n\">a</span><span class=\"p\">),</span><span class=\"w\"> </span><span class=\"n\">d</span><span class=\"o\">=</span><span class=\"kt\">Ref</span><span class=\"p\">(</span><span class=\"mf\">3.0</span><span class=\"p\">)</span>\n<span class=\"w\">           </span><span class=\"nd\">@btime</span><span class=\"w\"> </span><span class=\"n\">copy_with_changes</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">f</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"p\">(;</span><span class=\"n\">a</span><span class=\"o\">=$</span><span class=\"n\">a</span><span class=\"p\">[],</span><span class=\"w\"> </span><span class=\"n\">d</span><span class=\"o\">=$</span><span class=\"n\">d</span><span class=\"p\">[]))</span>\n<span class=\"w\">       </span><span class=\"k\">end</span><span class=\"p\">;</span>\n<span class=\"go\">  20.242 ns (0 allocations: 0 bytes)</span>\n</code></pre></div>",
+        "id": 343545170,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1679443907
+    },
+    {
+        "content": "<p>I think something soon I'll make a SumTypes 2.0 which tries to address the issues raised in <a href=\"https://github.com/JuliaLang/julia/discussions/48883\">https://github.com/JuliaLang/julia/discussions/48883</a>, partially using this</p>",
+        "id": 343545426,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1679444033
+    },
+    {
+        "content": "<p>Isn't <code>copy_with_changes</code> the same as <code>setproperties</code> from <code>ConstructionBase</code>?</p>",
+        "id": 343646884,
+        "sender_full_name": "aplavin",
+        "timestamp": 1679484498
+    },
+    {
+        "content": "<p>Not quite because it bypasses constructors, it’s really about the underlying data fields instead of properties</p>",
+        "id": 343719283,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1679500608
+    },
+    {
+        "content": "<p>But it also doesnt do what I wanted because it cant handle uninitalized fields <span aria-label=\"frown\" class=\"emoji emoji-1f641\" role=\"img\" title=\"frown\">:frown:</span></p>",
+        "id": 343719376,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1679500632
+    },
+    {
+        "content": "<p>Hm, can you give some examples of these two issues?<br>\nComparing copy_with_changes vs setproperties.</p>",
+        "id": 343722941,
+        "sender_full_name": "aplavin",
+        "timestamp": 1679501395
+    },
+    {
+        "content": "<p>Saw <a href=\"https://github.com/JuliaLang/julia/pull/51748\">https://github.com/JuliaLang/julia/pull/51748</a> floating around on Slack today and thought of this thread. If something which works with non-isbits types does come out of this, I think you'd be interested <span class=\"user-mention\" data-user-id=\"269150\">@Mason Protter</span></p>",
+        "id": 397962518,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1697997891
+    },
+    {
+        "content": "<p>Ooh very nice</p>",
+        "id": 397962760,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1697998148
+    }
+]

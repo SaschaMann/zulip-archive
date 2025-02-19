@@ -1,0 +1,20 @@
+[
+    {
+        "content": "<p>I often find myself wanting to do the following:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span><span class=\"w\"> </span><span class=\"n\">foo</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">y</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">z</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"k\">if</span><span class=\"w\"> </span><span class=\"n\">feasible</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">y</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">z</span><span class=\"p\">)</span>\n<span class=\"w\">        </span><span class=\"k\">return</span><span class=\"w\"> </span><span class=\"n\">complicated_calculation</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">y</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">z</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"k\">else</span>\n<span class=\"w\">        </span><span class=\"k\">return</span><span class=\"w\"> </span><span class=\"n\">convert</span><span class=\"p\">(</span><span class=\"n\">inferred_return_type_for_above_branch</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"nb\">NaN</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"k\">end</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>In practice, I find myself writing manual type promotion calculations like the following, based on knowledge of what goes on inside <code>complicated_calculation</code>:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"w\">    </span><span class=\"n\">returnT</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">oneunit</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">/</span><span class=\"w\"> </span><span class=\"n\">sqrt</span><span class=\"p\">(</span><span class=\"n\">oneunit</span><span class=\"p\">(</span><span class=\"n\">y</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"n\">oneunit</span><span class=\"p\">(</span><span class=\"n\">z</span><span class=\"p\">)))</span>\n</code></pre></div>\n<p>This is incredibly unergonomic. Is there a better solution for ensuring type stability when you need to return hardcoded sentinel values in some branches, and computed values in others?</p>",
+        "id": 462441915,
+        "sender_full_name": "Daniel Wennberg",
+        "timestamp": 1723683261
+    },
+    {
+        "content": "<p>There's <code>Core.Compiler.return_type</code> of course, but I try to refrain from using that</p>",
+        "id": 462442106,
+        "sender_full_name": "Daniel Wennberg",
+        "timestamp": 1723683421
+    },
+    {
+        "content": "<p>I suppose using <code>Base.promote_op</code>, like <a href=\"https://juliahub.com/ui/Packages/General/DispatchDoctor\">DispatchDoctor.jl</a>, is slightly less problematic. Maybe that's the way to go.</p>",
+        "id": 462442426,
+        "sender_full_name": "Daniel Wennberg",
+        "timestamp": 1723683561
+    }
+]

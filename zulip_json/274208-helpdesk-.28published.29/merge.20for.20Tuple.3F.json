@@ -1,0 +1,164 @@
+[
+    {
+        "content": "<p>You can copy a NamedTuple with modifications using the merge function. Is there any similar facility for a unnamed Tuple, merging by index?</p>",
+        "id": 234327028,
+        "sender_full_name": "Timothy Larson",
+        "timestamp": 1618321396
+    },
+    {
+        "content": "<p>There is <code>union</code>, but I don't know if it performs the kind on merge you want.</p>",
+        "id": 234327667,
+        "sender_full_name": "mbaz",
+        "timestamp": 1618321631
+    },
+    {
+        "content": "<p><code>union</code> assumes a set, which is too strong an assumption for a Tuple.</p>",
+        "id": 234329677,
+        "sender_full_name": "Timothy Larson",
+        "timestamp": 1618322313
+    },
+    {
+        "content": "<p>You can do this:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">a</span> <span class=\"o\">=</span> <span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"o\">:</span><span class=\"n\">b</span><span class=\"p\">,</span> <span class=\"mi\">3</span><span class=\"p\">)</span>\n<span class=\"kt\">Tuple</span><span class=\"p\">((</span><span class=\"n\">x</span> <span class=\"o\">=</span> <span class=\"n\">collect</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">);</span> <span class=\"n\">x</span><span class=\"p\">[</span><span class=\"mi\">3</span><span class=\"p\">]</span> <span class=\"o\">=</span> <span class=\"o\">:</span><span class=\"n\">c</span><span class=\"p\">;</span> <span class=\"n\">x</span><span class=\"p\">))</span>\n</code></pre></div>\n<p>Just wondering if there was something more idiomatic.</p>",
+        "id": 234330504,
+        "sender_full_name": "Timothy Larson",
+        "timestamp": 1618322564
+    },
+    {
+        "content": "<p>Now I see what you mean. I don't know of any function in <code>Base</code> to do this.<br>\nI think the difficulty is how to specify precedence; with named tuples, the last key \"wins\". An adhoc way to do it might be to write a <code>merge</code> method such that <code>merge( (1,2,3), (nothing, 10, nothing, 11) == (1, 10, 3, 11)</code>.</p>",
+        "id": 234333258,
+        "sender_full_name": "mbaz",
+        "timestamp": 1618323513
+    },
+    {
+        "content": "<p>Do you want <code>Base.setindex</code>?</p>",
+        "id": 234364403,
+        "sender_full_name": "Simeon Schaub",
+        "timestamp": 1618333509
+    },
+    {
+        "content": "<p>I would, if it were defined for Tuple, but it is not.</p>",
+        "id": 234366953,
+        "sender_full_name": "Timothy Larson",
+        "timestamp": 1618334436
+    },
+    {
+        "content": "<p>it isn't?</p>",
+        "id": 234367149,
+        "sender_full_name": "Maarten",
+        "timestamp": 1618334523
+    },
+    {
+        "content": "<p>It is only defined as Base.setindex! (note the !) as a mutation to an array. It is not defined for Tuple because they are not mutable. Perhaps Base.setindex (without a !) could be added to Julia for \"setting\" a value in an immutable via copy-with-modification?</p>",
+        "id": 234368139,
+        "sender_full_name": "Timothy Larson",
+        "timestamp": 1618334889
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">a</span> <span class=\"o\">=</span> <span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"mi\">3</span><span class=\"p\">);</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">b</span> <span class=\"o\">=</span> <span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">setindex</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">,</span><span class=\"mi\">10</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">);</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">b</span>\n<span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"mi\">10</span><span class=\"p\">,</span> <span class=\"mi\">3</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 234368255,
+        "sender_full_name": "Maarten",
+        "timestamp": 1618334935
+    },
+    {
+        "content": "<p>Nice :)  Did it not get in the docs, or am I just not searching well?</p>",
+        "id": 234368715,
+        "sender_full_name": "Timothy Larson",
+        "timestamp": 1618335107
+    },
+    {
+        "content": "<p>I remember seeing something like that used in tupletools.jl, but I've also never seen it documented</p>",
+        "id": 234368879,
+        "sender_full_name": "Maarten",
+        "timestamp": 1618335164
+    },
+    {
+        "content": "<p>There is a docstring though, so it probably is find-able in the documentation:<br>\n  setindex(c::Tuple, v, i::Integer)</p>\n<p>Creates a new tuple similar to x with the value at index i set to v. Throws a BoundsError when out of bounds.</p>",
+        "id": 234369020,
+        "sender_full_name": "Maarten",
+        "timestamp": 1618335224
+    },
+    {
+        "content": "<p>Thank you for finding that.</p>",
+        "id": 234369214,
+        "sender_full_name": "Timothy Larson",
+        "timestamp": 1618335269
+    },
+    {
+        "content": "<p>no problem :)</p>",
+        "id": 234369391,
+        "sender_full_name": "Maarten",
+        "timestamp": 1618335344
+    },
+    {
+        "content": "<p>It works on NamedTuple also.</p>",
+        "id": 234369547,
+        "sender_full_name": "Timothy Larson",
+        "timestamp": 1618335397
+    },
+    {
+        "content": "<p>There is also setindex!! from <a href=\"https://github.com/search?q=BangBang.jl&amp;type=Repositories\">BangBang.jl</a></p>",
+        "id": 234389734,
+        "sender_full_name": "Timothy Larson",
+        "timestamp": 1618343544
+    },
+    {
+        "content": "<p>See <a href=\"https://github.com/search?q=TupleTools.jl&amp;type=Repositories\">TupleTools.jl</a></p>",
+        "id": 234644981,
+        "sender_full_name": "Jeffrey Sarnoff",
+        "timestamp": 1618479370
+    },
+    {
+        "content": "<div class=\"codehilite\"><pre><span></span><code>setindex(t,e,i)=(t[begin:i-1]..., e, t[i+1:end]...)\n</code></pre></div>",
+        "id": 250963521,
+        "sender_full_name": "rocco sprmnt21",
+        "timestamp": 1630084500
+    },
+    {
+        "content": "<p>That'll be very slow</p>",
+        "id": 250991934,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1630096626
+    },
+    {
+        "content": "<p>A better option would be something like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">setindex</span><span class=\"p\">(</span><span class=\"n\">t</span><span class=\"o\">::</span><span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"kt\">Vararg</span><span class=\"p\">{</span><span class=\"kt\">Any</span><span class=\"p\">,</span> <span class=\"kt\">N</span><span class=\"p\">}},</span> <span class=\"n\">x</span><span class=\"p\">,</span> <span class=\"n\">i</span><span class=\"p\">)</span> <span class=\"k\">where</span> <span class=\"p\">{</span><span class=\"kt\">N</span><span class=\"p\">}</span>\n    <span class=\"n\">ntuple</span><span class=\"p\">(</span><span class=\"n\">j</span> <span class=\"o\">-&gt;</span> <span class=\"n\">i</span> <span class=\"o\">==</span> <span class=\"n\">j</span> <span class=\"o\">?</span> <span class=\"n\">x</span> <span class=\"o\">:</span> <span class=\"n\">t</span><span class=\"p\">[</span><span class=\"n\">j</span><span class=\"p\">],</span> <span class=\"kt\">Val</span><span class=\"p\">(</span><span class=\"n\">N</span><span class=\"p\">))</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 250993644,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1630097437
+    },
+    {
+        "content": "<p>Ah, it appears that <code>Base.setindex</code> already exists and works on Tuples. They have an equivalent implementation to the one I showed, but properly checked for bounds errors <a href=\"https://github.com/JuliaLang/julia/blob/master/base/tuple.jl#L52-L61\">https://github.com/JuliaLang/julia/blob/master/base/tuple.jl#L52-L61</a></p>",
+        "id": 250994384,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1630097830
+    },
+    {
+        "content": "<p>Yeah, that latter is what I tried, tii's also weirdly slow.</p>",
+        "id": 250996935,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1630099010
+    },
+    {
+        "content": "<p>Hm, why is <code>Base.setindex</code> not exported?  It really annoys me how many seemingly useful things are not exported from <code>Base</code>.  If that's going to continue there really needs to be some way of knowing whether those methods are truly \"private\".</p>",
+        "id": 250997132,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1630099126
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269446\">Expanding Man</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/merge.20for.20Tuple.3F/near/250996935\">said</a>:</p>\n<blockquote>\n<p>Yeah, that latter is what I tried, tii's also weirdly slow.</p>\n</blockquote>\n<p>tii's?</p>",
+        "id": 250997201,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1630099166
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/merge.20for.20Tuple.3F/near/250991934\">said</a>:</p>\n<blockquote>\n<p>That'll be very slow</p>\n</blockquote>\n<p>But it's quick to write <span aria-label=\"grinning face with smiling eyes\" class=\"emoji emoji-1f601\" role=\"img\" title=\"grinning face with smiling eyes\">:grinning_face_with_smiling_eyes:</span> <br>\nThe fact that it is slow is understood by the structure of the function or have you checked it? <br>\nhere a different proposal </p>\n<div class=\"codehilite\"><pre><span></span><code>function setindex_t2v(t,e,i)\n      arr=collect(t)\n      arr[i]=e\n      tuple(arr)\nend\n</code></pre></div>",
+        "id": 251033345,
+        "sender_full_name": "rocco sprmnt21",
+        "timestamp": 1630131960
+    },
+    {
+        "content": "<p>that one should allocate memory, while the compiler may be able to optimize allocations away for the original setindex</p>",
+        "id": 251037399,
+        "sender_full_name": "Maarten",
+        "timestamp": 1630136446
+    }
+]

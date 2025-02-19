@@ -1,0 +1,108 @@
+<html>
+<head><meta charset="utf-8"><title>How to reach Matlab speed for FFT? · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20reach.20Matlab.20speed.20for.20FFT.3F.html">How to reach Matlab speed for FFT?</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="360081997"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20reach%20Matlab%20speed%20for%20FFT%3F/near/360081997" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Alexandre Guillet <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20reach.20Matlab.20speed.20for.20FFT.3F.html#360081997">(May 21 2023 at 15:49)</a>:</h4>
+<p>Hello,<br>
+I try to reach the speed of Matlab's FFT in Julia. By default:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">r</span><span class="o">=</span><span class="n">randn</span><span class="p">(</span><span class="mi">2</span><span class="o">^</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="o">^</span><span class="mi">10</span><span class="p">)</span>
+<span class="k">using</span><span class="w"> </span><span class="n">FFTW</span>
+<span class="nd">@time</span><span class="w"> </span><span class="n">s</span><span class="o">=</span><span class="n">fft</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+</code></pre></div>
+<p>it is slower by more than one order of magnitude.<br>
+I noticed I could set the number of thread:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">FFTW</span><span class="o">.</span><span class="n">set_num_threads</span><span class="p">(</span><span class="mi">16</span><span class="p">)</span>
+</code></pre></div>
+<p>and use the real version of the fft: <code>rfft()</code>, and eventually compute the fft plan:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="w"> </span><span class="n">pr</span><span class="o">=</span><span class="n">plan_rfft</span><span class="p">(</span><span class="n">randn</span><span class="p">(</span><span class="mi">2</span><span class="o">^</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="o">^</span><span class="mi">10</span><span class="p">);</span><span class="w"> </span><span class="n">flags</span><span class="o">=</span><span class="n">FFTW</span><span class="o">.</span><span class="n">PATIENT</span><span class="p">,</span><span class="n">timelimit</span><span class="o">=</span><span class="nb">Inf</span><span class="p">);</span>
+<span class="nd">@time</span><span class="w"> </span><span class="n">s</span><span class="o">=</span><span class="n">pr</span><span class="o">*</span><span class="n">r</span>
+</code></pre></div>
+<p>...to get much closer to Matlab's fft speed (measured with tic toc). However, it remains almost always slower than Matlab (that has very few variations in successive computation times, as compared to Julia).<br>
+Do I still miss some optimization (that Matlab apparently does under the hood)?<br>
+Thank you!</p>
+
+
+
+<a name="360114206"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20reach%20Matlab%20speed%20for%20FFT%3F/near/360114206" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Alec <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20reach.20Matlab.20speed.20for.20FFT.3F.html#360114206">(May 21 2023 at 19:50)</a>:</h4>
+<p>One relatively uninformed idea: Matlab may ship with Intel binaries for some math libraries and high Julia does not because open source. See <a href="https://github.com/search?q=MKL.jl&amp;type=Repositories">MKL.jl</a> for faster intel performance.</p>
+
+
+
+<a name="360126657"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20reach%20Matlab%20speed%20for%20FFT%3F/near/360126657" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Alexandre Guillet <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20reach.20Matlab.20speed.20for.20FFT.3F.html#360126657">(May 21 2023 at 22:09)</a>:</h4>
+<p>I use an AMD CPU if that matters.</p>
+
+
+
+<a name="360128163"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20reach%20Matlab%20speed%20for%20FFT%3F/near/360128163" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Abbott <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20reach.20Matlab.20speed.20for.20FFT.3F.html#360128163">(May 21 2023 at 22:28)</a>:</h4>
+<p>You might be looking for the big note here: <a href="https://juliamath.github.io/AbstractFFTs.jl/stable/api/#AbstractFFTs.fft">https://juliamath.github.io/AbstractFFTs.jl/stable/api/#AbstractFFTs.fft</a> </p>
+<blockquote>
+<p>This performs a multidimensional FFT by default. FFT libraries in other languages such as Python and Octave perform a one-dimensional FFT along the first non-singleton dimension of the array. This is worth noting while performing comparisons.</p>
+</blockquote>
+<p>Malab says:  </p>
+<blockquote>
+<p>If X is a matrix, then fft(X) treats the columns of X as vectors and returns the Fourier transform of each column.</p>
+</blockquote>
+
+
+
+<a name="360194657"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20reach%20Matlab%20speed%20for%20FFT%3F/near/360194657" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Alexandre Guillet <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20reach.20Matlab.20speed.20for.20FFT.3F.html#360194657">(May 22 2023 at 08:41)</a>:</h4>
+<p>Indeed, that's important to specify that I am using the 2-dimensional fft in Matlab:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">r</span><span class="o">=</span><span class="n">randn</span><span class="p">(</span><span class="mi">2</span><span class="o">^</span><span class="mi">10</span><span class="p">);</span>
+<span class="n">tic</span><span class="p">;</span><span class="w"> </span><span class="n">s</span><span class="o">=</span><span class="n">fft2</span><span class="p">(</span><span class="n">r</span><span class="p">);</span><span class="w"> </span><span class="n">toc</span><span class="p">;</span>
+</code></pre></div>
+<p>When drawing the histogram of timings for the regular (complex) 2D FFT, I get this significant difference, even though I use plan_fft:<br>
+<a href="/user_uploads/7178/5DETErqPzx2YnzsNsQa5BC5_/FFT_Julia_Matlab_speed.png">FFT_Julia_Matlab_speed.png</a></p>
+<div class="message_inline_image"><a href="/user_uploads/7178/5DETErqPzx2YnzsNsQa5BC5_/FFT_Julia_Matlab_speed.png" title="FFT_Julia_Matlab_speed.png"><img src="/user_uploads/7178/5DETErqPzx2YnzsNsQa5BC5_/FFT_Julia_Matlab_speed.png"></a></div><p>However, when I use Julia's rfft (real version) against Matlab's regular fft2 (complex), it looks more reassuring that yesterday, for some reason (less memory allocation to Matlab process?)<br>
+<a href="/user_uploads/7178/qUs4giFHM5U_QvSyJDE7wXH4/RFFT_Julia_Matlab_speed.png">RFFT_Julia_Matlab_speed.png</a></p>
+<div class="message_inline_image"><a href="/user_uploads/7178/qUs4giFHM5U_QvSyJDE7wXH4/RFFT_Julia_Matlab_speed.png" title="RFFT_Julia_Matlab_speed.png"><img src="/user_uploads/7178/qUs4giFHM5U_QvSyJDE7wXH4/RFFT_Julia_Matlab_speed.png"></a></div>
+
+
+
+<a name="360261199"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20reach%20Matlab%20speed%20for%20FFT%3F/near/360261199" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Abbott <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20reach.20Matlab.20speed.20for.20FFT.3F.html#360261199">(May 22 2023 at 12:59)</a>:</h4>
+<p>But <code>r=randn(2^10)</code> is a vector, while above it was a matrix? I'm confused, but I suggest you make very sure (on small arrays) that you are computing the same thing.</p>
+
+
+
+<a name="360278344"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20reach%20Matlab%20speed%20for%20FFT%3F/near/360278344" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sebastian Pfitzner <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20reach.20Matlab.20speed.20for.20FFT.3F.html#360278344">(May 22 2023 at 13:54)</a>:</h4>
+<p>no, <code>randn(N)</code> returns a NxN matrix in Matlab</p>
+
+
+
+<a name="360656041"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20reach%20Matlab%20speed%20for%20FFT%3F/near/360656041" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Martin D. Maas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20reach.20Matlab.20speed.20for.20FFT.3F.html#360656041">(May 23 2023 at 23:25)</a>:</h4>
+<p>Oh, beware that the Matlab's 2d FFT and Julia's 2d FFT might not be the same thing</p>
+
+
+
+<a name="360656173"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20reach%20Matlab%20speed%20for%20FFT%3F/near/360656173" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Martin D. Maas <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20reach.20Matlab.20speed.20for.20FFT.3F.html#360656173">(May 23 2023 at 23:26)</a>:</h4>
+<p>One could be a true 2d transform, and the other just an array of 1d transforms</p>
+
+
+
+<a name="360656916"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/How%20to%20reach%20Matlab%20speed%20for%20FFT%3F/near/360656916" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Alexandre Guillet <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/How.20to.20reach.20Matlab.20speed.20for.20FFT.3F.html#360656916">(May 23 2023 at 23:34)</a>:</h4>
+<p>OK, I can give some more insights.<br>
+Actually, what I have measured and plotted seems to depend quite a lot on the computation history, certainly through memory and CPU states. After many joint attempts, Julia's standard (complex) 2D fft without and with plan_fft keep up quite well with Matlab. I don't know whether Matlab uses a garbage collector, but after many runs, the timing distributions for both Julia and Matlab are quite close and bimodal (supposedly runs without garbage collection and runs with it...).</p>
+<p>Here are the differences: Julia's fft has a delay (overhead) of 1ms as compared to Julia's plan_fft (about 10%), that achieves the same absolute minimal timing as Matlab (6ms). However, Julia's plan_fft (complex 2D) is 17% slower in average than Matlab's (complex  2D) fft. It could mean that garbage collection is quicker in Matlab.<br>
+Also, for this same computation, Julia uses 66% of the total CPU resources while Matlab takes only 41% (both using all 16 threads). Here again, Matlab's old age is a synonym of efficiency.</p>
+<p>Satisfyingly, Julia's plan_rfft (for real 2D input) is 4 to 5 times faster (min 1.4ms, mean 1.8ms) than Matlab's always complex fft ;-)  (At least today... A fresh run of Julia seems slower while a fresh run in Matlab seems faster.)</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

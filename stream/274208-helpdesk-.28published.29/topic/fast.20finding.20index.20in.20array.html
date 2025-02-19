@@ -1,0 +1,109 @@
+<html>
+<head><meta charset="utf-8"><title>fast finding index in array · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/fast.20finding.20index.20in.20array.html">fast finding index in array</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="275703425"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/fast%20finding%20index%20in%20array/near/275703425" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/fast.20finding.20index.20in.20array.html#275703425">(Mar 17 2022 at 18:09)</a>:</h4>
+<p>I am in search of the appropriate data structure to fast retrieve the index of an object in an array.<br>
+I am currently using an one dimensional array to store some objects and the order matters.<br>
+Up until now I was just searching through a array objects, i.e. with complexity O(n), to find an object's index.</p>
+<p>Since I do that often I would like to improve it to sublinear or even constant time complexity.<br>
+For sublinear I think I need to sort the array, which cannot happen because, as mentioned, the order matters.<br>
+For a constant time I can implement a hash table where each object of the array is mapped to its index.</p>
+<p>I think the  the <code>OrderedDict</code> from the <a href="https://github.com/search?q=OrderedCollections.jl&amp;type=Repositories">OrderedCollections.jl</a> package could be used.<br>
+But when I do:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">d</span> <span class="o">=</span> <span class="kt">OrderedDict</span><span class="p">{</span><span class="kt">Char</span><span class="p">,</span><span class="kt">Int</span><span class="p">}()</span>
+<span class="k">for</span> <span class="n">c</span> <span class="k">in</span> <span class="sc">'a'</span><span class="o">:</span><span class="sc">'e'</span>
+    <span class="n">d</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">c</span><span class="o">-</span><span class="sc">'a'</span><span class="o">+</span><span class="mi">1</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>then I cannot get the n-th index. I can only iterate through the dict.<br>
+e.g.</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span> <span class="n">d</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="gr">ERROR: KeyError: key 1 not found</span>
+<span class="gr">Stacktrace:</span>
+<span class="gr"> [1] getindex(h::OrderedDict{Char, Int64}, key::Int64)</span>
+<span class="gr">   @ OrderedCollections ~/.julia/packages/OrderedCollections/PRayh/src/ordered_dict.jl:380</span>
+<span class="gr"> [2] top-level scope</span>
+<span class="gr">   @ REPL[6]:1</span>
+</code></pre></div>
+<p>Ideally with <code>d[1]</code> I would like to get the first object .i.e. 'a'.<br>
+and with d['a'] I would like to get the uint index .i.e. 1.</p>
+<p>Do I miss an interface for <code>OrderedDict</code> or do you hve any other data structure suggestions ?</p>
+
+
+
+<a name="275703871"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/fast%20finding%20index%20in%20array/near/275703871" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/fast.20finding.20index.20in.20array.html#275703871">(Mar 17 2022 at 18:12)</a>:</h4>
+<p>The best data structure would probably be a hash table with the implementation of <code>Dictionaries.jl</code> - they contain the ordered vector of values as part of the structure and is also often more efficient than the <code>Dict</code> of Base</p>
+
+
+
+<a name="275703911"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/fast%20finding%20index%20in%20array/near/275703911" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/fast.20finding.20index.20in.20array.html#275703911">(Mar 17 2022 at 18:13)</a>:</h4>
+<p>Another option could be just making your own bootleg data structure with a vector and a dict inside</p>
+
+
+
+<a name="275704710"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/fast%20finding%20index%20in%20array/near/275704710" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/fast.20finding.20index.20in.20array.html#275704710">(Mar 17 2022 at 18:19)</a>:</h4>
+<p>Does anybody have any idea how expensive is actually  hashing? I mean okey, it is constant cost but if I have a relative small array e.g. 1-100 elements it might be  on average  faster just to check all elements.</p>
+
+
+
+<a name="275704809"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/fast%20finding%20index%20in%20array/near/275704809" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Filippos Christou <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/fast.20finding.20index.20in.20array.html#275704809">(Mar 17 2022 at 18:20)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="272650">Jakob Nybo Nissen</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/fast.20finding.20index.20in.20array/near/275703871">said</a>:</p>
+<blockquote>
+<p>The best data structure would probably be a hash table with the implementation of <code>Dictionaries.jl</code> - they contain the ordered vector of values as part of the structure and is also often more efficient than the <code>Dict</code> of Base</p>
+</blockquote>
+<p>I 've heard of <a href="https://github.com/search?q=DIctionaries.jl&amp;type=Repositories">DIctionaries.jl</a> before and I intended to give it a closer look. I guess the time has come.</p>
+
+
+
+<a name="275704881"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/fast%20finding%20index%20in%20array/near/275704881" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/fast.20finding.20index.20in.20array.html#275704881">(Mar 17 2022 at 18:20)</a>:</h4>
+<p>It also depends on how expensive it is to compare with equality. For things like integers, I seem to recall the crossover point is somewhere around 30-60 elements (but don't rely on that, I can't quite remember)</p>
+
+
+
+<a name="275705193"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/fast%20finding%20index%20in%20array/near/275705193" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/fast.20finding.20index.20in.20array.html#275705193">(Mar 17 2022 at 18:22)</a>:</h4>
+<p>In fact, I seem to recall that just a few days ago, there was a proposal to make Base's <code>Dict</code> simply be an array if there were fewer than N elements in it.</p>
+
+
+
+<a name="275715461"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/fast%20finding%20index%20in%20array/near/275715461" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/fast.20finding.20index.20in.20array.html#275715461">(Mar 17 2022 at 19:44)</a>:</h4>
+<p>(deleted)</p>
+
+
+
+<a name="275885773"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/fast%20finding%20index%20in%20array/near/275885773" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sundar R <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/fast.20finding.20index.20in.20array.html#275885773">(Mar 19 2022 at 03:10)</a>:</h4>
+<p><a href="https://github.com/scheinerman/Bijections.jl">Bijections.jl</a> works pretty  similar to what you want, but it doesn't seem to be very actively used/maintained, so I'm not sure how it does in terms of performance and reliability. </p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span> <span class="n">b</span> <span class="o">=</span> <span class="kt">Bijection</span><span class="p">{</span><span class="kt">Char</span><span class="p">,</span> <span class="kt">Int</span><span class="p">}()</span>
+<span class="go">Bijection{Char,Int64} (with 0 pairs)</span>
+
+<span class="gp">julia&gt;</span> <span class="k">for</span> <span class="n">c</span> <span class="k">in</span> <span class="sc">'a'</span><span class="o">:</span><span class="sc">'e'</span>
+           <span class="n">b</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">c</span><span class="o">-</span><span class="sc">'a'</span><span class="o">+</span><span class="mi">1</span>
+       <span class="k">end</span>
+
+<span class="gp">julia&gt;</span> <span class="n">b</span><span class="p">[</span><span class="sc">'a'</span><span class="p">]</span>
+<span class="go">1</span>
+
+<span class="gp">julia&gt;</span> <span class="n">b</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="go">'a': ASCII/Unicode U+0061 (category Ll: Letter, lowercase)</span>
+</code></pre></div>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

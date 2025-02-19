@@ -1,0 +1,441 @@
+<html>
+<head><meta charset="utf-8"><title>✔ StaticArrays.jl macro constructors · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html">✔ StaticArrays.jl macro constructors</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="287605730"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287605730" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287605730">(Jun 27 2022 at 16:48)</a>:</h4>
+<p>Can someone explain to a beginner what the macro constructors are doing at compile time? The generator function evaluated at compile time seems to be doing mostly type checking. I'm curious if it also evaluates the element-wise expressions at compile time, or what it is trying to solve: <a href="https://github.com/JuliaArrays/StaticArrays.jl/blob/master/src/SMatrix.jl">https://github.com/JuliaArrays/StaticArrays.jl/blob/master/src/SMatrix.jl</a></p>
+<p>(I am so not used to Julian macros yet coming from the land of Lisp where I can write a complicated macro in my sleep [and actually have before <span aria-label="smile" class="emoji emoji-1f642" role="img" title="smile">:smile:</span>])</p>
+
+
+
+<a name="287611697"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287611697" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287611697">(Jun 27 2022 at 17:34)</a>:</h4>
+<p><code>@macroexpand</code> is your best friend when it comes to understanding Julia macros.</p>
+
+
+
+<a name="287611800"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287611800" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287611800">(Jun 27 2022 at 17:35)</a>:</h4>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="nd">@macroexpand</span><span class="w"> </span><span class="nd">@SVector</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="w"></span>
+<span class="go">:(rand((SVector){3}))</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="nd">@macroexpand</span><span class="w"> </span><span class="nd">@SVector</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">]</span><span class="w"></span>
+<span class="go">:((SVector){3}(tuple(1, 2, 3)))</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="nd">@macroexpand</span><span class="w"> </span><span class="nd">@SMatrix</span><span class="w"> </span><span class="n">randn</span><span class="p">(</span><span class="kt">Float32</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"></span>
+<span class="go">:(randn((SMatrix){2, 3, Float32}))</span>
+</code></pre></div>
+
+
+
+<a name="287611907"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287611907" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287611907">(Jun 27 2022 at 17:36)</a>:</h4>
+<p>Yes I tried that, but I'm not sure what it is doing apart from the obvious syntactical abstraction.</p>
+
+
+
+<a name="287612127"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287612127" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287612127">(Jun 27 2022 at 17:38)</a>:</h4>
+<p>that's all a julia macro is though</p>
+
+
+
+<a name="287612133"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287612133" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287612133">(Jun 27 2022 at 17:38)</a>:</h4>
+<p>just an AST transform</p>
+
+
+
+<a name="287612147"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287612147" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287612147">(Jun 27 2022 at 17:38)</a>:</h4>
+<p>Oh in Lisp macros are for 2 things, that being 1 of them.</p>
+
+
+
+<a name="287612153"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287612153" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287612153">(Jun 27 2022 at 17:38)</a>:</h4>
+<p>what's the other?</p>
+
+
+
+<a name="287612211"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287612211" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287612211">(Jun 27 2022 at 17:39)</a>:</h4>
+<p>Evaluation control</p>
+
+
+
+<a name="287612298"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287612298" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287612298">(Jun 27 2022 at 17:40)</a>:</h4>
+<p>in what sense?</p>
+
+
+
+<a name="287612314"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287612314" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287612314">(Jun 27 2022 at 17:40)</a>:</h4>
+<p>sorry, not too familiar with common lisp :)</p>
+
+
+
+<a name="287612374"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287612374" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287612374">(Jun 27 2022 at 17:41)</a>:</h4>
+<p>Well suppose you had a function that took complex math expressions as arguments, but enough information is available to compute them at compile time. Or the opposite, deferring them until later.</p>
+
+
+
+<a name="287612520"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287612520" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287612520">(Jun 27 2022 at 17:42)</a>:</h4>
+<p>yeah, that doesn't really fit into julias compilation model</p>
+
+
+
+<a name="287612571"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287612571" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287612571">(Jun 27 2022 at 17:42)</a>:</h4>
+<p>restricting when and how <code>eval</code> works is a big part of what allows julia to be a compiled language in the first place</p>
+
+
+
+<a name="287612618"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287612618" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287612618">(Jun 27 2022 at 17:43)</a>:</h4>
+<p>unlike LISP, in julia there's a clear difference between the expression object and the runtime objects described by that expression</p>
+
+
+
+<a name="287612670"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287612670" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287612670">(Jun 27 2022 at 17:43)</a>:</h4>
+<p>julias macros run just after parsing, where no values are assigned to variables yet (except for literals of course)</p>
+
+
+
+<a name="287612677"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287612677" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287612677">(Jun 27 2022 at 17:43)</a>:</h4>
+<p>Ah ok. In Lisp each phase of the compiler, the Read (parser), Eval (compiler), Print[er] are recursive in that they can call any other phase.</p>
+
+
+
+<a name="287612744"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287612744" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287612744">(Jun 27 2022 at 17:44)</a>:</h4>
+<p>yes, the famous homoiconicity part of LISP allows that</p>
+
+
+
+<a name="287612767"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287612767" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287612767">(Jun 27 2022 at 17:44)</a>:</h4>
+<p>No, that has nothing to do with homoiconicity</p>
+
+
+
+<a name="287612787"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287612787" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287612787">(Jun 27 2022 at 17:44)</a>:</h4>
+<p>That is called a meta-circular evaluator.</p>
+
+
+
+<a name="287612864"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287612864" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287612864">(Jun 27 2022 at 17:45)</a>:</h4>
+<p>Homoiconicity just means that the internal AST representation is identical to the suface syntax of the language.</p>
+
+
+
+<a name="287613005"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287613005" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287613005">(Jun 27 2022 at 17:46)</a>:</h4>
+<p>hmm, yes, but I was trying to span a bridge from that property to LISP macros deferring the interpretation of the expression until some later date</p>
+
+
+
+<a name="287613040"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287613040" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287613040">(Jun 27 2022 at 17:46)</a>:</h4>
+<p>I suppose you could have the laziness without homoiconicity, but it wouldn't be as nice anymore <span aria-label="thinking" class="emoji emoji-1f914" role="img" title="thinking">:thinking:</span></p>
+
+
+
+<a name="287613064"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287613064" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287613064">(Jun 27 2022 at 17:46)</a>:</h4>
+<p>The deferral is just a special case of the 1st case (syntactic abstraction). The eager evaluation is the second case</p>
+
+
+
+<a name="287613077"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287613077" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287613077">(Jun 27 2022 at 17:47)</a>:</h4>
+<p>right</p>
+
+
+
+<a name="287613091"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287613091" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287613091">(Jun 27 2022 at 17:47)</a>:</h4>
+<p>After all, to defer, you just have to expand into a closure/thunk</p>
+
+
+
+<a name="287613093"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287613093" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287613093">(Jun 27 2022 at 17:47)</a>:</h4>
+<p>there's no eager evaluation in julia, by design :)</p>
+
+
+
+<a name="287613133"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287613133" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287613133">(Jun 27 2022 at 17:47)</a>:</h4>
+<p>you can sort of mimic it, but you can't evaluate code in the context of e.g. a local function</p>
+
+
+
+<a name="287613140"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287613140" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287613140">(Jun 27 2022 at 17:47)</a>:</h4>
+<p>I see</p>
+
+
+
+<a name="287613147"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287613147" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287613147">(Jun 27 2022 at 17:47)</a>:</h4>
+<p><code>eval</code> always happens at global scope</p>
+
+
+
+<a name="287613232"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287613232" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287613232">(Jun 27 2022 at 17:48)</a>:</h4>
+<p>Hmm, in my startup.jl I am using @eval inside a function.</p>
+
+
+
+<a name="287613385"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287613385" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287613385">(Jun 27 2022 at 17:49)</a>:</h4>
+<p>oh you can use it in a function, but the code will be evaluated at the top level, not in the scope of the function</p>
+
+
+
+<a name="287613418"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287613418" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287613418">(Jun 27 2022 at 17:49)</a>:</h4>
+<p>you e.g. can't <code>eval</code> a new variable into a function, for example</p>
+
+
+
+<a name="287613536"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287613536" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287613536">(Jun 27 2022 at 17:50)</a>:</h4>
+<p>Interesting. I guess that expains why there are no macrolet's or symbol macros, or compiler macros, only regular macros.</p>
+
+
+
+<a name="287613634"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287613634" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287613634">(Jun 27 2022 at 17:51)</a>:</h4>
+<p>not sure what those are, but yeah, that's in part why macros are just AST transforms</p>
+
+
+
+<a name="287613661"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287613661" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287613661">(Jun 27 2022 at 17:51)</a>:</h4>
+<p>I can really recommend Jeff's Phd thesis, explaining the whole world age mechanism that allows for this</p>
+
+
+
+<a name="287613734"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287613734" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287613734">(Jun 27 2022 at 17:52)</a>:</h4>
+<p><a href="https://github.com/JeffBezanson/phdthesis">https://github.com/JeffBezanson/phdthesis</a></p>
+
+
+
+<a name="287613865"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287613865" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287613865">(Jun 27 2022 at 17:53)</a>:</h4>
+<p>macrolet is the equivalent of a lexically scoped (local macro), like let, but for binding macros instead of variables.<br>
+symbol macros are for expanding plain old variables instead of expressions into compound forms.<br>
+compiler macros are attached to functions to have them expand or not expand into more efficient code based on the lexical environment they are surrounded in</p>
+
+
+
+<a name="287613891"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287613891" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287613891">(Jun 27 2022 at 17:53)</a>:</h4>
+<p>anyway, I am getting off-topic again <span aria-label="sweat smile" class="emoji emoji-1f605" role="img" title="sweat smile">:sweat_smile:</span></p>
+
+
+
+<a name="287614297"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287614297" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287614297">(Jun 27 2022 at 17:56)</a>:</h4>
+<p>not sure why you'd need to bind macros differently <span aria-label="thinking" class="emoji emoji-1f914" role="img" title="thinking">:thinking:</span> with symbol macros, are you referring to expanding the object/expression a variable is/was assigned from (represents?) into its original form?</p>
+
+
+
+<a name="287614311"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287614311" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287614311">(Jun 27 2022 at 17:57)</a>:</h4>
+<p>haha, it's fine</p>
+
+
+
+<a name="287614316"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287614316" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287614316">(Jun 27 2022 at 17:57)</a>:</h4>
+<p>Oh and I forgot reader macros, which are expanded early on by the parser. <code>(</code> for example is a reader macro.</p>
+
+
+
+<a name="287614555"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287614555" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287614555">(Jun 27 2022 at 17:58)</a>:</h4>
+<p>Forget what I said about variables. I meant symbols. you could have <code>:foo</code>, whenever encounterd in source code to expand into <code>call_something(x, y, z)</code>. There are both global and lexical variants of these.</p>
+
+
+
+<a name="287614647"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287614647" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287614647">(Jun 27 2022 at 17:59)</a>:</h4>
+<p>and variable bindings would shadow them if they are introduced in an inner scope, or vice versa if using local symbol macros.</p>
+
+
+
+<a name="287614767"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287614767" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287614767">(Jun 27 2022 at 18:00)</a>:</h4>
+<p>in julia, that would just be a <code>@foo</code> macro that doesn't take any arguments, returning the expression <code>:(call_something(x,y,z))</code></p>
+
+
+
+<a name="287614793"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287614793" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287614793">(Jun 27 2022 at 18:00)</a>:</h4>
+<p>Lisp macros do pretty much everything. In Julia though, we rely much less on them as the interface abstractions  (I love iterators) are just great.</p>
+
+
+
+<a name="287614886"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287614886" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287614886">(Jun 27 2022 at 18:01)</a>:</h4>
+<p>though they wouldn't be shadowed, since <code>@foo</code> is always parsed as a macro call and can't be an identifier</p>
+
+
+
+<a name="287614923"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287614923" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287614923">(Jun 27 2022 at 18:01)</a>:</h4>
+<p>It's a bit different than a nullary regular macro. They don't map the same. But I will let you breathe a bit <span aria-label="smile" class="emoji emoji-1f642" role="img" title="smile">:smile:</span></p>
+
+
+
+<a name="287614966"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287614966" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287614966">(Jun 27 2022 at 18:01)</a>:</h4>
+<p>if you like iterators, I think you may enjoy the most underused interface Base has to offer - the <code>Sampler</code> API in <code>Random</code></p>
+
+
+
+<a name="287615036"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287615036" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287615036">(Jun 27 2022 at 18:02)</a>:</h4>
+<p>the docs are a little dense, but once you figure it out - they're very nice</p>
+
+
+
+<a name="287615040"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287615040" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287615040">(Jun 27 2022 at 18:02)</a>:</h4>
+<p>I looked at that today. Pretty cool stuff.</p>
+
+
+
+<a name="287615543"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287615543" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287615543">(Jun 27 2022 at 18:06)</a>:</h4>
+<p>Lisp is like Haskell in that it is a community of a bunch of people working independently trying to bend the language to do interesting things due to how flexibile it is. As a result, nobody works together, and we have a bunch of single developers just writing papers and cool language extensions. They don't work together because well, macros being so flexible means that it is often much easier to re-implement an existing library than to take the time to try to understand the original author's convoluted macro code. After all, code is just a projection of one's own thought processes, and Lisp lets you model code the way you think.</p>
+
+
+
+<a name="287615622"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287615622" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287615622">(Jun 27 2022 at 18:07)</a>:</h4>
+<p>haha yeah I get that</p>
+
+
+
+<a name="287615665"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287615665" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287615665">(Jun 27 2022 at 18:07)</a>:</h4>
+<p>I've spent quite a lot of time implementing a julia property based testing framework based on a single haskell blog post about Hedgehog</p>
+
+
+
+<a name="287615677"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287615677" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287615677">(Jun 27 2022 at 18:07)</a>:</h4>
+<p>It's both a blessing and a curse. I am tired of it to be honest. I've been using it exclusively for about 20 years.</p>
+
+
+
+<a name="287615753"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287615753" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287615753">(Jun 27 2022 at 18:08)</a>:</h4>
+<p>Yeah, I saw your property based testing framework.</p>
+
+
+
+<a name="287615800"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287615800" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287615800">(Jun 27 2022 at 18:08)</a>:</h4>
+<p>docs are coming along, but I think there may be some breaking changes sometime.. I'm not quite happy with the experience yet</p>
+
+
+
+<a name="287615895"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287615895" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287615895">(Jun 27 2022 at 18:09)</a>:</h4>
+<p>With Lisp I feel like I am working backwards, always having to implement my own stuff, because of the above. The plus side is, that the language standard is so well designed that it hasn't ever needed to change. Code from the 60's still runs on modern implementations for example.</p>
+
+
+
+<a name="287615971"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287615971" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287615971">(Jun 27 2022 at 18:10)</a>:</h4>
+<p>But I had enough of it. I want to feel productive again, even if it means throwing away my life's work.</p>
+
+
+
+<a name="287616269"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287616269" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287616269">(Jun 27 2022 at 18:12)</a>:</h4>
+<p>Ah well good luck on it. By the way, what else do you work on? I'm curious since you are the only other Julia developer I know that only has a general CS background.</p>
+
+
+
+<a name="287616340"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287616340" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287616340">(Jun 27 2022 at 18:13)</a>:</h4>
+<p>I'm trying to finish my bachelor's thesis <span aria-label="joy" class="emoji emoji-1f602" role="img" title="joy">:joy:</span></p>
+
+
+
+<a name="287616359"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287616359" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287616359">(Jun 27 2022 at 18:13)</a>:</h4>
+<p>but I procrastinate too much with other cool julia stuff</p>
+
+
+
+<a name="287616393"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287616393" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287616393">(Jun 27 2022 at 18:13)</a>:</h4>
+<p>Aha.</p>
+
+
+
+<a name="287616679"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287616679" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287616679">(Jun 27 2022 at 18:15)</a>:</h4>
+<p>It looks like I've been dabbling with Julia on and off for 7 years already. I first started playing with it when <span class="user-mention" data-user-id="359511">@Tamas K. Papp</span> moved from CL to Julia, and I wanted to ever since, but I was in the midst of a years-long project until recently.</p>
+
+
+
+<a name="287617095"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287617095" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287617095">(Jun 27 2022 at 18:19)</a>:</h4>
+<p><a href="https://tamaspapp.eu/post/common-lisp-to-julia/">https://tamaspapp.eu/post/common-lisp-to-julia/</a></p>
+
+
+
+<a name="287617283"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287617283" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287617283">(Jun 27 2022 at 18:20)</a>:</h4>
+<p>I don't agree with every point he makes, especially 7 years later, but it does bring up a lot of good points. I am no data scientist though.</p>
+
+
+
+<a name="287617543"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287617543" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287617543">(Jun 27 2022 at 18:22)</a>:</h4>
+<blockquote>
+<p>The equivalent of reader macros are called non-standard string literals in Julia.</p>
+</blockquote>
+<p><del>Sadly the link to the Julia docs is dead, and the new Metaprogramming chapter doesn't have a section on them, so I don't know if they are user-extensible or not.</del></p>
+
+
+
+<a name="287617659"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287617659" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287617659">(Jun 27 2022 at 18:23)</a>:</h4>
+<p>Oh it does. I was looking in the wrong place.</p>
+
+
+
+<a name="287620507"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20StaticArrays.jl%20macro%20constructors/near/287620507" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20StaticArrays.2Ejl.20macro.20constructors.html#287620507">(Jun 27 2022 at 18:45)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="374994">Michael Fiano</span> has marked this topic as resolved.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

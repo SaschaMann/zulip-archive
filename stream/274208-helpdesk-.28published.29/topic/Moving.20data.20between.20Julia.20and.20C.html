@@ -1,0 +1,75 @@
+<html>
+<head><meta charset="utf-8"><title>Moving data between Julia and C · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Moving.20data.20between.20Julia.20and.20C.html">Moving data between Julia and C</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="258837397"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Moving%20data%20between%20Julia%20and%20C/near/258837397" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jeffrey Vasel <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Moving.20data.20between.20Julia.20and.20C.html#258837397">(Oct 23 2021 at 18:52)</a>:</h4>
+<p>Hi Everyone.  This is my first time using this forum....</p>
+
+
+
+<a name="258837492"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Moving%20data%20between%20Julia%20and%20C/near/258837492" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jeffrey Vasel <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Moving.20data.20between.20Julia.20and.20C.html#258837492">(Oct 23 2021 at 18:54)</a>:</h4>
+<p>Here is my current situation:<br>
+When I ccall my C function from Julia, the C function has to do some initial work that takes a lot of time.  Then it processes the data Julia sent to it.<br>
+A very short time later, Julia has some new data.  Julia then ccall the C function again.  The C function has to do the same initial work again causing a delay before it can process the new data Julia sent to it.<br>
+Ideally, I would like to be able to send new data from Julia to the C program without having to restart the C program with another ccall.<br>
+So, I thought perhaps I can have C "callback" a Julia function and retrieve data from the Julia function back into the C program.<br>
+What are your thoughts?</p>
+
+
+
+<a name="258838116"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Moving%20data%20between%20Julia%20and%20C/near/258838116" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Moving.20data.20between.20Julia.20and.20C.html#258838116">(Oct 23 2021 at 19:11)</a>:</h4>
+<p>Hey Jeffrey, welcome. </p>
+<p>Have you considered just setting a flag in the C function that determines if you repeat the setup work? E.g. you could make it so that it caches the setup work somewhere, and then when Julia calls the C function, it either calls the version that does the setup work, or it calls the version that fetches the setup work from last time</p>
+
+
+
+<a name="258838120"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Moving%20data%20between%20Julia%20and%20C/near/258838120" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Moving.20data.20between.20Julia.20and.20C.html#258838120">(Oct 23 2021 at 19:11)</a>:</h4>
+<p>But I think doing mutual callbacks would probably work too</p>
+
+
+
+<a name="258838363"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Moving%20data%20between%20Julia%20and%20C/near/258838363" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jeffrey Vasel <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Moving.20data.20between.20Julia.20and.20C.html#258838363">(Oct 23 2021 at 19:18)</a>:</h4>
+<p>Hi Mason!  </p>
+<p>The mutual callback sounds interesting.  I have C sending Julia data via a callback but is it possible for Julia to send data to C via this same callback?</p>
+
+
+
+<a name="258853597"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Moving%20data%20between%20Julia%20and%20C/near/258853597" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mosè Giordano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Moving.20data.20between.20Julia.20and.20C.html#258853597">(Oct 24 2021 at 02:04)</a>:</h4>
+<p><a href="https://julialang.org/blog/2013/05/callback/">https://julialang.org/blog/2013/05/callback/</a></p>
+
+
+
+<a name="258870786"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Moving%20data%20between%20Julia%20and%20C/near/258870786" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gunnar Farnebäck <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Moving.20data.20between.20Julia.20and.20C.html#258870786">(Oct 24 2021 at 10:10)</a>:</h4>
+<p>I have an example of the classic mutual fibonacci recurrence in <a href="https://github.com/GunnarFarneback/DynamicallyLoadedEmbedding.jl/blob/2df94e871b4967f96fe41427fcecd529685f1fb0/c/main.c#L6-L19">https://github.com/GunnarFarneback/DynamicallyLoadedEmbedding.jl/blob/2df94e871b4967f96fe41427fcecd529685f1fb0/c/main.c#L6-L19</a> and <a href="https://github.com/GunnarFarneback/DynamicallyLoadedEmbedding.jl/blob/2df94e871b4967f96fe41427fcecd529685f1fb0/src/julia_cfunctions.jl#L3-L14">https://github.com/GunnarFarneback/DynamicallyLoadedEmbedding.jl/blob/2df94e871b4967f96fe41427fcecd529685f1fb0/src/julia_cfunctions.jl#L3-L14</a>.</p>
+
+
+
+<a name="258889580"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Moving%20data%20between%20Julia%20and%20C/near/258889580" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> j-fu <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Moving.20data.20between.20Julia.20and.20C.html#258889580">(Oct 24 2021 at 17:44)</a>:</h4>
+<p>Also see here for a refinement callback for triangulations:<br>
+<a href="https://github.com/JuliaGeometry/Triangulate.jl/blob/master/src/ctriangulateio.jl">https://github.com/JuliaGeometry/Triangulate.jl/blob/master/src/ctriangulateio.jl</a>   and  <a href="https://github.com/JuliaGeometry/Triangulate.jl/blob/master/deps/src/triwrap.c">https://github.com/JuliaGeometry/Triangulate.jl/blob/master/deps/src/triwrap.c</a></p>
+
+
+
+<a name="258900457"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Moving%20data%20between%20Julia%20and%20C/near/258900457" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jeffrey Vasel <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Moving.20data.20between.20Julia.20and.20C.html#258900457">(Oct 24 2021 at 21:56)</a>:</h4>
+<p>Wow!!! Lots of good material...I need a bit more time to delve into it...I will circle back with you all soon though...thx!</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

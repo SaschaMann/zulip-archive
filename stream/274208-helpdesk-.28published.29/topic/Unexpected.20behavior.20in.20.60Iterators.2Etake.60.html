@@ -1,0 +1,344 @@
+<html>
+<head><meta charset="utf-8"><title>Unexpected behavior in `Iterators.take` · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html">Unexpected behavior in `Iterators.take`</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="317436902"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317436902" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317436902">(Dec 22 2022 at 19:25)</a>:</h4>
+<p>I'm writing an infinite, random iterator. Something like this (simplified):</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="kt">RandIter</span><span class="w"></span>
+<span class="w">    </span><span class="n">x</span><span class="w"> </span><span class="o">::</span><span class="w"> </span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Int</span><span class="p">}</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+
+<span class="n">Base</span><span class="o">.</span><span class="n">length</span><span class="p">(</span><span class="n">ri</span><span class="w"> </span><span class="o">::</span><span class="w"> </span><span class="n">RandIter</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="w"></span>
+
+<span class="k">function</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">iterate</span><span class="p">(</span><span class="n">i</span><span class="o">::</span><span class="kt">RandIter</span><span class="p">,</span><span class="w"> </span><span class="n">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">state</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">5</span><span class="w"></span>
+<span class="w">        </span><span class="n">i</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rand</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="n">i</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rand</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="n">i</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rand</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="n">state</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">state</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">else</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nb">nothing</span><span class="w"></span>
+<span class="w">    </span><span class="k">end</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+<p>and then</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="n">ri</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">RandIter</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]);</span><span class="w"></span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">collect</span><span class="p">(</span><span class="n">Iterators</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="n">ri</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">))</span><span class="w"></span>
+<span class="go">4-element Vector{Any}:</span>
+<span class="go"> [1, 3, 2]</span>
+<span class="go"> [1, 3, 2]</span>
+<span class="go"> [1, 3, 2]</span>
+<span class="go"> [1, 3, 2]</span>
+</code></pre></div>
+<p>Here, <code>[1, 3, 2]</code> is the last random value assigned to <code>ri.x</code>.</p>
+<p>This is specific to <code>take</code>; for example, this works:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">ri</span><span class="w"> </span><span class="n">println</span><span class="p">(</span><span class="n">v</span><span class="p">);</span><span class="w"> </span><span class="k">end</span><span class="w"></span>
+<span class="go">[3, 3, 1]</span>
+<span class="go">[2, 3, 1]</span>
+<span class="go">[3, 3, 3]</span>
+<span class="go">[1, 2, 2]</span>
+<span class="go">[1, 1, 2]</span>
+</code></pre></div>
+<p>Ultimately, what I want to do is generate the random values without allocating; that's the idea behind reusing the memory allocated in <code>ri.x</code>. How can I do that and still have a working <code>take</code> iterator?</p>
+
+
+
+<a name="317446179"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317446179" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317446179">(Dec 22 2022 at 20:26)</a>:</h4>
+<p>you're returning the exact same array in every iteration</p>
+
+
+
+<a name="317446201"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317446201" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317446201">(Dec 22 2022 at 20:26)</a>:</h4>
+<p>if you want to create distinct arrays, you HAVE to copy</p>
+
+
+
+<a name="317446218"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317446218" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317446218">(Dec 22 2022 at 20:27)</a>:</h4>
+<p>Hmm, I'm starting to think that this will be impossible... for <code>take</code> to work, at some point a copy will have to be made. Unfortunately, this makes the iterator almost 10x slower</p>
+
+
+
+<a name="317446286"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317446286" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317446286">(Dec 22 2022 at 20:27)</a>:</h4>
+<p>you could always return a tuple instead, if the size is limited</p>
+
+
+
+<a name="317446304"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317446304" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317446304">(Dec 22 2022 at 20:27)</a>:</h4>
+<p>but yeah, at some point you will have to copy</p>
+
+
+
+<a name="317446395"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317446395" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317446395">(Dec 22 2022 at 20:28)</a>:</h4>
+<p>the only reason <code>println</code> works is because it prints the current state of the array, and doesn't keep a reference to it around for longer than one iteration</p>
+
+
+
+<a name="317446402"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317446402" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317446402">(Dec 22 2022 at 20:28)</a>:</h4>
+<p>Yep -- the problem with tuples is that later on I'd like to use the random values in more flexible ways.</p>
+
+
+
+<a name="317446566"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317446566" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317446566">(Dec 22 2022 at 20:29)</a>:</h4>
+<p>I guess what I was hoping would happen is that <code>collect(take(...))</code> would allocate an array of the required size and stick the iterator values in there, requiring only one allocation.</p>
+<p>If I need to copy the array, I end up doing one allocation per iteration, which is sad.</p>
+
+
+
+<a name="317446723"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317446723" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317446723">(Dec 22 2022 at 20:30)</a>:</h4>
+<p>well it <em>does</em> only allocate once, the outer array</p>
+
+
+
+<a name="317446768"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317446768" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317446768">(Dec 22 2022 at 20:30)</a>:</h4>
+<p>it's just that every entry returned is the exact same array (<code>===</code>), where you just changed its contents</p>
+
+
+
+<a name="317446840"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317446840" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317446840">(Dec 22 2022 at 20:31)</a>:</h4>
+<p>it's the same reason why</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">fill</span><span class="p">([],</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"></span>
+<span class="mi">2</span><span class="o">-</span><span class="n">element</span><span class="w"> </span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Any</span><span class="p">}}</span><span class="o">:</span><span class="w"></span>
+<span class="w"> </span><span class="p">[]</span><span class="w"></span>
+<span class="w"> </span><span class="p">[]</span><span class="w"></span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">ans</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="n">ans</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="w"></span>
+<span class="nb">true</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="317446893"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317446893" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317446893">(Dec 22 2022 at 20:31)</a>:</h4>
+<p>Yeah, but <code>collect</code> is not copying the values returned by my iterator.</p>
+
+
+
+<a name="317446909"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317446909" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317446909">(Dec 22 2022 at 20:32)</a>:</h4>
+<p>why should it?</p>
+
+
+
+<a name="317447010"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317447010" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Abbott <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317447010">(Dec 22 2022 at 20:32)</a>:</h4>
+<p>If you do something with the result, though, it might be fine that it gets re-used. E.g. <code>map(sum, iter)</code> ought to call sum before getting the next element, and thus have distinct values.</p>
+
+
+
+<a name="317447086"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317447086" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317447086">(Dec 22 2022 at 20:33)</a>:</h4>
+<p><span class="user-mention" data-user-id="272550">@Michael Abbott</span> Yeah, in some cases (like <code>for</code>) above it does work.</p>
+
+
+
+<a name="317447105"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317447105" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317447105">(Dec 22 2022 at 20:33)</a>:</h4>
+<p>if you want to copy, you need to copy explicitly - either by doing <code>Iterators.map(copy, RandIter([1,2,3]))</code> or by copying in your iterator</p>
+
+
+
+<a name="317447174"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317447174" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317447174">(Dec 22 2022 at 20:33)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="345789">mbaz</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60/near/317447086">said</a>:</p>
+<blockquote>
+<p><span class="user-mention silent" data-user-id="272550">Michael Abbott</span> Yeah, in some cases (like <code>for</code>) above it does work.</p>
+</blockquote>
+<p>again - the  <code>for</code> doesn't copy. The <code>println</code> just looks at the elements of the array before you change them again.</p>
+
+
+
+<a name="317447294"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317447294" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317447294">(Dec 22 2022 at 20:34)</a>:</h4>
+<p>I understand.</p>
+
+
+
+<a name="317447432"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317447432" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317447432">(Dec 22 2022 at 20:35)</a>:</h4>
+<p>I'm not complaining, by the way, I just was very confused by the behavior of <code>collect(take(itr))</code>. I assumed that, just like <code>println</code> uses the values before they change, <code>collect</code> would take the returned values and stick them in its own array.</p>
+
+
+
+<a name="317447565"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317447565" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317447565">(Dec 22 2022 at 20:36)</a>:</h4>
+<p>that is exactly what it's doing though! :D</p>
+
+
+
+<a name="317447577"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317447577" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317447577">(Dec 22 2022 at 20:36)</a>:</h4>
+<p>you just always return the same array</p>
+
+
+
+<a name="317447595"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317447595" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317447595">(Dec 22 2022 at 20:36)</a>:</h4>
+<p>so it always sticks the same exact array into the new location</p>
+
+
+
+<a name="317447800"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317447800" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317447800">(Dec 22 2022 at 20:38)</a>:</h4>
+<p>Maybe I don't know what you mean by "same array". I understand the array (in the sense of the array pointer) is the same. However, the values of the array are different in each iteration.</p>
+
+
+
+<a name="317447823"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317447823" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Abbott <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317447823">(Dec 22 2022 at 20:38)</a>:</h4>
+<p>Maybe this is like copy vs deepcopy. <code>collect</code> is making a new array to hold things, but those things themselves are just pointers to memory. If I do <code>A = [[1,2], [3,4]]; B = copy(A)</code>, doing <code>B[1] = [5,6]</code> mutates B but not A. But <code>B[2] .= 0</code> mutates not B but B[2], which is <code>=== A[2]</code>, the same memory.</p>
+
+
+
+<a name="317448093"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317448093" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317448093">(Dec 22 2022 at 20:40)</a>:</h4>
+<p>By "same array" I mean that they are <code>===</code> (called egal) - they are literally the same exact array object! They not only have the same contents, they occupy the same memory because they are the exact same object.</p>
+
+
+
+<a name="317448112"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317448112" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Abbott <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317448112">(Dec 22 2022 at 20:40)</a>:</h4>
+<p>I also had a mapslices example... internally it does exactly this re-use of one array for every slice. This is written into, passed to <code>f</code>, the result saved elsewhere, and repeat -- safe. But if you explicitly save the array elsewhere, it's always the same one:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">store</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[];</span><span class="w"> </span><span class="n">mapslices</span><span class="p">(</span><span class="n">rand</span><span class="p">(</span><span class="kt">Int8</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">);</span><span class="w"> </span><span class="n">dims</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">x</span><span class="w"></span>
+<span class="w">                       </span><span class="n">push!</span><span class="p">(</span><span class="n">store</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"></span>
+<span class="w">                       </span><span class="n">sum</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"></span>
+<span class="w">                   </span><span class="k">end</span><span class="w"></span>
+<span class="mi">1</span><span class="o">×</span><span class="mi">3</span><span class="w"> </span><span class="kt">Matrix</span><span class="p">{</span><span class="kt">Int64</span><span class="p">}</span><span class="o">:</span><span class="w"></span>
+<span class="w"> </span><span class="o">-</span><span class="mi">225</span><span class="w">  </span><span class="mi">90</span><span class="w">  </span><span class="o">-</span><span class="mi">78</span><span class="w"></span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">store</span><span class="w"></span>
+<span class="mi">3</span><span class="o">-</span><span class="n">element</span><span class="w"> </span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Any</span><span class="p">}</span><span class="o">:</span><span class="w"></span>
+<span class="w"> </span><span class="kt">Int8</span><span class="p">[</span><span class="o">-</span><span class="mi">64</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">14</span><span class="p">]</span><span class="w"></span>
+<span class="w"> </span><span class="kt">Int8</span><span class="p">[</span><span class="o">-</span><span class="mi">64</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">14</span><span class="p">]</span><span class="w"></span>
+<span class="w"> </span><span class="kt">Int8</span><span class="p">[</span><span class="o">-</span><span class="mi">64</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">14</span><span class="p">]</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="317448259"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317448259" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317448259">(Dec 22 2022 at 20:41)</a>:</h4>
+<p>Whether the <em>content</em> of the array differs in each iteration is irrelevant - your iterator always returns the same <em>object</em>, so that's what <code>collect</code> sticks in the collected array. It doesn't go around checking whether the contents have changed - that'd be quite a lot of overhead (and hard to do in a generic way).</p>
+
+
+
+<a name="317448280"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317448280" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317448280">(Dec 22 2022 at 20:41)</a>:</h4>
+<p>Let's say <code>A</code> is <code>collect</code>'s array and <code>ri.x</code> is what my iterator returns. I thought what would happen is <code>A[:, n] = ri.x[:]</code>, where <code>n</code> is the iteration index.</p>
+
+
+
+<a name="317448337"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317448337" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317448337">(Dec 22 2022 at 20:41)</a>:</h4>
+<p>an iteration is not indexable - your iterator only returns a single object</p>
+
+
+
+<a name="317448342"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317448342" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317448342">(Dec 22 2022 at 20:41)</a>:</h4>
+<p>not a collection of objects</p>
+
+
+
+<a name="317448485"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317448485" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317448485">(Dec 22 2022 at 20:42)</a>:</h4>
+<p>No, but <code>collect</code> knows, since it iterates over the <code>Take</code> iterator.</p>
+
+
+
+<a name="317448517"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317448517" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Abbott <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317448517">(Dec 22 2022 at 20:43)</a>:</h4>
+<p>That's what mapslices will do, it makes a matrix A to write slices into -- they are moved to new memory. But the collected array is not a matrix like <code>A</code>, it's a vector containing <code>Vector</code>s, each of which has its own pointer (and in this case they all agree)</p>
+
+
+
+<a name="317448519"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317448519" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317448519">(Dec 22 2022 at 20:43)</a>:</h4>
+<p>that is also not indexable!</p>
+
+
+
+<a name="317448754"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317448754" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Abbott <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317448754">(Dec 22 2022 at 20:44)</a>:</h4>
+<p>Making one big output array and writing into it while iterating is also what stack will do:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">Compat</span><span class="w"></span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">stack</span><span class="p">(</span><span class="n">Iterators</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="n">ri</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">))</span><span class="w"></span>
+<span class="mi">3</span><span class="o">×</span><span class="mi">4</span><span class="w"> </span><span class="kt">Matrix</span><span class="p">{</span><span class="kt">Int64</span><span class="p">}</span><span class="o">:</span><span class="w"></span>
+<span class="w"> </span><span class="mi">2</span><span class="w">  </span><span class="mi">1</span><span class="w">  </span><span class="mi">2</span><span class="w">  </span><span class="mi">1</span><span class="w"></span>
+<span class="w"> </span><span class="mi">3</span><span class="w">  </span><span class="mi">1</span><span class="w">  </span><span class="mi">3</span><span class="w">  </span><span class="mi">2</span><span class="w"></span>
+<span class="w"> </span><span class="mi">1</span><span class="w">  </span><span class="mi">2</span><span class="w">  </span><span class="mi">3</span><span class="w">  </span><span class="mi">3</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="317448798"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317448798" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317448798">(Dec 22 2022 at 20:45)</a>:</h4>
+<p><code>collect</code> (roughly) does this, provided the array has some knowable size:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Array</span><span class="p">{</span><span class="kt">eltype</span><span class="p">(</span><span class="kt">itr</span><span class="p">)}(</span><span class="nb">undef</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="p">(</span><span class="n">itr</span><span class="p">))</span><span class="w"></span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">idx</span><span class="p">,</span><span class="w"> </span><span class="n">obj</span><span class="p">)</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">enumerate</span><span class="p">(</span><span class="n">itr</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">out</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">obj</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+<span class="n">out</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="317448855"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317448855" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317448855">(Dec 22 2022 at 20:45)</a>:</h4>
+<p>there is no <code>copy</code> involved and it has no knowledge of whether or not you return the same exact object in each iteration or not</p>
+
+
+
+<a name="317448960"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317448960" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317448960">(Dec 22 2022 at 20:46)</a>:</h4>
+<p>(there are some more cases with multidimensional iterators, but those share the non-copying semantics so I'll leave them out for simplicity)</p>
+
+
+
+<a name="317448981"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317448981" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Abbott <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317448981">(Dec 22 2022 at 20:46)</a>:</h4>
+<p>And this is very different to having <code>out[:, idx] .= obj</code> in the loop, which copies the values of <code>obj</code> immediately (into <code>out::Matrix</code> instead of <code>out::Vector{Vector{...}}</code>)</p>
+
+
+
+<a name="317449018"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317449018" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317449018">(Dec 22 2022 at 20:46)</a>:</h4>
+<p><span class="user-mention" data-user-id="306754">@Sukera</span> Agreed -- I see it now, but I didn't see it before.</p>
+<p><span class="user-mention" data-user-id="272550">@Michael Abbott</span> <code>stack</code> looks like what I need here.</p>
+
+
+
+<a name="317449541"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317449541" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317449541">(Dec 22 2022 at 20:50)</a>:</h4>
+<p><code>stack</code> is superfast as well... almost zero overhead. I can't wait for v1.9</p>
+
+
+
+<a name="317449629"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Unexpected%20behavior%20in%20%60Iterators.take%60/near/317449629" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mbaz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Unexpected.20behavior.20in.20.60Iterators.2Etake.60.html#317449629">(Dec 22 2022 at 20:51)</a>:</h4>
+<p><span class="user-mention" data-user-id="306754">@Sukera</span> <span class="user-mention" data-user-id="272550">@Michael Abbott</span>  Thanks for you help!</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

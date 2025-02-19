@@ -1,0 +1,37 @@
+<html>
+<head><meta charset="utf-8"><title>Performance senstitive `AbstractArray` methods to define · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Performance.20senstitive.20.60AbstractArray.60.20methods.20to.20define.html">Performance senstitive `AbstractArray` methods to define</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="417237381"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Performance%20senstitive%20%60AbstractArray%60%20methods%20to%20define/near/417237381" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Performance.20senstitive.20.60AbstractArray.60.20methods.20to.20define.html#417237381">(Jan 22 2024 at 14:12)</a>:</h4>
+<p>If I define <code>MyArray &lt;: DenseArray &lt;: AbstractArray</code>,  are there important indexing methods and stuff that I should be defining to make this thing perform well? Suppose it's basically just wrapping a normal dense array.</p>
+<p>Fundamentally, all one really needs to define is </p>
+<p>1) <code>size(::MyArray)</code><br>
+2) <code>getindex(A, ::Vararg{Int})</code><br>
+3) <code>setindex!(::MyArray, ::Any, ::Vararg{Int})</code></p>
+<p>but are there cases where e.g. for broadcasting or something like that, that I'm leaving a lot of performance on the table if I don't do something special?</p>
+
+
+
+<a name="417238355"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Performance%20senstitive%20%60AbstractArray%60%20methods%20to%20define/near/417238355" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Performance.20senstitive.20.60AbstractArray.60.20methods.20to.20define.html#417238355">(Jan 22 2024 at 14:17)</a>:</h4>
+<p>For instance, I noticed that <a href="https://juliahub.com/ui/Packages/General/UnsafeArrays">UnsafeArrays.jl</a> defines its own specialized methods for <code>copyto!</code>: <a href="https://github.com/JuliaArrays/UnsafeArrays.jl/blob/main/src/unsafe_array.jl#L114-L146">https://github.com/JuliaArrays/UnsafeArrays.jl/blob/main/src/unsafe_array.jl#L114-L146</a></p>
+<p>It's not clear to me what the advantage of doing that was, e.g. I could imagine that maybe there's somethign about broadcast that would make it better to have you own <code>copyto!</code> implementation, but I can also imagine that this code is just unnecessary dead weight</p>
+
+
+
+<a name="417633753"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Performance%20senstitive%20%60AbstractArray%60%20methods%20to%20define/near/417633753" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Eric Hanson <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Performance.20senstitive.20.60AbstractArray.60.20methods.20to.20define.html#417633753">(Jan 24 2024 at 12:21)</a>:</h4>
+<p>I found these to be necessary for performance when wrapping StrideArrays coming out of Bumper: <a href="https://github.com/ericphanson/AllocArrays.jl/blob/main/src/AllocArray.jl#L74-L98">https://github.com/ericphanson/AllocArrays.jl/blob/main/src/AllocArray.jl#L74-L98</a></p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

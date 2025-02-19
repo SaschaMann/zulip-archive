@@ -1,0 +1,147 @@
+<html>
+<head><meta charset="utf-8"><title>Labelled/named arrays · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Labelled.2Fnamed.20arrays.html">Labelled/named arrays</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="420472106"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Labelled/named%20arrays/near/420472106" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Labelled.2Fnamed.20arrays.html#420472106">(Feb 08 2024 at 14:41)</a>:</h4>
+<p>What's the current state of labelled arrays? I recall there were many approaches in early Julia, has something turned out to be the favourite?</p>
+<p>To give some background, I'm considering transitioning my <code>SynthControl.jl</code> package over to use some sort of named arrays. Essentially the package solves a bunch of problems of the following form:</p>
+<p>We have a set of outcomes <code>Y::Matrix{Float64}</code> which is size <code>N</code> by <code>T</code>, where <code>N</code> is the number of observed units and <code>T</code> the time periods during which they are observed. Now one (or more, but let's go with one for simplicity) of these units is "treated" at some point <code>1 &lt; T0 &lt; T</code> and we want to find out how the outcome was affected by this treatment. The idea is to find a weighted combination of the other <code>N-1</code> units that closely approximates the evolution of the outcome of the treated unit before <code>T0</code>. So essentially we do</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">minimize</span><span class="p">(</span><span class="n">w</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">sum</span><span class="p">(</span><span class="n">abs2</span><span class="p">,</span><span class="w"> </span><span class="n">Y</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="n">T0</span><span class="p">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">Y</span><span class="p">[</span><span class="n">Not</span><span class="p">(</span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="n">T0</span><span class="p">]</span><span class="o">*</span><span class="n">w</span><span class="p">))</span>
+</code></pre></div>
+<p>Now every row in <code>Y</code> represents an observed unit, e.g. a US state, and every column a time, e.g. 1981. Likewise the <code>w</code> vector is a weight for every non-treated unit, so it would be nice to have, instead of</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">s</span><span class="o">.</span><span class="n">treatment_panel</span><span class="o">.</span><span class="n">Y</span>
+<span class="mi">39</span><span class="o">×</span><span class="mi">31</span><span class="w"> </span><span class="kt">Matrix</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}</span><span class="o">:</span>
+<span class="w">  </span><span class="mf">89.8</span><span class="w">   </span><span class="mf">95.4</span><span class="w">  </span><span class="mf">101.1</span><span class="w">  </span><span class="mf">102.9</span><span class="w">  </span><span class="mf">108.2</span><span class="w">  </span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">s</span><span class="o">.</span><span class="n">w</span>
+<span class="mi">38</span><span class="o">-</span><span class="n">element</span><span class="w"> </span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}</span><span class="o">:</span>
+<span class="w"> </span><span class="mf">0.0</span>
+<span class="w"> </span><span class="mf">0.0</span>
+<span class="w"> </span><span class="mf">0.014810770450243859</span>
+<span class="w"> </span><span class="mf">0.10908962424043207</span>
+<span class="w"> </span><span class="mf">0.0</span>
+<span class="w"> </span><span class="mf">0.0</span>
+<span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</code></pre></div>
+<p>To have something like</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">s</span><span class="o">.</span><span class="n">treatment_panel</span><span class="o">.</span><span class="n">Y</span>
+<span class="mi">39</span><span class="o">×</span><span class="mi">31</span><span class="w"> </span><span class="kt">SomeMatrix</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}</span><span class="o">:</span>
+<span class="w">                  </span><span class="o">/</span><span class="w">  </span><span class="mi">1980</span><span class="w">  </span><span class="mi">1981</span><span class="w">  </span><span class="mi">1982</span><span class="w">  </span><span class="mi">1983</span><span class="w">  </span><span class="mi">1984</span>
+<span class="n">Alabama</span><span class="w"> </span><span class="o">|</span><span class="w">  </span><span class="mf">89.8</span><span class="w">   </span><span class="mf">95.4</span><span class="w">  </span><span class="mf">101.1</span><span class="w">  </span><span class="mf">102.9</span><span class="w">  </span><span class="mf">108.2</span><span class="w">  </span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">Alaska</span><span class="w">      </span><span class="o">|</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">s</span><span class="o">.</span><span class="n">w</span>
+<span class="mi">38</span><span class="o">-</span><span class="n">element</span><span class="w"> </span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}</span><span class="o">:</span>
+<span class="n">Alabama</span><span class="w"> </span><span class="o">|</span><span class="w">  </span><span class="mf">0.0</span>
+<span class="n">Alaska</span><span class="w"> </span><span class="o">|</span><span class="w">  </span><span class="mf">0.0</span>
+<span class="n">Arkansas</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="mf">0.014810770450243859</span>
+<span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</code></pre></div>
+<p>Ideally with as little overhead as possible for things like <code>Y*w</code>. Any suggestions?</p>
+
+
+
+<a name="420473899"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Labelled/named%20arrays/near/420473899" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Labelled.2Fnamed.20arrays.html#420473899">(Feb 08 2024 at 14:50)</a>:</h4>
+<p>NamedArrays seems pretty good:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">y_test</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NamedArray</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">treatment_panel</span><span class="o">.</span><span class="n">Y</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">treatment_panel</span><span class="o">.</span><span class="n">is</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="o">.</span><span class="n">treatment_panel</span><span class="o">.</span><span class="n">ts</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="s">"State"</span><span class="p">,</span><span class="w"> </span><span class="s">"Year"</span><span class="p">))</span>
+<span class="mi">39</span><span class="o">×</span><span class="mi">31</span><span class="w"> </span><span class="n">Named</span><span class="w"> </span><span class="kt">Matrix</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}</span>
+<span class="n">State</span><span class="w"> </span><span class="n">╲</span><span class="w"> </span><span class="n">Year</span><span class="w"> </span><span class="n">│</span><span class="w">  </span><span class="mi">1970</span><span class="w">   </span><span class="mi">1971</span><span class="w">   </span><span class="mi">1972</span><span class="w">   </span><span class="mi">1973</span><span class="w">   </span><span class="mi">1974</span><span class="w">   </span><span class="mi">1975</span><span class="w">   </span><span class="mi">1976</span><span class="w">   </span><span class="mi">1977</span><span class="w">   </span><span class="mi">1978</span><span class="w">   </span><span class="mi">1979</span><span class="w">   </span><span class="mi">1980</span><span class="w">   </span><span class="mi">1981</span><span class="w">   </span><span class="mi">1982</span><span class="w">  </span><span class="o">…</span><span class="w">   </span><span class="mi">1988</span><span class="w">   </span><span class="mi">1989</span><span class="w">   </span><span class="mi">1990</span><span class="w">   </span><span class="mi">1991</span><span class="w">   </span><span class="mi">1992</span><span class="w">   </span><span class="mi">1993</span><span class="w">   </span><span class="mi">1994</span><span class="w">   </span><span class="mi">1995</span><span class="w">   </span><span class="mi">1996</span><span class="w">   </span><span class="mi">1997</span><span class="w">   </span><span class="mi">1998</span><span class="w">   </span><span class="mi">1999</span><span class="w">   </span><span class="mi">2000</span>
+<span class="n">─────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</span>
+<span class="mi">1</span><span class="w">            </span><span class="n">│</span><span class="w">  </span><span class="mf">89.8</span><span class="w">   </span><span class="mf">95.4</span><span class="w">  </span><span class="mf">101.1</span><span class="w">  </span><span class="mf">102.9</span><span class="w">  </span><span class="mf">108.2</span><span class="w">  </span><span class="mf">111.7</span><span class="w">  </span><span class="mf">116.2</span><span class="w">  </span><span class="mf">117.1</span><span class="w">  </span><span class="mf">123.0</span><span class="w">  </span><span class="mf">121.4</span><span class="w">  </span><span class="mf">123.2</span><span class="w">  </span><span class="mf">119.6</span><span class="w">  </span><span class="mf">119.1</span><span class="w">  </span><span class="o">…</span><span class="w">  </span><span class="mf">112.1</span><span class="w">  </span><span class="mf">105.6</span><span class="w">  </span><span class="mf">108.6</span><span class="w">  </span><span class="mf">107.9</span><span class="w">  </span><span class="mf">109.1</span><span class="w">  </span><span class="mf">108.5</span><span class="w">  </span><span class="mf">107.1</span><span class="w">  </span><span class="mf">102.6</span><span class="w">  </span><span class="mf">101.4</span><span class="w">  </span><span class="mf">104.9</span><span class="w">  </span><span class="mf">106.2</span><span class="w">  </span><span class="mf">100.7</span><span class="w">   </span><span class="mf">96.2</span>
+<span class="mi">2</span><span class="w">            </span><span class="n">│</span><span class="w"> </span><span class="mf">100.3</span><span class="w">  </span><span class="mf">104.1</span><span class="w">  </span><span class="mf">103.9</span><span class="w">  </span><span class="mf">108.0</span><span class="w">  </span><span class="mf">109.7</span><span class="w">  </span><span class="mf">114.8</span><span class="w">  </span><span class="mf">119.1</span><span class="w">  </span><span class="mf">122.6</span><span class="w">  </span><span class="mf">127.3</span><span class="w">  </span><span class="mf">126.5</span><span class="w">  </span><span class="mf">131.8</span><span class="w">  </span><span class="mf">128.7</span><span class="w">  </span><span class="mf">127.4</span><span class="w">     </span><span class="mf">121.5</span><span class="w">  </span><span class="mf">118.3</span><span class="w">  </span><span class="mf">113.1</span><span class="w">  </span><span class="mf">116.8</span><span class="w">  </span><span class="mf">126.0</span><span class="w">  </span><span class="mf">113.8</span><span class="w">  </span><span class="mf">108.8</span><span class="w">  </span><span class="mf">113.0</span><span class="w">  </span><span class="mf">110.7</span><span class="w">  </span><span class="mf">108.7</span><span class="w">  </span><span class="mf">109.5</span><span class="w">  </span><span class="mf">104.8</span><span class="w">   </span><span class="mf">99.4</span>
+<span class="mi">3</span><span class="w">            </span><span class="n">│</span><span class="w"> </span><span class="mf">123.0</span><span class="w">  </span><span class="mf">121.0</span><span class="w">  </span><span class="mf">123.5</span><span class="w">  </span><span class="mf">124.4</span><span class="w">  </span><span class="mf">126.7</span><span class="w">  </span><span class="mf">127.1</span><span class="w">  </span><span class="mf">128.0</span><span class="w">  </span><span class="mf">126.4</span><span class="w">  </span><span class="mf">126.1</span><span class="w">  </span><span class="mf">121.9</span><span class="w">  </span><span class="mf">120.2</span><span class="w">  </span><span class="mf">118.6</span><span class="w">  </span><span class="mf">115.4</span><span class="w">      </span><span class="mf">90.1</span><span class="w">   </span><span class="mf">82.4</span><span class="w">   </span><span class="mf">77.8</span><span class="w">   </span><span class="mf">68.7</span><span class="w">   </span><span class="mf">67.5</span><span class="w">   </span><span class="mf">63.4</span><span class="w">   </span><span class="mf">58.6</span><span class="w">   </span><span class="mf">56.4</span><span class="w">   </span><span class="mf">54.5</span><span class="w">   </span><span class="mf">53.8</span><span class="w">   </span><span class="mf">52.3</span><span class="w">   </span><span class="mf">47.2</span><span class="w">   </span><span class="mf">41.6</span>
+<span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">w_test</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NamedArray</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">w</span><span class="p">,</span><span class="w"> </span><span class="n">filter</span><span class="p">(</span><span class="o">!=</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span><span class="w"> </span><span class="n">s</span><span class="o">.</span><span class="n">treatment_panel</span><span class="o">.</span><span class="n">is</span><span class="p">),</span><span class="w"> </span><span class="s">"State"</span><span class="p">)</span>
+<span class="mi">38</span><span class="o">-</span><span class="n">element</span><span class="w"> </span><span class="n">Named</span><span class="w"> </span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}</span>
+<span class="n">State</span><span class="w">  </span><span class="n">│</span>
+<span class="n">───────┼──────────</span>
+<span class="mi">1</span><span class="w">      </span><span class="n">│</span><span class="w">       </span><span class="mf">0.0</span>
+<span class="mi">2</span><span class="w">      </span><span class="n">│</span><span class="w">       </span><span class="mf">0.0</span>
+<span class="mi">4</span><span class="w">      </span><span class="n">│</span><span class="w"> </span><span class="mf">0.0148108</span>
+<span class="mi">5</span><span class="w">      </span><span class="n">│</span><span class="w">   </span><span class="mf">0.10909</span>
+<span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">y_test</span><span class="p">[</span><span class="n">Not</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span><span class="w"> </span><span class="o">:</span><span class="p">]</span><span class="o">'*</span><span class="n">s</span><span class="o">.</span><span class="n">w</span>
+<span class="mi">31</span><span class="o">-</span><span class="n">element</span><span class="w"> </span><span class="n">Named</span><span class="w"> </span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}</span>
+<span class="n">Year</span><span class="w">  </span><span class="n">│</span>
+<span class="n">──────┼────────</span>
+<span class="mi">1970</span><span class="w">  </span><span class="n">│</span><span class="w"> </span><span class="mf">117.424</span>
+<span class="mi">1971</span><span class="w">  </span><span class="n">│</span><span class="w"> </span><span class="mf">119.823</span>
+<span class="mi">1972</span><span class="w">  </span><span class="n">│</span><span class="w"> </span><span class="mf">124.646</span>
+<span class="mi">1973</span><span class="w">  </span><span class="n">│</span><span class="w"> </span><span class="mf">124.367</span>
+</code></pre></div>
+<p>Any known downsides to this?</p>
+
+
+
+<a name="420530426"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Labelled/named%20arrays/near/420530426" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Labelled.2Fnamed.20arrays.html#420530426">(Feb 08 2024 at 19:49)</a>:</h4>
+<p><a href="https://juliahub.com/ui/Packages/General/AxisKeys">AxisKeys.jl</a> is my favorite</p>
+
+
+
+<a name="420575410"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Labelled/named%20arrays/near/420575410" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> aplavin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Labelled.2Fnamed.20arrays.html#420575410">(Feb 09 2024 at 02:02)</a>:</h4>
+<p>Yeah, AxisKeys have the most lightweight data structure among all "keyed arrays" packages that I saw.</p>
+
+
+
+<a name="420584684"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Labelled/named%20arrays/near/420584684" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Labelled.2Fnamed.20arrays.html#420584684">(Feb 09 2024 at 04:24)</a>:</h4>
+<p>AxisKeys also distinguishes between selecting from the <code>axes</code> vs from the <code>axiskeys</code>, which I think is important for a clean interface.</p>
+
+
+
+<a name="420613171"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Labelled/named%20arrays/near/420613171" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Nils <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Labelled.2Fnamed.20arrays.html#420613171">(Feb 09 2024 at 09:23)</a>:</h4>
+<p>Thanks I'll try it out</p>
+
+
+
+<a name="420718974"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Labelled/named%20arrays/near/420718974" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Abbott <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Labelled.2Fnamed.20arrays.html#420718974">(Feb 09 2024 at 19:39)</a>:</h4>
+<p>Sadly we never got the ecosystem to consolidate on one. </p>
+<p><a href="https://juliahub.com/ui/Packages/General/AxisKeys">AxisKeys.jl</a> was my attempt, trying to be fairly lightweight and make few assumptions. It could still be much simpler (e.g. I think double-wrapping with <a href="https://juliahub.com/ui/Packages/General/NamedDims">NamedDims.jl</a> ends up more complex than putting all the info in one struct). The ideal for me is something as natural &amp; inevitable as Base's <code>NamedTuple</code>. But I don't use it much in the end &amp; should probably hand over maintenance somehow.</p>
+<p><a href="https://juliahub.com/ui/Packages/General/DimensionalData">DimensionalData.jl</a> is probably the most actively developed package, and the largest, builds in many things instead of farming out? Aimed at spatial data, special meanings to X, Y. In my ideal world all of this could be built on top of some minimal NamedTuple-esque package... but this is unlikely to happen. </p>
+<p><a href="https://juliahub.com/ui/Packages/General/AxisArrays">AxisArrays.jl</a> is older, and seemed abandoned for a bit (when the above two were written), has many undocumented features. But is still in use, e.g. I think by the <a href="https://juliahub.com/ui/Packages/General/Images">Images.jl</a> ecosystem. It worked hard to be low-overhead, and some of this hard work was aimed at Julia &lt;1 &amp; could be simplified.</p>
+<p><a href="https://juliahub.com/ui/Packages/General/NamedArrays">NamedArrays.jl</a> is also older. It's generally much more mutable, and I think doesn't try so hard to be type-stable etc. Got the best name though!</p>
+
+
+
+<a name="420744431"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Labelled/named%20arrays/near/420744431" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Andy Dienes <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Labelled.2Fnamed.20arrays.html#420744431">(Feb 09 2024 at 22:45)</a>:</h4>
+<p>I know <code>https://github.com/JuliaDataCubes/YAXArrays.jl</code> exists as well. though I don't know much about it, it does seem actively developed</p>
+
+
+
+<a name="420746140"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Labelled/named%20arrays/near/420746140" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Labelled.2Fnamed.20arrays.html#420746140">(Feb 09 2024 at 23:00)</a>:</h4>
+<p><a href="https://juliahub.com/ui/Packages/General/YAXArrays">YAXArrays.jl</a></p>
+
+
+
+<a name="420751383"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Labelled/named%20arrays/near/420751383" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Abbott <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Labelled.2Fnamed.20arrays.html#420751383">(Feb 09 2024 at 23:54)</a>:</h4>
+<p>Oh right I forgot that one. It's built on top of <a href="https://juliahub.com/ui/Packages/General/DimensionalData">DimensionalData.jl</a> I think.</p>
+<p>There's also at least one such thing built into <a href="https://juliahub.com/ui/Packages/General/JuMP">JuMP.jl</a> e.g. here <a href="https://jump.dev/JuMP.jl/stable/manual/containers/">https://jump.dev/JuMP.jl/stable/manual/containers/</a></p>
+
+
+
+<a name="420773834"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Labelled/named%20arrays/near/420773834" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Alec <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Labelled.2Fnamed.20arrays.html#420773834">(Feb 10 2024 at 05:49)</a>:</h4>
+<p>I use <a href="https://github.com/SciML/LabelledArrays.jl">LabelledArrays.jl</a> in places where I would normally use a named tuple but the interface requires an array.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

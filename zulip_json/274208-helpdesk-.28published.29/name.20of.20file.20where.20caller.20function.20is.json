@@ -1,0 +1,26 @@
+[
+    {
+        "content": "<p>Hi, I would like to know if there is a function that returns the name of the file where the function is evaluated, much like pwd() does for the directory.<br>\nI can't use @__FILE__ as that returns the name of the file where the function containing the @__FILE__ is, so it doesn't work if I call my function containig @__FILE__ from somewhere else.</p>\n<p>Some more details on my use-case</p>\n<p>Say I have a julia file in path X that calls my utility function <code>know_filename()</code> defined in path Y and I would like <code>know_filename()</code> to be aware of the file-name of X during its processing.<br>\nI know that I could pass @__FILE__ as an argument to the function from the caller, but I would like to avoid having to explicitly pass this as argument if possible.</p>\n<p>I would need this this for storing pasted images to serve on Pluto notebooks.<br>\nI often finds the need to directly paste images inside Pluto notebooks.<br>\nTo do so, I practically want to automatically move the pasted image in a subfolder of where my Pluto notebook is located.<br>\nMore specifically, since I may have more than one notebook in the same folder, I would like images to be stored in a subdirectory structure like this<br>\n<code>notebook_folder/pastedImages/notebook_name/img_name.png</code></p>\n<p>I was already using @__DIR__ inside my function to get the working directory, but I just realized that indeed that was providing the directory of where my utility function is defined, rather than the directry where the notebook is located.<br>\nThat can easily be fixed using pwd() inside the utility function, but is there a similar way to obtain the filename of the notebook calling the function without the need to pass it as an argument?</p>",
+        "id": 246197873,
+        "sender_full_name": "disberd",
+        "timestamp": 1626424683
+    },
+    {
+        "content": "<p>That is only possible using macros. In this case I guess you can use a macro like this (pseudo code):</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"nd\">@pass_filename</span> <span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">args</span><span class=\"o\">...</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>that just calls e.g.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">f</span><span class=\"p\">(</span><span class=\"n\">args</span><span class=\"o\">...</span><span class=\"p\">;</span> <span class=\"n\">file</span> <span class=\"o\">=</span> <span class=\"o\">...</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 246254876,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1626456985
+    },
+    {
+        "content": "<p><code>string(stacktrace(backtrace())[2].file)</code> might give you the answer but it reaches into internals and I'm not sure how reliable it is.</p>",
+        "id": 246283510,
+        "sender_full_name": "Gunnar Farnebäck",
+        "timestamp": 1626471470
+    },
+    {
+        "content": "<p>Thanks, indeed in the end I relied on stacktrace() and on the fact that the filename (in the stacktrace) of function call where the Pluto cell output evaluation is happening always ends with <code>notebook-name#==#CELL-UUID</code>.<br>\nSo I can extract the notebook name by looking for that pattern</p>",
+        "id": 246310925,
+        "sender_full_name": "disberd",
+        "timestamp": 1626507136
+    }
+]

@@ -1,0 +1,138 @@
+<html>
+<head><meta charset="utf-8"><title>LoopVectorization silently failing · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVectorization.20silently.20failing.html">LoopVectorization silently failing</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="238651327"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVectorization%20silently%20failing/near/238651327" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kyle Daruwalla <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVectorization.20silently.20failing.html#238651327">(May 13 2021 at 17:15)</a>:</h4>
+<p>In the spirit of <code>@brrrt</code> (see <a class="stream-topic" data-stream-id="225582" href="/#narrow/stream/225582-random/topic/Rename.20.02klzzwxh.3A0001.03.3F">#random &gt; Rename <code>LoopVectorization.@avx</code>?</a>), I recently spent days debugging the following bug:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="c"># get hidden neuron firing rate</span>
+<span class="n">reservoir</span><span class="o">.</span><span class="n">ξhidden!</span><span class="p">(</span><span class="n">cache</span><span class="o">.</span><span class="n">r</span><span class="p">)</span>
+<span class="nd">@avx</span> <span class="n">cache</span><span class="o">.</span><span class="n">r</span> <span class="o">.+=</span> <span class="n">reservoir</span><span class="o">.</span><span class="n">f</span><span class="o">.</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+
+<span class="c"># get output neuron firing rate</span>
+<span class="n">reservoir</span><span class="o">.</span><span class="n">ξ!</span><span class="p">(</span><span class="n">cache</span><span class="o">.</span><span class="n">z</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">isexploring</span><span class="p">[]</span>
+    <span class="n">reservoir</span><span class="o">.</span><span class="n">ξ!</span><span class="p">(</span><span class="n">cache</span><span class="o">.</span><span class="n">z</span><span class="p">)</span>
+    <span class="nd">@avx</span> <span class="n">cache</span><span class="o">.</span><span class="n">z</span> <span class="o">.+=</span> <span class="n">reservoir</span><span class="o">.</span><span class="n">Wout</span> <span class="o">*</span> <span class="n">cache</span><span class="o">.</span><span class="n">r</span>
+<span class="k">else</span>
+    <span class="nd">@avx</span> <span class="n">cache</span><span class="o">.</span><span class="n">z</span> <span class="o">.=</span> <span class="n">reservoir</span><span class="o">.</span><span class="n">Wout</span> <span class="o">*</span> <span class="n">cache</span><span class="o">.</span><span class="n">r</span>
+<span class="k">end</span>
+
+<span class="c"># update du</span>
+<span class="nd">@avx</span> <span class="n">du</span> <span class="o">.=</span> <span class="p">(</span><span class="o">-</span><span class="n">u</span> <span class="o">.+</span> <span class="n">reservoir</span><span class="o">.</span><span class="n">λ</span> <span class="o">*</span> <span class="n">reservoir</span><span class="o">.</span><span class="n">Wr</span> <span class="o">*</span> <span class="n">cache</span><span class="o">.</span><span class="n">r</span> <span class="o">.+</span>
+                  <span class="n">reservoir</span><span class="o">.</span><span class="n">Win</span> <span class="o">*</span> <span class="n">input</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">.+</span>
+                  <span class="n">reservoir</span><span class="o">.</span><span class="n">Wfb</span> <span class="o">*</span> <span class="n">cache</span><span class="o">.</span><span class="n">z</span><span class="p">)</span> <span class="o">./</span> <span class="n">reservoir</span><span class="o">.</span><span class="n">τ</span>
+</code></pre></div>
+<p>This code fails to produce anything resembling working. A red herring related to the DE stepping is why I spent so many days on it until I found out that removing <code>@avx</code> from the line corresponding to <code>du</code> fixed things. Now, I am wondering why the error occurred (like a more detailed explanation than <a href="https://github.com/search?q=LoopVectorization.jl&amp;type=Repositories">LoopVectorization.jl</a> is unsafe). The size of the weight matrices are:</p>
+<ul>
+<li><code>size(Wr) == (1000, 1000)</code></li>
+<li><code>size(Win) == (1000, 1)</code></li>
+<li><code>size(Wfb) == (1000, 1)</code></li>
+<li><code>size(Wout) == (1, 1000)</code> (notice that <code>Wout</code> is not part of a broadcast, it is a matmul)</li>
+</ul>
+
+
+
+<a name="238651627"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVectorization%20silently%20failing/near/238651627" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVectorization.20silently.20failing.html#238651627">(May 13 2021 at 17:17)</a>:</h4>
+<p>I think it's probably this:<br>
+<a href="/user_uploads/7178/X-X5rKdz9qPYr_yiP6hTz7CF/image.png">image.png</a></p>
+<div class="message_inline_image"><a href="/user_uploads/7178/X-X5rKdz9qPYr_yiP6hTz7CF/image.png" title="image.png"><img src="/user_uploads/7178/X-X5rKdz9qPYr_yiP6hTz7CF/image.png"></a></div>
+
+
+
+<a name="238651721"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVectorization%20silently%20failing/near/238651721" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVectorization.20silently.20failing.html#238651721">(May 13 2021 at 17:18)</a>:</h4>
+<p>Dimensions of size 1 are not kosher with LV, but I never really understood why</p>
+
+
+
+<a name="238652212"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVectorization%20silently%20failing/near/238652212" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kyle Daruwalla <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVectorization.20silently.20failing.html#238652212">(May 13 2021 at 17:21)</a>:</h4>
+<p>Yeah but that warning only mentions broadcasting. The full expression is <code>z .= z .+ Wout * r</code>, so the 1x1000 array is embedded in an expression that uses broadcast, but it is not part of the broadcast itself. This is partially why I asked the question — to get clarity on if this kind of expression is still bad. And if the following would "fix" things:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">tmp</span> <span class="o">=</span> <span class="n">Wout</span> <span class="o">*</span> <span class="n">r</span>
+<span class="nd">@avx</span> <span class="n">z</span> <span class="o">.+=</span> <span class="n">tmp</span>
+</code></pre></div>
+
+
+
+<a name="238652332"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVectorization%20silently%20failing/near/238652332" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kyle Daruwalla <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVectorization.20silently.20failing.html#238652332">(May 13 2021 at 17:22)</a>:</h4>
+<p>Also it is weird that I only needed to remove <code>@avx</code> from the <code>du</code> expression which involves no 1xN arrays!</p>
+
+
+
+<a name="238652674"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVectorization%20silently%20failing/near/238652674" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVectorization.20silently.20failing.html#238652674">(May 13 2021 at 17:25)</a>:</h4>
+<p>What's the size of <code>r</code>?</p>
+
+
+
+<a name="238652839"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVectorization%20silently%20failing/near/238652839" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVectorization.20silently.20failing.html#238652839">(May 13 2021 at 17:26)</a>:</h4>
+<p>If <code>r</code> is a <code>1000xN</code> array, then <code>Wout * r</code> is a <code>1xN</code> array so the problem is not solved</p>
+
+
+
+<a name="238652910"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVectorization%20silently%20failing/near/238652910" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVectorization.20silently.20failing.html#238652910">(May 13 2021 at 17:27)</a>:</h4>
+<p>You can make <code>Wout</code> a <code>Transpose{Vector}</code> though</p>
+
+
+
+<a name="238652928"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVectorization%20silently%20failing/near/238652928" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kyle Daruwalla <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVectorization.20silently.20failing.html#238652928">(May 13 2021 at 17:27)</a>:</h4>
+<p>Ah, you're right! <code>r</code> is 1000x1, but I assume 1x1 arrays also not supported</p>
+
+
+
+<a name="238652982"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVectorization%20silently%20failing/near/238652982" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kyle Daruwalla <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVectorization.20silently.20failing.html#238652982">(May 13 2021 at 17:28)</a>:</h4>
+<p>Yeah let me try with the transpose</p>
+
+
+
+<a name="238653005"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVectorization%20silently%20failing/near/238653005" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kyle Daruwalla <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVectorization.20silently.20failing.html#238653005">(May 13 2021 at 17:28)</a>:</h4>
+<p>Thanks, this makes sense now</p>
+
+
+
+<a name="238653057"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVectorization%20silently%20failing/near/238653057" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVectorization.20silently.20failing.html#238653057">(May 13 2021 at 17:28)</a>:</h4>
+<p>Is <code>r</code> a <code>Matrix</code>, or is it a <code>Vector</code>?</p>
+
+
+
+<a name="238653207"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVectorization%20silently%20failing/near/238653207" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVectorization.20silently.20failing.html#238653207">(May 13 2021 at 17:30)</a>:</h4>
+<p>You'll need <code>r</code> to be a <code>Vector</code> in order to not get a <code>1x1</code> array out</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">let</span> <span class="n">Wout</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span><span class="o">'</span><span class="p">,</span> <span class="n">r</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+           <span class="n">Wout</span> <span class="o">*</span> <span class="n">r</span>
+       <span class="k">end</span>
+<span class="mi">1</span><span class="o">×</span><span class="mi">1</span> <span class="n">adjoint</span><span class="p">(</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="kt">Float64</span><span class="p">})</span> <span class="n">with</span> <span class="n">eltype</span> <span class="kt">Float64</span><span class="o">:</span>
+ <span class="mf">244.01241695906867</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="k">let</span> <span class="n">Wout</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span><span class="o">'</span><span class="p">,</span> <span class="n">r</span> <span class="o">=</span> <span class="n">rand</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
+           <span class="n">Wout</span> <span class="o">*</span> <span class="n">r</span>
+       <span class="k">end</span>
+<span class="mf">236.71936258108883</span>
+</code></pre></div>
+
+
+
+<a name="238653338"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/LoopVectorization%20silently%20failing/near/238653338" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kyle Daruwalla <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/LoopVectorization.20silently.20failing.html#238653338">(May 13 2021 at 17:31)</a>:</h4>
+<p>It's a <code>Vector</code></p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

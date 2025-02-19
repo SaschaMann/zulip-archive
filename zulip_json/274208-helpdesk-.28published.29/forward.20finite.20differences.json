@@ -1,0 +1,38 @@
+[
+    {
+        "content": "<p>Is this the proper way of computing a simple forward difference algorithm in the x-direction in Julia, given <code>h=1</code> on a 2D array/image?</p>\n<p><a href=\"/user_uploads/7178/15l1bRYfR8ZjKfoJesxQz-ll/image.png\">image.png</a> </p>\n<div class=\"message_inline_image\"><a href=\"/user_uploads/7178/15l1bRYfR8ZjKfoJesxQz-ll/image.png\" title=\"image.png\"><img src=\"/user_uploads/7178/15l1bRYfR8ZjKfoJesxQz-ll/image.png\"></a></div><div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">forward_diff_i</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">)</span>\n    <span class=\"n\">∇ᵢ₊</span> <span class=\"o\">=</span> <span class=\"n\">zeros</span><span class=\"p\">(</span><span class=\"n\">size</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">))</span>\n\n    <span class=\"k\">for</span> <span class=\"n\">j</span> <span class=\"k\">in</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">size</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"mi\">2</span><span class=\"p\">),</span> <span class=\"n\">i</span> <span class=\"k\">in</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">size</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"mi\">1</span><span class=\"p\">)</span> <span class=\"o\">-</span> <span class=\"mi\">1</span>\n        <span class=\"n\">∇ᵢ₊</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">,</span> <span class=\"n\">j</span><span class=\"p\">]</span> <span class=\"o\">=</span> <span class=\"n\">f</span><span class=\"p\">[</span><span class=\"n\">i</span> <span class=\"o\">+</span> <span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"n\">j</span><span class=\"p\">]</span> <span class=\"o\">-</span> <span class=\"n\">f</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">,</span> <span class=\"n\">j</span><span class=\"p\">]</span>\n    <span class=\"k\">end</span>\n\n    <span class=\"c\"># Compute backward diff for edge case</span>\n    <span class=\"k\">for</span> <span class=\"n\">j</span> <span class=\"k\">in</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">size</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"mi\">2</span><span class=\"p\">)</span>\n        <span class=\"n\">∇ᵢ₊</span><span class=\"p\">[</span><span class=\"k\">end</span><span class=\"p\">,</span> <span class=\"n\">j</span><span class=\"p\">]</span> <span class=\"o\">=</span> <span class=\"n\">f</span><span class=\"p\">[</span><span class=\"k\">end</span><span class=\"p\">,</span> <span class=\"n\">j</span><span class=\"p\">]</span> <span class=\"o\">-</span> <span class=\"n\">f</span><span class=\"p\">[</span><span class=\"k\">end</span> <span class=\"o\">-</span> <span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"n\">j</span><span class=\"p\">]</span>\n    <span class=\"k\">end</span>\n\n    <span class=\"k\">return</span> <span class=\"n\">∇ᵢ₊</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>If so, what's the recommended way to account for the edge?</p>",
+        "id": 252943749,
+        "sender_full_name": "Dale Black",
+        "timestamp": 1631404079
+    },
+    {
+        "content": "<p>have you looked at the <code>diff</code>function in base Julia?</p>",
+        "id": 252944595,
+        "sender_full_name": "Sundar R",
+        "timestamp": 1631405087
+    },
+    {
+        "content": "<p>Oh no I hadn't actually. Looks like it's performing a similar operation and the results are similar on my end. Thanks</p>",
+        "id": 252944807,
+        "sender_full_name": "Dale Black",
+        "timestamp": 1631405353
+    },
+    {
+        "content": "<p>Here is what I have decided on, in case this is at all useful</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">forward_diff_i</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">)</span>\n    <span class=\"n\">∇ᵢ₊</span> <span class=\"o\">=</span> <span class=\"n\">padarray</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"n\">Pad</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"mi\">1</span><span class=\"p\">))</span>\n\n    <span class=\"k\">for</span> <span class=\"n\">j</span> <span class=\"k\">in</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">size</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"mi\">2</span><span class=\"p\">),</span> <span class=\"n\">i</span> <span class=\"k\">in</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"n\">size</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">,</span> <span class=\"mi\">1</span><span class=\"p\">)</span>\n        <span class=\"n\">∇ᵢ₊</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">,</span> <span class=\"n\">j</span><span class=\"p\">]</span> <span class=\"o\">=</span> <span class=\"n\">∇ᵢ₊</span><span class=\"p\">[</span><span class=\"n\">i</span> <span class=\"o\">+</span> <span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"n\">j</span><span class=\"p\">]</span> <span class=\"o\">-</span> <span class=\"n\">∇ᵢ₊</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">,</span> <span class=\"n\">j</span><span class=\"p\">]</span>\n    <span class=\"k\">end</span>\n\n    <span class=\"k\">return</span> <span class=\"n\">parent</span><span class=\"p\">(</span><span class=\"n\">∇ᵢ₊</span><span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"k\">end</span><span class=\"o\">-</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"k\">end</span><span class=\"o\">-</span><span class=\"mi\">1</span><span class=\"p\">])</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 252945703,
+        "sender_full_name": "Dale Black",
+        "timestamp": 1631406400
+    },
+    {
+        "content": "<p>I'd consider renaming this topic to \"forward differences\" to not confuse it with forward mode automatic differentiation like implemented in <a href=\"https://github.com/search?q=ForwardDiff.jl&amp;type=Repositories\">ForwardDiff.jl</a></p>",
+        "id": 255020160,
+        "sender_full_name": "Simon Christ",
+        "timestamp": 1632735834
+    },
+    {
+        "content": "<p>Done</p>",
+        "id": 255063102,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1632754843
+    }
+]

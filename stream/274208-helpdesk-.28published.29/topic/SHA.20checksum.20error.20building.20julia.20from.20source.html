@@ -1,0 +1,170 @@
+<html>
+<head><meta charset="utf-8"><title>SHA checksum error building julia from source · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/SHA.20checksum.20error.20building.20julia.20from.20source.html">SHA checksum error building julia from source</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="420911138"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/SHA%20checksum%20error%20building%20julia%20from%20source/near/420911138" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mnemnion <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/SHA.20checksum.20error.20building.20julia.20from.20source.html#420911138">(Feb 11 2024 at 18:24)</a>:</h4>
+<p>Hi, trying to build Julia from source, macOS 12.6.3. When I try to simply <code>make</code> I get a curl 502 error. When I add <code>USE_BINARYBUILDER=0</code> to  <code>Make.user</code>, I get a different error: <code>sha512 checksum failure on llvm-julia-16.0.6-2.tar.gz</code>. Any idea what's going on here?</p>
+
+
+
+<a name="420914445"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/SHA%20checksum%20error%20building%20julia%20from%20source/near/420914445" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sebastien Marie (semarie) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/SHA.20checksum.20error.20building.20julia.20from.20source.html#420914445">(Feb 11 2024 at 19:11)</a>:</h4>
+<p>I have seeing it too (and I workarounded it by I overrided the <code>deps/checksums/llvm</code> entry for the file with the one from the file)</p>
+
+
+
+<a name="420922690"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/SHA%20checksum%20error%20building%20julia%20from%20source/near/420922690" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mnemnion <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/SHA.20checksum.20error.20building.20julia.20from.20source.html#420922690">(Feb 11 2024 at 21:21)</a>:</h4>
+<p>Thanks for the tip, I'll try that</p>
+
+
+
+<a name="420926591"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/SHA%20checksum%20error%20building%20julia%20from%20source/near/420926591" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mnemnion <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/SHA.20checksum.20error.20building.20julia.20from.20source.html#420926591">(Feb 11 2024 at 22:20)</a>:</h4>
+<p>Hmm, that lead to considerable progress but then errored out with <code>CMake Error at CMakeLists.txt:39 (message):
+  llvm-config failed with status 1</code></p>
+
+
+
+<a name="420926659"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/SHA%20checksum%20error%20building%20julia%20from%20source/near/420926659" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mnemnion <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/SHA.20checksum.20error.20building.20julia.20from.20source.html#420926659">(Feb 11 2024 at 22:22)</a>:</h4>
+<p>which leads me to think that perhaps the SHA bug is not a shallow one (in the sense that the SHA is simply incorrect /  wasn't updated)</p>
+
+
+
+<a name="420926983"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/SHA%20checksum%20error%20building%20julia%20from%20source/near/420926983" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mnemnion <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/SHA.20checksum.20error.20building.20julia.20from.20source.html#420926983">(Feb 11 2024 at 22:27)</a>:</h4>
+<p>hmm, it's calling <code>./usr/tools/llvm-config --includedir --prefix --src-root</code> but <code>--src-root</code> does not appear to be a valid flag. <code>llvm-config --version</code> reports <code>16.0.6jl</code>, if that's useful info</p>
+
+
+
+<a name="420927810"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/SHA%20checksum%20error%20building%20julia%20from%20source/near/420927810" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mnemnion <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/SHA.20checksum.20error.20building.20julia.20from.20source.html#420927810">(Feb 11 2024 at 22:40)</a>:</h4>
+<p>looks like the offending flag is in deps/patches/llvm-libunwind-revert-monorepo-requirement.patch. I'll try removing it but my instinct is that the flag itself is not the issue here</p>
+
+
+
+<a name="420928291"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/SHA%20checksum%20error%20building%20julia%20from%20source/near/420928291" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mnemnion <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/SHA.20checksum.20error.20building.20julia.20from.20source.html#420928291">(Feb 11 2024 at 22:48)</a>:</h4>
+<p>hrm, removing that flag from the patch did not, in fact, prevent it from being spuriously called in the build. Ah well. Might be time to do something else with my day ¯\_(ツ)_/¯</p>
+
+
+
+<a name="420932480"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/SHA%20checksum%20error%20building%20julia%20from%20source/near/420932480" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mosè Giordano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/SHA.20checksum.20error.20building.20julia.20from.20source.html#420932480">(Feb 11 2024 at 23:52)</a>:</h4>
+<p>While the issues with the manual build system should be fixed (maybe by someone motivated enough to track down the issue), do you have any particular reason for trying to build julia with <code>USE_BINARYBUILDER=0</code>?</p>
+
+
+
+<a name="420949272"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/SHA%20checksum%20error%20building%20julia%20from%20source/near/420949272" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mnemnion <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/SHA.20checksum.20error.20building.20julia.20from.20source.html#420949272">(Feb 12 2024 at 04:11)</a>:</h4>
+<p>without it the process immediately errors on curl, a 502</p>
+<p>more specifically, in case it's useful:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">curl</span><span class="o">:</span><span class="w"> </span><span class="p">(</span><span class="mi">22</span><span class="p">)</span><span class="w"> </span><span class="n">The</span><span class="w"> </span><span class="n">requested</span><span class="w"> </span><span class="n">URL</span><span class="w"> </span><span class="n">returned</span><span class="w"> </span><span class="n">error</span><span class="o">:</span><span class="w"> </span><span class="mi">502</span>
+<span class="n">curl</span><span class="o">:</span><span class="w"> </span><span class="n">Failed</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">extract</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">sensible</span><span class="w"> </span><span class="n">file</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="n">from</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">URL</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">use</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">storage</span>
+<span class="n">curl</span><span class="o">:</span><span class="w"> </span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="n">URL</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">bad</span><span class="o">/</span><span class="n">illegal</span><span class="w"> </span><span class="n">format</span><span class="w"> </span><span class="n">or</span><span class="w"> </span><span class="nb">missing</span><span class="w"> </span><span class="n">URL</span>
+<span class="n">make</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">:</span><span class="w"> </span><span class="o">***</span><span class="w"> </span><span class="p">[[</span><span class="o">...</span><span class="p">]</span><span class="o">/</span><span class="n">julia</span><span class="o">/</span><span class="n">stdlib</span><span class="o">/</span><span class="n">srccache</span><span class="o">/</span><span class="n">Pkg</span><span class="o">-.</span><span class="n">tar</span><span class="o">.</span><span class="n">gz</span><span class="p">]</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="mi">3</span>
+</code></pre></div>
+
+
+
+<a name="420979172"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/SHA%20checksum%20error%20building%20julia%20from%20source/near/420979172" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sebastien Marie (semarie) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/SHA.20checksum.20error.20building.20julia.20from.20source.html#420979172">(Feb 12 2024 at 09:00)</a>:</h4>
+<p>for me, I am looking to build on unsupported OS, so it is expected to have <code>USE_BINARYBUILDER=0</code>.</p>
+
+
+
+<a name="421047277"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/SHA%20checksum%20error%20building%20julia%20from%20source/near/421047277" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mnemnion <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/SHA.20checksum.20error.20building.20julia.20from.20source.html#421047277">(Feb 12 2024 at 14:32)</a>:</h4>
+<p>searching the issue tracker for <code>USE_BINARYBUILDER</code> turns up <a href="https://github.com/JuliaLang/julia/issues/48820">this</a> (and a few more), which isn't the same issue I experienced. Is this a cross-platform issue? Should I file an issue on the problems I'm seeing?</p>
+
+
+
+<a name="421047879"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/SHA%20checksum%20error%20building%20julia%20from%20source/near/421047879" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mnemnion <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/SHA.20checksum.20error.20building.20julia.20from.20source.html#421047879">(Feb 12 2024 at 14:35)</a>:</h4>
+<p>just pulled the latest master branch, I'm still seeing the same 502 error</p>
+
+
+
+<a name="421048554"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/SHA%20checksum%20error%20building%20julia%20from%20source/near/421048554" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mnemnion <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/SHA.20checksum.20error.20building.20julia.20from.20source.html#421048554">(Feb 12 2024 at 14:38)</a>:</h4>
+<p>trashed the repo and downloaded a fresh one, same error</p>
+
+
+
+<a name="421055468"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/SHA%20checksum%20error%20building%20julia%20from%20source/near/421055468" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sebastien Marie (semarie) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/SHA.20checksum.20error.20building.20julia.20from.20source.html#421055468">(Feb 12 2024 at 15:06)</a>:</h4>
+<p>the checksum was modified with <a href="https://github.com/JuliaLang/julia/pull/53195">https://github.com/JuliaLang/julia/pull/53195</a> . I asked if the change was intented or not, as the remote file still match the old checksum.</p>
+
+
+
+<a name="421070275"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/SHA%20checksum%20error%20building%20julia%20from%20source/near/421070275" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mnemnion <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/SHA.20checksum.20error.20building.20julia.20from.20source.html#421070275">(Feb 12 2024 at 16:03)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="690671">Sebastien Marie (semarie)</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/SHA.20checksum.20error.20building.20julia.20from.20source/near/421055468">said</a>:</p>
+<blockquote>
+<p>the checksum was modified with <a href="https://github.com/JuliaLang/julia/pull/53195">https://github.com/JuliaLang/julia/pull/53195</a> . I asked if the change was intented or not, as the remote file still match the old checksum.</p>
+</blockquote>
+<p>It seems like there's more than one problem there, because the version of <code>llvm_config</code> with the updated checksum doesn't have <code>--src-root</code> listed as a flag, which causes any operation involving that binary and that flag to fail.</p>
+
+
+
+<a name="421101774"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/SHA%20checksum%20error%20building%20julia%20from%20source/near/421101774" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sebastien Marie (semarie) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/SHA.20checksum.20error.20building.20julia.20from.20source.html#421101774">(Feb 12 2024 at 18:31)</a>:</h4>
+<p>I agree that there is several different problems.<br>
+the <code>llvm-config --src-root</code> change could be related to llvm 16 update.<br>
+only Darwin OS is using the <code>llvmunwind</code> component (which is using <code>--src-root</code>) (others Linux, BSD are using <code>unwind</code>)</p>
+
+
+
+<a name="421106234"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/SHA%20checksum%20error%20building%20julia%20from%20source/near/421106234" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sebastien Marie (semarie) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/SHA.20checksum.20error.20building.20julia.20from.20source.html#421106234">(Feb 12 2024 at 18:53)</a>:</h4>
+<p><span class="user-mention" data-user-id="690889">@mnemnion</span> could test <a href="https://github.com/JuliaLang/julia/pull/53304">https://github.com/JuliaLang/julia/pull/53304</a> and report on the PR if it is working for you ?</p>
+
+
+
+<a name="421110687"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/SHA%20checksum%20error%20building%20julia%20from%20source/near/421110687" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mnemnion <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/SHA.20checksum.20error.20building.20julia.20from.20source.html#421110687">(Feb 12 2024 at 19:19)</a>:</h4>
+<p>That branch doesn't fix the issue with a simple build, I'll try it with <code>USE_BINARYBUILDER</code> though (I think that was what you were expecting)</p>
+
+
+
+<a name="421111100"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/SHA%20checksum%20error%20building%20julia%20from%20source/near/421111100" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sebastien Marie (semarie) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/SHA.20checksum.20error.20building.20julia.20from.20source.html#421111100">(Feb 12 2024 at 19:22)</a>:</h4>
+<p>yes, it (should) only fixes the <code>llvm-config --src-root</code> usage. so please try it with <code>USE_BINARYBUILDER=0</code></p>
+
+
+
+<a name="421111470"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/SHA%20checksum%20error%20building%20julia%20from%20source/near/421111470" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mnemnion <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/SHA.20checksum.20error.20building.20julia.20from.20source.html#421111470">(Feb 12 2024 at 19:24)</a>:</h4>
+<p>This branch has the same SHA error as the other one (I don't know if the hashes are the same error, but it's the same mismatch between expected and actual)</p>
+
+
+
+<a name="421111664"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/SHA%20checksum%20error%20building%20julia%20from%20source/near/421111664" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mnemnion <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/SHA.20checksum.20error.20building.20julia.20from.20source.html#421111664">(Feb 12 2024 at 19:26)</a>:</h4>
+<p>I'll try patching in the actual hashes in /deps</p>
+
+
+
+<a name="421112149"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/SHA%20checksum%20error%20building%20julia%20from%20source/near/421112149" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mnemnion <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/SHA.20checksum.20error.20building.20julia.20from.20source.html#421112149">(Feb 12 2024 at 19:29)</a>:</h4>
+<p>it looks like that also fails, but in a different way. I'm running <code>cleanall</code> and then a single-thread make, <code>make -j</code> makes it inconvenient to find the actual step that's failing</p>
+
+
+
+<a name="421121521"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/SHA%20checksum%20error%20building%20julia%20from%20source/near/421121521" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> mnemnion <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/SHA.20checksum.20error.20building.20julia.20from.20source.html#421121521">(Feb 12 2024 at 20:24)</a>:</h4>
+<p>man that takes a long time on just one thread. So the build isn't successful, but llvm-config is no longer responsible for the errors. So that's something at least</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

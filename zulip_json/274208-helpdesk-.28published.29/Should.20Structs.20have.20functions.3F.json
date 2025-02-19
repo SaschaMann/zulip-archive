@@ -1,0 +1,56 @@
+[
+    {
+        "content": "<p>I know that in Julia the multiple-dispatch makes it (almost?) obsolete the creation of structs with functions. But I was wondering if for my case it would be useful. Consider that I have a plotting package that receives a <code>m::Marker</code> and draws it. Now, I wish that users of the package could implement their own markers, which would be drawn according to a function <code>drawmarker(m::Marker)</code>. The thing is, for the set of markers I've implemented, I have the multiple-dispatch setup, i.e. </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">drawmarker</span><span class=\"p\">(</span><span class=\"n\">m</span><span class=\"o\">::</span><span class=\"kt\">Circle</span><span class=\"p\">)</span>\n<span class=\"n\">drawmarker</span><span class=\"p\">(</span><span class=\"n\">m</span><span class=\"o\">::</span><span class=\"kt\">Bar</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>But since I wish a user can create his own marker, I was wondering if it would be better for the marker struct to have a <code>drawmarker</code> as a method. Any thoughts? Should I just make the user pass a <code>drawmarker</code> function as an argument?</p>",
+        "id": 267436610,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1641820201
+    },
+    {
+        "content": "<p>To clarify, what is wrong with user-defined <code>drawmarker(m::CustomMarker)</code>?</p>",
+        "id": 267443272,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1641823903
+    },
+    {
+        "content": "<p>Nothing really wrong about. Mostly about design. I mean, I'd have something like:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">plot</span><span class=\"p\">(</span><span class=\"n\">m</span><span class=\"o\">::</span><span class=\"kt\">Marker</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>which my package provides. Now, the <code>plot</code> function calls <code>drawmarker</code> inside of it. But requiring the user to write a <code>drawmarker</code> function, it would also require that he passed his function to the <code>plot</code> function, and I'd need to check whether or not he passed the function to run it instead of the already defined inside the package. What I mean, is, if the <code>drawmarker</code> was a method from the marker, then I could keep the <code>plot(m::Marker)</code>. Otherwise, I need something like:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">plot</span><span class=\"p\">(</span><span class=\"n\">m</span><span class=\"o\">::</span><span class=\"kt\">Marker</span><span class=\"p\">;</span> <span class=\"n\">drawfunction</span><span class=\"o\">::</span><span class=\"kt\">Function</span> <span class=\"o\">=</span> <span class=\"nb\">nothing</span><span class=\"p\">)</span>\n  <span class=\"k\">if</span> <span class=\"n\">drawfunction</span> <span class=\"o\">===</span> <span class=\"nb\">nothing</span>\n     <span class=\"n\">drawmarker</span><span class=\"p\">(</span><span class=\"n\">m</span><span class=\"p\">)</span>\n <span class=\"k\">else</span>\n    <span class=\"n\">drawfunction</span><span class=\"p\">(</span><span class=\"n\">m</span><span class=\"p\">)</span>\n <span class=\"k\">end</span>\n\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 267453649,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1641828853
+    },
+    {
+        "content": "<p>So, I'm not saying that it cannot be done. Just that It looks like an uglier solution than just defining the <code>drawmarker</code> as a method of the marker. Hence, I was wondering if it was still advisable not to create the method for the marker.</p>",
+        "id": 267454035,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1641829038
+    },
+    {
+        "content": "<p>I think, what Andrey meant is for the user to write something like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">import</span> <span class=\"n\">Package</span><span class=\"o\">:</span> <span class=\"n\">drawmarker</span>\n<span class=\"k\">struct</span> <span class=\"kt\">MyCustomMarker</span> <span class=\"k\">end</span>\n\n<span class=\"k\">function</span> <span class=\"n\">drawmarker</span><span class=\"p\">(</span><span class=\"n\">m</span><span class=\"o\">::</span><span class=\"kt\">MyCustomMarker</span><span class=\"p\">)</span>\n    <span class=\"c\"># specify how to draw it</span>\n<span class=\"k\">end</span>\n\n<span class=\"n\">plot</span><span class=\"p\">(</span><span class=\"n\">m</span><span class=\"o\">::</span><span class=\"kt\">MyCustomMarker</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 267457008,
+        "sender_full_name": "Felix Kastner",
+        "timestamp": 1641830133
+    },
+    {
+        "content": "<p>Hmm, this would work out of the box? I thought since the function with dispatch for the custom marker is not in my package, it would not work. If it indeed works, then all my problems are resolved :)</p>",
+        "id": 267491941,
+        "sender_full_name": "Davi Sales Barreira",
+        "timestamp": 1641844944
+    },
+    {
+        "content": "<p>The <code>import Package: drawmarker</code> line is what makes it work</p>",
+        "id": 267507609,
+        "sender_full_name": "James Fairbanks",
+        "timestamp": 1641852267
+    },
+    {
+        "content": "<p>See here too: <a href=\"https://docs.julialang.org/en/v1/manual/modules/#using-and-import-with-specific-identifiers,-and-adding-methods\">https://docs.julialang.org/en/v1/manual/modules/#using-and-import-with-specific-identifiers,-and-adding-methods</a></p>",
+        "id": 267529975,
+        "sender_full_name": "Kyle Daruwalla",
+        "timestamp": 1641868798
+    },
+    {
+        "content": "<p>Yeah, this is such a beautiful thing about Julia’s multiple dispatch</p>",
+        "id": 267535407,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1641875269
+    }
+]

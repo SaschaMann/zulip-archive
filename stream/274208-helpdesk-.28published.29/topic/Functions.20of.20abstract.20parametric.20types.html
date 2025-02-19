@@ -1,0 +1,78 @@
+<html>
+<head><meta charset="utf-8"><title>Functions of abstract parametric types · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Functions.20of.20abstract.20parametric.20types.html">Functions of abstract parametric types</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="242919274"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Functions%20of%20abstract%20parametric%20types/near/242919274" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mike <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Functions.20of.20abstract.20parametric.20types.html#242919274">(Jun 16 2021 at 18:05)</a>:</h4>
+<p>Suppose I have an abstract parametric type with two subtypes:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">abstract type</span> <span class="kt">A</span><span class="p">{</span><span class="kt">T</span><span class="p">}</span> <span class="k">end</span>
+<span class="k">struct</span> <span class="kt">B</span><span class="p">{</span><span class="kt">T</span><span class="p">}</span> <span class="o">&lt;:</span> <span class="kt">A</span><span class="p">{</span><span class="kt">T</span><span class="p">}</span> <span class="k">end</span>
+<span class="k">struct</span> <span class="kt">C</span><span class="p">{</span><span class="kt">T</span><span class="p">}</span> <span class="o">&lt;:</span> <span class="kt">A</span><span class="p">{</span><span class="kt">T</span><span class="p">}</span> <span class="k">end</span>
+</code></pre></div>
+<p>I want to write a general function that takes either of these types with some <code>T</code>, and returns the same type — but with a different parameter.  I'm having a hard time searching for this because I don't even know what words to use for this concept.</p>
+<p>Obviously, I could code these up explicitly:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">f</span><span class="p">(</span><span class="n">a</span><span class="o">::</span><span class="kt">B</span><span class="p">{</span><span class="kt">T</span><span class="p">})</span> <span class="k">where</span> <span class="kt">T</span> <span class="o">=</span> <span class="kt">B</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}()</span>
+<span class="n">f</span><span class="p">(</span><span class="n">a</span><span class="o">::</span><span class="kt">C</span><span class="p">{</span><span class="kt">T</span><span class="p">})</span> <span class="k">where</span> <span class="kt">T</span> <span class="o">=</span> <span class="kt">C</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}()</span>
+</code></pre></div>
+<p>But we're all much too sensible and lazy for that.  I know that I could loop over <code>[:B, :C]</code> and <code>@eval</code> these methods into existence, but that's getting complicated quickly.  Is there some simpler and/or more elegant method?</p>
+<p>I feel like I should be able to do something like</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">f</span><span class="p">(</span><span class="n">a</span><span class="o">::</span><span class="kt">D</span><span class="p">{</span><span class="kt">T</span><span class="p">})</span> <span class="k">where</span> <span class="p">{</span><span class="kt">T</span><span class="p">,</span> <span class="kt">D</span><span class="o">&lt;:</span><span class="kt">A</span><span class="p">}</span> <span class="o">=</span> <span class="kt">D</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}()</span>
+</code></pre></div>
+<p>But all my attempts are being rejected.</p>
+
+
+
+<a name="242921165"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Functions%20of%20abstract%20parametric%20types/near/242921165" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Functions.20of.20abstract.20parametric.20types.html#242921165">(Jun 16 2021 at 18:20)</a>:</h4>
+<p>From this very old discussion <a href="https://discourse.julialang.org/t/extract-type-name-only-from-parametric-type/14188/20">https://discourse.julialang.org/t/extract-type-name-only-from-parametric-type/14188/20</a></p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">f</span><span class="p">(</span><span class="n">a</span><span class="o">::</span><span class="kt">T</span><span class="p">)</span> <span class="k">where</span> <span class="p">{</span><span class="kt">T</span> <span class="o">&lt;:</span> <span class="kt">A</span><span class="p">}</span> <span class="o">=</span> <span class="n">Base</span><span class="o">.</span><span class="n">typename</span><span class="p">(</span><span class="n">T</span><span class="p">)</span><span class="o">.</span><span class="kt">wrapper</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}()</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">x</span> <span class="o">=</span> <span class="kt">B</span><span class="p">{</span><span class="kt">Int</span><span class="p">}()</span>
+<span class="kt">B</span><span class="p">{</span><span class="kt">Int64</span><span class="p">}()</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="kt">B</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}()</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">x</span> <span class="o">=</span> <span class="kt">C</span><span class="p">{</span><span class="kt">Int</span><span class="p">}()</span>
+<span class="kt">C</span><span class="p">{</span><span class="kt">Int64</span><span class="p">}()</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="kt">C</span><span class="p">{</span><span class="kt">Float64</span><span class="p">}()</span>
+</code></pre></div>
+
+
+
+<a name="242921214"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Functions%20of%20abstract%20parametric%20types/near/242921214" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Functions.20of.20abstract.20parametric.20types.html#242921214">(Jun 16 2021 at 18:20)</a>:</h4>
+<p>It's somewhat scary of course, but still valid.<br>
+Probably there are better ways already.</p>
+
+
+
+<a name="242925651"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Functions%20of%20abstract%20parametric%20types/near/242925651" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mike <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Functions.20of.20abstract.20parametric.20types.html#242925651">(Jun 16 2021 at 18:55)</a>:</h4>
+<p>This looks like a good solution.  Should also work when somebody else comes along and creates another subtype; my loop over <code>[:B, :C]</code> wouldn't work for those types.  Thanks!</p>
+
+
+
+<a name="242926421"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Functions%20of%20abstract%20parametric%20types/near/242926421" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Functions.20of.20abstract.20parametric.20types.html#242926421">(Jun 16 2021 at 19:00)</a>:</h4>
+<p>Yeah, this is something that for whatever reason, the julia devs seem to thing is not important enough to be an actual language feature and I don't understand why</p>
+
+
+
+<a name="242997286"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Functions%20of%20abstract%20parametric%20types/near/242997286" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Functions.20of.20abstract.20parametric.20types.html#242997286">(Jun 17 2021 at 10:17)</a>:</h4>
+<p>I think the recent comments in <a href="https://github.com/JuliaLang/julia/issues/35543">https://github.com/JuliaLang/julia/issues/35543</a> suggest it will be made a language feature soon-ish</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

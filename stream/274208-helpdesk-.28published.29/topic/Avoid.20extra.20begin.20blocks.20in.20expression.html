@@ -1,0 +1,148 @@
+<html>
+<head><meta charset="utf-8"><title>Avoid extra begin blocks in expression · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Avoid.20extra.20begin.20blocks.20in.20expression.html">Avoid extra begin blocks in expression</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="288839372"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Avoid%20extra%20begin%20blocks%20in%20expression/near/288839372" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Avoid.20extra.20begin.20blocks.20in.20expression.html#288839372">(Jul 07 2022 at 17:34)</a>:</h4>
+<p>Is there a reasonable way to avoid the <code>begin</code> block wrapping the nested <code>let</code> block here:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">buildexpr</span><span class="p">(</span><span class="n">x</span><span class="o">::</span><span class="kt">Tuple</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">subexprs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">map</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">xi</span><span class="w"></span>
+<span class="w">        </span><span class="n">buildexpr</span><span class="p">(</span><span class="n">xi</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">end</span><span class="w"></span>
+<span class="w">    </span><span class="k">quote</span><span class="w"></span>
+<span class="w">        </span><span class="k">let</span><span class="w"></span>
+<span class="w">            </span><span class="o">$</span><span class="p">(</span><span class="n">subexprs</span><span class="o">...</span><span class="p">)</span><span class="w"></span>
+<span class="w">            </span><span class="n">foo</span><span class="p">(</span><span class="o">$</span><span class="n">x</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">end</span><span class="w"></span>
+<span class="w">    </span><span class="k">end</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+
+<span class="n">buildexpr</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">:</span><span class="p">(</span><span class="o">$</span><span class="n">x</span><span class="p">)</span><span class="w"></span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">buildexpr</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,(</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">)))</span><span class="w"></span>
+<span class="k">quote</span><span class="w"></span>
+<span class="w">    </span><span class="cm">#= REPL[289]:6 =#</span><span class="w"></span>
+<span class="w">    </span><span class="k">let</span><span class="w"></span>
+<span class="w">        </span><span class="cm">#= REPL[289]:7 =#</span><span class="w"></span>
+<span class="w">        </span><span class="mi">1</span><span class="w"></span>
+<span class="w">        </span><span class="mi">2</span><span class="w"></span>
+<span class="w">        </span><span class="k">begin</span><span class="w"></span>
+<span class="w">            </span><span class="cm">#= REPL[289]:6 =#</span><span class="w"></span>
+<span class="w">            </span><span class="k">let</span><span class="w"></span>
+<span class="w">                </span><span class="cm">#= REPL[289]:7 =#</span><span class="w"></span>
+<span class="w">                </span><span class="mi">3</span><span class="w"></span>
+<span class="w">                </span><span class="mi">4</span><span class="w"></span>
+<span class="w">                </span><span class="cm">#= REPL[289]:8 =#</span><span class="w"></span>
+<span class="w">                </span><span class="n">foo</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">))</span><span class="w"></span>
+<span class="w">            </span><span class="k">end</span><span class="w"></span>
+<span class="w">        </span><span class="k">end</span><span class="w"></span>
+<span class="w">        </span><span class="cm">#= REPL[289]:8 =#</span><span class="w"></span>
+<span class="w">        </span><span class="n">foo</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">)))</span><span class="w"></span>
+<span class="w">    </span><span class="k">end</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+<p>I guess they don't do anything bad, but I would like to make the generated expression a bit more readable as there might be many levels.</p>
+
+
+
+<a name="288848919"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Avoid%20extra%20begin%20blocks%20in%20expression/near/288848919" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Abbott <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Avoid.20extra.20begin.20blocks.20in.20expression.html#288848919">(Jul 07 2022 at 18:43)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">buildexpr</span><span class="p">(</span><span class="n">x</span><span class="o">::</span><span class="kt">Tuple</span><span class="p">)</span><span class="w"></span>
+<span class="w">           </span><span class="n">subexprs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">map</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">xi</span><span class="w"></span>
+<span class="w">               </span><span class="n">buildexpr</span><span class="p">(</span><span class="n">xi</span><span class="p">)</span><span class="w"></span>
+<span class="w">           </span><span class="k">end</span><span class="w"></span>
+<span class="w">           </span><span class="o">:</span><span class="p">(</span><span class="k">let</span><span class="w"></span>
+<span class="w">               </span><span class="o">$</span><span class="p">(</span><span class="n">subexprs</span><span class="o">...</span><span class="p">)</span><span class="w"></span>
+<span class="w">               </span><span class="n">foo</span><span class="p">(</span><span class="o">$</span><span class="n">x</span><span class="p">)</span><span class="w"></span>
+<span class="w">           </span><span class="k">end</span><span class="p">)</span><span class="w"></span>
+<span class="w">       </span><span class="k">end</span><span class="w"></span>
+<span class="n">buildexpr</span><span class="w"> </span><span class="p">(</span><span class="n">generic</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="n">methods</span><span class="p">)</span><span class="w"></span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">buildexpr</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,(</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">)))</span><span class="w"></span>
+<span class="o">:</span><span class="p">(</span><span class="k">let</span><span class="w"></span>
+<span class="w">      </span><span class="cm">#= REPL[185]:6 =#</span><span class="w"></span>
+<span class="w">      </span><span class="mi">1</span><span class="w"></span>
+<span class="w">      </span><span class="mi">2</span><span class="w"></span>
+<span class="w">      </span><span class="k">let</span><span class="w"></span>
+<span class="w">          </span><span class="cm">#= REPL[185]:6 =#</span><span class="w"></span>
+<span class="w">          </span><span class="mi">3</span><span class="w"></span>
+<span class="w">          </span><span class="mi">4</span><span class="w"></span>
+<span class="w">          </span><span class="cm">#= REPL[185]:7 =#</span><span class="w"></span>
+<span class="w">          </span><span class="n">foo</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">))</span><span class="w"></span>
+<span class="w">      </span><span class="k">end</span><span class="w"></span>
+<span class="w">      </span><span class="cm">#= REPL[185]:7 =#</span><span class="w"></span>
+<span class="w">      </span><span class="n">foo</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">)))</span><span class="w"></span>
+<span class="w">  </span><span class="k">end</span><span class="p">)</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="288853127"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Avoid%20extra%20begin%20blocks%20in%20expression/near/288853127" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Avoid.20extra.20begin.20blocks.20in.20expression.html#288853127">(Jul 07 2022 at 19:18)</a>:</h4>
+<p>Wow, here I have been thinking for the longest time that <code>qoute</code> blocks are just a way to do <code>:()</code> with fewer parentheses. The manual seems to just kinda introduce them like they are equivalent.</p>
+
+
+
+<a name="288854161"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Avoid%20extra%20begin%20blocks%20in%20expression/near/288854161" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Avoid.20extra.20begin.20blocks.20in.20expression.html#288854161">(Jul 07 2022 at 19:26)</a>:</h4>
+<p><code>:()</code> is more like a quasiquote with interpolation</p>
+
+
+
+<a name="288854210"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Avoid%20extra%20begin%20blocks%20in%20expression/near/288854210" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Avoid.20extra.20begin.20blocks.20in.20expression.html#288854210">(Jul 07 2022 at 19:26)</a>:</h4>
+<p>without interpolation, it's a "return the literal expression written here" thing</p>
+
+
+
+<a name="288854400"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Avoid%20extra%20begin%20blocks%20in%20expression/near/288854400" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Avoid.20extra.20begin.20blocks.20in.20expression.html#288854400">(Jul 07 2022 at 19:28)</a>:</h4>
+<p>Yeah, that's how I mapped it to my Lisp brain as well.</p>
+
+
+
+<a name="288854496"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Avoid%20extra%20begin%20blocks%20in%20expression/near/288854496" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Avoid.20extra.20begin.20blocks.20in.20expression.html#288854496">(Jul 07 2022 at 19:29)</a>:</h4>
+<p>I use that pattern all the time for combining multiple let blocks into one, though not in Julia...yet <span aria-label="smile" class="emoji emoji-1f642" role="img" title="smile">:smile:</span></p>
+
+
+
+<a name="288854572"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Avoid%20extra%20begin%20blocks%20in%20expression/near/288854572" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Avoid.20extra.20begin.20blocks.20in.20expression.html#288854572">(Jul 07 2022 at 19:29)</a>:</h4>
+<p><span class="user-mention" data-user-id="306754">@Sukera</span>  Why do you have to distinguish between those two cases?</p>
+
+
+
+<a name="288854965"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Avoid%20extra%20begin%20blocks%20in%20expression/near/288854965" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Avoid.20extra.20begin.20blocks.20in.20expression.html#288854965">(Jul 07 2022 at 19:32)</a>:</h4>
+<p>because the interpolate part gets interpolated into the returned expression, instead of being an <code>interpolate</code> block in the expression</p>
+
+
+
+<a name="288855002"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Avoid%20extra%20begin%20blocks%20in%20expression/near/288855002" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Avoid.20extra.20begin.20blocks.20in.20expression.html#288855002">(Jul 07 2022 at 19:32)</a>:</h4>
+<p><span class="user-mention" data-user-id="306754">@Sukera</span> This was how I thought about both <code>qoute</code> and <code>:()</code>. My revised intuition is that they are equivalent, its just that a <code>quote</code> adds a <code>begin</code> block when lowered (or something) which happened to show up here.</p>
+
+
+
+<a name="288855008"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Avoid%20extra%20begin%20blocks%20in%20expression/near/288855008" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Michael Fiano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Avoid.20extra.20begin.20blocks.20in.20expression.html#288855008">(Jul 07 2022 at 19:32)</a>:</h4>
+<p>Basically, quoting is not the same as quasiquoting</p>
+
+
+
+<a name="288855036"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Avoid%20extra%20begin%20blocks%20in%20expression/near/288855036" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Avoid.20extra.20begin.20blocks.20in.20expression.html#288855036">(Jul 07 2022 at 19:32)</a>:</h4>
+<p>as in, the returned expression has no idea it got interpolated into</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

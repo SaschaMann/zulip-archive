@@ -1,0 +1,386 @@
+[
+    {
+        "content": "<p>So I have a dataframe with a bunch of benchmarking data, I want to save this dataframe (preferably as plaintext), together with some metadata with things like the machine the benchmarks were performed on, the git commit of the package when it got benchmarked, etc. What's the best way to go about this?</p>\n<p>There's no obvious way to include metadata in a CSV file from what I can tell. Do I need to work with JSON or something here?</p>",
+        "id": 423062769,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1708709474
+    },
+    {
+        "content": "<p>My go-to usually would just be to use JLD2 to store a <code>DataFrame</code> and struct with my metadata, but I'd like to store it as plaintext and have the results not be tied to literal julia objects if possible.</p>",
+        "id": 423062865,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1708709517
+    },
+    {
+        "content": "<p>Very imperfect but my recent solution to this problem was to smash together a TOML file as a header with the CSV at the bottom. I can re-ingest the CSV by just skipping the correct number of rows and separately I can read the meta-data by slicing off the CSV at the bottom and parsing the TOML file at the top. Not the best solution ever but has worked well enough I suppose.</p>\n<p>For now I just manually tell the reader how many rows to skip, not sure what would be the easiest way to detect the \"split point\" automatically so I could write a function that handles both halves automatically for me.</p>",
+        "id": 423068042,
+        "sender_full_name": "Jordan Cluts",
+        "timestamp": 1708711284
+    },
+    {
+        "content": "<p>JLD2 uses HDF5 files, and HDF5 files support arbitrary key-value metadata (attributes). What I'm less sure about is whether you can use JLD2 itself to read and write such metadata, or if you'd need <a href=\"https://github.com/JuliaIO/HDF5.jl\">https://github.com/JuliaIO/HDF5.jl</a></p>",
+        "id": 423068191,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1708711329
+    },
+    {
+        "content": "<p>But HDF5 isn't human-readable right?</p>",
+        "id": 423068557,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1708711509
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together/near/423068557\">said</a>:</p>\n<blockquote>\n<p>But HDF5 isn't human-readable right?</p>\n</blockquote>\n<p>Answering on behalf of Brian, that's correct. It's a binary format.</p>",
+        "id": 423068757,
+        "sender_full_name": "Jordan Cluts",
+        "timestamp": 1708711596
+    },
+    {
+        "content": "<p>Another low-tech solution would be to put the data file and metadata file into a single tarball or other archive. I personally would prefer everything in one JSON or HDF5 file, but it's hard to beat the simplicity of this approach</p>",
+        "id": 423068776,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1708711605
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together/near/423068557\">said</a>:</p>\n<blockquote>\n<p>But HDF5 isn't human-readable right?</p>\n</blockquote>\n<p>Correct. I interpreted your statement as being fine with storing the dataframe as binary, as long as the metadata is readable outside of Julia</p>",
+        "id": 423068915,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1708711666
+    },
+    {
+        "content": "<p>I personally advocate the tarball approach.  Trying to cram different data formats together into the same file in an ad hoc way rarely ends well.</p>",
+        "id": 423068922,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1708711668
+    },
+    {
+        "content": "<p>Man, data sucks.</p>",
+        "id": 423069029,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1708711698
+    },
+    {
+        "content": "<p>If the requirement is to have everything plaintext and readable, the JSON table approach may be the way to go. Less efficient, but no tarball required</p>",
+        "id": 423069041,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1708711700
+    },
+    {
+        "content": "<p>I'll probably just go for a binary format, because the whole tarball thing sounds awful</p>",
+        "id": 423069331,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1708711807
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269446\">Expanding Man</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together/near/423068922\">said</a>:</p>\n<blockquote>\n<p>I personally advocate the tarball approach.  Trying to cram different data formats together into the same file in an ad hoc way rarely ends well.</p>\n</blockquote>\n<p>There is a legacy \"format\" at my employer that is a few thousand bytes of ascii with metadata fields (I don't recall the exact number) directly prepended to Float32 raw arrays. You have to just know the standard ascii size and split it at the right spot to ingest. It's horrible. I tried to advocate for a .zip archive custom format (or HDF5) but was shot down.</p>",
+        "id": 423069503,
+        "sender_full_name": "Jordan Cluts",
+        "timestamp": 1708711878
+    },
+    {
+        "content": "<p>Parquet has limited metadata support, and I believe arrow does as well,  though my feeling about your context (\"a bunch of benchmarking data\") is that you probably shouldn't be eager to start whipping out dedicated tabular formats.</p>",
+        "id": 423069587,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1708711919
+    },
+    {
+        "content": "<p>I figured it would be better to not recommend Parquet in case you had thoughts :D</p>",
+        "id": 423069663,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1708711942
+    },
+    {
+        "content": "<p>Yeah, I am probably notorious by now for being both the primary maintainer of parquet in the julia ecosystem and an individual who hates the parquet format.</p>",
+        "id": 423069729,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1708711974
+    },
+    {
+        "content": "<p>I'm honestly tempted to just write a CSV with an extra column that has the first cell holding the metadata, and the rest of the column empty</p>",
+        "id": 423069807,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1708712009
+    },
+    {
+        "content": "<p>I just had the same thought</p>",
+        "id": 423069837,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1708712025
+    },
+    {
+        "content": "<p>all I want is CSV with a quick description. This is so stupid.</p>",
+        "id": 423069859,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1708712035
+    },
+    {
+        "content": "<p>I wonder how many of these types of \"need a quick table format with some other stuff\" could be handled by a version of JSON or TOML that included a CSV field as one of the embeddable types</p>",
+        "id": 423069972,
+        "sender_full_name": "Jordan Cluts",
+        "timestamp": 1708712073
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together/near/423069859\">said</a>:</p>\n<blockquote>\n<p>This is so stupid.</p>\n</blockquote>\n<p>The perpetual sentiment of \"data scientists\" everywhere.  Just wait until you see SQL.</p>",
+        "id": 423069982,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1708712079
+    },
+    {
+        "content": "<p><a href=\"https://stackoverflow.com/a/33846112\">https://stackoverflow.com/a/33846112</a> TIL</p>",
+        "id": 423070005,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1708712094
+    },
+    {
+        "content": "<p>Wonder if <a href=\"https://juliahub.com/ui/Packages/General/CSV\">CSV.jl</a> knows about this</p>",
+        "id": 423070030,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1708712104
+    },
+    {
+        "content": "<p>You can tell <a href=\"https://juliahub.com/ui/Packages/General/CSV\">CSV.jl</a> about comment characters, I'm pretty sure.</p>",
+        "id": 423070056,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1708712121
+    },
+    {
+        "content": "<p>I was just going to say that ways of appending data to csv's or concatenating csv's of different formats in the same file are not totally unheard of but I wouldn't necessarily recommend it.</p>",
+        "id": 423070165,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1708712164
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"278065\">Brian Chen</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together/near/423070030\">said</a>:</p>\n<blockquote>\n<p>Wonder if <a href=\"https://juliahub.com/ui/Packages/General/CSV\">CSV.jl</a> knows about this</p>\n</blockquote>\n<p>lolno</p>",
+        "id": 423070458,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1708712286
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia console\"><pre><span></span><code><span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"k\">using</span><span class=\"w\"> </span><span class=\"n\">CSV</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">DataFrames</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">file</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"n\">tempname</span><span class=\"p\">()</span><span class=\"w\"> </span><span class=\"o\">*</span><span class=\"w\"> </span><span class=\"s\">\".csv\"</span><span class=\"p\">;</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">open</span><span class=\"p\">(</span><span class=\"n\">file</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"s\">\"w+\"</span><span class=\"p\">)</span><span class=\"w\"> </span><span class=\"k\">do</span><span class=\"w\"> </span><span class=\"n\">io</span>\n<span class=\"w\">           </span><span class=\"n\">write</span><span class=\"p\">(</span><span class=\"n\">io</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"s\">\"\"\"</span>\n<span class=\"w\">      </span><span class=\"s\"> #publisher,W3C</span>\n<span class=\"w\">      </span><span class=\"s\"> #updated,2015-10-17T00:00:00Z</span>\n<span class=\"w\">      </span><span class=\"s\"> #name,sensor,temperature</span>\n<span class=\"w\">      </span><span class=\"s\"> #datatype,string,float</span>\n<span class=\"w\">      </span><span class=\"s\"> sensor,temperature</span>\n<span class=\"w\">      </span><span class=\"s\"> s-1,25.5</span>\n<span class=\"w\">      </span><span class=\"s\"> \"\"\"</span><span class=\"p\">)</span>\n<span class=\"w\">       </span><span class=\"k\">end</span><span class=\"p\">;</span>\n\n<span class=\"gp\">julia&gt;</span><span class=\"w\"> </span><span class=\"n\">CSV</span><span class=\"o\">.</span><span class=\"n\">read</span><span class=\"p\">(</span><span class=\"n\">file</span><span class=\"p\">,</span><span class=\"w\"> </span><span class=\"n\">DataFrame</span><span class=\"p\">)</span>\n<span class=\"go\">┌ Warning: thread = 1 warning: parsed expected 2 columns, but didn't reach end of line around data row: 2. Parsing extra columns and widening final columnset</span>\n<span class=\"go\">└ @ CSV ~/.julia/packages/CSV/aoJqo/src/file.jl:587</span>\n<span class=\"go\">┌ Warning: thread = 1 warning: only found 2 / 3 columns around data row: 4. Filling remaining columns with `missing`</span>\n<span class=\"go\">└ @ CSV ~/.julia/packages/CSV/aoJqo/src/file.jl:586</span>\n<span class=\"go\">5×3 DataFrame</span>\n<span class=\"go\"> Row │ #publisher  W3C                   Column3</span>\n<span class=\"go\">     │ String15    String31              String15?</span>\n<span class=\"go\">─────┼───────────────────────────────────────────────</span>\n<span class=\"go\">   1 │ #updated    2015-10-17T00:00:00Z  missing</span>\n<span class=\"go\">   2 │ #name       sensor                temperature</span>\n<span class=\"go\">   3 │ #datatype   string                float</span>\n<span class=\"go\">   4 │ sensor      temperature           missing</span>\n<span class=\"go\">   5 │ s-1         25.5                  missing</span>\n</code></pre></div>",
+        "id": 423070470,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1708712290
+    },
+    {
+        "content": "<p>As <span class=\"user-mention\" data-user-id=\"269446\">@Expanding Man</span> said, at least it can be taught to ignore the comments</p>",
+        "id": 423070523,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1708712320
+    },
+    {
+        "content": "<p><a href=\"https://csv.juliadata.org/latest/examples.html#comment_example\">https://csv.juliadata.org/latest/examples.html#comment_example</a></p>",
+        "id": 423070533,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1708712324
+    },
+    {
+        "content": "<p>But that still leaves having to parse them out into a usable form</p>",
+        "id": 423070584,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1708712344
+    },
+    {
+        "content": "<p>yeah</p>",
+        "id": 423070597,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1708712350
+    },
+    {
+        "content": "<p>Probably what we need, at least from a Julia ecosystem point of view, is utility functions for making it as simple and effortless as possible to do what you are trying to do with tarballs.  Will still involve separate objects from an API point of view though (i.e. metadata as a separate object from table).</p>",
+        "id": 423070837,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1708712456
+    },
+    {
+        "content": "<p><a href=\"/user_uploads/7178/s-WRXBYIw64w89HFD8r4xUiR/image.png\">image.png</a></p>\n<div class=\"message_inline_image\"><a href=\"/user_uploads/7178/s-WRXBYIw64w89HFD8r4xUiR/image.png\" title=\"image.png\"><img src=\"/user_uploads/7178/s-WRXBYIw64w89HFD8r4xUiR/image.png\"></a></div>",
+        "id": 423071219,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1708712601
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269446\">Expanding Man</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together/near/423070837\">said</a>:</p>\n<blockquote>\n<p>Probably what we need, at least from a Julia ecosystem point of view, is utility functions for making it as simple and effortless as possible to do what you are trying to do with tarballs.  Will still involve separate objects from an API point of view though (i.e. metadata as a separate object from table).</p>\n</blockquote>\n<p>Depending on one's view of how \"human readable\" a tarball or zip archive is you're just reinventing HDF5 at that point, no?</p>",
+        "id": 423071268,
+        "sender_full_name": "Jordan Cluts",
+        "timestamp": 1708712621
+    },
+    {
+        "content": "<p>It's possible using a zip instead would make this easier. <a href=\"https://github.com/JuliaIO/ZipArchives.jl\">https://github.com/JuliaIO/ZipArchives.jl</a> for example lets you read out individual entries with a single call</p>",
+        "id": 423071795,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1708712827
+    },
+    {
+        "content": "<p>I guess my next question would then become, if I use HDF5, what's the easiest way to store tabular data with heterogeneous columns?</p>\n<p>I'm pretty tempted to just shove a DataFrame into JLD2 but I am kinda worried about the compatability of it if the future layout of DataFrames changes</p>",
+        "id": 423072016,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1708712907
+    },
+    {
+        "content": "<p>I guess I could always go for a <code>Vector{&lt;:NamedTuple}</code></p>",
+        "id": 423072046,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1708712921
+    },
+    {
+        "content": "<p>I'm only storing <code>Int</code>, <code>Float64</code>, and <code>String</code></p>",
+        "id": 423072133,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1708712956
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"274356\">Jordan Cluts</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together/near/423071268\">said</a>:</p>\n<blockquote>\n<p>Depending on one's view of how \"human readable\" a tarball or zip archive is you're just reinventing HDF5 at that point, no?</p>\n</blockquote>\n<p>Not really.  You could of course argue that HDF5 supports any format because you can stick a binary blob in it, but by design there is a natural isomorphism between a tarball and a file system directory, so you don't need any additional conventions on top of what already exists in the file system to identify files or file format metadata.</p>",
+        "id": 423072739,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1708713200
+    },
+    {
+        "content": "<p>I guess I see what you're saying but I suppose this query started with \"I have a dataframe and some metadata and I'd like to store and retrieve them\" instead of \"I have a folder of files of various kinds I'd like to keep together\" and while it's easy to transition between those two states HDF5 handles the first rather directly while tarball/zip handle the latter rather directly. And in neither case can you directly inspect the result with a text editor.</p>\n<p>(For a broad definition of the word \"directly\")</p>",
+        "id": 423073506,
+        "sender_full_name": "Jordan Cluts",
+        "timestamp": 1708713528
+    },
+    {
+        "content": "<p>yeah, dealing with multiple files is exactly what I want to avoid</p>",
+        "id": 423073677,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1708713606
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together/near/423072133\">said</a>:</p>\n<blockquote>\n<p>I'm only storing <code>Int</code>, <code>Float64</code>, and <code>String</code></p>\n</blockquote>\n<p>So in theory HDF5 eats this use case for breakfast, but I can only find very old an conflicting info on whether there's any integration between <a href=\"https://juliahub.com/ui/Packages/General/DF\">DF.jl</a> and <a href=\"https://juliahub.com/ui/Packages/General/HDF5\">HDF5.jl</a></p>",
+        "id": 423073803,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1708713669
+    },
+    {
+        "content": "<p><a href=\"https://github.com/JuliaData/DataFrames.jl/issues/64\">https://github.com/JuliaData/DataFrames.jl/issues/64</a></p>",
+        "id": 423073820,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1708713677
+    },
+    {
+        "content": "<p><a href=\"https://github.com/JuliaIO/HDF5.jl/issues/122\">https://github.com/JuliaIO/HDF5.jl/issues/122</a></p>",
+        "id": 423073984,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1708713737
+    },
+    {
+        "content": "<p>Would have to look into how JLD serializes dataframes</p>",
+        "id": 423074026,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1708713756
+    },
+    {
+        "content": "<p>Honestly at this point, I think having everything in one JSON file might be the least bad approach as long as you don't have too much data</p>",
+        "id": 423074107,
+        "sender_full_name": "Brian Chen",
+        "timestamp": 1708713789
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"278065\">Brian Chen</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together/near/423074107\">said</a>:</p>\n<blockquote>\n<p>Honestly at this point, I think having everything in one JSON file might be the least bad approach as long as you don't have too much data</p>\n</blockquote>\n<p>I haven't tried this but a similar idea is simply to use TOML directly as well. It would be more verbose and less readable than a CSV but for \"small\" amounts of data could work. It supports a type called an <a href=\"https://toml.io/en/v1.0.0#array-of-tables\">Array of Tables</a> which is basically identical to a vector of named tuples i.e. a <a href=\"https://juliahub.com/ui/Packages/General/Tables\">Tables.jl</a> compatible source (I don't actually know what <a href=\"https://juliahub.com/ui/Packages/General/TOML\">TOML.jl</a> converts this to but presumably getting it back into a DataFrame should be pretty easy).</p>\n<p>edit: I went and checked and <a href=\"https://juliahub.com/ui/Packages/General/TOML\">TOML.jl</a> generates a dictionary containing a vector of dictionaries. It'd take a bit of finagling to convert the dictionaries all to named tuples and eventually into a DataFrame but definitely conceivable.</p>",
+        "id": 423075534,
+        "sender_full_name": "Jordan Cluts",
+        "timestamp": 1708714351
+    },
+    {
+        "content": "<p>My point, more broadly, is that readers of tarballs already understand the concept of files and the usual metadata tricks (file extensions and magic bytes) for specifying their format.  A reader of a tarball containing a bunch of separate data in different formats should then be able to understand it with almost no context, whereas with HDF5 you'd need to specify which blobs are files.  Maybe there is already a standard for this, but my understanding was that it is not necessarily guaranteed that you are supposed to treat paths in HDF5 as paths in a file system.</p>",
+        "id": 423076461,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1708714764
+    },
+    {
+        "content": "<p><a href=\"https://juliahub.com/ui/Packages/General/DataFrames\">DataFrames.jl</a> has table-level metadata <a href=\"https://dataframes.juliadata.org/stable/lib/functions/#DataAPI.metadata\">https://dataframes.juliadata.org/stable/lib/functions/#DataAPI.metadata</a> <br>\n<a href=\"https://juliahub.com/ui/Packages/General/Arrow\">Arrow.jl</a> does too <a href=\"https://arrow.apache.org/julia/stable/manual/#Custom-application-metadata\">https://arrow.apache.org/julia/stable/manual/#Custom-application-metadata</a></p>\n<p>I haven't tried it but that's where I'd start.</p>",
+        "id": 423077026,
+        "sender_full_name": "jar",
+        "timestamp": 1708714997
+    },
+    {
+        "content": "<p>The metadata doesn't get preserved when you write it to a CSV or other non-binary format</p>",
+        "id": 423077147,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1708715044
+    },
+    {
+        "content": "<p>Metadata won't get preserved if you write it into a format that doesn't support metadata, such as CSV. Other human-readable formats may support metadata.</p>",
+        "id": 423077888,
+        "sender_full_name": "jar",
+        "timestamp": 1708715361
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"326776\">jar</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together/near/423077888\">said</a>:</p>\n<blockquote>\n<p>Metadata won't get preserved if you write it into a format that doesn't support metadata, such as CSV. Other human-readable formats may support metadata.</p>\n</blockquote>\n<p>Yes but it's frustrating that for \"human-readable table formats\" CSV is the clear victor except for its glaring lack of standard frontmatter/metadata support. And alternatives that handle this sort of key-value store well (JSON, TOML, etc.) in turn don't handle anything larger than very small tables gracefully or at all. Clearly there <em>could</em> be a universal meta-data CSV standard but we (society writ large, not Julia community) haven't managed to do so.</p>",
+        "id": 423078531,
+        "sender_full_name": "Jordan Cluts",
+        "timestamp": 1708715632
+    },
+    {
+        "content": "<p>I don't think smarter text formats is the way to go. With either text or binary formats I'm going to need a program to display and edit a table. A simple program like <code>cat</code> isn't going to cut it for either, it's gotta be at least somewhat smart. So instead of trying to make text formats smarter, I'd rather we make our viewers/editors for binary tables more usable.</p>",
+        "id": 423079563,
+        "sender_full_name": "jar",
+        "timestamp": 1708716052
+    },
+    {
+        "content": "<p>I really don't think it's that unreasonable or weird to want some quick over-all metadata at the start of a CSV file</p>",
+        "id": 423079639,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1708716088
+    },
+    {
+        "content": "<p>like literally just a string description field. Nothing clever</p>",
+        "id": 423079703,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1708716116
+    },
+    {
+        "content": "<p>So you can look at it in a text editor?</p>",
+        "id": 423079915,
+        "sender_full_name": "jar",
+        "timestamp": 1708716198
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"326776\">jar</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together/near/423079563\">said</a>:</p>\n<blockquote>\n<p>I don't think smarter text formats is the way to go. With either text or binary formats I'm going to need a program to display and edit a table. A simple program like <code>cat</code> isn't going to cut it for either, it's gotta be at least somewhat smart. So instead of trying to make text formats smarter, I'd rather we make our viewers/editors for binary tables more usable.</p>\n</blockquote>\n<p>I agree with the sentiment completely. I tried that approach and the senior engineers (not computer science but other engineering fields) at my employer were a) intolerant of change and b) refused to use anything that can't be investigated as text since they don't trust any binary reader program to still work 150 years from now which apparently is a crucial requirement. As such I have been forced to be inventive with text formats and sympathize strongly with Mason about this.</p>",
+        "id": 423080084,
+        "sender_full_name": "Jordan Cluts",
+        "timestamp": 1708716260
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"326776\">jar</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Saving.20tabular.20data.20and.20metadata.20together/near/423079915\">said</a>:</p>\n<blockquote>\n<p>So you can look at it in a text editor?</p>\n</blockquote>\n<p>in this case, yes, I just want someone to be able to look at it and see what it says. But in more advanced examples, if someone wanted to put some data in there and parse it themselves they should be free to do so</p>",
+        "id": 423080346,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1708716366
+    },
+    {
+        "content": "<blockquote>\n<p>put some data in there and parse it themselves</p>\n</blockquote>\n<p>what do these mean?</p>",
+        "id": 423080622,
+        "sender_full_name": "jar",
+        "timestamp": 1708716467
+    },
+    {
+        "content": "<p>whatever they want it to mean</p>",
+        "id": 423081199,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1708716675
+    },
+    {
+        "content": "<p>Anyway you can put <code>#</code> comments at the top of a csv, many readers have an option to strip them</p>",
+        "id": 423082019,
+        "sender_full_name": "jar",
+        "timestamp": 1708717016
+    },
+    {
+        "content": "<p>but not to read them</p>",
+        "id": 423082406,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1708717162
+    },
+    {
+        "content": "<p>Fwiw, my lesson with data (at least on HPC clusters): either use different files (annoying but simple) or established binary formats (like e.g. HDF5).</p>\n<p>I wouldn't use JLD2 for \"long term\" storage. Actually, I did in the past and had to manually convert everything to plain HDF5 because of incompatibilities and broken files.</p>\n<p>As for the \"human readable\" debate, I kind of agree with @jar. Binary viewers, say for HDF5, are fine, as long as it is a established binary format with a standard.</p>",
+        "id": 423234806,
+        "sender_full_name": "Carsten Bauer",
+        "timestamp": 1708839631
+    },
+    {
+        "content": "<p>Probably not the solution you want, but <a href=\"https://juliahub.com/ui/Packages/General/TableMetaDataTools\">TableMetaDataTools.jl</a> has some functions to help you save and read metadata. If would have to be a separate toml file, not in the .csv, but at least it automates attaching the metadata in a toml file to the julia object you want.</p>",
+        "id": 469138786,
+        "sender_full_name": "Peter Deffebach",
+        "timestamp": 1725983899
+    }
+]

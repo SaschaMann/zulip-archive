@@ -1,0 +1,92 @@
+<html>
+<head><meta charset="utf-8"><title>`@time_imports` and precompilation · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.60.40time_imports.60.20and.20precompilation.html">`@time_imports` and precompilation</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="399010399"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%60%40time_imports%60%20and%20precompilation/near/399010399" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Alec <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.60.40time_imports.60.20and.20precompilation.html#399010399">(Oct 28 2023 at 04:48)</a>:</h4>
+<p>If something takes a long time with <code>@time_imports</code>, does it likely mean that (more) precompile statements would help or are the causes separate? I'm trying to diagnose and speed up my package's load time.</p>
+
+
+
+<a name="399063254"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%60%40time_imports%60%20and%20precompilation/near/399063254" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.60.40time_imports.60.20and.20precompilation.html#399063254">(Oct 28 2023 at 15:55)</a>:</h4>
+<p>Precompile statements wouldln't help much with that. The good news is that it's absolutely possible to make your package load faster! You should</p>
+<ul>
+<li>Use Julia 1.10 if possible. Loading packages has been optimised for Julia 1.10 relative to Julia 1.9</li>
+<li>Cut down on dependencies, if possible</li>
+<li>
+<p>Gate optional features of packages behind pkg extensions - this can reduce the total number of dependencies by quite a lot<br>
+... and now for the actual optimisation of loading time:</p>
+</li>
+<li>
+<p>Use <a href="https://juliahub.com/ui/Packages/General/Aqua">Aqua.jl</a> to make sure that your package doesn't commit type piracy.</p>
+</li>
+<li>Make sure your package is type stable - or more precisely, that every variable's type is known at compile time when running your package</li>
+<li>A few packages use metaprogramming to programmatically define gigantic methods, or define tens of thousands of methods. Avoid these packages and don't do it yourself</li>
+<li>Make sure your dependencies don't commit type piracy, and that they are type stable, too</li>
+</ul>
+
+
+
+<a name="399063337"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%60%40time_imports%60%20and%20precompilation/near/399063337" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.60.40time_imports.60.20and.20precompilation.html#399063337">(Oct 28 2023 at 15:57)</a>:</h4>
+<p>There is a sense in which the above is pretty easy: Don't commit type piracy, write inferrible code, and don't use metaprogramming to generate massive packages.<br>
+The hard part is - if you have an existing stack with your package and a lot of dependencies, how can you tell exactly which type instability in your dependencies cause issues such that you can surgically fix these issues instead of rewriting 20 different packages? For this, use SnoopCompile. But I'm afraid it'll be a bit of "invalidation whack-a-mole". The real solution is to use type-stable packages.</p>
+
+
+
+<a name="399069991"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%60%40time_imports%60%20and%20precompilation/near/399069991" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.60.40time_imports.60.20and.20precompilation.html#399069991">(Oct 28 2023 at 17:37)</a>:</h4>
+<blockquote>
+<p>Make sure your package is type stable - or more precisely, that every variable's type is known at compile time when running your package</p>
+</blockquote>
+<p>What distinction are you making here?</p>
+
+
+
+<a name="399113328"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%60%40time_imports%60%20and%20precompilation/near/399113328" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Alec <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.60.40time_imports.60.20and.20precompilation.html#399113328">(Oct 29 2023 at 04:26)</a>:</h4>
+<blockquote>
+<p>I'm afraid it'll be a bit of "invalidation whack-a-mole". The real solution is to use type-stable packages.</p>
+</blockquote>
+<p>That's what I'm running into with JET and SnoopCompile - seems like both are highlighting pretty deep sources for possible call errors and invalidations respectively. :(</p>
+
+
+
+<a name="399131328"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%60%40time_imports%60%20and%20precompilation/near/399131328" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.60.40time_imports.60.20and.20precompilation.html#399131328">(Oct 29 2023 at 08:31)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="326776">jar</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/.60.40time_imports.60.20and.20precompilation/near/399069991">said</a>:</p>
+<blockquote>
+<p>What distinction are you making here?</p>
+</blockquote>
+<p>Type stability is (was?) normally considered to only apply to whether the return type could be inferred from the input types. Whereas I'm talking about all variables. Someone called this "type groundedness" but the term hasn't caught on. Maybe "inferrible" is more common</p>
+
+
+
+<a name="399131516"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%60%40time_imports%60%20and%20precompilation/near/399131516" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.60.40time_imports.60.20and.20precompilation.html#399131516">(Oct 29 2023 at 08:33)</a>:</h4>
+<p>Alec: Is this in Base or stdlib packages, or third-party packages? You can try to add issues upstream and maybe a few PRs. I think it would be good to begin pushing people to release inferrible code into the ecosystem. Still today I hear from people who think inferribility is only something you care about in hot loops and due to performance.</p>
+
+
+
+<a name="399188934"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%60%40time_imports%60%20and%20precompilation/near/399188934" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Alec <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.60.40time_imports.60.20and.20precompilation.html#399188934">(Oct 29 2023 at 22:11)</a>:</h4>
+<p>Third party packages. I’m going to rewatch some of the 2021 JuliaCon presentations on latency and try to grok that stuff better so when I open issues I can be more constructive (and maybe even submit PRs)</p>
+
+
+
+<a name="399207392"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%60%40time_imports%60%20and%20precompilation/near/399207392" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Alec <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.60.40time_imports.60.20and.20precompilation.html#399207392">(Oct 30 2023 at 01:53)</a>:</h4>
+<p>First upstream improvement in process of being registered :) <a href="https://gitlab.com/aplavin/AccessorsExtra.jl/-/issues/2">https://gitlab.com/aplavin/AccessorsExtra.jl/-/issues/2</a></p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

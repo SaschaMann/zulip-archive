@@ -1,0 +1,317 @@
+<html>
+<head><meta charset="utf-8"><title>Keyword Arguments in Macros · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Keyword.20Arguments.20in.20Macros.html">Keyword Arguments in Macros</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="347907347"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Keyword%20Arguments%20in%20Macros/near/347907347" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Keyword.20Arguments.20in.20Macros.html#347907347">(Apr 08 2023 at 18:48)</a>:</h4>
+<p>Is there a workaround to provide keyword arguments for macros in Julia? The basic approach doesn't work but I am guessing there is some workaround??</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">macro</span><span class="w"> </span><span class="n">keyword_macro</span><span class="p">(</span><span class="n">f</span><span class="p">;</span><span class="w"> </span><span class="n">kwarg1</span><span class="o">=</span><span class="nb">false</span><span class="p">)</span>
+<span class="w">    </span><span class="k">quote</span>
+<span class="w">        </span><span class="n">println</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="n">kwarg1</span><span class="p">)</span>
+<span class="w">    </span><span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">syntax</span><span class="o">:</span><span class="w"> </span><span class="n">macros</span><span class="w"> </span><span class="n">cannot</span><span class="w"> </span><span class="n">accept</span><span class="w"> </span><span class="n">keyword</span><span class="w"> </span><span class="n">arguments</span><span class="w"> </span><span class="n">around</span>
+</code></pre></div>
+
+
+
+<a name="347907741"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Keyword%20Arguments%20in%20Macros/near/347907741" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Keyword.20Arguments.20in.20Macros.html#347907741">(Apr 08 2023 at 18:53)</a>:</h4>
+<p>This kind of works, but is ugly</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">macro</span><span class="w"> </span><span class="n">print_kwargs</span><span class="p">(</span><span class="n">args</span><span class="o">...</span><span class="p">)</span>
+<span class="w">    </span><span class="c"># Filter out dictionaries (assuming dictionaries are passed for keyword arguments)</span>
+<span class="w">    </span><span class="n">pos_args</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="n">arg</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">arg</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">args</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="o">!</span><span class="p">(</span><span class="n">arg</span><span class="w"> </span><span class="k">isa</span><span class="w"> </span><span class="kt">Expr</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">arg</span><span class="o">.</span><span class="n">head</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="ss">:call</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">arg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="ss">:Dict</span><span class="p">)]</span>
+<span class="w">    </span><span class="n">kw_args</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="n">arg</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">arg</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">args</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">arg</span><span class="w"> </span><span class="k">isa</span><span class="w"> </span><span class="kt">Expr</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">arg</span><span class="o">.</span><span class="n">head</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="ss">:call</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">arg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="ss">:Dict</span><span class="p">)]</span>
+
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="k">quote</span>
+<span class="w">        </span><span class="n">println</span><span class="p">(</span><span class="s">"Keyword arguments: "</span><span class="p">,</span><span class="w"> </span><span class="o">$</span><span class="p">(</span><span class="n">kw_args</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+<span class="w">    </span><span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="nd">@print_kwargs</span><span class="w"> </span><span class="n">arg1</span><span class="w"> </span><span class="n">arg2</span><span class="w"> </span><span class="n">arg3</span><span class="w"> </span><span class="kt">Dict</span><span class="p">(</span><span class="ss">:a</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="ss">:b</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="ss">:c</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">"three"</span><span class="p">)</span>
+<span class="c">#returns Keyword arguments: Dict{Symbol, Any}(:a =&gt; 1, :b =&gt; 2, :c =&gt; "three")</span>
+</code></pre></div>
+
+
+
+<a name="347912346"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Keyword%20Arguments%20in%20Macros/near/347912346" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Keyword.20Arguments.20in.20Macros.html#347912346">(Apr 08 2023 at 19:49)</a>:</h4>
+<p>I came up with something like this but I am guessing there is something better</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">_button_dict</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Dict</span><span class="p">(</span>
+<span class="w">    </span><span class="s">"disabled"</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nb">false</span><span class="p">,</span>
+<span class="w">    </span><span class="s">"onclick"</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">""</span>
+<span class="p">)</span>
+
+<span class="k">macro</span><span class="w"> </span><span class="n">button</span><span class="p">(</span><span class="n">text</span><span class="p">,</span><span class="w"> </span><span class="n">kwargs</span><span class="o">...</span><span class="p">)</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">kwarg</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">kwargs</span>
+<span class="w">        </span><span class="n">kwarg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">eval</span><span class="p">(</span><span class="n">kwarg</span><span class="p">)</span>
+<span class="w">        </span><span class="n">_button_dict</span><span class="p">[</span><span class="s">"</span><span class="si">$</span><span class="p">(</span><span class="n">kwarg</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="s">"</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kwarg</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="w">    </span><span class="k">quote</span>
+<span class="w">        </span><span class="o">$</span><span class="p">(</span><span class="nd">@htl</span><span class="p">(</span><span class="s">"""</span>
+<span class="s">            &lt;button</span>
+<span class="s">                disabled=</span><span class="si">$</span><span class="p">(</span><span class="n">eval</span><span class="p">(</span><span class="n">_button_dict</span><span class="p">[</span><span class="s">"disabled"</span><span class="p">]))</span>
+<span class="s">                onclick=</span><span class="si">$</span><span class="p">(</span><span class="n">eval</span><span class="p">(</span><span class="n">_button_dict</span><span class="p">[</span><span class="s">"onclick"</span><span class="p">]))</span>
+<span class="s">            &gt;</span>
+<span class="s">                </span><span class="si">$</span><span class="p">(</span><span class="n">eval</span><span class="p">(</span><span class="n">text</span><span class="p">))</span>
+<span class="s">            &lt;/button&gt;</span>
+<span class="s">        """</span><span class="p">))</span>
+<span class="w">    </span><span class="k">end</span>
+<span class="k">end</span>
+
+<span class="nd">@button</span><span class="p">(</span>
+<span class="w">    </span><span class="s">"hi"</span><span class="p">,</span>
+<span class="w">    </span><span class="s">"disabled"</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nb">false</span><span class="p">,</span>
+<span class="w">    </span><span class="s">"onclick"</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">msg</span>
+<span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="347913733"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Keyword%20Arguments%20in%20Macros/near/347913733" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Keyword.20Arguments.20in.20Macros.html#347913733">(Apr 08 2023 at 20:04)</a>:</h4>
+<p>I'm not sure if there are easier examples, but check out how stdlib macros like <code>@code_warntype</code> and <code>@info</code> handle this</p>
+
+
+
+<a name="347913826"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Keyword%20Arguments%20in%20Macros/near/347913826" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Keyword.20Arguments.20in.20Macros.html#347913826">(Apr 08 2023 at 20:05)</a>:</h4>
+<p>For the latter <a href="https://github.com/JuliaLang/julia/blob/1cf5091b474f46a4fc1f2d648db9be168e610399/base/logging.jl#L399">https://github.com/JuliaLang/julia/blob/1cf5091b474f46a4fc1f2d648db9be168e610399/base/logging.jl#L399</a> looks relevant. I think matching on <code>=</code> Exprs will get you things which look like kwargs</p>
+
+
+
+<a name="347914279"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Keyword%20Arguments%20in%20Macros/near/347914279" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Keyword.20Arguments.20in.20Macros.html#347914279">(Apr 08 2023 at 20:10)</a>:</h4>
+<p>Thanks! I don't understand those fully but I can look more into it!</p>
+
+
+
+<a name="347917314"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Keyword%20Arguments%20in%20Macros/near/347917314" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Keyword.20Arguments.20in.20Macros.html#347917314">(Apr 08 2023 at 20:51)</a>:</h4>
+<p>Definitely don't <code>eval</code> in a macro!</p>
+
+
+
+<a name="347917744"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Keyword%20Arguments%20in%20Macros/near/347917744" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Keyword.20Arguments.20in.20Macros.html#347917744">(Apr 08 2023 at 20:56)</a>:</h4>
+<p>Hmm, would you be able to briefly explain why?</p>
+
+
+
+<a name="347918396"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Keyword%20Arguments%20in%20Macros/near/347918396" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Keyword.20Arguments.20in.20Macros.html#347918396">(Apr 08 2023 at 21:06)</a>:</h4>
+<p>Sorry for the delay, I'd write this maybe like so:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">macro</span><span class="w"> </span><span class="n">button</span><span class="p">(</span><span class="n">text</span><span class="p">,</span><span class="w"> </span><span class="n">kwargs</span><span class="o">...</span><span class="p">)</span>
+<span class="w">    </span><span class="n">allowed_kwargs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Set</span><span class="p">([</span><span class="ss">:disabled</span><span class="p">,</span><span class="w"> </span><span class="ss">:onclick</span><span class="p">])</span>
+<span class="w">    </span><span class="n">defaults</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Dict</span><span class="p">(</span><span class="ss">:disabled</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nb">false</span><span class="p">,</span><span class="w"> </span><span class="ss">:onclick</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">""</span><span class="p">)</span>
+<span class="w">    </span><span class="n">processed_kwargs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">map</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">kwarg</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">isexpr</span><span class="p">(</span><span class="n">kwarg</span><span class="p">,</span><span class="w"> </span><span class="o">:</span><span class="p">(</span><span class="o">=</span><span class="p">),</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="n">kwarg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">∈</span><span class="w"> </span><span class="n">allowed_kwargs</span>
+<span class="w">                </span><span class="n">kwarg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">kwarg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+<span class="w">            </span><span class="k">else</span>
+<span class="w">                </span><span class="n">error</span><span class="p">(</span><span class="kt">ArgumentError</span><span class="p">(</span><span class="s">"Not an acceptable keyword argument </span><span class="si">$</span><span class="p">(</span><span class="n">kwarg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="s">"</span><span class="p">))</span>
+<span class="w">            </span><span class="k">end</span>
+<span class="w">        </span><span class="k">elseif</span><span class="w"> </span><span class="n">kwarg</span><span class="w"> </span><span class="k">isa</span><span class="w"> </span><span class="kt">Symbol</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="n">kwarg</span><span class="w"> </span><span class="o">∈</span><span class="w"> </span><span class="n">allowed_kwargs</span>
+<span class="w">                </span><span class="n">kwarg</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">kwarg</span>
+<span class="w">            </span><span class="k">else</span>
+<span class="w">                </span><span class="n">error</span><span class="p">(</span><span class="kt">ArgumentError</span><span class="p">(</span><span class="s">"Not an acceptable keyword argument </span><span class="si">$</span><span class="p">(</span><span class="n">kwarg</span><span class="p">)</span><span class="s">"</span><span class="p">))</span>
+<span class="w">            </span><span class="k">end</span>
+<span class="w">        </span><span class="k">else</span>
+<span class="w">            </span><span class="n">error</span><span class="p">(</span><span class="kt">ArgumentError</span><span class="p">(</span><span class="s">"Malformed kwarg </span><span class="si">$kwarg</span><span class="s">"</span><span class="p">))</span>
+<span class="w">        </span><span class="k">end</span>
+<span class="w">    </span><span class="k">end</span>
+<span class="w">    </span><span class="n">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">merge</span><span class="p">(</span><span class="n">defaults</span><span class="p">,</span><span class="w"> </span><span class="kt">Dict</span><span class="p">(</span><span class="n">processed_kwargs</span><span class="p">))</span>
+<span class="w">    </span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"""&lt;button</span>
+<span class="s">                disabled=</span><span class="si">$</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="ss">:disabled</span><span class="p">])</span>
+<span class="s">                onclick=</span><span class="si">$</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="ss">:onclick</span><span class="p">])</span>
+<span class="s">            &gt;</span>
+<span class="s">                </span><span class="si">$</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+<span class="s">            &lt;/button&gt;</span>
+<span class="s">        """</span>
+<span class="w">    </span><span class="o">:</span><span class="p">(</span><span class="o">$</span><span class="p">(</span><span class="nd">@__MODULE__</span><span class="p">)</span><span class="o">.</span><span class="nd">@htl</span><span class="p">(</span><span class="o">$</span><span class="n">s</span><span class="p">))</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">esc</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="347918688"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Keyword%20Arguments%20in%20Macros/near/347918688" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Keyword.20Arguments.20in.20Macros.html#347918688">(Apr 08 2023 at 21:11)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="352971">Dale Black</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Keyword.20Arguments.20in.20Macros/near/347917744">said</a>:</p>
+<blockquote>
+<p>Hmm, would you be able to briefly explain why?</p>
+</blockquote>
+<p>There are many problems with it. So first of all, when you wrote  <code>kwarg = eval(kwarg)</code> that actually ended up (re)defining global variables <code>disabled</code> and <code>onclick</code>. This is because <code>eval</code> always happens in the global scope, so it'll cause all sorts of confusion, e.g.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">macro</span><span class="w"> </span><span class="n">foo</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="w">           </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">eval</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="w">           </span><span class="n">y</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">       </span><span class="k">end</span><span class="p">;</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="k">let</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">1000</span>
+<span class="w">           </span><span class="nd">@foo</span><span class="w"> </span><span class="n">x</span>
+<span class="w">       </span><span class="k">end</span>
+<span class="mi">2</span>
+</code></pre></div>
+
+
+
+<a name="347956946"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Keyword%20Arguments%20in%20Macros/near/347956946" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Keyword.20Arguments.20in.20Macros.html#347956946">(Apr 09 2023 at 05:11)</a>:</h4>
+<p>Wow there is so much to learn about meta programming in Julia! Are there any resources aside from the Julia docs? Those are kinda thin imo</p>
+
+
+
+<a name="348213755"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Keyword%20Arguments%20in%20Macros/near/348213755" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Santtu <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Keyword.20Arguments.20in.20Macros.html#348213755">(Apr 10 2023 at 13:12)</a>:</h4>
+<p>It's not just Julia where you should avoid the use of <code>eval</code>. I'd argue that there is no use for it anywhere ever, unless you're writing a REPL of your own.</p>
+
+
+
+<a name="348249103"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Keyword%20Arguments%20in%20Macros/near/348249103" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Keyword.20Arguments.20in.20Macros.html#348249103">(Apr 10 2023 at 15:48)</a>:</h4>
+<p>Empirical studies of eval usage<br>
+<a href="http://janvitek.org/pubs/oopsla12b.pdf">http://janvitek.org/pubs/oopsla12b.pdf</a> <br>
+<a href="http://janvitek.org/pubs/oopsla21a.pdf">http://janvitek.org/pubs/oopsla21a.pdf</a></p>
+
+
+
+<a name="348280957"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Keyword%20Arguments%20in%20Macros/near/348280957" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Keyword.20Arguments.20in.20Macros.html#348280957">(Apr 10 2023 at 18:36)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="352971">Dale Black</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Keyword.20Arguments.20in.20Macros/near/347956946">said</a>:</p>
+<blockquote>
+<p>Wow there is so much to learn about meta programming in Julia! Are there any resources aside from the Julia docs? Those are kinda thin imo</p>
+</blockquote>
+<p>I remember people having wrote about this but not who and where. Maybe have a search through the Juliabloggers archives to see if anything stands out there.</p>
+
+
+
+<a name="348280972"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Keyword%20Arguments%20in%20Macros/near/348280972" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Brian Chen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Keyword.20Arguments.20in.20Macros.html#348280972">(Apr 10 2023 at 18:36)</a>:</h4>
+<p>Also the docs are pretty thin, yeah</p>
+
+
+
+<a name="348559539"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Keyword%20Arguments%20in%20Macros/near/348559539" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Keyword.20Arguments.20in.20Macros.html#348559539">(Apr 11 2023 at 20:48)</a>:</h4>
+<p>Yeah, I found something from Emma Bourdou on medium but not a ton that I have seen</p>
+
+
+
+<a name="348560704"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Keyword%20Arguments%20in%20Macros/near/348560704" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sundar R <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Keyword.20Arguments.20in.20Macros.html#348560704">(Apr 11 2023 at 20:56)</a>:</h4>
+<p>I remember the <a href="https://www.youtube.com/watch?v=2QLhw6LVaq0">Introduction to metaprogramming in Julia workshop</a>  from JuliaCon 2021 being pretty good</p>
+<div class="youtube-video message_inline_image"><a data-id="2QLhw6LVaq0" href="https://www.youtube.com/watch?v=2QLhw6LVaq0"><img src="https://uploads.zulipusercontent.net/eb4b1cf891dca56f507fbcd9aad5ec1eacea1d75/68747470733a2f2f692e7974696d672e636f6d2f76692f32514c6877364c566171302f64656661756c742e6a7067"></a></div>
+
+
+
+<a name="348571767"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Keyword%20Arguments%20in%20Macros/near/348571767" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Keyword.20Arguments.20in.20Macros.html#348571767">(Apr 11 2023 at 22:23)</a>:</h4>
+<p>Ooooh thank you!</p>
+
+
+
+<a name="350690813"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Keyword%20Arguments%20in%20Macros/near/350690813" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Keyword.20Arguments.20in.20Macros.html#350690813">(Apr 18 2023 at 07:12)</a>:</h4>
+<p>Alright, I am still playing with this. I <em>think</em> I have come up with a pretty simple approach that seems to mimic React/JSX style templating with pure Julia code instead of strings. Do y'all see anything that is a big no-no, in this approach?</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">process_exprs</span><span class="p">(</span><span class="n">macro_symbol</span><span class="p">,</span><span class="w"> </span><span class="n">exprs</span><span class="p">)</span>
+<span class="w">    </span><span class="n">str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">string</span><span class="p">(</span><span class="s">"&lt;"</span><span class="p">,</span><span class="w"> </span><span class="n">macro_symbol</span><span class="p">,</span><span class="w"> </span><span class="s">" "</span><span class="p">)</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">e</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">exprs</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">typeof</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kt">Expr</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="n">e</span><span class="o">.</span><span class="n">head</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="ss">:call</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="o">:</span><span class="p">(</span><span class="o">=&gt;</span><span class="p">)</span>
+<span class="w">                </span><span class="n">str</span><span class="w"> </span><span class="o">*=</span><span class="w"> </span><span class="n">string</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="s">"="</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+<span class="w">                </span><span class="n">str</span><span class="w"> </span><span class="o">*=</span><span class="w"> </span><span class="s">" &gt;"</span>
+<span class="w">            </span><span class="k">end</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="n">e</span><span class="o">.</span><span class="n">head</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="ss">:tuple</span>
+<span class="w">                </span><span class="k">for</span><span class="w"> </span><span class="n">arg</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">e</span><span class="o">.</span><span class="n">args</span>
+<span class="w">                    </span><span class="n">str</span><span class="w"> </span><span class="o">*=</span><span class="w"> </span><span class="n">string</span><span class="p">(</span><span class="n">arg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="s">"="</span><span class="p">,</span><span class="w"> </span><span class="n">arg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="w"> </span><span class="s">" "</span><span class="p">)</span>
+<span class="w">                </span><span class="k">end</span>
+<span class="w">                </span><span class="n">str</span><span class="w"> </span><span class="o">*=</span><span class="w"> </span><span class="s">"&gt;"</span>
+<span class="w">            </span><span class="k">end</span>
+<span class="w">        </span><span class="k">end</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">typeof</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kt">String</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="n">last</span><span class="p">(</span><span class="n">str</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="sc">'&gt;'</span>
+<span class="w">                </span><span class="n">str</span><span class="w"> </span><span class="o">*=</span><span class="w"> </span><span class="n">string</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+<span class="w">            </span><span class="k">else</span>
+<span class="w">                </span><span class="n">str</span><span class="w"> </span><span class="o">*=</span><span class="w"> </span><span class="n">string</span><span class="p">(</span><span class="s">"&gt;"</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">)</span>
+<span class="w">            </span><span class="k">end</span>
+<span class="w">        </span><span class="k">end</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">typeof</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kt">Expr</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="n">e</span><span class="o">.</span><span class="n">head</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="ss">:macrocall</span>
+<span class="w">                </span><span class="n">str</span><span class="w"> </span><span class="o">*=</span><span class="w"> </span><span class="n">process_exprs</span><span class="p">(</span><span class="n">split</span><span class="p">(</span><span class="n">string</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span><span class="w"> </span><span class="s">"@"</span><span class="p">)[</span><span class="mi">2</span><span class="p">],</span><span class="w"> </span><span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+<span class="w">            </span><span class="k">end</span>
+<span class="w">        </span><span class="k">end</span>
+<span class="w">    </span><span class="k">end</span>
+<span class="w">    </span><span class="n">str</span><span class="w"> </span><span class="o">*=</span><span class="w"> </span><span class="n">string</span><span class="p">(</span><span class="s">"&lt;/"</span><span class="p">,</span><span class="w"> </span><span class="n">macro_symbol</span><span class="p">,</span><span class="w"> </span><span class="s">"&gt;"</span><span class="p">)</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">str</span>
+<span class="k">end</span>
+
+<span class="k">macro</span><span class="w"> </span><span class="n">p</span><span class="p">(</span><span class="n">exprs</span><span class="o">...</span><span class="p">)</span>
+<span class="w">    </span><span class="n">str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">process_exprs</span><span class="p">(</span><span class="s">"p"</span><span class="p">,</span><span class="w"> </span><span class="n">exprs</span><span class="p">)</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="o">:</span><span class="p">(</span><span class="nd">@htl</span><span class="p">(</span><span class="s">"""</span>
+<span class="s">            </span><span class="si">$</span><span class="p">(</span><span class="o">$</span><span class="p">(</span><span class="n">str</span><span class="p">))</span>
+<span class="s">    """</span><span class="p">))</span>
+<span class="k">end</span>
+
+<span class="k">macro</span><span class="w"> </span><span class="n">span</span><span class="p">(</span><span class="n">exprs</span><span class="o">...</span><span class="p">)</span>
+<span class="w">    </span><span class="n">str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">process_exprs</span><span class="p">(</span><span class="s">"span"</span><span class="p">,</span><span class="w"> </span><span class="n">exprs</span><span class="p">)</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="o">:</span><span class="p">(</span><span class="nd">@htl</span><span class="p">(</span><span class="s">"""</span>
+<span class="s">            </span><span class="si">$</span><span class="p">(</span><span class="o">$</span><span class="p">(</span><span class="n">str</span><span class="p">))</span>
+<span class="s">    """</span><span class="p">))</span>
+<span class="k">end</span>
+</code></pre></div>
+<p><a href="/user_uploads/7178/fdPCyGZRKqbUMy_4beGUTWMx/image.png">image.png</a></p>
+<div class="message_inline_image"><a href="/user_uploads/7178/fdPCyGZRKqbUMy_4beGUTWMx/image.png" title="image.png"><img src="/user_uploads/7178/fdPCyGZRKqbUMy_4beGUTWMx/image.png"></a></div>
+
+
+
+<a name="350690950"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Keyword%20Arguments%20in%20Macros/near/350690950" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Keyword.20Arguments.20in.20Macros.html#350690950">(Apr 18 2023 at 07:13)</a>:</h4>
+<p><a href="/user_uploads/7178/Qpfvf_W431E3MR-kDGpvmEk8/image.png">image.png</a></p>
+<div class="message_inline_image"><a href="/user_uploads/7178/Qpfvf_W431E3MR-kDGpvmEk8/image.png" title="image.png"><img src="/user_uploads/7178/Qpfvf_W431E3MR-kDGpvmEk8/image.png"></a></div>
+
+
+
+<a name="350691637"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Keyword%20Arguments%20in%20Macros/near/350691637" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Dale Black <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Keyword.20Arguments.20in.20Macros.html#350691637">(Apr 18 2023 at 07:18)</a>:</h4>
+<p>Also, I am having trouble with this approach when it comes to HTML element attributes. Right now, all the attributes are being converted to a string which should work for classes, but attributes that expect javascript code or booleans for example are now messed up. Any idea how I could modify this part</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">typeof</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kt">Expr</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="n">e</span><span class="o">.</span><span class="n">head</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="ss">:call</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="o">:</span><span class="p">(</span><span class="o">=&gt;</span><span class="p">)</span>
+<span class="w">                </span><span class="n">str</span><span class="w"> </span><span class="o">*=</span><span class="w"> </span><span class="n">string</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="s">"="</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+<span class="w">                </span><span class="n">str</span><span class="w"> </span><span class="o">*=</span><span class="w"> </span><span class="s">" &gt;"</span>
+<span class="w">            </span><span class="k">end</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="n">e</span><span class="o">.</span><span class="n">head</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="ss">:tuple</span>
+<span class="w">                </span><span class="k">for</span><span class="w"> </span><span class="n">arg</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">e</span><span class="o">.</span><span class="n">args</span>
+<span class="w">                    </span><span class="n">str</span><span class="w"> </span><span class="o">*=</span><span class="w"> </span><span class="n">string</span><span class="p">(</span><span class="n">arg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="s">"="</span><span class="p">,</span><span class="w"> </span><span class="n">arg</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="w"> </span><span class="s">" "</span><span class="p">)</span>
+<span class="w">                </span><span class="k">end</span>
+<span class="w">                </span><span class="n">str</span><span class="w"> </span><span class="o">*=</span><span class="w"> </span><span class="s">"&gt;"</span>
+<span class="w">            </span><span class="k">end</span>
+<span class="w">        </span><span class="k">end</span>
+</code></pre></div>
+<p>to account for this error?</p>
+<p>e.g.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">macro</span><span class="w"> </span><span class="n">button</span><span class="p">(</span><span class="n">exprs</span><span class="o">...</span><span class="p">)</span>
+<span class="w">    </span><span class="n">str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">process_exprs</span><span class="p">(</span><span class="s">"button"</span><span class="p">,</span><span class="w"> </span><span class="n">exprs</span><span class="p">)</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="o">:</span><span class="p">(</span><span class="nd">@htl</span><span class="p">(</span><span class="s">"""</span>
+<span class="s">            </span><span class="si">$</span><span class="p">(</span><span class="o">$</span><span class="p">(</span><span class="n">str</span><span class="p">))</span>
+<span class="s">    """</span><span class="p">))</span>
+<span class="k">end</span>
+</code></pre></div>
+<p><a href="/user_uploads/7178/1BuMgimAcvkLwpgt-59XMKfb/image.png">image.png</a> <br>
+<a href="/user_uploads/7178/xQD8gZTDysmhoyQL5Z2W7oCS/image.png">image.png</a></p>
+<div class="message_inline_image"><a href="/user_uploads/7178/1BuMgimAcvkLwpgt-59XMKfb/image.png" title="image.png"><img src="/user_uploads/7178/1BuMgimAcvkLwpgt-59XMKfb/image.png"></a></div><div class="message_inline_image"><a href="/user_uploads/7178/xQD8gZTDysmhoyQL5Z2W7oCS/image.png" title="image.png"><img src="/user_uploads/7178/xQD8gZTDysmhoyQL5Z2W7oCS/image.png"></a></div>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

@@ -1,0 +1,680 @@
+<html>
+<head><meta charset="utf-8"><title>Get world age of method · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html">Get world age of method</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="310359675"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310359675" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310359675">(Nov 16 2022 at 08:33)</a>:</h4>
+<p>I'm thinking of having a family of methods where I check to see if the world age they were compiled with is earlier than X and if so call <code>invokelatest</code>, but I can't see an easy way to check the world age of a method. Might somebody know how best to do this?</p>
+
+
+
+<a name="310376340"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310376340" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> DrChainsaw <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310376340">(Nov 16 2022 at 10:21)</a>:</h4>
+<p>Probably not the best way, but so far this has worked for me:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="kt">NoFutureWarn</span><span class="w"> </span><span class="k">end</span><span class="w"></span>
+
+<span class="k">struct</span> <span class="kt">FutureFunction</span><span class="p">{</span><span class="kt">F</span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">f</span><span class="o">::</span><span class="kt">F</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+<span class="k">function</span><span class="w"> </span><span class="p">(</span><span class="n">f</span><span class="o">::</span><span class="kt">FutureFunction</span><span class="p">)(</span><span class="n">args</span><span class="o">...</span><span class="p">)</span><span class="w"></span>
+<span class="w">   </span><span class="c"># try_advance_world_age! does not mutate anything in this version as those parts are stripped out here</span><span class="w"></span>
+<span class="w">   </span><span class="c"># I had some caching logic which only makes sense in the application this was used for so that</span><span class="w"></span>
+<span class="w">   </span><span class="c"># this code will never be called for f.f again if world age could be advanced</span><span class="w"></span>
+<span class="w">    </span><span class="n">fnew</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">try_advance_world_age!</span><span class="p">(</span><span class="n">f</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">f</span><span class="o">.</span><span class="n">f</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="n">fnew</span><span class="w"></span>
+<span class="w">        </span><span class="c"># The world age has advanced and f.f is now safe to use</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">fnew</span><span class="p">(</span><span class="n">args</span><span class="o">...</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">end</span><span class="w"></span>
+<span class="w">    </span><span class="nd">@warn</span><span class="w">  </span><span class="s">"Calling </span><span class="si">$</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">f</span><span class="p">)</span><span class="s"> from a future world age. This is quite slow and should be avoided if possible.</span>
+<span class="s">            This warning will only display once."</span><span class="w"> </span><span class="n">maxlog</span><span class="o">=</span><span class="mi">1</span><span class="w"></span>
+<span class="w">    </span><span class="n">f</span><span class="p">(</span><span class="n">NoFutureWarn</span><span class="p">(),</span><span class="w"> </span><span class="n">args</span><span class="o">...</span><span class="p">)</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+<span class="p">(</span><span class="n">f</span><span class="o">::</span><span class="kt">FutureFunction</span><span class="p">)(</span><span class="o">::</span><span class="kt">NoFutureWarn</span><span class="p">,</span><span class="w"> </span><span class="n">args</span><span class="o">...</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">invokelatest</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="n">args</span><span class="o">...</span><span class="p">)</span><span class="w"></span>
+<span class="n">get_current_world</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">ccall</span><span class="p">(</span><span class="ss">:jl_get_tls_world_age</span><span class="p">,</span><span class="w"> </span><span class="kt">UInt</span><span class="p">,</span><span class="w"> </span><span class="p">())</span><span class="w"></span>
+
+<span class="n">try_advance_world_age!</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">args</span><span class="o">...</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"></span>
+<span class="k">function</span><span class="w"> </span><span class="n">try_advance_world_age!</span><span class="p">(</span><span class="n">f</span><span class="o">::</span><span class="kt">FutureFunction</span><span class="p">,</span><span class="w"> </span><span class="n">currentworld</span><span class="o">=</span><span class="n">get_current_world</span><span class="p">())</span><span class="w"></span>
+<span class="w">    </span><span class="n">all</span><span class="p">(</span><span class="n">methods</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">f</span><span class="p">))</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">fmethod</span><span class="w"></span>
+<span class="w">        </span><span class="n">fmethod</span><span class="o">.</span><span class="n">primary_world</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">currentworld</span><span class="w"></span>
+<span class="w">    </span><span class="k">end</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">f</span><span class="o">.</span><span class="n">f</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">f</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+<p>Not sure if it can be made type stable(r) in some way. It was only used in a very specific application and in that context it was fast enough.</p>
+
+
+
+<a name="310455231"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310455231" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310455231">(Nov 16 2022 at 17:01)</a>:</h4>
+<p>Thanks, this has helped me get halfway to where I want, I think.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">const</span><span class="w"> </span><span class="n">relevant_world_age</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Ref</span><span class="p">(</span><span class="n">Base</span><span class="o">.</span><span class="n">get_world_counter</span><span class="p">())</span><span class="w"></span>
+
+<span class="k">function</span><span class="w"> </span><span class="n">update_world_age!</span><span class="p">()</span><span class="w"></span>
+<span class="w">    </span><span class="n">relevant_world_age</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Ref</span><span class="p">(</span><span class="n">Base</span><span class="o">.</span><span class="n">get_world_counter</span><span class="p">())</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+
+<span class="k">function</span><span class="w"> </span><span class="n">invokerelevant</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="n">args</span><span class="o">...</span><span class="p">;</span><span class="w"> </span><span class="n">kwargs</span><span class="o">...</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">fmethod</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getmethod</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="n">args</span><span class="o">...</span><span class="p">;</span><span class="w"> </span><span class="n">kwargs</span><span class="o">...</span><span class="p">)</span><span class="w"> </span><span class="c"># help! this function is made up, I don't know what to do here</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">fmethod</span><span class="o">.</span><span class="n">primary_world</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">relevant_world_age</span><span class="p">[]</span><span class="w"></span>
+<span class="w">        </span><span class="n">Base</span><span class="o">.</span><span class="n">invokelatest</span><span class="p">(</span><span class="n">fmethod</span><span class="p">,</span><span class="w"> </span><span class="n">args</span><span class="o">...</span><span class="p">;</span><span class="w"> </span><span class="n">kwargs</span><span class="o">..</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">else</span><span class="w"></span>
+<span class="w">        </span><span class="n">fmethod</span><span class="p">(</span><span class="n">args</span><span class="o">...</span><span class="p">;</span><span class="w"> </span><span class="n">kwargs</span><span class="o">...</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">end</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+<p>The idea is that this would act like <code>invokelatest</code> but only when necessary.</p>
+<p>I think the main issue now is <code>getmethod</code> (which doesn't actually exist). One could probably use <code>first(methods(f, Tuple{typeof(args)...}))</code>, but since half the point of this is to be lightweight I'm not sure if that's a good fit.</p>
+<p>I'm also aware that you can't call methods :( so imagine <code>f</code> in place of <code>fmethod</code> in the invocation lines.</p>
+
+
+
+<a name="310456514"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310456514" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310456514">(Nov 16 2022 at 17:07)</a>:</h4>
+<p>you want <code>methods</code></p>
+
+
+
+<a name="310456629"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310456629" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310456629">(Nov 16 2022 at 17:07)</a>:</h4>
+<p>(the function, not the concept)</p>
+
+
+
+<a name="310456688"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310456688" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310456688">(Nov 16 2022 at 17:07)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">help</span><span class="o">?&gt;</span><span class="w"> </span><span class="n">methods</span><span class="w"></span>
+<span class="n">search</span><span class="o">:</span><span class="w"> </span><span class="n">methods</span><span class="w"> </span><span class="n">methodswith</span><span class="w"> </span><span class="kt">Method</span><span class="w"> </span><span class="kt">MethodError</span><span class="w"> </span><span class="n">hasmethod</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">methods</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="n">types</span><span class="p">],</span><span class="w"> </span><span class="p">[</span><span class="k">module</span><span class="p">])</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">Return</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="n">table</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">f</span><span class="o">.</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">If</span><span class="w"> </span><span class="n">types</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">specified</span><span class="p">,</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">an</span><span class="w"> </span><span class="n">array</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">methods</span><span class="w"> </span><span class="n">whose</span><span class="w"> </span><span class="n">types</span><span class="w"> </span><span class="n">match</span><span class="o">.</span><span class="w"></span>
+<span class="w">  </span><span class="n">If</span><span class="w"> </span><span class="k">module</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">specified</span><span class="p">,</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">an</span><span class="w"> </span><span class="n">array</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">methods</span><span class="w"> </span><span class="n">defined</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">that</span><span class="w"></span>
+<span class="w">  </span><span class="k">module</span><span class="o">.</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="n">list</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">modules</span><span class="w"> </span><span class="n">can</span><span class="w"> </span><span class="n">also</span><span class="w"> </span><span class="n">be</span><span class="w"> </span><span class="n">specified</span><span class="w"> </span><span class="n">as</span><span class="w"> </span><span class="n">an</span><span class="w"> </span><span class="n">array</span><span class="o">.</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">│</span><span class="w"> </span><span class="n">Julia</span><span class="w"> </span><span class="mf">1.4</span><span class="w"></span>
+<span class="w">  </span><span class="n">│</span><span class="w"></span>
+<span class="w">  </span><span class="n">│</span><span class="w">  </span><span class="n">At</span><span class="w"> </span><span class="n">least</span><span class="w"> </span><span class="n">Julia</span><span class="w"> </span><span class="mf">1.4</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">required</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">specifying</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">module</span><span class="o">.</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">See</span><span class="w"> </span><span class="n">also</span><span class="o">:</span><span class="w"> </span><span class="n">which</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="nd">@which</span><span class="o">.</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="310458650"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310458650" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310458650">(Nov 16 2022 at 17:17)</a>:</h4>
+<p>As I understand it, <code>methods</code> just gives the list of methods with compatible function signatures. Here we want <em>the</em> method that will be invoked.</p>
+
+
+
+<a name="310459808"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310459808" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310459808">(Nov 16 2022 at 17:23)</a>:</h4>
+<p>If <code>first</code> is good enough, is there anything better than this approach?</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="nd">@generated</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">getmethod</span><span class="p">(</span><span class="o">::</span><span class="kt">F</span><span class="p">,</span><span class="w"> </span><span class="n">argtypes</span><span class="o">...</span><span class="p">)</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="kt">F</span><span class="w"> </span><span class="o">&lt;:</span><span class="w"> </span><span class="kt">Function</span><span class="w"> </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">first</span><span class="p">(</span><span class="n">methods</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">instance</span><span class="p">,</span><span class="w"> </span><span class="n">argtypes</span><span class="p">))</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="310459882"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310459882" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310459882">(Nov 16 2022 at 17:24)</a>:</h4>
+<p>Oh, and is there any way this could handle kwargs?</p>
+
+
+
+<a name="310459986"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310459986" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310459986">(Nov 16 2022 at 17:24)</a>:</h4>
+<p><code>methods</code> takes two arguments</p>
+
+
+
+<a name="310460000"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310460000" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310460000">(Nov 16 2022 at 17:24)</a>:</h4>
+<p>first the function, second an optional signature</p>
+
+
+
+<a name="310460059"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310460059" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310460059">(Nov 16 2022 at 17:25)</a>:</h4>
+<p>e.g.:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">methods</span><span class="p">(</span><span class="o">+</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">Int</span><span class="p">,</span><span class="w"> </span><span class="kt">Int</span><span class="p">))</span><span class="w"></span>
+<span class="c"># 1 method for generic function "+" from Base:</span><span class="w"></span>
+<span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="p">(</span><span class="n">x</span><span class="o">::</span><span class="kt">T</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="o">::</span><span class="kt">T</span><span class="p">)</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="kt">T</span><span class="o">&lt;:</span><span class="kt">Union</span><span class="p">{</span><span class="kt">Int128</span><span class="p">,</span><span class="w"> </span><span class="kt">Int16</span><span class="p">,</span><span class="w"> </span><span class="kt">Int32</span><span class="p">,</span><span class="w"> </span><span class="kt">Int64</span><span class="p">,</span><span class="w"> </span><span class="kt">Int8</span><span class="p">,</span><span class="w"> </span><span class="kt">UInt128</span><span class="p">,</span><span class="w"> </span><span class="kt">UInt16</span><span class="p">,</span><span class="w"> </span><span class="kt">UInt32</span><span class="p">,</span><span class="w"> </span><span class="kt">UInt64</span><span class="p">,</span><span class="w"> </span><span class="kt">UInt8</span><span class="p">}</span><span class="w"></span>
+<span class="w">     </span><span class="err">@</span><span class="w"> </span><span class="n">int</span><span class="o">.</span><span class="n">jl</span><span class="o">:</span><span class="mi">87</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="310460209"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310460209" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310460209">(Nov 16 2022 at 17:26)</a>:</h4>
+<p>keyword arguments don't participate in dispatch, so you don't use them for method selection</p>
+
+
+
+<a name="310460317"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310460317" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310460317">(Nov 16 2022 at 17:26)</a>:</h4>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">kwfunc</span><span class="p">(</span><span class="n">x</span><span class="p">;</span><span class="w"> </span><span class="n">args</span><span class="o">...</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">args</span><span class="w"></span>
+<span class="n">kwfunc</span><span class="w"> </span><span class="p">(</span><span class="n">generic</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">method</span><span class="p">)</span><span class="w"></span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">methods</span><span class="p">(</span><span class="n">kwfunc</span><span class="p">)</span><span class="w"></span>
+<span class="c"># 1 method for generic function "kwfunc" from Main:</span><span class="w"></span>
+<span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="n">kwfunc</span><span class="p">(</span><span class="n">x</span><span class="p">;</span><span class="w"> </span><span class="n">args</span><span class="o">...</span><span class="p">)</span><span class="w"></span>
+<span class="w">     </span><span class="err">@</span><span class="w"> </span><span class="n">REPL</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">:</span><span class="mi">1</span><span class="w"></span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">methods</span><span class="p">(</span><span class="n">kwfunc</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">sig</span><span class="w"></span>
+<span class="kt">Tuple</span><span class="p">{</span><span class="kt">typeof</span><span class="p">(</span><span class="kt">kwfunc</span><span class="p">),</span><span class="w"> </span><span class="kt">Any</span><span class="p">}</span><span class="w"></span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="n">methods</span><span class="p">(</span><span class="n">kwfunc</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">Int</span><span class="p">,))</span><span class="w"></span>
+<span class="c"># 1 method for generic function "kwfunc" from Main:</span><span class="w"></span>
+<span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="n">kwfunc</span><span class="p">(</span><span class="n">x</span><span class="p">;</span><span class="w"> </span><span class="n">args</span><span class="o">...</span><span class="p">)</span><span class="w"></span>
+<span class="w">     </span><span class="err">@</span><span class="w"> </span><span class="n">REPL</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">:</span><span class="mi">1</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="310460372"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310460372" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310460372">(Nov 16 2022 at 17:26)</a>:</h4>
+<p>Ok, so I take it there's probably nothing better than my <code>getmethod</code> implementation above?</p>
+
+
+
+<a name="310460452"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310460452" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310460452">(Nov 16 2022 at 17:27)</a>:</h4>
+<p>I think your <code>invokerelevant</code> already is <code>invokelatest</code></p>
+
+
+
+<a name="310460474"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310460474" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310460474">(Nov 16 2022 at 17:27)</a>:</h4>
+<p>but yes</p>
+
+
+
+<a name="310460648"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310460648" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310460648">(Nov 16 2022 at 17:28)</a>:</h4>
+<p>in general, if <code>methods</code> returns only a single argument, that is the method that will be called with arguments of that type</p>
+
+
+
+<a name="310460693"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310460693" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310460693">(Nov 16 2022 at 17:28)</a>:</h4>
+<p>if it returns an empty list, you get a MethodError (there's no method after all)</p>
+
+
+
+<a name="310460733"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310460733" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310460733">(Nov 16 2022 at 17:28)</a>:</h4>
+<p>if it returns a list with more than one thing, it's an ambiguity</p>
+
+
+
+<a name="310460861"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310460861" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310460861">(Nov 16 2022 at 17:29)</a>:</h4>
+<p>so the <code>getmethod</code> you're thinking of is already <code>methods</code></p>
+
+
+
+<a name="310461370"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310461370" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310461370">(Nov 16 2022 at 17:32)</a>:</h4>
+<p>I'm under the impression that doing <code>invokelatest</code> all the time in a whole bunch of places isn't a great idea.</p>
+
+
+
+<a name="310461470"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310461470" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310461470">(Nov 16 2022 at 17:32)</a>:</h4>
+<p>indeed! :)</p>
+
+
+
+<a name="310461504"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310461504" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310461504">(Nov 16 2022 at 17:32)</a>:</h4>
+<p>there's currently no way around the forced type instability</p>
+
+
+
+<a name="310461569"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310461569" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310461569">(Nov 16 2022 at 17:32)</a>:</h4>
+<p>after all, the whole purpose of <code>invokelatest</code>is to call possibly-changed code, with a possibly-changed return type</p>
+
+
+
+<a name="310461623"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310461623" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310461623">(Nov 16 2022 at 17:33)</a>:</h4>
+<p>by proxy, your <code>invokerelevant</code> has the same issue since it uses <code>invokelatest</code> internally</p>
+
+
+
+<a name="310461951"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310461951" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310461951">(Nov 16 2022 at 17:34)</a>:</h4>
+<p>Mmm, the idea with <code>invokelatest</code> is that at least I can avoid it unintentionally triggering.</p>
+
+
+
+<a name="310462061"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310462061" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310462061">(Nov 16 2022 at 17:35)</a>:</h4>
+<p>Since in this situation I'm writing a package that supports lazy-loaded packages, and when doing so can bump the minimum world age.</p>
+
+
+
+<a name="310462187"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310462187" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310462187">(Nov 16 2022 at 17:36)</a>:</h4>
+<p>Do you know about <a href="https://github.com/search?q=Requires.jl&amp;type=Repositories">Requires.jl</a>?</p>
+
+
+
+<a name="310462254"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310462254" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310462254">(Nov 16 2022 at 17:36)</a>:</h4>
+<p>people tend to not like using it, because it causes MASSIVE amounts of invalidations &amp; recompilation</p>
+
+
+
+<a name="310463060"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310463060" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310463060">(Nov 16 2022 at 17:40)</a>:</h4>
+<p>I do, but this is working a little differently. Instead of executing code when a package is loaded, we're loading a package when code is executed <em>if the package is not already loaded</em>.</p>
+
+
+
+<a name="310463258"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310463258" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310463258">(Nov 16 2022 at 17:41)</a>:</h4>
+<p>The idea is that this way a package can be written with say ~20 "soft dependencies" and if the user executes something that needs package X and X <em>can</em> be loaded, then this package will do so.</p>
+
+
+
+<a name="310465481"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310465481" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310465481">(Nov 16 2022 at 17:53)</a>:</h4>
+<p>sounds like <a href="https://github.com/JuliaLang/julia/pull/47040">https://github.com/JuliaLang/julia/pull/47040</a></p>
+
+
+
+<a name="310468569"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310468569" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310468569">(Nov 16 2022 at 18:10)</a>:</h4>
+<p>There is some overlap. For reference, this is the code for loading packages on-demand I have: <a href="https://github.com/tecosaur/DataToolkitBase.jl/blob/main/src/model/usepkg.jl">https://github.com/tecosaur/DataToolkitBase.jl/blob/main/src/model/usepkg.jl</a></p>
+<p>It basically lets you do this:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">foobar</span><span class="p">()</span><span class="w"></span>
+<span class="w">    </span><span class="nd">@use</span><span class="w"> </span><span class="n">JSON3</span><span class="w"></span>
+<span class="w">    </span><span class="n">JSON3</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">source</span><span class="p">)</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="310476130"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310476130" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310476130">(Nov 16 2022 at 18:51)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="400021">Timothy</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method/near/310461370">said</a>:</p>
+<blockquote>
+<p>I'm under the impression that doing <code>invokelatest</code> all the time in a whole bunch of places isn't a great idea.</p>
+</blockquote>
+<p>Actually, <code>invokelatest</code> is very very fast unless the worldage has actually changed.</p>
+
+
+
+<a name="310476365"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310476365" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310476365">(Nov 16 2022 at 18:52)</a>:</h4>
+<p>cf <a href="#narrow/stream/225542-helpdesk/topic/.E2.9C.94.20world.20age/near/308193385">https://julialang.zulipchat.com/#narrow/stream/225542-helpdesk/topic/.E2.9C.94.20world.20age/near/308193385</a></p>
+
+
+
+<a name="310527654"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310527654" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310527654">(Nov 17 2022 at 00:41)</a>:</h4>
+<p>Hmm, is there any potential issue/overhead when the world age changes but nothing relevant has changed?</p>
+
+
+
+<a name="310527818"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310527818" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310527818">(Nov 17 2022 at 00:42)</a>:</h4>
+<p>Hard to measure, but that's what I attempted to probe here: <a href="#narrow/stream/225542-helpdesk/topic/.E2.9C.94.20world.20age/near/308194057">https://julialang.zulipchat.com/#narrow/stream/225542-helpdesk/topic/.E2.9C.94.20world.20age/near/308194057</a></p>
+
+
+
+<a name="310527866"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310527866" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310527866">(Nov 17 2022 at 00:43)</a>:</h4>
+<p><del>What I saw was that at least relative to the performance cost of an <code>eval</code>, there was no measurable cost to <code>invokelatest</code> if there's no relative change.</del></p>
+
+
+
+<a name="310528048"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310528048" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310528048">(Nov 17 2022 at 00:45)</a>:</h4>
+<p><del>Sorry, what I actually saw there was that irrelevant changes to the world-age <em>do</em> have a substantial impact.</del></p>
+
+
+
+<a name="310528185"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310528185" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310528185">(Nov 17 2022 at 00:46)</a>:</h4>
+<p>Annnd wait, that's wrong again. I actually measured it poorly.</p>
+
+
+
+<a name="310528214"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310528214" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310528214">(Nov 17 2022 at 00:47)</a>:</h4>
+<p>Here is a better comparison:<br>
+Pure eval creating a function:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="nd">@benchmark</span><span class="w"> </span><span class="nd">@eval</span><span class="w"> </span><span class="n">blargh</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"></span>
+<span class="c">#+end_src</span><span class="w"></span>
+
+<span class="c">#+RESULTS:</span><span class="w"></span>
+<span class="o">:</span><span class="w"> </span><span class="n">BenchmarkTools</span><span class="o">.</span><span class="n">Trial</span><span class="o">:</span><span class="w"> </span><span class="mi">10000</span><span class="w"> </span><span class="n">samples</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">evaluation</span><span class="o">.</span><span class="w"></span>
+<span class="o">:</span><span class="w">  </span><span class="n">Range</span><span class="w"> </span><span class="p">(</span><span class="n">min</span><span class="w"> </span><span class="o">…</span><span class="w"> </span><span class="n">max</span><span class="p">)</span><span class="o">:</span><span class="w">  </span><span class="mf">169.600</span><span class="w"> </span><span class="n">μs</span><span class="w"> </span><span class="o">…</span><span class="w">  </span><span class="mf">7.494</span><span class="w"> </span><span class="n">ms</span><span class="w">  </span><span class="n">┊</span><span class="w"> </span><span class="n">GC</span><span class="w"> </span><span class="p">(</span><span class="n">min</span><span class="w"> </span><span class="o">…</span><span class="w"> </span><span class="n">max</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="mf">0.00</span><span class="o">%</span><span class="w"> </span><span class="o">…</span><span class="w"> </span><span class="mf">93.67</span><span class="o">%</span><span class="w"></span>
+<span class="o">:</span><span class="w">  </span><span class="n">Time</span><span class="w">  </span><span class="p">(</span><span class="n">median</span><span class="p">)</span><span class="o">:</span><span class="w">     </span><span class="mf">174.199</span><span class="w"> </span><span class="n">μs</span><span class="w">              </span><span class="n">┊</span><span class="w"> </span><span class="n">GC</span><span class="w"> </span><span class="p">(</span><span class="n">median</span><span class="p">)</span><span class="o">:</span><span class="w">    </span><span class="mf">0.00</span><span class="o">%</span><span class="w"></span>
+<span class="o">:</span><span class="w">  </span><span class="n">Time</span><span class="w">  </span><span class="p">(</span><span class="n">mean</span><span class="w"> </span><span class="o">±</span><span class="w"> </span><span class="n">σ</span><span class="p">)</span><span class="o">:</span><span class="w">   </span><span class="mf">180.871</span><span class="w"> </span><span class="n">μs</span><span class="w"> </span><span class="o">±</span><span class="w"> </span><span class="mf">80.589</span><span class="w"> </span><span class="n">μs</span><span class="w">  </span><span class="n">┊</span><span class="w"> </span><span class="n">GC</span><span class="w"> </span><span class="p">(</span><span class="n">mean</span><span class="w"> </span><span class="o">±</span><span class="w"> </span><span class="n">σ</span><span class="p">)</span><span class="o">:</span><span class="w">  </span><span class="mf">0.39</span><span class="o">%</span><span class="w"> </span><span class="o">±</span><span class="w">  </span><span class="mf">0.94</span><span class="o">%</span><span class="w"></span>
+<span class="o">:</span><span class="w"></span>
+<span class="o">:</span><span class="w">   </span><span class="n">██▅▄▂▁</span><span class="w">                                                       </span><span class="n">▂</span><span class="w"></span>
+<span class="o">:</span><span class="w">   </span><span class="n">███████▇▇▇▇███▇█▇▅▄▃▁▁▁▁▁▁▁▁▁▁▁▁▁▃▁▁▁▁▁▁▁▁▁▁▁▁▁▃▄▅▃▁▄▃▄▅▁▄▄▅</span><span class="w"> </span><span class="n">█</span><span class="w"></span>
+<span class="o">:</span><span class="w">   </span><span class="mi">170</span><span class="w"> </span><span class="n">μs</span><span class="w">        </span><span class="n">Histogram</span><span class="o">:</span><span class="w"> </span><span class="n">log</span><span class="p">(</span><span class="n">frequency</span><span class="p">)</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="n">time</span><span class="w">       </span><span class="mi">428</span><span class="w"> </span><span class="n">μs</span><span class="w"> </span><span class="o">&lt;</span><span class="w"></span>
+<span class="o">:</span><span class="w"></span>
+<span class="o">:</span><span class="w">  </span><span class="n">Memory</span><span class="w"> </span><span class="n">estimate</span><span class="o">:</span><span class="w"> </span><span class="mf">6.63</span><span class="w"> </span><span class="n">KiB</span><span class="p">,</span><span class="w"> </span><span class="n">allocs</span><span class="w"> </span><span class="n">estimate</span><span class="o">:</span><span class="w"> </span><span class="mf">126.</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="310528276"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310528276" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310528276">(Nov 17 2022 at 00:47)</a>:</h4>
+<p>And <code>invokelatest</code> on top of that <code>eval</code>:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="c">#+begin_src julia</span><span class="w"></span>
+<span class="n">f</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"></span>
+<span class="k">function</span><span class="w"> </span><span class="n">advance_worldage</span><span class="p">()</span><span class="w"></span>
+<span class="w">    </span><span class="nd">@eval</span><span class="w"> </span><span class="n">blah</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"></span>
+<span class="w">    </span><span class="n">Base</span><span class="o">.</span><span class="n">invokelatest</span><span class="p">(</span><span class="n">f</span><span class="p">)</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+<span class="nd">@benchmark</span><span class="w"> </span><span class="n">advance_worldage</span><span class="p">()</span><span class="w"></span>
+<span class="c">#+end_src</span><span class="w"></span>
+
+<span class="c">#+RESULTS:</span><span class="w"></span>
+<span class="o">:</span><span class="w"> </span><span class="n">BenchmarkTools</span><span class="o">.</span><span class="n">Trial</span><span class="o">:</span><span class="w"> </span><span class="mi">10000</span><span class="w"> </span><span class="n">samples</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">evaluation</span><span class="o">.</span><span class="w"></span>
+<span class="o">:</span><span class="w">  </span><span class="n">Range</span><span class="w"> </span><span class="p">(</span><span class="n">min</span><span class="w"> </span><span class="o">…</span><span class="w"> </span><span class="n">max</span><span class="p">)</span><span class="o">:</span><span class="w">  </span><span class="mf">168.360</span><span class="w"> </span><span class="n">μs</span><span class="w"> </span><span class="o">…</span><span class="w">  </span><span class="mf">9.291</span><span class="w"> </span><span class="n">ms</span><span class="w">  </span><span class="n">┊</span><span class="w"> </span><span class="n">GC</span><span class="w"> </span><span class="p">(</span><span class="n">min</span><span class="w"> </span><span class="o">…</span><span class="w"> </span><span class="n">max</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="mf">0.00</span><span class="o">%</span><span class="w"> </span><span class="o">…</span><span class="w"> </span><span class="mf">97.52</span><span class="o">%</span><span class="w"></span>
+<span class="o">:</span><span class="w">  </span><span class="n">Time</span><span class="w">  </span><span class="p">(</span><span class="n">median</span><span class="p">)</span><span class="o">:</span><span class="w">     </span><span class="mf">173.700</span><span class="w"> </span><span class="n">μs</span><span class="w">              </span><span class="n">┊</span><span class="w"> </span><span class="n">GC</span><span class="w"> </span><span class="p">(</span><span class="n">median</span><span class="p">)</span><span class="o">:</span><span class="w">    </span><span class="mf">0.00</span><span class="o">%</span><span class="w"></span>
+<span class="o">:</span><span class="w">  </span><span class="n">Time</span><span class="w">  </span><span class="p">(</span><span class="n">mean</span><span class="w"> </span><span class="o">±</span><span class="w"> </span><span class="n">σ</span><span class="p">)</span><span class="o">:</span><span class="w">   </span><span class="mf">182.926</span><span class="w"> </span><span class="n">μs</span><span class="w"> </span><span class="o">±</span><span class="w"> </span><span class="mf">98.141</span><span class="w"> </span><span class="n">μs</span><span class="w">  </span><span class="n">┊</span><span class="w"> </span><span class="n">GC</span><span class="w"> </span><span class="p">(</span><span class="n">mean</span><span class="w"> </span><span class="o">±</span><span class="w"> </span><span class="n">σ</span><span class="p">)</span><span class="o">:</span><span class="w">  </span><span class="mf">0.50</span><span class="o">%</span><span class="w"> </span><span class="o">±</span><span class="w">  </span><span class="mf">0.98</span><span class="o">%</span><span class="w"></span>
+<span class="o">:</span><span class="w"></span>
+<span class="o">:</span><span class="w">   </span><span class="n">▇█▅▃▂▁▁</span><span class="w">    </span><span class="n">▂▁▁▂▁▁</span><span class="w">                                            </span><span class="n">▂</span><span class="w"></span>
+<span class="o">:</span><span class="w">   </span><span class="n">██████████████████▆▆▅▃▄▁▁▁▁▁▁▁▁▁▁▁▃▁▁▁▁▁▁▁▁▁▁▁▁▁▁▅▆▄▃▄▄▃▃▄▅▄</span><span class="w"> </span><span class="n">█</span><span class="w"></span>
+<span class="o">:</span><span class="w">   </span><span class="mi">168</span><span class="w"> </span><span class="n">μs</span><span class="w">        </span><span class="n">Histogram</span><span class="o">:</span><span class="w"> </span><span class="n">log</span><span class="p">(</span><span class="n">frequency</span><span class="p">)</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="n">time</span><span class="w">       </span><span class="mi">424</span><span class="w"> </span><span class="n">μs</span><span class="w"> </span><span class="o">&lt;</span><span class="w"></span>
+<span class="o">:</span><span class="w"></span>
+<span class="o">:</span><span class="w">  </span><span class="n">Memory</span><span class="w"> </span><span class="n">estimate</span><span class="o">:</span><span class="w"> </span><span class="mf">6.63</span><span class="w"> </span><span class="n">KiB</span><span class="p">,</span><span class="w"> </span><span class="n">allocs</span><span class="w"> </span><span class="n">estimate</span><span class="o">:</span><span class="w"> </span><span class="mf">126.</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="310528431"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310528431" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310528431">(Nov 17 2022 at 00:49)</a>:</h4>
+<p>So my conclusion I guess remains that I don't see any significant overhead to <code>invokelatest</code> if the change doesn't actually affect the method table of the function being called, or any of it's downstream callees</p>
+
+
+
+<a name="310528698"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310528698" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310528698">(Nov 17 2022 at 00:52)</a>:</h4>
+<p>And in case you worry that maybe the <code>eval</code>ing the same body many times doesn't change the worldage, I did check the world-age before and after the benchmark, and the difference was <code>38684</code>.</p>
+
+
+
+<a name="310529009"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310529009" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310529009">(Nov 17 2022 at 00:56)</a>:</h4>
+<p>So think <code>invokelatest</code> is always doing the smart thing here.</p>
+
+
+
+<a name="310531745"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310531745" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310531745">(Nov 17 2022 at 01:32)</a>:</h4>
+<p>cc <span class="user-mention" data-user-id="374994">@Michael Fiano</span>, this might be of interest. Turns out the overhead I was attributing to <code>invokelatest</code> before was actually just that <code>eval</code>ing a function is heavier than <code>eval</code>ing a variable binding.</p>
+
+
+
+<a name="310532117"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310532117" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310532117">(Nov 17 2022 at 01:38)</a>:</h4>
+<p>It's interesting that <code>invokelatest</code> seems to have the exact same overhead as my <code>invokerecent</code> (20.4us and 20.8us over a baseline of 12.5us in one test case)</p>
+
+
+
+<a name="310532137"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310532137" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310532137">(Nov 17 2022 at 01:38)</a>:</h4>
+<p>Probably because they're essentially doing the same thing</p>
+
+
+
+<a name="310532202"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310532202" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310532202">(Nov 17 2022 at 01:39)</a>:</h4>
+<p>Mmm, though it seems like the bulk of the overhead comes from my <code>getmethod</code>.</p>
+
+
+
+<a name="310533263"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310533263" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310533263">(Nov 17 2022 at 01:56)</a>:</h4>
+<p>Just for reference, benchmarks (from a different machine)</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="nd">@benchmark</span><span class="w"> </span><span class="n">sum</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">])</span><span class="w"></span>
+<span class="n">BenchmarkTools</span><span class="o">.</span><span class="n">Trial</span><span class="o">:</span><span class="w"> </span><span class="mi">10000</span><span class="w"> </span><span class="n">samples</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="mi">996</span><span class="w"> </span><span class="n">evaluations</span><span class="o">.</span><span class="w"></span>
+<span class="w"> </span><span class="n">Range</span><span class="w"> </span><span class="p">(</span><span class="n">min</span><span class="w"> </span><span class="o">…</span><span class="w"> </span><span class="n">max</span><span class="p">)</span><span class="o">:</span><span class="w">  </span><span class="mf">23.710</span><span class="w"> </span><span class="n">ns</span><span class="w"> </span><span class="o">…</span><span class="w">  </span><span class="mf">2.325</span><span class="w"> </span><span class="n">μs</span><span class="w">  </span><span class="n">┊</span><span class="w"> </span><span class="n">GC</span><span class="w"> </span><span class="p">(</span><span class="n">min</span><span class="w"> </span><span class="o">…</span><span class="w"> </span><span class="n">max</span><span class="p">)</span><span class="o">:</span><span class="w">  </span><span class="mf">0.00</span><span class="o">%</span><span class="w"> </span><span class="o">…</span><span class="w"> </span><span class="mf">96.48</span><span class="o">%</span><span class="w"></span>
+<span class="w"> </span><span class="n">Time</span><span class="w">  </span><span class="p">(</span><span class="n">median</span><span class="p">)</span><span class="o">:</span><span class="w">     </span><span class="mf">28.759</span><span class="w"> </span><span class="n">ns</span><span class="w">              </span><span class="n">┊</span><span class="w"> </span><span class="n">GC</span><span class="w"> </span><span class="p">(</span><span class="n">median</span><span class="p">)</span><span class="o">:</span><span class="w">     </span><span class="mf">0.00</span><span class="o">%</span><span class="w"></span>
+<span class="w"> </span><span class="n">Time</span><span class="w">  </span><span class="p">(</span><span class="n">mean</span><span class="w"> </span><span class="o">±</span><span class="w"> </span><span class="n">σ</span><span class="p">)</span><span class="o">:</span><span class="w">   </span><span class="mf">33.361</span><span class="w"> </span><span class="n">ns</span><span class="w"> </span><span class="o">±</span><span class="w"> </span><span class="mf">93.276</span><span class="w"> </span><span class="n">ns</span><span class="w">  </span><span class="n">┊</span><span class="w"> </span><span class="n">GC</span><span class="w"> </span><span class="p">(</span><span class="n">mean</span><span class="w"> </span><span class="o">±</span><span class="w"> </span><span class="n">σ</span><span class="p">)</span><span class="o">:</span><span class="w">  </span><span class="mf">11.35</span><span class="o">%</span><span class="w"> </span><span class="o">±</span><span class="w">  </span><span class="mf">4.01</span><span class="o">%</span><span class="w"></span>
+
+<span class="w">      </span><span class="n">▂▄▆▅▅▆██▅▁</span><span class="w">                             </span><span class="n">▁▁▁</span><span class="w">              </span><span class="n">▂</span><span class="w"></span>
+<span class="w">  </span><span class="n">███████████████████▇▇▆▆▅▄▅▄▄▅▅▄▄▅▅▄▅▄▄▄▄▄▆████▇▇▆▅▅▄▄▃▄▇▇▇▇</span><span class="w"> </span><span class="n">█</span><span class="w"></span>
+<span class="w">  </span><span class="mf">23.7</span><span class="w"> </span><span class="n">ns</span><span class="w">      </span><span class="n">Histogram</span><span class="o">:</span><span class="w"> </span><span class="n">log</span><span class="p">(</span><span class="n">frequency</span><span class="p">)</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="n">time</span><span class="w">      </span><span class="mf">51.7</span><span class="w"> </span><span class="n">ns</span><span class="w"> </span><span class="o">&lt;</span><span class="w"></span>
+
+<span class="w"> </span><span class="n">Memory</span><span class="w"> </span><span class="n">estimate</span><span class="o">:</span><span class="w"> </span><span class="mi">80</span><span class="w"> </span><span class="n">bytes</span><span class="p">,</span><span class="w"> </span><span class="n">allocs</span><span class="w"> </span><span class="n">estimate</span><span class="o">:</span><span class="w"> </span><span class="mf">1.</span><span class="w"></span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="nd">@benchmark</span><span class="w"> </span><span class="n">Base</span><span class="o">.</span><span class="n">invokelatest</span><span class="p">(</span><span class="n">sum</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">])</span><span class="w"></span>
+<span class="n">BenchmarkTools</span><span class="o">.</span><span class="n">Trial</span><span class="o">:</span><span class="w"> </span><span class="mi">10000</span><span class="w"> </span><span class="n">samples</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="mi">988</span><span class="w"> </span><span class="n">evaluations</span><span class="o">.</span><span class="w"></span>
+<span class="w"> </span><span class="n">Range</span><span class="w"> </span><span class="p">(</span><span class="n">min</span><span class="w"> </span><span class="o">…</span><span class="w"> </span><span class="n">max</span><span class="p">)</span><span class="o">:</span><span class="w">  </span><span class="mf">46.141</span><span class="w"> </span><span class="n">ns</span><span class="w"> </span><span class="o">…</span><span class="w">  </span><span class="mf">2.463</span><span class="w"> </span><span class="n">μs</span><span class="w">  </span><span class="n">┊</span><span class="w"> </span><span class="n">GC</span><span class="w"> </span><span class="p">(</span><span class="n">min</span><span class="w"> </span><span class="o">…</span><span class="w"> </span><span class="n">max</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="mf">0.00</span><span class="o">%</span><span class="w"> </span><span class="o">…</span><span class="w"> </span><span class="mf">96.64</span><span class="o">%</span><span class="w"></span>
+<span class="w"> </span><span class="n">Time</span><span class="w">  </span><span class="p">(</span><span class="n">median</span><span class="p">)</span><span class="o">:</span><span class="w">     </span><span class="mf">49.425</span><span class="w"> </span><span class="n">ns</span><span class="w">              </span><span class="n">┊</span><span class="w"> </span><span class="n">GC</span><span class="w"> </span><span class="p">(</span><span class="n">median</span><span class="p">)</span><span class="o">:</span><span class="w">    </span><span class="mf">0.00</span><span class="o">%</span><span class="w"></span>
+<span class="w"> </span><span class="n">Time</span><span class="w">  </span><span class="p">(</span><span class="n">mean</span><span class="w"> </span><span class="o">±</span><span class="w"> </span><span class="n">σ</span><span class="p">)</span><span class="o">:</span><span class="w">   </span><span class="mf">54.329</span><span class="w"> </span><span class="n">ns</span><span class="w"> </span><span class="o">±</span><span class="w"> </span><span class="mf">94.346</span><span class="w"> </span><span class="n">ns</span><span class="w">  </span><span class="n">┊</span><span class="w"> </span><span class="n">GC</span><span class="w"> </span><span class="p">(</span><span class="n">mean</span><span class="w"> </span><span class="o">±</span><span class="w"> </span><span class="n">σ</span><span class="p">)</span><span class="o">:</span><span class="w">  </span><span class="mf">7.05</span><span class="o">%</span><span class="w"> </span><span class="o">±</span><span class="w">  </span><span class="mf">3.97</span><span class="o">%</span><span class="w"></span>
+
+<span class="w">   </span><span class="n">▃▅▅▅▆█▇▅▂▁▁▁▁</span><span class="w">                             </span><span class="n">▁▁▁</span><span class="w">              </span><span class="n">▂</span><span class="w"></span>
+<span class="w">  </span><span class="n">▅██████████████▇█▇▇▆▆▇▆▆▅▆▆▄▄▃▃▁▄▃▄▁▃▄▄▃▁▆█████▇▆▅▆▅▄▅▆▇▇▇▇</span><span class="w"> </span><span class="n">█</span><span class="w"></span>
+<span class="w">  </span><span class="mf">46.1</span><span class="w"> </span><span class="n">ns</span><span class="w">      </span><span class="n">Histogram</span><span class="o">:</span><span class="w"> </span><span class="n">log</span><span class="p">(</span><span class="n">frequency</span><span class="p">)</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="n">time</span><span class="w">        </span><span class="mi">76</span><span class="w"> </span><span class="n">ns</span><span class="w"> </span><span class="o">&lt;</span><span class="w"></span>
+
+<span class="w"> </span><span class="n">Memory</span><span class="w"> </span><span class="n">estimate</span><span class="o">:</span><span class="w"> </span><span class="mi">80</span><span class="w"> </span><span class="n">bytes</span><span class="p">,</span><span class="w"> </span><span class="n">allocs</span><span class="w"> </span><span class="n">estimate</span><span class="o">:</span><span class="w"> </span><span class="mf">1.</span><span class="w"></span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="nd">@benchmark</span><span class="w"> </span><span class="n">invokerecent</span><span class="p">(</span><span class="n">sum</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">])</span><span class="w"></span>
+<span class="n">BenchmarkTools</span><span class="o">.</span><span class="n">Trial</span><span class="o">:</span><span class="w"> </span><span class="mi">10000</span><span class="w"> </span><span class="n">samples</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="mi">989</span><span class="w"> </span><span class="n">evaluations</span><span class="o">.</span><span class="w"></span>
+<span class="w"> </span><span class="n">Range</span><span class="w"> </span><span class="p">(</span><span class="n">min</span><span class="w"> </span><span class="o">…</span><span class="w"> </span><span class="n">max</span><span class="p">)</span><span class="o">:</span><span class="w">  </span><span class="mf">44.554</span><span class="w"> </span><span class="n">ns</span><span class="w"> </span><span class="o">…</span><span class="w">  </span><span class="mf">2.475</span><span class="w"> </span><span class="n">μs</span><span class="w">  </span><span class="n">┊</span><span class="w"> </span><span class="n">GC</span><span class="w"> </span><span class="p">(</span><span class="n">min</span><span class="w"> </span><span class="o">…</span><span class="w"> </span><span class="n">max</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="mf">0.00</span><span class="o">%</span><span class="w"> </span><span class="o">…</span><span class="w"> </span><span class="mf">96.14</span><span class="o">%</span><span class="w"></span>
+<span class="w"> </span><span class="n">Time</span><span class="w">  </span><span class="p">(</span><span class="n">median</span><span class="p">)</span><span class="o">:</span><span class="w">     </span><span class="mf">47.411</span><span class="w"> </span><span class="n">ns</span><span class="w">              </span><span class="n">┊</span><span class="w"> </span><span class="n">GC</span><span class="w"> </span><span class="p">(</span><span class="n">median</span><span class="p">)</span><span class="o">:</span><span class="w">    </span><span class="mf">0.00</span><span class="o">%</span><span class="w"></span>
+<span class="w"> </span><span class="n">Time</span><span class="w">  </span><span class="p">(</span><span class="n">mean</span><span class="w"> </span><span class="o">±</span><span class="w"> </span><span class="n">σ</span><span class="p">)</span><span class="o">:</span><span class="w">   </span><span class="mf">52.438</span><span class="w"> </span><span class="n">ns</span><span class="w"> </span><span class="o">±</span><span class="w"> </span><span class="mf">94.743</span><span class="w"> </span><span class="n">ns</span><span class="w">  </span><span class="n">┊</span><span class="w"> </span><span class="n">GC</span><span class="w"> </span><span class="p">(</span><span class="n">mean</span><span class="w"> </span><span class="o">±</span><span class="w"> </span><span class="n">σ</span><span class="p">)</span><span class="o">:</span><span class="w">  </span><span class="mf">7.34</span><span class="o">%</span><span class="w"> </span><span class="o">±</span><span class="w">  </span><span class="mf">3.98</span><span class="o">%</span><span class="w"></span>
+
+<span class="w">   </span><span class="n">▆▆▆▇██▇▆▄▃▃▂▁▁</span><span class="w">                            </span><span class="n">▁▂▂▁</span><span class="w">             </span><span class="n">▃</span><span class="w"></span>
+<span class="w">  </span><span class="n">██████████████████▇▇▆▆▆▅▆▆▆▃▃▁▄▄▄▁▁▁▁▁▃▃▁▅█████▇█▆▅▃▄▃▅▇███</span><span class="w"> </span><span class="n">█</span><span class="w"></span>
+<span class="w">  </span><span class="mf">44.6</span><span class="w"> </span><span class="n">ns</span><span class="w">      </span><span class="n">Histogram</span><span class="o">:</span><span class="w"> </span><span class="n">log</span><span class="p">(</span><span class="n">frequency</span><span class="p">)</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="n">time</span><span class="w">      </span><span class="mf">73.4</span><span class="w"> </span><span class="n">ns</span><span class="w"> </span><span class="o">&lt;</span><span class="w"></span>
+
+<span class="w"> </span><span class="n">Memory</span><span class="w"> </span><span class="n">estimate</span><span class="o">:</span><span class="w"> </span><span class="mi">80</span><span class="w"> </span><span class="n">bytes</span><span class="p">,</span><span class="w"> </span><span class="n">allocs</span><span class="w"> </span><span class="n">estimate</span><span class="o">:</span><span class="w"> </span><span class="mf">1.</span><span class="w"></span>
+
+<span class="n">julia</span><span class="o">&gt;</span><span class="w"> </span><span class="nd">@benchmark</span><span class="w"> </span><span class="n">getmethod</span><span class="p">(</span><span class="n">sum</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">])</span><span class="w"></span>
+<span class="n">BenchmarkTools</span><span class="o">.</span><span class="n">Trial</span><span class="o">:</span><span class="w"> </span><span class="mi">10000</span><span class="w"> </span><span class="n">samples</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="mi">997</span><span class="w"> </span><span class="n">evaluations</span><span class="o">.</span><span class="w"></span>
+<span class="w"> </span><span class="n">Range</span><span class="w"> </span><span class="p">(</span><span class="n">min</span><span class="w"> </span><span class="o">…</span><span class="w"> </span><span class="n">max</span><span class="p">)</span><span class="o">:</span><span class="w">  </span><span class="mf">20.349</span><span class="w"> </span><span class="n">ns</span><span class="w"> </span><span class="o">…</span><span class="w">  </span><span class="mf">2.378</span><span class="w"> </span><span class="n">μs</span><span class="w">  </span><span class="n">┊</span><span class="w"> </span><span class="n">GC</span><span class="w"> </span><span class="p">(</span><span class="n">min</span><span class="w"> </span><span class="o">…</span><span class="w"> </span><span class="n">max</span><span class="p">)</span><span class="o">:</span><span class="w">  </span><span class="mf">0.00</span><span class="o">%</span><span class="w"> </span><span class="o">…</span><span class="w"> </span><span class="mf">97.64</span><span class="o">%</span><span class="w"></span>
+<span class="w"> </span><span class="n">Time</span><span class="w">  </span><span class="p">(</span><span class="n">median</span><span class="p">)</span><span class="o">:</span><span class="w">     </span><span class="mf">24.670</span><span class="w"> </span><span class="n">ns</span><span class="w">              </span><span class="n">┊</span><span class="w"> </span><span class="n">GC</span><span class="w"> </span><span class="p">(</span><span class="n">median</span><span class="p">)</span><span class="o">:</span><span class="w">     </span><span class="mf">0.00</span><span class="o">%</span><span class="w"></span>
+<span class="w"> </span><span class="n">Time</span><span class="w">  </span><span class="p">(</span><span class="n">mean</span><span class="w"> </span><span class="o">±</span><span class="w"> </span><span class="n">σ</span><span class="p">)</span><span class="o">:</span><span class="w">   </span><span class="mf">29.012</span><span class="w"> </span><span class="n">ns</span><span class="w"> </span><span class="o">±</span><span class="w"> </span><span class="mf">93.224</span><span class="w"> </span><span class="n">ns</span><span class="w">  </span><span class="n">┊</span><span class="w"> </span><span class="n">GC</span><span class="w"> </span><span class="p">(</span><span class="n">mean</span><span class="w"> </span><span class="o">±</span><span class="w"> </span><span class="n">σ</span><span class="p">)</span><span class="o">:</span><span class="w">  </span><span class="mf">12.67</span><span class="o">%</span><span class="w"> </span><span class="o">±</span><span class="w">  </span><span class="mf">3.90</span><span class="o">%</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">▁▃▄▅▅▅▄▃▆█▇▅▁</span><span class="w">  </span><span class="n">▁</span><span class="w">                                            </span><span class="n">▂</span><span class="w"></span>
+<span class="w">  </span><span class="n">█████████████▇█████▇▆▆▆▆▄▄▅▂▄▄▄▄▄▅▅▄▄▃▅▆▇█████▆▅▅▅▃▃▄▆▆▆▇▇▇</span><span class="w"> </span><span class="n">█</span><span class="w"></span>
+<span class="w">  </span><span class="mf">20.3</span><span class="w"> </span><span class="n">ns</span><span class="w">      </span><span class="n">Histogram</span><span class="o">:</span><span class="w"> </span><span class="n">log</span><span class="p">(</span><span class="n">frequency</span><span class="p">)</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="n">time</span><span class="w">      </span><span class="mf">47.4</span><span class="w"> </span><span class="n">ns</span><span class="w"> </span><span class="o">&lt;</span><span class="w"></span>
+
+<span class="w"> </span><span class="n">Memory</span><span class="w"> </span><span class="n">estimate</span><span class="o">:</span><span class="w"> </span><span class="mi">80</span><span class="w"> </span><span class="n">bytes</span><span class="p">,</span><span class="w"> </span><span class="n">allocs</span><span class="w"> </span><span class="n">estimate</span><span class="o">:</span><span class="w"> </span><span class="mf">1.</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="310649566"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310649566" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310649566">(Nov 17 2022 at 16:40)</a>:</h4>
+<p>Hmm, if I add the package re-run bits the overhead grows from ~10ns to ~40ns per call.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">invokerecent</span><span class="p">(</span><span class="n">f</span><span class="o">::</span><span class="kt">Function</span><span class="p">,</span><span class="w"> </span><span class="n">args</span><span class="o">...</span><span class="p">;</span><span class="w"> </span><span class="n">kwargs</span><span class="o">...</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getmethod</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="n">args</span><span class="o">...</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">try</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">method</span><span class="o">.</span><span class="n">primary_world</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">RECENT_WORLD_AGE</span><span class="p">[]</span><span class="w"></span>
+<span class="w">            </span><span class="n">f</span><span class="p">(</span><span class="n">args</span><span class="o">...</span><span class="p">;</span><span class="w"> </span><span class="n">kwargs</span><span class="o">...</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"></span>
+<span class="w">            </span><span class="n">Base</span><span class="o">.</span><span class="n">invokelatest</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="n">args</span><span class="o">...</span><span class="p">;</span><span class="w"> </span><span class="n">kwargs</span><span class="o">...</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">end</span><span class="w"></span>
+<span class="w">    </span><span class="k">catch</span><span class="w"> </span><span class="n">e</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">e</span><span class="w"> </span><span class="k">isa</span><span class="w"> </span><span class="n">PkgRequiredRerunNeeded</span><span class="w"></span>
+<span class="w">            </span><span class="n">update_recency!</span><span class="p">()</span><span class="w"></span>
+<span class="w">            </span><span class="n">invokerecent</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="n">args</span><span class="o">...</span><span class="p">;</span><span class="w"> </span><span class="n">kwargs</span><span class="o">...</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"></span>
+<span class="w">            </span><span class="n">rethrow</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">end</span><span class="w"></span>
+<span class="w">    </span><span class="k">end</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+<p>Might anyone have any suggestions with this?</p>
+
+
+
+<a name="310776274"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310776274" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310776274">(Nov 18 2022 at 09:16)</a>:</h4>
+<p>Hmm, it looks like I can get much better performance (back to 10ns overhead instead of 30ns) is I return the error instead of throwing it.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">invokerecent2</span><span class="p">(</span><span class="n">f</span><span class="o">::</span><span class="kt">Function</span><span class="p">,</span><span class="w"> </span><span class="n">args</span><span class="o">...</span><span class="p">;</span><span class="w"> </span><span class="n">kwargs</span><span class="o">...</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getmethod</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="n">args</span><span class="o">...</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">method</span><span class="o">.</span><span class="n">primary_world</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">RECENT_WORLD_AGE</span><span class="p">[]</span><span class="w"></span>
+<span class="w">            </span><span class="n">f</span><span class="p">(</span><span class="n">args</span><span class="o">...</span><span class="p">;</span><span class="w"> </span><span class="n">kwargs</span><span class="o">...</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"></span>
+<span class="w">            </span><span class="n">Base</span><span class="o">.</span><span class="n">invokelatest</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="n">args</span><span class="o">...</span><span class="p">;</span><span class="w"> </span><span class="n">kwargs</span><span class="o">...</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">end</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="k">isa</span><span class="w"> </span><span class="n">PkgRequiredRerunNeeded</span><span class="w"></span>
+<span class="w">        </span><span class="n">update_recency!</span><span class="p">()</span><span class="w"></span>
+<span class="w">        </span><span class="n">invokerecent</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="n">args</span><span class="o">...</span><span class="p">;</span><span class="w"> </span><span class="n">kwargs</span><span class="o">...</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">else</span><span class="w"></span>
+<span class="w">        </span><span class="n">res</span><span class="w"></span>
+<span class="w">    </span><span class="k">end</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<a name="310777209"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310777209" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310777209">(Nov 18 2022 at 09:23)</a>:</h4>
+<p>that's not surprising - stack unwinding &amp; setting up a function for that is expensive</p>
+
+
+
+<a name="310777223"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310777223" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310777223">(Nov 18 2022 at 09:23)</a>:</h4>
+<p>(relatively speaking)</p>
+
+
+
+<a name="310777490"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310777490" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310777490">(Nov 18 2022 at 09:24)</a>:</h4>
+<p>What I can't see here is the impact this has on type inference</p>
+
+
+
+<a name="310777628"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310777628" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310777628">(Nov 18 2022 at 09:25)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="306754">Sukera</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method/near/310777209">said</a>:</p>
+<blockquote>
+<p>that's not surprising - stack unwinding &amp; setting up a function for that is expensive</p>
+</blockquote>
+<p>I'm not surprised that raising an exception is so expensive, but I am surprised at how much of an impact just adding a <code>try ... catch end</code> block has.</p>
+
+
+
+<a name="310777919"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310777919" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310777919">(Nov 18 2022 at 09:27)</a>:</h4>
+<p>I wonder if the situation could be any nicer if Julia had first-class delimited continuations <span aria-label="thinking" class="emoji emoji-1f914" role="img" title="thinking">:thinking:</span></p>
+
+
+
+<a name="310778189"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310778189" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310778189">(Nov 18 2022 at 09:29)</a>:</h4>
+<p>It seems like there are a few ways this could be done well with LLVM, Chez-like segmented stacks (<a href="https://llvm.org/docs/SegmentedStacks.html">https://llvm.org/docs/SegmentedStacks.html</a>) look interesting but seem to complicate GC.</p>
+
+
+
+<a name="310779646"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310779646" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310779646">(Nov 18 2022 at 09:38)</a>:</h4>
+<p>That link seems more related to ensuring different <em>threads</em>  can grow their stack dynamically</p>
+
+
+
+<a name="310779658"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310779658" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310779658">(Nov 18 2022 at 09:38)</a>:</h4>
+<p>(which is not a problem in single threaded code)</p>
+
+
+
+<a name="310780303"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310780303" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310780303">(Nov 18 2022 at 09:42)</a>:</h4>
+<p>Oh, that link is about segmented stacks existing in LLVM, for how segmented stacks can be used to implement delimited continuations see other resources like <a href="https://legacy.cs.indiana.edu/~dyb/pubs/stack.pdf">https://legacy.cs.indiana.edu/~dyb/pubs/stack.pdf</a></p>
+
+
+
+<a name="310863286"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310863286" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310863286">(Nov 18 2022 at 16:42)</a>:</h4>
+<p>Hmm, I seem to have hit the latest challenge in this endeavour, a good <code>getmethod</code> implementation for types not functions. E.g.</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">struct</span> <span class="kt">Foo</span><span class="w"> </span><span class="k">end</span><span class="w"></span>
+<span class="p">(</span><span class="o">::</span><span class="kt">Foo</span><span class="p">)(</span><span class="n">x</span><span class="o">::</span><span class="kt">Int</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="n">x</span><span class="w"></span>
+
+<span class="n">f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Foo</span><span class="p">()</span><span class="w"></span>
+<span class="n">getmethod</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="c"># function I'd like to define</span><span class="w"></span>
+</code></pre></div>
+<p>For reference, this seems to work nicely with functions</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="nd">@generated</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">getmethod</span><span class="p">(</span><span class="o">::</span><span class="kt">F</span><span class="p">,</span><span class="w"> </span><span class="n">argtypes</span><span class="o">...</span><span class="p">)</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="kt">F</span><span class="w"> </span><span class="o">&lt;:</span><span class="w"> </span><span class="kt">Function</span><span class="w"> </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">first</span><span class="p">(</span><span class="n">methods</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">instance</span><span class="p">,</span><span class="w"> </span><span class="n">argtypes</span><span class="p">))</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+<p>This takes ~10ns.<br>
+I can do</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">getmethod</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="w"> </span><span class="n">args</span><span class="o">...</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">first</span><span class="p">(</span><span class="n">methods</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="w"> </span><span class="n">typeof</span><span class="o">.</span><span class="p">(</span><span class="n">args</span><span class="p">)))</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+<p>but that takes ~500ns, which seems like a bit much.</p>
+
+
+
+<a name="310863758"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310863758" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310863758">(Nov 18 2022 at 16:45)</a>:</h4>
+<p>because julia is not specializing <code>getmethod</code> on <code>t</code>, and neither should you</p>
+
+
+
+<a name="310863837"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310863837" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310863837">(Nov 18 2022 at 16:45)</a>:</h4>
+<p><a href="https://docs.julialang.org/en/v1/manual/performance-tips/#Be-aware-of-when-Julia-avoids-specializing">https://docs.julialang.org/en/v1/manual/performance-tips/#Be-aware-of-when-Julia-avoids-specializing</a></p>
+
+
+
+<a name="310870050"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310870050" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310870050">(Nov 18 2022 at 17:14)</a>:</h4>
+<p>I take it you're talking about the <code>getmethod(::F, ...)</code> implementation? That works nicely, it's the type instance one I'm trying to improve.</p>
+
+
+
+<a name="310876538"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310876538" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310876538">(Nov 18 2022 at 17:47)</a>:</h4>
+<p>no, I'm talking about the <code>getmethod(t, args...)</code> one</p>
+
+
+
+<a name="310876605"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310876605" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310876605">(Nov 18 2022 at 17:47)</a>:</h4>
+<p>your generated function does specialize, since you parametrize (per my link)</p>
+
+
+
+<a name="310876756"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/310876756" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#310876756">(Nov 18 2022 at 17:48)</a>:</h4>
+<p>singleing out <code>::Function</code> is not the general case though, since anything can be callable - you're not going to make that faster</p>
+
+
+
+<a name="311034301"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Get%20world%20age%20of%20method/near/311034301" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Get.20world.20age.20of.20method.html#311034301">(Nov 19 2022 at 15:32)</a>:</h4>
+<p>I think I've arrived at my solution:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="nd">@generated</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">getmethod</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">args</span><span class="o">...</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">hasmethod</span><span class="p">(</span><span class="n">empty</span><span class="p">,</span><span class="w"> </span><span class="kt">Tuple</span><span class="p">{</span><span class="kt">Type</span><span class="p">{</span><span class="kt">T</span><span class="p">}})</span><span class="w"></span>
+<span class="w">        </span><span class="n">first</span><span class="p">(</span><span class="n">methods</span><span class="p">(</span><span class="n">empty</span><span class="p">(</span><span class="n">T</span><span class="p">),</span><span class="w"> </span><span class="n">args</span><span class="p">))</span><span class="w"></span>
+<span class="w">    </span><span class="k">else</span><span class="w"></span>
+<span class="w">        </span><span class="o">:</span><span class="p">(</span><span class="n">first</span><span class="p">(</span><span class="n">methods</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="o">$</span><span class="p">(</span><span class="n">args</span><span class="p">))))</span><span class="w"></span>
+<span class="w">    </span><span class="k">end</span><span class="w"></span>
+<span class="k">end</span><span class="w"></span>
+</code></pre></div>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

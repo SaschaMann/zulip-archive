@@ -1,0 +1,72 @@
+<html>
+<head><meta charset="utf-8"><title>Safety of local variables inside `@spawn` · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Safety.20of.20local.20variables.20inside.20.60.40spawn.60.html">Safety of local variables inside `@spawn`</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="240434539"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Safety%20of%20local%20variables%20inside%20%60%40spawn%60/near/240434539" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kenta Sato <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Safety.20of.20local.20variables.20inside.20.60.40spawn.60.html#240434539">(May 27 2021 at 08:29)</a>:</h4>
+<p>The following code is unsafe (or the result is undefined) in general because the loop variable <code>i</code> may be changed when a new task is spawned and run:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span> <span class="o">.</span><span class="n">Threads</span><span class="o">:</span> <span class="nd">@spawn</span>
+<span class="k">function</span> <span class="n">loop</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+    <span class="n">tasks</span> <span class="o">=</span> <span class="kt">Task</span><span class="p">[]</span>
+    <span class="nd">@sync</span> <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="n">n</span>
+        <span class="n">push!</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span> <span class="nd">@spawn</span> <span class="n">i</span><span class="p">)</span>
+    <span class="k">end</span>
+    <span class="k">return</span> <span class="n">sum</span><span class="p">(</span><span class="n">fetch</span><span class="p">,</span> <span class="n">tasks</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>Instead, we should interpolate the variable with <code>$</code> to copy the value, right?</p>
+
+
+
+<a name="240443231"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Safety%20of%20local%20variables%20inside%20%60%40spawn%60/near/240443231" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Safety.20of.20local.20variables.20inside.20.60.40spawn.60.html#240443231">(May 27 2021 at 10:03)</a>:</h4>
+<p>You don't need interpolation in this case because the scope of <code>i</code> is inside the loop and <code>i</code> is never re-assigned. You'd have the problem if you are capturing variables that are re-assigned. For example:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">let</span> <span class="n">tasks</span> <span class="o">=</span> <span class="p">[]</span>
+           <span class="n">a</span> <span class="o">=</span> <span class="mi">0</span>
+           <span class="nd">@sync</span> <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="mi">3</span>
+               <span class="n">a</span> <span class="o">+=</span> <span class="n">i</span>
+               <span class="n">push!</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span> <span class="n">Threads</span><span class="o">.</span><span class="nd">@spawn</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">a</span><span class="p">))</span>
+           <span class="k">end</span>
+           <span class="n">fetch</span><span class="o">.</span><span class="p">(</span><span class="n">tasks</span><span class="p">)</span>
+       <span class="k">end</span>
+<span class="mi">3</span><span class="o">-</span><span class="n">element</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">Tuple</span><span class="p">{</span><span class="kt">Int64</span><span class="p">,</span> <span class="kt">Int64</span><span class="p">}}</span><span class="o">:</span>
+ <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+ <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+ <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+</code></pre></div>
+<p>Using <code>$a</code> (or <code>let a = a ... end</code>) is a good solution here.</p>
+
+
+
+<a name="240448308"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Safety%20of%20local%20variables%20inside%20%60%40spawn%60/near/240448308" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kenta Sato <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Safety.20of.20local.20variables.20inside.20.60.40spawn.60.html#240448308">(May 27 2021 at 10:55)</a>:</h4>
+<p>Thank you! So, we can think <code>i</code> as a variable that is newly generated for each iteration and therefore iterations have its own isolated variable. I need to update my mental model.</p>
+
+
+
+<a name="240540141"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Safety%20of%20local%20variables%20inside%20%60%40spawn%60/near/240540141" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Safety.20of.20local.20variables.20inside.20.60.40spawn.60.html#240540141">(May 27 2021 at 22:29)</a>:</h4>
+<p>Exactly! This is actually how closures work in Julia. Task-creating macros like <code>@spawn</code> are just a thin syntax sugar on top of closures.</p>
+<p>I think it's easier to play with closures and figure out how it interacts with the scoping rule:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">fs</span> <span class="o">=</span> <span class="p">[]</span>
+       <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="mi">3</span>
+           <span class="n">push!</span><span class="p">(</span><span class="n">fs</span><span class="p">,</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">i</span><span class="p">)</span>
+       <span class="k">end</span>
+       <span class="p">[</span><span class="n">f</span><span class="p">()</span> <span class="k">for</span> <span class="n">f</span> <span class="k">in</span> <span class="n">fs</span><span class="p">]</span>
+<span class="mi">3</span><span class="o">-</span><span class="n">element</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">Int64</span><span class="p">}</span><span class="o">:</span>
+ <span class="mi">1</span>
+ <span class="mi">2</span>
+ <span class="mi">3</span>
+</code></pre></div>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

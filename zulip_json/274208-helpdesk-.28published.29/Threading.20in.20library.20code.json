@@ -1,0 +1,98 @@
+[
+    {
+        "content": "<p>Say I'm writing a package and there's a bit of code that measurably benefits from multithreading with <code>Threads.@threads</code>. Should I use multithreading?</p>\n<p>My concern is that doing so may clash with multithreading that the package user has set up in their own code, leading to overall slower execution.</p>",
+        "id": 282863184,
+        "sender_full_name": "mbaz",
+        "timestamp": 1652916786
+    },
+    {
+        "content": "<p>It's a good question... one option might be to add an optional  keyword argument <code>multithreaded=true</code> or <code>false</code> to whatever relevant function... optionally plus or minus some heuristics to pick the fastest option by default (e.g. <a href=\"https://github.com/JuliaSIMD/VectorizedStatistics.jl/blob/4839b730f88f1d39091624f9433c8a9009e9a83e/src/vcov.jl#L41-L48\">https://github.com/JuliaSIMD/VectorizedStatistics.jl/blob/4839b730f88f1d39091624f9433c8a9009e9a83e/src/vcov.jl#L41-L48</a>)</p>",
+        "id": 282864074,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1652917599
+    },
+    {
+        "content": "<p>Not sure I'm 100% satisfied with that approach, but it's an option and I haven't thought of a better one yet in that case</p>",
+        "id": 282864115,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1652917647
+    },
+    {
+        "content": "<p><code>Threads.@threads</code> uses the composable task-level parallelism now, so in theory it composes well with other multithreaded user code.  I think <code>Threads.@threads</code> still depends on <code>Threads.nthreads()</code> to determine the number of tasks to use, and this could be a bad heuristic depending on your problem size. (But if this is a problem you can do manual decomposition of your problem into tasks with <code>@spawn</code>.)</p>\n<p>Overall I think it's quite reasonable to try just using <code>@threads</code> unconditionally. It would be best to do some tests with some plausible outer threaded loop — such as might be written by a user — around your library to reassure yourself.</p>",
+        "id": 282864727,
+        "sender_full_name": "c42f",
+        "timestamp": 1652918146
+    },
+    {
+        "content": "<blockquote>\n<p>still depends on Threads.nthreads() to determine the number of tasks to use</p>\n</blockquote>\n<p>Actually, this is no longer true in 1.9-DEV — it uses dynamic scheduling instead which is great.</p>",
+        "id": 282865078,
+        "sender_full_name": "c42f",
+        "timestamp": 1652918400
+    },
+    {
+        "content": "<p>Or... scratch that, it has some dynamic scheduling aspects, but the number of tasks is still the number of threads.</p>",
+        "id": 282865271,
+        "sender_full_name": "c42f",
+        "timestamp": 1652918510
+    },
+    {
+        "content": "<p>Anyway, I'd say try it and see!</p>",
+        "id": 282865319,
+        "sender_full_name": "c42f",
+        "timestamp": 1652918526
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269205\">Chris Foster</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Threading.20in.20library.20code/near/282864727\">said</a>:</p>\n<blockquote>\n<p><code>Threads.@threads</code> uses the composable task-level parallelism now, so in theory it composes well with other multithreaded user code.  I think <code>Threads.@threads</code> still depends on <code>Threads.nthreads()</code> to determine the number of tasks to use, and this could be a bad heuristic depending on your problem size. (But if this is a problem you can do manual decomposition of your problem into tasks with <code>@spawn</code>.)</p>\n<p>Overall I think it's quite reasonable to try just using <code>@threads</code> unconditionally. It would be best to do some tests with some plausible outer threaded loop — such as might be written by a user — around your library to reassure yourself.</p>\n</blockquote>\n<p>Well.. if 'now' means on the bleeding edge non-released versions then yeah</p>",
+        "id": 282867194,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652920291
+    },
+    {
+        "content": "<p>I'd recommend strongly against shipping packages that use <code>Threads.@threads</code> without a way to disable it</p>",
+        "id": 282867279,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652920337
+    },
+    {
+        "content": "<blockquote>\n<p>if 'now' means on the bleeding edge non-released versions then yeah</p>\n</blockquote>\n<p>1.6 is the LTS and it uses the task system?</p>\n<p>Oh... waait a minute. No, it kind of uses it, but I was mistaken in exactly how.  Looking closer, it actually subverts the scheduler and statically assigns tasks to threads.</p>\n<p>In that case yeah, I totally agree.</p>",
+        "id": 282867968,
+        "sender_full_name": "c42f",
+        "timestamp": 1652921100
+    },
+    {
+        "content": "<p>Thanks everyone for the pointers! I think I'll be conservative and disable threads by default, but use a keyword argument to allow users to enable it.</p>",
+        "id": 282870079,
+        "sender_full_name": "mbaz",
+        "timestamp": 1652923310
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269205\">Chris Foster</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Threading.20in.20library.20code/near/282867968\">said</a>:</p>\n<blockquote>\n<blockquote>\n<p>if 'now' means on the bleeding edge non-released versions then yeah</p>\n</blockquote>\n<p>1.6 is the LTS and it uses the task system?</p>\n<p>Oh... waait a minute. No, it kind of uses it, but I was mistaken in exactly how.  Looking closer, it actually subverts the scheduler and statically assigns tasks to threads.</p>\n<p>In that case yeah, I totally agree.</p>\n</blockquote>\n<p>Yeah, there's a lot of confusion about this and it's bad.  It wasn't until a couple months ago that the PR was merged to make it dynamic rather than static. Jeff was on the fence about it.  My argument in favour of the dynamic scheduler was that many people right now are under the mistaken assumption that it is dynamic, so that's what we should provide by default.</p>",
+        "id": 282871672,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652925327
+    },
+    {
+        "content": "<p>This is why I constantly tell people \"don't use Base threads, just use <a href=\"https://github.com/search?q=ThreadsX.jl&amp;type=Repositories\">ThreadsX.jl</a> unless you know exactly what you're doing and why you need something different. \"</p>",
+        "id": 282872962,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1652926727
+    },
+    {
+        "content": "<p>I kind of hate that it took this long since 1.3 to get proper dynamic and nested threading...</p>",
+        "id": 282911564,
+        "sender_full_name": "Sukera",
+        "timestamp": 1652957964
+    },
+    {
+        "content": "<p>the initial multithreading blogpost was almost 3 years ago, and while the <code>@spawn</code> tasks were easily nest &amp; composable, <code>@threads</code> just wasn't</p>",
+        "id": 282911795,
+        "sender_full_name": "Sukera",
+        "timestamp": 1652958074
+    },
+    {
+        "content": "<p><a href=\"https://julialang.org/blog/2019/07/multithreading/#how_to_use_it\">https://julialang.org/blog/2019/07/multithreading/#how_to_use_it</a></p>",
+        "id": 282911797,
+        "sender_full_name": "Sukera",
+        "timestamp": 1652958075
+    }
+]

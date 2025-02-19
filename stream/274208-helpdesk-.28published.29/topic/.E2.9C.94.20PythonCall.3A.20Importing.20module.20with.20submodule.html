@@ -1,0 +1,76 @@
+<html>
+<head><meta charset="utf-8"><title>✔ PythonCall: Importing module with submodule · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20PythonCall.3A.20Importing.20module.20with.20submodule.html">✔ PythonCall: Importing module with submodule</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="354633572"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20PythonCall%3A%20Importing%20module%20with%20submodule/near/354633572" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jesper Stemann Andersen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20PythonCall.3A.20Importing.20module.20with.20submodule.html#354633572">(Apr 30 2023 at 08:38)</a>:</h4>
+<p>Using PythonCall, suppose I would like to import a Python module <code>foo</code> and its sub-module <code>bar</code>, where <code>bar</code> defines <code>baz</code>, I would expect the following to work but it does not:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">PythonCall</span>
+
+<span class="n">foo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pyimport</span><span class="p">(</span><span class="s">"foo"</span><span class="p">)</span>
+<span class="n">foo</span><span class="o">.</span><span class="n">bar</span><span class="o">.</span><span class="n">baz</span>
+</code></pre></div>
+<p><code>foo.bar</code> is a Python module (a <code>Py</code> object), but it does not have <code>baz</code> defined - it doesn't seem to have any names defined.</p>
+<p>Current workaround seems to be something like:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">PythonCall</span>
+
+<span class="n">foo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pyimport</span><span class="p">(</span><span class="s">"foo"</span><span class="p">)</span>
+<span class="n">foo_bar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pyimport</span><span class="p">(</span><span class="s">"foo.bar"</span><span class="p">)</span>
+<span class="n">foo_bar</span><span class="o">.</span><span class="n">baz</span>
+</code></pre></div>
+
+
+
+<a name="354636058"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20PythonCall%3A%20Importing%20module%20with%20submodule/near/354636058" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jesper Stemann Andersen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20PythonCall.3A.20Importing.20module.20with.20submodule.html#354636058">(Apr 30 2023 at 08:54)</a>:</h4>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">PythonCall</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">fo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pyimport</span><span class="p">(</span><span class="s">"fiftyone"</span><span class="p">)</span>
+<span class="go">Python module: &lt;module 'fiftyone' from '/Users/jsa/work/julia/FiftyOne.jl/.CondaPkg/env/lib/python3.11/site-packages/fiftyone/__init__.py'&gt;</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">fo</span><span class="o">.</span><span class="n">core</span>
+<span class="go">Python module: &lt;module 'fiftyone.core' from '/Users/jsa/work/julia/FiftyOne.jl/.CondaPkg/env/lib/python3.11/site-packages/fiftyone/core/__init__.py'&gt;</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">fo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span>
+</code></pre></div>
+<p>No names defined in <code>fo.core</code>, i.e. no completions available in the REPL.</p>
+<p>Whereas all the names are defined if importing <code>fiftyone.core</code> separately:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span><span class="w"> </span><span class="n">fo_core</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pyimport</span><span class="p">(</span><span class="s">"fiftyone.core"</span><span class="p">)</span>
+<span class="go">Python module: &lt;module 'fiftyone.core' from '/Users/jsa/work/julia/FiftyOne.jl/.CondaPkg/env/lib/python3.11/site-packages/fiftyone/core/__init__.py'&gt;</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">fo_core</span>
+<span class="go">Python module: &lt;module 'fiftyone.core' from '/Users/jsa/work/julia/FiftyOne.jl/.CondaPkg/env/lib/python3.11/site-packages/fiftyone/core/__init__.py'&gt;</span>
+
+<span class="gp">julia&gt;</span><span class="w"> </span><span class="n">fo_core</span><span class="o">.</span>
+<span class="go">__annotations__    __cached__         __class__          __delattr__        __dict__           __dir__            __doc__            __eq__             __file__           __format__</span>
+<span class="go">__ge__             __getattribute__   __getstate__       __gt__             __hash__           __init__           __init_subclass__  __le__             __loader__         __lt__</span>
+<span class="go">__name__           __ne__             __new__            __package__        __path__           __reduce__         __reduce_ex__      __repr__           __setattr__        __sizeof__</span>
+<span class="go">__spec__           __str__            __subclasshook__   aggregations       annotation         brain              clips              collections        config             context</span>
+<span class="go">dataset            document           evaluation         expressions        fields             frame              frame_utils        groups             json               labels</span>
+<span class="go">logging            media              metadata           models             odm                patches            plots              runs               sample             service</span>
+<span class="go">session            singletons         spaces             stages             state              uid                utils              validation         video              view</span>
+</code></pre></div>
+
+
+
+<a name="356018897"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20PythonCall%3A%20Importing%20module%20with%20submodule/near/356018897" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jesper Stemann Andersen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20PythonCall.3A.20Importing.20module.20with.20submodule.html#356018897">(May 05 2023 at 11:03)</a>:</h4>
+<p>Seems like the names are indeed there - they are returned by <code>getpropertynames(fo.core)</code> - just that they somehow are not available from the REPL...</p>
+
+
+
+<a name="356018915"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20PythonCall%3A%20Importing%20module%20with%20submodule/near/356018915" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20PythonCall.3A.20Importing.20module.20with.20submodule.html#356018915">(May 05 2023 at 11:03)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="432905">Jesper Stemann Andersen</span> has marked this topic as resolved.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

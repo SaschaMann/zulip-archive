@@ -1,0 +1,74 @@
+[
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">d</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span><span class=\"n\">y</span><span class=\"p\">)</span>\n        <span class=\"n\">x</span><span class=\"o\">=</span><span class=\"mi\">3</span>\n       <span class=\"n\">y</span><span class=\"o\">=</span><span class=\"mi\">8</span>\n<span class=\"k\">end</span>\n\n<span class=\"n\">d</span><span class=\"p\">(</span><span class=\"n\">dog</span><span class=\"p\">,</span><span class=\"n\">cat</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>This doesn't recognize dog as a variable<br>\nhow do I get dog=3, cat=8<br>\n?</p>",
+        "id": 240729766,
+        "sender_full_name": "brett knoss",
+        "timestamp": 1622334758
+    },
+    {
+        "content": "<p><code>dog = 3; cat = 8</code>?<br>\nor if you want to be fancy</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">dog</span><span class=\"p\">,</span> <span class=\"n\">cat</span> <span class=\"o\">=</span> <span class=\"mi\">3</span><span class=\"p\">,</span> <span class=\"mi\">8</span>\n</code></pre></div>",
+        "id": 240729953,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1622335102
+    },
+    {
+        "content": "<p>But whether or not that's something you want to to do maybe depends on what you're ultimately trying to accomplish</p>",
+        "id": 240729966,
+        "sender_full_name": "Brenhin Keller",
+        "timestamp": 1622335197
+    },
+    {
+        "content": "<p>It sounds like you're trying to run a function inside out. That's now how the data flows.  When you write <code>d(dog, cat)</code>, julia looks up what values are associate with the variables <code>dog</code> and <code>cat</code> and then passes those variables into the function <code>d</code>. </p>\n<p>Inside the function, you then bind those values to the arguments, <code>x</code> and <code>y</code>, but then inside the function body you then rebind <code>x</code> and <code>y</code> to <code>3</code> and <code>8</code>, completely ignoring whatever values were passed in</p>",
+        "id": 240730731,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1622336638
+    },
+    {
+        "content": "<p>If you want <code>d</code> to assign the values <code>3</code> and <code>8</code> to new variables <code>dog</code> and <code>cat</code>, then you can't do that with a function, but you can do it using a macro.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">macro</span> <span class=\"n\">d</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">,</span> <span class=\"n\">y</span><span class=\"p\">)</span>\n           <span class=\"n\">ex</span> <span class=\"o\">=</span> <span class=\"k\">quote</span>\n               <span class=\"o\">$</span><span class=\"n\">x</span> <span class=\"o\">=</span> <span class=\"mi\">3</span>\n               <span class=\"o\">$</span><span class=\"n\">y</span> <span class=\"o\">=</span> <span class=\"mi\">8</span>\n           <span class=\"k\">end</span>\n           <span class=\"n\">esc</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"p\">)</span>\n       <span class=\"k\">end</span>\n\n<span class=\"nd\">@d</span> <span class=\"p\">(</span><span class=\"k\">macro</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@d</span><span class=\"p\">(</span><span class=\"n\">dog</span><span class=\"p\">,</span> <span class=\"n\">cat</span><span class=\"p\">)</span>\n<span class=\"mi\">8</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">dog</span> <span class=\"o\">+</span> <span class=\"n\">cat</span>\n<span class=\"mi\">11</span>\n</code></pre></div>",
+        "id": 240730851,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1622336853
+    },
+    {
+        "content": "<p>That works, but apparently I can't do the same thing in a dataframes, or maybe I'm trying to send data both ways</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">macro</span> <span class=\"n\">transaction</span><span class=\"p\">(</span><span class=\"n\">newdate</span><span class=\"p\">,</span><span class=\"n\">newcredit</span><span class=\"p\">,</span><span class=\"n\">credit_amount</span><span class=\"p\">,</span><span class=\"n\">newdebit</span><span class=\"p\">,</span> <span class=\"n\">debit_amount</span><span class=\"p\">)</span>\n    <span class=\"k\">if</span> <span class=\"n\">credit_amount</span> <span class=\"o\">!=</span> <span class=\"n\">debit_amount</span>\n        <span class=\"s\">\"Error--Debit and Credit must match\"</span>\n    <span class=\"k\">else</span>\n        <span class=\"n\">ex</span><span class=\"o\">=</span> <span class=\"k\">quote</span>\n\n            <span class=\"n\">newtransaction</span> <span class=\"o\">=</span> <span class=\"n\">DataFrame</span><span class=\"p\">(</span>\n            <span class=\"o\">$</span><span class=\"n\">newdate</span><span class=\"o\">=</span><span class=\"p\">[</span><span class=\"n\">newdate</span><span class=\"p\">]</span>\n            <span class=\"o\">$</span><span class=\"n\">newcredit</span> <span class=\"o\">=</span> <span class=\"p\">[</span><span class=\"n\">credit_amount</span><span class=\"p\">],</span>\n            <span class=\"o\">$</span><span class=\"n\">newdebit</span> <span class=\"o\">=</span> <span class=\"p\">[</span><span class=\"n\">debit_amount</span><span class=\"p\">])</span>\n        <span class=\"k\">end</span>\n        <span class=\"n\">esc</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"p\">)</span>\n    <span class=\"k\">end</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 240731561,
+        "sender_full_name": "brett knoss",
+        "timestamp": 1622338254
+    },
+    {
+        "content": "<p>Macros are not like functions. They just operate on syntax.</p>",
+        "id": 240731672,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1622338490
+    },
+    {
+        "content": "<p>Ok, so do I then need to somehow have a macro and a function?</p>",
+        "id": 240731725,
+        "sender_full_name": "brett knoss",
+        "timestamp": 1622338618
+    },
+    {
+        "content": "<p>I would recommend just writing a function and no macro.</p>",
+        "id": 240731773,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1622338730
+    },
+    {
+        "content": "<p>And then just writing </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">new_transaction</span> <span class=\"o\">=</span> <span class=\"n\">transaction</span><span class=\"p\">(</span><span class=\"n\">newdate</span><span class=\"p\">,</span><span class=\"n\">newcredit</span><span class=\"p\">,</span><span class=\"n\">credit_amount</span><span class=\"p\">,</span><span class=\"n\">newdebit</span><span class=\"p\">,</span> <span class=\"n\">debit_amount</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>instead of trying to write a macro</p>",
+        "id": 240731778,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1622338774
+    },
+    {
+        "content": "<p>If you really want a macro for this though, I guess you could write</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">using</span> <span class=\"n\">DataFrames</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">macro</span> <span class=\"n\">transaction</span><span class=\"p\">(</span><span class=\"n\">newdate</span><span class=\"p\">,</span><span class=\"n\">newcredit</span><span class=\"p\">,</span><span class=\"n\">credit_amount</span><span class=\"p\">,</span><span class=\"n\">newdebit</span><span class=\"p\">,</span> <span class=\"n\">debit_amount</span><span class=\"p\">)</span>\n           <span class=\"n\">ex</span><span class=\"o\">=</span> <span class=\"k\">quote</span>\n               <span class=\"k\">if</span> <span class=\"o\">$</span><span class=\"n\">credit_amount</span> <span class=\"o\">!=</span> <span class=\"o\">$</span><span class=\"n\">debit_amount</span>\n                   <span class=\"s\">\"Error--Debit and Credit must match\"</span>\n               <span class=\"k\">else</span>\n                   <span class=\"n\">newtransaction</span> <span class=\"o\">=</span> <span class=\"o\">$</span><span class=\"n\">DataFrame</span><span class=\"p\">(</span>\n                       <span class=\"n\">newdate</span><span class=\"o\">=</span><span class=\"p\">[</span><span class=\"o\">$</span><span class=\"n\">newdate</span><span class=\"p\">],</span>\n                       <span class=\"n\">newcredit</span> <span class=\"o\">=</span> <span class=\"p\">[</span><span class=\"o\">$</span><span class=\"n\">credit_amount</span><span class=\"p\">],</span>\n                       <span class=\"n\">newdebit</span> <span class=\"o\">=</span> <span class=\"p\">[</span><span class=\"o\">$</span><span class=\"n\">debit_amount</span><span class=\"p\">]</span>\n                   <span class=\"p\">)</span>\n               <span class=\"k\">end</span>\n           <span class=\"k\">end</span>\n           <span class=\"n\">esc</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"p\">)</span>\n       <span class=\"k\">end</span>\n<span class=\"nd\">@transaction</span> <span class=\"p\">(</span><span class=\"k\">macro</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@transaction</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"mi\">2</span><span class=\"p\">,</span> <span class=\"mi\">3</span><span class=\"p\">,</span> <span class=\"mi\">4</span><span class=\"p\">,</span> <span class=\"mi\">3</span><span class=\"p\">)</span>\n<span class=\"mi\">1</span><span class=\"o\">×</span><span class=\"mi\">3</span> <span class=\"n\">DataFrame</span>\n <span class=\"n\">Row</span> <span class=\"n\">│</span> <span class=\"n\">newdate</span>  <span class=\"n\">newcredit</span>  <span class=\"n\">newdebit</span>\n     <span class=\"n\">│</span> <span class=\"kt\">Int64</span>    <span class=\"kt\">Int64</span>      <span class=\"kt\">Int64</span>\n<span class=\"n\">─────┼──────────────────────────────</span>\n   <span class=\"mi\">1</span> <span class=\"n\">│</span>       <span class=\"mi\">1</span>          <span class=\"mi\">3</span>         <span class=\"mi\">3</span>\n</code></pre></div>",
+        "id": 240731841,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1622338904
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">macro</span> <span class=\"n\">transaction</span><span class=\"p\">(</span><span class=\"n\">newdate</span><span class=\"p\">,</span><span class=\"n\">newcredit</span><span class=\"p\">,</span><span class=\"n\">credit_amount</span><span class=\"p\">,</span><span class=\"n\">newdebit</span><span class=\"p\">,</span> <span class=\"n\">debit_amount</span><span class=\"p\">)</span>\n           <span class=\"n\">ex</span><span class=\"o\">=</span> <span class=\"k\">quote</span>\n               <span class=\"k\">if</span> <span class=\"o\">$</span><span class=\"n\">credit_amount</span> <span class=\"o\">!=</span> <span class=\"o\">$</span><span class=\"n\">debit_amount</span>\n                   <span class=\"s\">\"Error--Debit and Credit must match\"</span>\n               <span class=\"k\">else</span>\n                   <span class=\"n\">newtransaction</span> <span class=\"o\">=</span> <span class=\"o\">$</span><span class=\"n\">DataFrame</span><span class=\"p\">(</span>\n                       <span class=\"n\">Date</span><span class=\"o\">=</span><span class=\"p\">[</span><span class=\"o\">$</span><span class=\"n\">newdate</span><span class=\"p\">],</span>\n                       <span class=\"o\">$</span><span class=\"n\">newcredit</span> <span class=\"o\">=</span> <span class=\"p\">[</span><span class=\"mi\">4</span><span class=\"p\">],</span>\n                       <span class=\"o\">$</span><span class=\"n\">newdebit</span> <span class=\"o\">=</span> <span class=\"p\">[</span><span class=\"mi\">4</span><span class=\"p\">]</span>\n                   <span class=\"p\">)</span>\n               <span class=\"k\">end</span>\n           <span class=\"k\">end</span>\n           <span class=\"n\">esc</span><span class=\"p\">(</span><span class=\"n\">ex</span><span class=\"p\">)</span>\n       <span class=\"k\">end</span>\n<span class=\"nd\">@transaction</span><span class=\"p\">(</span><span class=\"s\">\"Jan 1, 1900\"</span><span class=\"p\">,</span> <span class=\"n\">chequing</span><span class=\"p\">,</span> <span class=\"mi\">3</span><span class=\"p\">,</span> <span class=\"n\">personal</span><span class=\"p\">,</span> <span class=\"mi\">3</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>won't let me add a variable, but I'm not sure which one.<br>\nwo</p>",
+        "id": 240732252,
+        "sender_full_name": "brett knoss",
+        "timestamp": 1622339533
+    }
+]

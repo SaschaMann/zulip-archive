@@ -1,0 +1,398 @@
+<html>
+<head><meta charset="utf-8"><title>Ensuring const propagation · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html">Ensuring const propagation</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="276957760"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/276957760" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jack C <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#276957760">(Mar 29 2022 at 04:47)</a>:</h4>
+<p>(cross posted from helpdesk)<br>
+Does anyone have advice on how to ensure that the compiler will propagate constants into compiled code? I've specifically got a bunch of abstractions operating over NamedTuples, and the generated code is "forgetting" at a crucial point that a given symbol is of a certain value. Looking at the warntype output, it is okay up until this one method, but inside the method the argument is just a <code>::Symbol</code>, not a <code>Core.Const</code>.</p>
+
+
+
+<a name="276957804"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/276957804" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jack C <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#276957804">(Mar 29 2022 at 04:48)</a>:</h4>
+<p>I feel like I am throwing <code>::Val{symb}</code> in random places without any understanding of whether it will help or not.</p>
+
+
+
+<a name="276960401"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/276960401" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#276960401">(Mar 29 2022 at 05:41)</a>:</h4>
+<p>Unfortunately  there are no real systematic ways to approach this, other than perhaps the new effect macros that are on the master version of the language currently.  This stuff mostly just needs to be taken on a case by case basis. </p>
+<p>One thing I’d advise is that if your function bodies are very large, start seeing if you can break down functionality into smaller pieces and compose them. Julia’s optimizer is more likely to give up optimizing a very large function body</p>
+
+
+
+<a name="276968274"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/276968274" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Zachary P Christensen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#276968274">(Mar 29 2022 at 07:40)</a>:</h4>
+<p>You can use <a href="https://github.com/search?q=Static.jl&amp;type=Repositories">Static.jl</a>'s <code>StaticSymbol</code> type as a more structured dispatchable type for this but Mason gave you the best answer, many small efficient methods to ensure inference works correctly. The places I've found inference to fail in large function bodies is when there are complicated conditions in if-else branches or if the condition is computed secondary to a loop.</p>
+<p>For example, something like this can be problematic when combined with more complicated stuff</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="k">function</span> <span class="n">foo</span><span class="p">(</span><span class="n">x</span><span class="o">::</span><span class="kt">NamedTuple</span><span class="p">)</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="n">length</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">is_bar</span><span class="p">(</span><span class="n">keys</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="n">i</span><span class="p">])</span> <span class="o">&amp;&amp;</span> <span class="n">is_buz</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="n">i</span>
+        <span class="k">end</span>
+    <span class="k">end</span>
+    <span class="n">x</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+<span class="k">end</span>
+</code></pre></div>
+
+
+
+<a name="277042083"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/277042083" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#277042083">(Mar 29 2022 at 17:48)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="462847">Jack C</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation/near/276957804">said</a>:</p>
+<blockquote>
+<p>I feel like I am throwing <code>::Val{symb}</code> in random places without any understanding of whether it will help or not.</p>
+</blockquote>
+<p>Generally, what you'd find is that this, and generated functions can create a 'whack-a-mole' situation if your code is sufficiently complex. </p>
+<p>By lifting these values explicitly to the type domain, you can force it to specialize and propagate a specific thing, but in doing so you'll end up stressing the compiler and cause it to give up more early on other things that it would have normally optimized better, which forces you to use even more type domain lifting, and it all feeds back on itself until your compile times are horrendous or you find a better way to approach it</p>
+
+
+
+<a name="277045066"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/277045066" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jack C <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#277045066">(Mar 29 2022 at 18:11)</a>:</h4>
+<p>Awesome, thank you everyone for the advice!</p>
+
+
+
+<a name="277045309"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/277045309" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jack C <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#277045309">(Mar 29 2022 at 18:13)</a>:</h4>
+<p><span class="user-mention" data-user-id="286004">@Chad Scherrer</span> (on other topic) you said that <code>assume_effects</code> may be able to guarantee constant propagation in the future? How would that work, from reading the 1.9-dev docs I do not see an obvious connection.</p>
+
+
+
+<a name="277045440"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/277045440" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#277045440">(Mar 29 2022 at 18:14)</a>:</h4>
+<p><code>assume_effects</code> lets the compiler not worry about proving certain invariants that are needed for it to do optimizations, so it makes the optimizations more likely to happen</p>
+
+
+
+<a name="277049014"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/277049014" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> chriselrod <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#277049014">(Mar 29 2022 at 18:46)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269150">Mason Protter</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation/near/277042083">said</a>:</p>
+<blockquote>
+<p>By lifting these values explicitly to the type domain, you can force it to specialize and propagate a specific thing, but in doing so you'll end up stressing the compiler and cause it to give up more early on other things that it would have normally optimized better, which forces you to use even more type domain lifting, and it all feeds back on itself until your compile times are horrendous or you find a better way to approach it</p>
+</blockquote>
+<p>Yeah, <a href="https://github.com/search?q=VectorizationBase.jl&amp;type=Repositories">VectorizationBase.jl</a> and <a href="https://github.com/search?q=LoopVectorization.jl&amp;type=Repositories">LoopVectorization.jl</a> have this problem, and why I've been pushing against others following the same path, as they are likely to also come to regret it.<br>
+Or, because my on-the-job performance work is predominantly to combat latency, I'll likely come to regret if I don't succeed in convincing other people to write low-latency code.</p>
+
+
+
+<a name="277049529"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/277049529" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#277049529">(Mar 29 2022 at 18:50)</a>:</h4>
+<p>To take <span class="user-mention" data-user-id="269192">@Zachary P Christensen</span>'s example, observe this:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="k">function</span> <span class="n">foo</span><span class="p">(</span><span class="n">x</span><span class="o">::</span><span class="kt">NamedTuple</span><span class="p">)</span>
+           <span class="n">index</span> <span class="o">=</span> <span class="mi">1</span>
+           <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="n">length</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+               <span class="k">if</span> <span class="n">is_bar</span><span class="p">(</span><span class="n">keys</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="n">i</span><span class="p">])</span> <span class="o">&amp;&amp;</span> <span class="n">is_buz</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                   <span class="n">index</span> <span class="o">=</span> <span class="n">i</span>
+               <span class="k">end</span>
+           <span class="k">end</span>
+           <span class="n">x</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+       <span class="k">end</span>
+<span class="n">foo</span> <span class="p">(</span><span class="n">generic</span> <span class="k">function</span> <span class="n">with</span> <span class="mi">1</span> <span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">is_bar</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">=</span> <span class="n">s</span> <span class="o">==</span> <span class="ss">:hi</span>
+<span class="n">is_bar</span> <span class="p">(</span><span class="n">generic</span> <span class="k">function</span> <span class="n">with</span> <span class="mi">1</span> <span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">is_buz</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">iseven</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">is_buz</span> <span class="p">(</span><span class="n">generic</span> <span class="k">function</span> <span class="n">with</span> <span class="mi">1</span> <span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">bar</span><span class="p">()</span> <span class="o">=</span> <span class="n">foo</span><span class="p">((;</span><span class="n">a</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">hi</span><span class="o">=</span><span class="mi">4</span><span class="p">))</span>
+<span class="n">bar</span> <span class="p">(</span><span class="n">generic</span> <span class="k">function</span> <span class="n">with</span> <span class="mi">1</span> <span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@code_typed</span> <span class="n">bar</span><span class="p">()</span>
+<span class="n">CodeInfo</span><span class="p">(</span>
+<span class="mi">1</span> <span class="n">──</span>       <span class="n">goto</span> <span class="c">#10 if not true</span>
+<span class="mi">2</span> <span class="n">┄─</span> <span class="o">%</span><span class="mi">2</span>  <span class="o">=</span> <span class="n">φ</span> <span class="p">(</span><span class="c">#1 =&gt; 1, #9 =&gt; %20)::Int64</span>
+<span class="n">│</span>    <span class="o">%</span><span class="mi">3</span>  <span class="o">=</span> <span class="n">φ</span> <span class="p">(</span><span class="c">#1 =&gt; 1, #9 =&gt; %21)::Int64</span>
+<span class="n">│</span>    <span class="o">%</span><span class="mi">4</span>  <span class="o">=</span> <span class="n">φ</span> <span class="p">(</span><span class="c">#1 =&gt; 1, #9 =&gt; %13)::Int64</span>
+<span class="n">│</span>    <span class="o">%</span><span class="mi">5</span>  <span class="o">=</span> <span class="n">Base</span><span class="o">.</span><span class="n">getfield</span><span class="p">((</span><span class="ss">:a</span><span class="p">,</span> <span class="ss">:b</span><span class="p">,</span> <span class="ss">:c</span><span class="p">,</span> <span class="ss">:hi</span><span class="p">),</span> <span class="o">%</span><span class="mi">2</span><span class="p">,</span> <span class="nb">true</span><span class="p">)</span><span class="o">::</span><span class="kt">Symbol</span>
+<span class="n">│</span>    <span class="o">%</span><span class="mi">6</span>  <span class="o">=</span> <span class="p">(</span><span class="o">%</span><span class="mi">5</span> <span class="o">===</span> <span class="ss">:hi</span><span class="p">)</span><span class="o">::</span><span class="kt">Bool</span>
+<span class="n">└───</span>       <span class="n">goto</span> <span class="c">#5 if not %6</span>
+<span class="mi">3</span> <span class="n">──</span> <span class="o">%</span><span class="mi">8</span>  <span class="o">=</span> <span class="n">Base</span><span class="o">.</span><span class="n">getfield</span><span class="p">(</span><span class="o">$</span><span class="p">(</span><span class="kt">QuoteNode</span><span class="p">((</span><span class="n">a</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">hi</span> <span class="o">=</span> <span class="mi">4</span><span class="p">))),</span> <span class="o">%</span><span class="mi">2</span><span class="p">)</span><span class="o">::</span><span class="kt">Int64</span>
+<span class="n">│</span>    <span class="o">%</span><span class="mi">9</span>  <span class="o">=</span> <span class="n">Base</span><span class="o">.</span><span class="n">checked_srem_int</span><span class="p">(</span><span class="o">%</span><span class="mi">8</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">::</span><span class="kt">Int64</span>
+<span class="n">│</span>    <span class="o">%</span><span class="mi">10</span> <span class="o">=</span> <span class="p">(</span><span class="o">%</span><span class="mi">9</span> <span class="o">===</span> <span class="mi">0</span><span class="p">)</span><span class="o">::</span><span class="kt">Bool</span>
+<span class="n">└───</span>       <span class="n">goto</span> <span class="c">#5 if not %10</span>
+<span class="mi">4</span> <span class="n">──</span>       <span class="nb">nothing</span><span class="o">::</span><span class="kt">Nothing</span>
+<span class="mi">5</span> <span class="n">┄─</span> <span class="o">%</span><span class="mi">13</span> <span class="o">=</span> <span class="n">φ</span> <span class="p">(</span><span class="c">#4 =&gt; %2, #3 =&gt; %4, #2 =&gt; %4)::Int64</span>
+<span class="n">│</span>    <span class="o">%</span><span class="mi">14</span> <span class="o">=</span> <span class="p">(</span><span class="o">%</span><span class="mi">3</span> <span class="o">===</span> <span class="mi">4</span><span class="p">)</span><span class="o">::</span><span class="kt">Bool</span>
+<span class="n">└───</span>       <span class="n">goto</span> <span class="c">#7 if not %14</span>
+<span class="mi">6</span> <span class="n">──</span>       <span class="n">Base</span><span class="o">.</span><span class="nb">nothing</span><span class="o">::</span><span class="kt">Nothing</span>
+<span class="n">└───</span>       <span class="n">goto</span> <span class="c">#8</span>
+<span class="mi">7</span> <span class="n">──</span> <span class="o">%</span><span class="mi">18</span> <span class="o">=</span> <span class="n">Base</span><span class="o">.</span><span class="n">add_int</span><span class="p">(</span><span class="o">%</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">::</span><span class="kt">Int64</span>
+<span class="n">└───</span>       <span class="n">goto</span> <span class="c">#8</span>
+<span class="mi">8</span> <span class="n">┄─</span> <span class="o">%</span><span class="mi">20</span> <span class="o">=</span> <span class="n">φ</span> <span class="p">(</span><span class="c">#7 =&gt; %18)::Int64</span>
+<span class="n">│</span>    <span class="o">%</span><span class="mi">21</span> <span class="o">=</span> <span class="n">φ</span> <span class="p">(</span><span class="c">#7 =&gt; %18)::Int64</span>
+<span class="n">│</span>    <span class="o">%</span><span class="mi">22</span> <span class="o">=</span> <span class="n">φ</span> <span class="p">(</span><span class="c">#6 =&gt; true, #7 =&gt; false)::Bool</span>
+<span class="n">│</span>    <span class="o">%</span><span class="mi">23</span> <span class="o">=</span> <span class="n">Base</span><span class="o">.</span><span class="n">not_int</span><span class="p">(</span><span class="o">%</span><span class="mi">22</span><span class="p">)</span><span class="o">::</span><span class="kt">Bool</span>
+<span class="n">└───</span>       <span class="n">goto</span> <span class="c">#10 if not %23</span>
+<span class="mi">9</span> <span class="n">──</span>       <span class="n">goto</span> <span class="c">#2</span>
+<span class="mi">10</span> <span class="n">┄</span> <span class="o">%</span><span class="mi">26</span> <span class="o">=</span> <span class="n">φ</span> <span class="p">(</span><span class="c">#8 =&gt; %13, #1 =&gt; 1)::Int64</span>
+<span class="n">│</span>    <span class="o">%</span><span class="mi">27</span> <span class="o">=</span> <span class="n">Base</span><span class="o">.</span><span class="n">getfield</span><span class="p">(</span><span class="o">$</span><span class="p">(</span><span class="kt">QuoteNode</span><span class="p">((</span><span class="n">a</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">hi</span> <span class="o">=</span> <span class="mi">4</span><span class="p">))),</span> <span class="o">%</span><span class="mi">26</span><span class="p">)</span><span class="o">::</span><span class="kt">Int64</span>
+<span class="n">└───</span>       <span class="n">goto</span> <span class="c">#11</span>
+<span class="mi">11</span> <span class="n">─</span>       <span class="k">return</span> <span class="o">%</span><span class="mi">27</span>
+<span class="p">)</span> <span class="o">=&gt;</span> <span class="kt">Int64</span>
+</code></pre></div>
+
+
+
+<a name="277049573"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/277049573" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#277049573">(Mar 29 2022 at 18:51)</a>:</h4>
+<p>Now compare (using a recent build of the master branch) with this:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">Base</span><span class="o">.</span><span class="nd">@assume_effects</span> <span class="ss">:consistent</span> <span class="ss">:effect_free</span> <span class="ss">:terminates_locally</span> <span class="k">function</span> <span class="n">foo</span><span class="p">(</span><span class="n">x</span><span class="o">::</span><span class="kt">NamedTuple</span><span class="p">)</span>
+           <span class="n">index</span> <span class="o">=</span> <span class="mi">1</span>
+           <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">1</span><span class="o">:</span><span class="n">length</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+               <span class="k">if</span> <span class="n">is_bar</span><span class="p">(</span><span class="n">keys</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="n">i</span><span class="p">])</span> <span class="o">&amp;&amp;</span> <span class="n">is_buz</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                   <span class="n">index</span> <span class="o">=</span> <span class="n">i</span>
+               <span class="k">end</span>
+           <span class="k">end</span>
+           <span class="n">x</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+       <span class="k">end</span>
+<span class="n">foo</span> <span class="p">(</span><span class="n">generic</span> <span class="k">function</span> <span class="n">with</span> <span class="mi">1</span> <span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@code_typed</span> <span class="n">bar</span><span class="p">()</span>
+<span class="n">CodeInfo</span><span class="p">(</span>
+<span class="mi">1</span> <span class="n">─</span>     <span class="k">return</span> <span class="mi">4</span>
+<span class="p">)</span> <span class="o">=&gt;</span> <span class="kt">Int64</span>
+</code></pre></div>
+
+
+
+<a name="277049940"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/277049940" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#277049940">(Mar 29 2022 at 18:54)</a>:</h4>
+<p>That does look pretty scary, it's not realistic to expect to be doing <code>Base.@assume_effects</code> on every piece of code you write</p>
+
+
+
+<a name="277050012"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/277050012" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jack C <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#277050012">(Mar 29 2022 at 18:55)</a>:</h4>
+<p>That's very impressive, but what is each of those directives doing? Is the compiler basically encouraged to "look further" when it doesn't have to waste its time checking for effects on each call?</p>
+
+
+
+<a name="277050080"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/277050080" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#277050080">(Mar 29 2022 at 18:56)</a>:</h4>
+<p>Yeah, the compiler has heuristics for how long it's allowed to spend trying to discover if various optimizations are allowed.</p>
+
+
+
+<a name="277050181"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/277050181" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#277050181">(Mar 29 2022 at 18:56)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269446">Expanding Man</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation/near/277049940">said</a>:</p>
+<blockquote>
+<p>That does look pretty scary, it's not realistic to expect to be doing <code>Base.@assume_effects</code> on every piece of code you write</p>
+</blockquote>
+<p>Sure, but IMO is this is a much more sane and scalable solution than lifting everything into generated functions</p>
+
+
+
+<a name="277050276"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/277050276" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Expanding Man <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#277050276">(Mar 29 2022 at 18:57)</a>:</h4>
+<p>I suppose, but relying on constant propagation seems like a dubious proposition in Julia right now, even with whatever fanciness is happening here on master.</p>
+
+
+
+<a name="277050294"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/277050294" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#277050294">(Mar 29 2022 at 18:57)</a>:</h4>
+<p>And it's not necessary for every piece of code you write. It's something you reach for when things like constant propagation and whatnot are not being agressive enough in a usecase you've identified.</p>
+
+
+
+<a name="277050930"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/277050930" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Zachary P Christensen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#277050930">(Mar 29 2022 at 19:02)</a>:</h4>
+<p>It's actually good that the compiler fails for constant propagation, in a way. If we had absolute constant propagation we couldn't get away with a  lot of stuff we do.</p>
+
+
+
+<a name="277056667"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/277056667" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Simeon Schaub <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#277056667">(Mar 29 2022 at 19:52)</a>:</h4>
+<p>Do you actually need to tell it about the consistent and effect free part? I would have assumed the compiler would be able to figure out that part on its own.</p>
+
+
+
+<a name="277057649"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/277057649" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#277057649">(Mar 29 2022 at 20:01)</a>:</h4>
+<p>Just tried out all the combinations of those three options and found that the minimal options necessary were <code> :consistent :terminates_locally</code></p>
+
+
+
+<a name="277057707"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/277057707" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Ari Katz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#277057707">(Mar 29 2022 at 20:01)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="272583">Simeon Schaub</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation/near/277056667">said</a>:</p>
+<blockquote>
+<p>Do you actually need to tell it about the consistent and effect free part? I would have assumed the compiler would be able to figure out that part on its own.</p>
+</blockquote>
+<p>See this thread where Keno discusses that: <a href="https://twitter.com/akatzzzzz/status/1504433279876935685">https://twitter.com/akatzzzzz/status/1504433279876935685</a></p>
+<div class="inline-preview-twitter"><div class="twitter-tweet"><a href="https://twitter.com/akatzzzzz/status/1504433279876935685"><img class="twitter-avatar" src="https://uploads.zulipusercontent.net/b06fe73b56f4f203ff80b62d19fcb0c8a901fe62/68747470733a2f2f6162732e7477696d672e636f6d2f737469636b792f64656661756c745f70726f66696c655f696d616765732f64656661756c745f70726f66696c655f6e6f726d616c2e706e67"></a><p><a href="https://twitter.com/KenoFischer">@KenoFischer</a> Is it feasible to come in from the invariant side also-, something like trait constraints on generic functions or abstract types? Or effect handlers? Hopefully make proving easier if people are willing to opt into that stuff.</p><span>- Ari Katz (@akatzzzzz)</span></div></div>
+
+
+
+<a name="277057877"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/277057877" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#277057877">(Mar 29 2022 at 20:03)</a>:</h4>
+<p>Also, <span class="user-mention" data-user-id="272583">@Simeon Schaub</span> or anyone else, would you happen to know why functions like this that compile away due to const-prop still have a single clock cycle runtime rather than sub-nanosecond?</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@code_typed</span> <span class="n">bar</span><span class="p">()</span>
+<span class="n">CodeInfo</span><span class="p">(</span>
+<span class="mi">1</span> <span class="n">─</span>     <span class="k">return</span> <span class="mi">4</span>
+<span class="p">)</span> <span class="o">=&gt;</span> <span class="kt">Int64</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@benchmark</span> <span class="n">bar</span><span class="p">()</span>
+<span class="n">BenchmarkTools</span><span class="o">.</span><span class="n">Trial</span><span class="o">:</span> <span class="mi">10000</span> <span class="n">samples</span> <span class="n">with</span> <span class="mi">1000</span> <span class="n">evaluations</span><span class="o">.</span>
+ <span class="n">Range</span> <span class="p">(</span><span class="n">min</span> <span class="o">…</span> <span class="n">max</span><span class="p">)</span><span class="o">:</span>  <span class="mf">1.257</span> <span class="n">ns</span> <span class="o">…</span> <span class="mf">15.821</span> <span class="n">ns</span>  <span class="n">┊</span> <span class="n">GC</span> <span class="p">(</span><span class="n">min</span> <span class="o">…</span> <span class="n">max</span><span class="p">)</span><span class="o">:</span> <span class="mf">0.00</span><span class="o">%</span> <span class="o">…</span> <span class="mf">0.00</span><span class="o">%</span>
+ <span class="n">Time</span>  <span class="p">(</span><span class="n">median</span><span class="p">)</span><span class="o">:</span>     <span class="mf">1.518</span> <span class="n">ns</span>              <span class="n">┊</span> <span class="n">GC</span> <span class="p">(</span><span class="n">median</span><span class="p">)</span><span class="o">:</span>    <span class="mf">0.00</span><span class="o">%</span>
+ <span class="n">Time</span>  <span class="p">(</span><span class="n">mean</span> <span class="o">±</span> <span class="n">σ</span><span class="p">)</span><span class="o">:</span>   <span class="mf">1.502</span> <span class="n">ns</span> <span class="o">±</span>  <span class="mf">0.397</span> <span class="n">ns</span>  <span class="n">┊</span> <span class="n">GC</span> <span class="p">(</span><span class="n">mean</span> <span class="o">±</span> <span class="n">σ</span><span class="p">)</span><span class="o">:</span>  <span class="mf">0.00</span><span class="o">%</span> <span class="o">±</span> <span class="mf">0.00</span><span class="o">%</span>
+
+  <span class="n">▂</span>                           <span class="n">█</span>
+  <span class="n">█▂▂▄▃▁▂▅▁▁▃▄▁▁▄▆▂▁▂▄▃▁▁█▇▂▁▂█▇▂▁▂▆▃▂▂▁▃▃▂▂▁▂▅▃▂▁▁▂▄▂▂▁▁▁▄▄</span> <span class="n">▃</span>
+  <span class="mf">1.26</span> <span class="n">ns</span>        <span class="n">Histogram</span><span class="o">:</span> <span class="n">frequency</span> <span class="n">by</span> <span class="n">time</span>         <span class="mf">1.8</span> <span class="n">ns</span> <span class="o">&lt;</span>
+
+ <span class="n">Memory</span> <span class="n">estimate</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">,</span> <span class="n">allocs</span> <span class="n">estimate</span><span class="o">:</span> <span class="mf">0.</span>
+</code></pre></div>
+<p>Wait, hm maybe benchmark tools is somehow getting smarter? this is a bit weird. </p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">bar2</span><span class="p">()</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">bar2</span> <span class="p">(</span><span class="n">generic</span> <span class="k">function</span> <span class="n">with</span> <span class="mi">1</span> <span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@benchmark</span> <span class="n">bar2</span><span class="p">()</span>
+<span class="n">BenchmarkTools</span><span class="o">.</span><span class="n">Trial</span><span class="o">:</span> <span class="mi">10000</span> <span class="n">samples</span> <span class="n">with</span> <span class="mi">1000</span> <span class="n">evaluations</span><span class="o">.</span>
+ <span class="n">Range</span> <span class="p">(</span><span class="n">min</span> <span class="o">…</span> <span class="n">max</span><span class="p">)</span><span class="o">:</span>  <span class="mf">1.258</span> <span class="n">ns</span> <span class="o">…</span> <span class="mf">16.736</span> <span class="n">ns</span>  <span class="n">┊</span> <span class="n">GC</span> <span class="p">(</span><span class="n">min</span> <span class="o">…</span> <span class="n">max</span><span class="p">)</span><span class="o">:</span> <span class="mf">0.00</span><span class="o">%</span> <span class="o">…</span> <span class="mf">0.00</span><span class="o">%</span>
+ <span class="n">Time</span>  <span class="p">(</span><span class="n">median</span><span class="p">)</span><span class="o">:</span>     <span class="mf">1.522</span> <span class="n">ns</span>              <span class="n">┊</span> <span class="n">GC</span> <span class="p">(</span><span class="n">median</span><span class="p">)</span><span class="o">:</span>    <span class="mf">0.00</span><span class="o">%</span>
+ <span class="n">Time</span>  <span class="p">(</span><span class="n">mean</span> <span class="o">±</span> <span class="n">σ</span><span class="p">)</span><span class="o">:</span>   <span class="mf">1.557</span> <span class="n">ns</span> <span class="o">±</span>  <span class="mf">0.441</span> <span class="n">ns</span>  <span class="n">┊</span> <span class="n">GC</span> <span class="p">(</span><span class="n">mean</span> <span class="o">±</span> <span class="n">σ</span><span class="p">)</span><span class="o">:</span>  <span class="mf">0.00</span><span class="o">%</span> <span class="o">±</span> <span class="mf">0.00</span><span class="o">%</span>
+
+                       <span class="n">█</span>
+  <span class="n">▆▂▄▃▁▄▃▂▇▃▁▅▂▁▄▃▁█▆▂▂█▅▂▃▆▂▂▃▄▂▁▂▆▃▂▁▃▃▂▂▁▅▄▂▂▂▆▄▂▂▂▂▂▂▂▂▂</span> <span class="n">▃</span>
+  <span class="mf">1.26</span> <span class="n">ns</span>        <span class="n">Histogram</span><span class="o">:</span> <span class="n">frequency</span> <span class="n">by</span> <span class="n">time</span>        <span class="mf">1.97</span> <span class="n">ns</span> <span class="o">&lt;</span>
+
+ <span class="n">Memory</span> <span class="n">estimate</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">,</span> <span class="n">allocs</span> <span class="n">estimate</span><span class="o">:</span> <span class="mf">0.</span>
+</code></pre></div>
+<p>Compare with 1.7.2 where I get</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">bar2</span><span class="p">()</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">bar2</span> <span class="p">(</span><span class="n">generic</span> <span class="k">function</span> <span class="n">with</span> <span class="mi">1</span> <span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@benchmark</span> <span class="n">bar2</span><span class="p">()</span>
+<span class="n">BenchmarkTools</span><span class="o">.</span><span class="n">Trial</span><span class="o">:</span> <span class="mi">10000</span> <span class="n">samples</span> <span class="n">with</span> <span class="mi">1000</span> <span class="n">evaluations</span><span class="o">.</span>
+ <span class="n">Range</span> <span class="p">(</span><span class="n">min</span> <span class="o">…</span> <span class="n">max</span><span class="p">)</span><span class="o">:</span>  <span class="mf">0.033</span> <span class="n">ns</span> <span class="o">…</span> <span class="mf">0.053</span> <span class="n">ns</span>  <span class="n">┊</span> <span class="n">GC</span> <span class="p">(</span><span class="n">min</span> <span class="o">…</span> <span class="n">max</span><span class="p">)</span><span class="o">:</span> <span class="mf">0.00</span><span class="o">%</span> <span class="o">…</span> <span class="mf">0.00</span><span class="o">%</span>
+ <span class="n">Time</span>  <span class="p">(</span><span class="n">median</span><span class="p">)</span><span class="o">:</span>     <span class="mf">0.038</span> <span class="n">ns</span>             <span class="n">┊</span> <span class="n">GC</span> <span class="p">(</span><span class="n">median</span><span class="p">)</span><span class="o">:</span>    <span class="mf">0.00</span><span class="o">%</span>
+ <span class="n">Time</span>  <span class="p">(</span><span class="n">mean</span> <span class="o">±</span> <span class="n">σ</span><span class="p">)</span><span class="o">:</span>   <span class="mf">0.038</span> <span class="n">ns</span> <span class="o">±</span> <span class="mf">0.002</span> <span class="n">ns</span>  <span class="n">┊</span> <span class="n">GC</span> <span class="p">(</span><span class="n">mean</span> <span class="o">±</span> <span class="n">σ</span><span class="p">)</span><span class="o">:</span>  <span class="mf">0.00</span><span class="o">%</span> <span class="o">±</span> <span class="mf">0.00</span><span class="o">%</span>
+
+              <span class="n">▂</span>     <span class="n">▂</span>      <span class="n">▁</span>     <span class="n">█</span>     <span class="n">▇</span>      <span class="n">▅</span>
+  <span class="n">▂▁▁▁▁▁▃▁▁▁▁▁█▁▁▁▁▁█▁▁▁▁▁▁█▁▁▁▁▁█▁▁▁▁▁█▁▁▁▁▁▁█▁▁▁▁▁▆▁▁▁▁▁▂</span> <span class="n">▃</span>
+  <span class="mf">0.033</span> <span class="n">ns</span>       <span class="n">Histogram</span><span class="o">:</span> <span class="n">frequency</span> <span class="n">by</span> <span class="n">time</span>      <span class="mf">0.042</span> <span class="n">ns</span> <span class="o">&lt;</span>
+
+ <span class="n">Memory</span> <span class="n">estimate</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">,</span> <span class="n">allocs</span> <span class="n">estimate</span><span class="o">:</span> <span class="mf">0.</span>
+</code></pre></div>
+
+
+
+<a name="277057887"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/277057887" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Ari Katz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#277057887">(Mar 29 2022 at 20:03)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="284680">chriselrod</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation/near/277049014">said</a>:</p>
+<blockquote>
+<p><span class="user-mention silent" data-user-id="269150">Mason Protter</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation/near/277042083">said</a>:</p>
+<blockquote>
+<p>By lifting these values explicitly to the type domain, you can force it to specialize and propagate a specific thing, but in doing so you'll end up stressing the compiler and cause it to give up more early on other things that it would have normally optimized better, which forces you to use even more type domain lifting, and it all feeds back on itself until your compile times are horrendous or you find a better way to approach it</p>
+</blockquote>
+<p>Yeah, <a href="https://github.com/search?q=VectorizationBase.jl&amp;type=Repositories">VectorizationBase.jl</a> and <a href="https://github.com/search?q=LoopVectorization.jl&amp;type=Repositories">LoopVectorization.jl</a> have this problem, and why I've been pushing against others following the same path, as they are likely to also come to regret it.<br>
+Or, because my on-the-job performance work is predominantly to combat latency, I'll likely come to regret if I don't succeed in convincing other people to write low-latency code.</p>
+</blockquote>
+<p>I really hope the new compiler plugin work that <span class="user-mention" data-user-id="307643">@Shuhei Kadowaki</span> is working on could help here, as it's supposed to supplant/augment generated functions</p>
+
+
+
+<a name="277058093"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/277058093" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Ari Katz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#277058093">(Mar 29 2022 at 20:04)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269203">Ari Katz</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation/near/277057707">said</a>:</p>
+<blockquote>
+<p><span class="user-mention silent" data-user-id="272583">Simeon Schaub</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation/near/277056667">said</a>:</p>
+<blockquote>
+<p>Do you actually need to tell it about the consistent and effect free part? I would have assumed the compiler would be able to figure out that part on its own.</p>
+</blockquote>
+<p>See this thread where Keno discusses that: <a href="https://twitter.com/akatzzzzz/status/1504433279876935685">https://twitter.com/akatzzzzz/status/1504433279876935685</a></p>
+</blockquote>
+<p>It seems to do this in general requires some theorem proving...and to put in more invariants to make it easier to prove would be difficult, though I'm currently asking about that to some type system wizards in Jan's group on slack here:  <a href="https://julialang.slack.com/archives/C67910KEH/p1648581752673659?thread_ts=1648485094.033829&amp;cid=C67910KEH">https://julialang.slack.com/archives/C67910KEH/p1648581752673659?thread_ts=1648485094.033829&amp;cid=C67910KEH</a></p>
+
+
+
+<a name="277058158"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/277058158" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Ari Katz <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#277058158">(Mar 29 2022 at 20:05)</a>:</h4>
+<p>Other languages like Koka and Dex have effects as part of the type system, and can type functions to that effect (heh)</p>
+
+
+
+<a name="277058178"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/277058178" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Simeon Schaub <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#277058178">(Mar 29 2022 at 20:06)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="269150">Mason Protter</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation/near/277057877">said</a>:</p>
+<blockquote>
+<p>Also, <span class="user-mention silent" data-user-id="272583">Simeon Schaub</span> or anyone else, would you happen to know why functions like this that compile away due to const-prop still have a single clock cycle runtime rather than sub-nanosecond?</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@code_typed</span> <span class="n">bar</span><span class="p">()</span>
+<span class="n">CodeInfo</span><span class="p">(</span>
+<span class="mi">1</span> <span class="n">─</span>     <span class="k">return</span> <span class="mi">4</span>
+<span class="p">)</span> <span class="o">=&gt;</span> <span class="kt">Int64</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@benchmark</span> <span class="n">bar</span><span class="p">()</span>
+<span class="n">BenchmarkTools</span><span class="o">.</span><span class="n">Trial</span><span class="o">:</span> <span class="mi">10000</span> <span class="n">samples</span> <span class="n">with</span> <span class="mi">1000</span> <span class="n">evaluations</span><span class="o">.</span>
+ <span class="n">Range</span> <span class="p">(</span><span class="n">min</span> <span class="o">…</span> <span class="n">max</span><span class="p">)</span><span class="o">:</span>  <span class="mf">1.257</span> <span class="n">ns</span> <span class="o">…</span> <span class="mf">15.821</span> <span class="n">ns</span>  <span class="n">┊</span> <span class="n">GC</span> <span class="p">(</span><span class="n">min</span> <span class="o">…</span> <span class="n">max</span><span class="p">)</span><span class="o">:</span> <span class="mf">0.00</span><span class="o">%</span> <span class="o">…</span> <span class="mf">0.00</span><span class="o">%</span>
+ <span class="n">Time</span>  <span class="p">(</span><span class="n">median</span><span class="p">)</span><span class="o">:</span>     <span class="mf">1.518</span> <span class="n">ns</span>              <span class="n">┊</span> <span class="n">GC</span> <span class="p">(</span><span class="n">median</span><span class="p">)</span><span class="o">:</span>    <span class="mf">0.00</span><span class="o">%</span>
+ <span class="n">Time</span>  <span class="p">(</span><span class="n">mean</span> <span class="o">±</span> <span class="n">σ</span><span class="p">)</span><span class="o">:</span>   <span class="mf">1.502</span> <span class="n">ns</span> <span class="o">±</span>  <span class="mf">0.397</span> <span class="n">ns</span>  <span class="n">┊</span> <span class="n">GC</span> <span class="p">(</span><span class="n">mean</span> <span class="o">±</span> <span class="n">σ</span><span class="p">)</span><span class="o">:</span>  <span class="mf">0.00</span><span class="o">%</span> <span class="o">±</span> <span class="mf">0.00</span><span class="o">%</span>
+
+  <span class="n">▂</span>                           <span class="n">█</span>
+  <span class="n">█▂▂▄▃▁▂▅▁▁▃▄▁▁▄▆▂▁▂▄▃▁▁█▇▂▁▂█▇▂▁▂▆▃▂▂▁▃▃▂▂▁▂▅▃▂▁▁▂▄▂▂▁▁▁▄▄</span> <span class="n">▃</span>
+  <span class="mf">1.26</span> <span class="n">ns</span>        <span class="n">Histogram</span><span class="o">:</span> <span class="n">frequency</span> <span class="n">by</span> <span class="n">time</span>         <span class="mf">1.8</span> <span class="n">ns</span> <span class="o">&lt;</span>
+
+ <span class="n">Memory</span> <span class="n">estimate</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">,</span> <span class="n">allocs</span> <span class="n">estimate</span><span class="o">:</span> <span class="mf">0.</span>
+</code></pre></div>
+<p>Wait, hm maybe benchmark tools is somehow getting smarter? this is a bit weird. </p>
+<p><div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">julia</span><span class="o">&gt;</span> <span class="n">bar2</span><span class="p">()</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">bar2</span> <span class="p">(</span><span class="n">generic</span> <span class="k">function</span> <span class="n">with</span> <span class="mi">1</span> <span class="n">method</span><span class="p">)</span>
+
+<span class="n">julia</span><span class="o">&gt;</span> <span class="nd">@benchmark</span> <span class="n">bar2</span><span class="p">()</span>
+<span class="n">BenchmarkTools</span><span class="o">.</span><span class="n">Trial</span><span class="o">:</span> <span class="mi">10000</span> <span class="n">samples</span> <span class="n">with</span> <span class="mi">1000</span> <span class="n">evaluations</span><span class="o">.</span>
+ <span class="n">Range</span> <span class="p">(</span><span class="n">min</span> <span class="o">…</span> <span class="n">max</span><span class="p">)</span><span class="o">:</span>  <span class="mf">1.258</span> <span class="n">ns</span> <span class="o">…</span> <span class="mf">16.736</span> <span class="n">ns</span>  <span class="n">┊</span> <span class="n">GC</span> <span class="p">(</span><span class="n">min</span> <span class="o">…</span> <span class="n">max</span><span class="p">)</span><span class="o">:</span> <span class="mf">0.00</span><span class="o">%</span> <span class="o">…</span> <span class="mf">0.00</span><span class="o">%</span>
+ <span class="n">Time</span>  <span class="p">(</span><span class="n">median</span><span class="p">)</span><span class="o">:</span>     <span class="mf">1.522</span> <span class="n">ns</span>              <span class="n">┊</span> <span class="n">GC</span> <span class="p">(</span><span class="n">median</span><span class="p">)</span><span class="o">:</span>    <span class="mf">0.00</span><span class="o">%</span>
+ <span class="n">Time</span>  <span class="p">(</span><span class="n">mean</span> <span class="o">±</span> <span class="n">σ</span><span class="p">)</span><span class="o">:</span>   <span class="mf">1.557</span> <span class="n">ns</span> <span class="o">±</span>  <span class="mf">0.441</span> <span class="n">ns</span>  <span class="n">┊</span> <span class="n">GC</span> <span class="p">(</span><span class="n">mean</span> <span class="o">±</span> <span class="n">σ</span><span class="p">)</span><span class="o">:</span>  <span class="mf">0.00</span><span class="o">%</span> <span class="o">±</span> <span class="mf">0.00</span><span class="o">%</span>
+
+                       <span class="n">█</span>
+  <span class="n">▆▂▄▃▁▄▃▂▇▃▁▅▂▁▄▃▁█▆▂▂█▅▂▃▆▂▂▃▄▂▁▂▆▃▂▁▃▃▂▂▁▅▄▂▂▂▆▄▂▂▂▂▂▂▂▂▂</span> <span class="n">▃</span>
+  <span class="mf">1.26</span> <span class="n">ns</span>        <span class="n">Histogram</span><span class="o">:</span> <span class="n">frequency</span> <span class="n">by</span> <span class="n">time</span>        <span class="mf">1.97</span> <span class="n">ns</span> <span class="o">&lt;</span>
+
+ <span class="n">Memory</span> <span class="n">estimate</span><span class="o">:</span> <span class="mi">0</span> <span class="n">bytes</span><span class="p">,</span> <span class="n">allocs</span> <span class="n">estimate</span><span class="o">:</span> <span class="mf">0.</span>
+</code></pre></div><br>
+</p>
+</blockquote>
+<p>Yeah, it's just a benchmarking artifact. That shouldn't have any effect on real-world code</p>
+
+
+
+<a name="277058529"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/277058529" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mosè Giordano <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#277058529">(Mar 29 2022 at 20:09)</a>:</h4>
+<p>Are you using Julia <code>master</code>? Isn't that the effect of <a href="https://github.com/JuliaCI/BenchmarkTools.jl/pull/275">https://github.com/JuliaCI/BenchmarkTools.jl/pull/275</a>?</p>
+
+
+
+<a name="277058708"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/277058708" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Mason Protter <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#277058708">(Mar 29 2022 at 20:10)</a>:</h4>
+<p>Ah nice</p>
+
+
+
+<a name="277059175"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/277059175" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#277059175">(Mar 29 2022 at 20:14)</a>:</h4>
+<p><a href="https://github.com/olynch/CompTime.jl">https://github.com/olynch/CompTime.jl</a> seems relevant</p>
+
+
+
+<a name="277059295"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Ensuring%20const%20propagation/near/277059295" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Chad Scherrer <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Ensuring.20const.20propagation.html#277059295">(Mar 29 2022 at 20:15)</a>:</h4>
+<p>Of course! Just talking about this with <span class="user-mention" data-user-id="315815">@Owen Lynch</span>, sorry I left it out</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

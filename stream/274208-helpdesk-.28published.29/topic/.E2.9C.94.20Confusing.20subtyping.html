@@ -1,0 +1,255 @@
+<html>
+<head><meta charset="utf-8"><title>✔ Confusing subtyping · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html">✔ Confusing subtyping</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="262768140"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262768140" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262768140">(Nov 26 2021 at 07:48)</a>:</h4>
+<p>I'm a bit confused about why the expected function method isn't being dispatched in my code, and it seems it comes down to this confusing result:</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="gp">julia&gt;</span> <span class="kt">Dict</span><span class="p">{</span><span class="kt">Char</span><span class="p">,</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">Type</span><span class="p">}}</span> <span class="o">&lt;:</span> <span class="kt">Dict</span><span class="p">{</span><span class="kt">Char</span><span class="p">,</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">Type</span><span class="p">}}</span>
+<span class="go">true</span>
+
+<span class="gp">julia&gt;</span> <span class="kt">Dict</span><span class="p">{</span><span class="kt">Char</span><span class="p">,</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">Type</span><span class="p">}}</span> <span class="o">&lt;:</span> <span class="kt">Dict</span><span class="p">{</span><span class="kt">Char</span><span class="p">,</span> <span class="kt">Vector</span><span class="p">{</span><span class="o">&lt;:</span><span class="kt">Type</span><span class="p">}}</span>
+<span class="go">false</span>
+
+<span class="gp">julia&gt;</span> <span class="kt">Dict</span><span class="p">{</span><span class="kt">Char</span><span class="p">,</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">DataType</span><span class="p">}}</span> <span class="o">&lt;:</span> <span class="kt">Dict</span><span class="p">{</span><span class="kt">Char</span><span class="p">,</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">Type</span><span class="p">}}</span>
+<span class="go">false</span>
+
+<span class="gp">julia&gt;</span> <span class="kt">Dict</span><span class="p">{</span><span class="kt">Char</span><span class="p">,</span> <span class="kt">Vector</span><span class="p">{</span><span class="kt">DataType</span><span class="p">}}</span> <span class="o">&lt;:</span> <span class="kt">Dict</span><span class="p">{</span><span class="kt">Char</span><span class="p">,</span> <span class="kt">Vector</span><span class="p">{</span><span class="o">&lt;:</span><span class="kt">Type</span><span class="p">}}</span>
+<span class="go">false</span>
+</code></pre></div>
+<p>If we could work out how to attain the result I'm expecting, that would be great.</p>
+<p>For reference, this is the issue I'm having</p>
+<div class="codehilite" data-code-language="Julia console"><pre><span></span><code><span class="go">MethodError: no method matching parseorg(::String, ::Dict{Char, Vector{Type}}, ::Vector{DataType}; debug=false, pointonfail=false)</span>
+<span class="go">Closest candidates are:</span>
+<span class="go">  parseorg(::AbstractString, ::Dict{Char, Vector{var"#s40"} where var"#s40"&lt;:Type}, ::Vector{var"#s33"} where var"#s33"&lt;:Type; debug, pointonfail)</span>
+</code></pre></div>
+
+
+
+<a name="262768416"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262768416" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262768416">(Nov 26 2021 at 07:54)</a>:</h4>
+<p>types in julia are invariant</p>
+
+
+
+<a name="262768417"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262768417" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262768417">(Nov 26 2021 at 07:54)</a>:</h4>
+<p>(except tuples)</p>
+
+
+
+<a name="262768469"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262768469" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262768469">(Nov 26 2021 at 07:55)</a>:</h4>
+<p>see <a href="https://docs.julialang.org/en/v1/manual/types/#man-parametric-composite-types">https://docs.julialang.org/en/v1/manual/types/#man-parametric-composite-types</a></p>
+
+
+
+<a name="262768653"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262768653" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262768653">(Nov 26 2021 at 07:58)</a>:</h4>
+<p>I'm guessing you declared your function like <code>parseorg(s::AbstractString, d::Dict{Char, Vector{T}}, v::Vector{U}) where {T &lt;: Type, U &lt;: Type}</code>? To get the dispatch you want, you'd write that as <code>parseorg(s::AbstractString, d::AbstractDict{Char, &lt;:AbstractVector{T}}, v::AbstractVector{U}) where {T, U}</code>, though that feels overly typed to me</p>
+
+
+
+<a name="262768683"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262768683" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262768683">(Nov 26 2021 at 07:59)</a>:</h4>
+<p>I've written</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code> <span class="n">parseorg</span><span class="p">(</span><span class="n">content</span><span class="o">::</span><span class="kt">AbstractString</span><span class="p">,</span> <span class="n">typematchers</span><span class="o">::</span><span class="kt">Dict</span><span class="p">{</span><span class="kt">Char</span><span class="p">,</span> <span class="kt">Vector</span><span class="p">{</span><span class="o">&lt;:</span><span class="kt">Type</span><span class="p">}},</span>
+                  <span class="n">typefallbacks</span><span class="o">::</span><span class="kt">Vector</span><span class="p">{</span><span class="o">&lt;:</span><span class="kt">Type</span><span class="p">};</span> <span class="n">debug</span><span class="o">=</span><span class="nb">false</span><span class="p">,</span> <span class="n">pointonfail</span><span class="o">=</span><span class="nb">false</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+<a name="262768694"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262768694" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262768694">(Nov 26 2021 at 07:59)</a>:</h4>
+<p>yeah, same thing, just without the <code>where</code></p>
+
+
+
+<a name="262768763"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262768763" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262768763">(Nov 26 2021 at 08:00)</a>:</h4>
+<p>So basically going from a concrete to abstract type should do the trick?</p>
+
+
+
+<a name="262768846"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262768846" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262768846">(Nov 26 2021 at 08:00)</a>:</h4>
+<p>no, acknowledging that types are invariant does the trick ;)</p>
+
+
+
+<a name="262768888"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262768888" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262768888">(Nov 26 2021 at 08:01)</a>:</h4>
+<p>what you've written is asking for a <code>Dict</code> taking a <code>Char</code> as key and pointing to _a_ vector that holds a subtype of <code>Type</code> though</p>
+
+
+
+<a name="262768899"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262768899" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262768899">(Nov 26 2021 at 08:01)</a>:</h4>
+<p>note the <code>&lt;: AbstractVector</code> part</p>
+
+
+
+<a name="262768920"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262768920" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262768920">(Nov 26 2021 at 08:01)</a>:</h4>
+<p>Ah right, thanks for pointing out that it's <em>that</em> bit</p>
+
+
+
+<a name="262768965"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262768965" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262768965">(Nov 26 2021 at 08:02)</a>:</h4>
+<p>do you have to distinguish between different <code>parseorg</code>? if not, I wouldn't necessarily use type annotations at all here</p>
+
+
+
+<a name="262768991"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262768991" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262768991">(Nov 26 2021 at 08:02)</a>:</h4>
+<p>I have two forms, yes. I also like typing function arguments when to let myself know what I'm expecting.</p>
+
+
+
+<a name="262769017"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262769017" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262769017">(Nov 26 2021 at 08:03)</a>:</h4>
+<p>does that form have the same signature/number &amp; order of arguments?</p>
+
+
+
+<a name="262769104"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262769104" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262769104">(Nov 26 2021 at 08:04)</a>:</h4>
+<p>The signature doesn't match. I <em>could</em> get away without typing any of it but then I come back to "I also like typing function arguments when to let myself know what I'm expecting."</p>
+
+
+
+<a name="262769109"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262769109" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262769109">(Nov 26 2021 at 08:04)</a>:</h4>
+<p>Yeah, for documentation purposes it's not a bad idea, though be aware that you don't necessarily want to use concrete types in the signature</p>
+
+
+
+<a name="262769131"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262769131" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262769131">(Nov 26 2021 at 08:04)</a>:</h4>
+<p>On that note, is there a particular reason why I'd want to go for <code>AbstractDict</code> / <code>AbstractVec</code> ?</p>
+
+
+
+<a name="262769148"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262769148" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262769148">(Nov 26 2021 at 08:05)</a>:</h4>
+<p>a <code>view</code> is an <code>AbstractVector</code> :)</p>
+
+
+
+<a name="262769156"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262769156" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262769156">(Nov 26 2021 at 08:05)</a>:</h4>
+<p>no need to copy arrays around when slicing after all</p>
+
+
+
+<a name="262769222"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262769222" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262769222">(Nov 26 2021 at 08:06)</a>:</h4>
+<p>As for <code>AbstractDict</code>- you could switch to <a href="https://github.com/search?q=Dictionaries.jl&amp;type=Repositories">Dictionaries.jl</a> or an OrderedDict from <a href="https://github.com/search?q=DataStructures.jl&amp;type=Repositories">DataStructures.jl</a> if you need a different interface or some ordering in your dict</p>
+
+
+
+<a name="262769235"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262769235" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262769235">(Nov 26 2021 at 08:06)</a>:</h4>
+<p>if you have <code>AbstractDict</code>, you don't get <code>MethodError</code> all over the place, since they all satisfy that API</p>
+
+
+
+<a name="262769278"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262769278" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262769278">(Nov 26 2021 at 08:07)</a>:</h4>
+<p>Thanks for elaborating. I've got <code>AbstractString</code> here for exactly the reason you mention with vectors (I'm taking <em>lots</em> of substrings).</p>
+
+
+
+<a name="262769332"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262769332" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262769332">(Nov 26 2021 at 08:08)</a>:</h4>
+<p>but other than that - I usually don't type things and rather document in comments/docstrings what I expect to hold interface-wise, since apart from dispatch, type annotations in function signatures do not improve performance or help inference</p>
+
+
+
+<a name="262769385"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262769385" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262769385">(Nov 26 2021 at 08:09)</a>:</h4>
+<p>the only things I do type religiously is when I have a custom struct internal to my package and I want to make sure to require that struct as an input</p>
+
+
+
+<a name="262769405"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262769405" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262769405">(Nov 26 2021 at 08:09)</a>:</h4>
+<p>I do have more info in docstrings, however for er, somewhat <em>unique</em> reasons, I'm not putting the docstrings next to the functions here.</p>
+
+
+
+<a name="262769479"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262769479" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262769479">(Nov 26 2021 at 08:10)</a>:</h4>
+<p>( if I do I get load order errors, since the docstrings use a macro which uses the code I'm documenting )</p>
+
+
+
+<a name="262769603"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262769603" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262769603">(Nov 26 2021 at 08:12)</a>:</h4>
+<p><span aria-label="thinking" class="emoji emoji-1f914" role="img" title="thinking">:thinking:</span></p>
+
+
+
+<a name="262769650"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262769650" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262769650">(Nov 26 2021 at 08:13)</a>:</h4>
+<p>are you using <code>@doc</code>?</p>
+
+
+
+<a name="262769753"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262769753" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262769753">(Nov 26 2021 at 08:14)</a>:</h4>
+<p>I am</p>
+
+
+
+<a name="262769763"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262769763" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262769763">(Nov 26 2021 at 08:14)</a>:</h4>
+<p>I'm very curious about how that breaks :o</p>
+
+
+
+<a name="262769861"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262769861" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262769861">(Nov 26 2021 at 08:16)</a>:</h4>
+<p>Well, for the sake of your curiosity, this is what I've got going on:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="nd">@doc</span> <span class="sa">org</span><span class="s">"""</span>
+<span class="s">some lovely documentation</span>
+<span class="s">"""</span> <span class="n">parseorg</span>
+</code></pre></div>
+<p>and as you may imagine, the <code>@org_str</code> macro definition involves calling <code>parseorg</code> <span aria-label="smile" class="emoji emoji-1f642" role="img" title="smile">:smile:</span>.</p>
+
+
+
+<a name="262770119"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262770119" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262770119">(Nov 26 2021 at 08:20)</a>:</h4>
+<p>well, I'm sure you have your reasons for that <span aria-label="sweat smile" class="emoji emoji-1f605" role="img" title="sweat smile">:sweat_smile:</span></p>
+
+
+
+<a name="262770201"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262770201" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262770201">(Nov 26 2021 at 08:22)</a>:</h4>
+<p>Well, if I'm writing a package to provide nice support for a certain markup language, it would basically be heretical <em>not</em> to write the docs using that markup language wouldn't it? <span aria-label="stuck out tongue" class="emoji emoji-1f61b" role="img" title="stuck out tongue">:stuck_out_tongue:</span></p>
+
+
+
+<a name="262772060"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262772060" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262772060">(Nov 26 2021 at 08:46)</a>:</h4>
+<p>Anyway, thanks for the help!</p>
+
+
+
+<a name="262798359"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/%E2%9C%94%20Confusing%20subtyping/near/262798359" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Notification Bot <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/.E2.9C.94.20Confusing.20subtyping.html#262798359">(Nov 26 2021 at 13:39)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="400021">Timothy</span> has marked this topic as resolved.</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

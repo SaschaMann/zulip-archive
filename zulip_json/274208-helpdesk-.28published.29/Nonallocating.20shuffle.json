@@ -1,0 +1,200 @@
+[
+    {
+        "content": "<p>Is there any package, which provides non allocating shuffle for tuples or SVectors?</p>\n<p>I've tried to use <a href=\"https://github.com/search?q=StaticArrays.jl&amp;type=Repositories\">StaticArrays.jl</a>, but default algorithm works only with <code>MVector</code> and it allocates</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span> <span class=\"n\">Random</span>\n<span class=\"k\">using</span> <span class=\"n\">StaticArrays</span>\n<span class=\"n\">x</span> <span class=\"o\">=</span> <span class=\"n\">MVector</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"mi\">2</span><span class=\"p\">,</span> <span class=\"mi\">3</span><span class=\"p\">,</span> <span class=\"mi\">4</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">Random</span><span class=\"o\">.</span><span class=\"n\">shuffle</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">x</span><span class=\"p\">)</span>\n  <span class=\"mf\">38.575</span> <span class=\"n\">ns</span> <span class=\"p\">(</span><span class=\"mi\">1</span> <span class=\"n\">allocation</span><span class=\"o\">:</span> <span class=\"mi\">48</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>I can use <code>Random.shuffle!</code>, but then I still need to allocate initial <code>MVector</code>.</p>\n<p>Interestingly enough, it is easy to write non allocating version, but it is slower than <code>MVector</code> version</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">using</span> <span class=\"n\">Setfield</span>\n\n<span class=\"k\">function</span> <span class=\"n\">myshuffle</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n    <span class=\"n\">L</span> <span class=\"o\">=</span> <span class=\"n\">length</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n    <span class=\"k\">for</span> <span class=\"n\">i</span> <span class=\"k\">in</span> <span class=\"mi\">1</span><span class=\"o\">:</span><span class=\"p\">(</span><span class=\"n\">L</span><span class=\"o\">-</span><span class=\"mi\">1</span><span class=\"p\">)</span>\n        <span class=\"n\">j</span> <span class=\"o\">=</span> <span class=\"n\">rand</span><span class=\"p\">(</span><span class=\"n\">i</span><span class=\"o\">:</span><span class=\"n\">L</span><span class=\"p\">)</span>\n        <span class=\"n\">i</span> <span class=\"o\">==</span> <span class=\"n\">j</span> <span class=\"o\">&amp;&amp;</span> <span class=\"k\">continue</span>\n        <span class=\"n\">t</span> <span class=\"o\">=</span> <span class=\"n\">x</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span>\n        <span class=\"nd\">@set!</span> <span class=\"n\">x</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span> <span class=\"o\">=</span> <span class=\"n\">x</span><span class=\"p\">[</span><span class=\"n\">j</span><span class=\"p\">]</span>\n        <span class=\"nd\">@set!</span> <span class=\"n\">x</span><span class=\"p\">[</span><span class=\"n\">j</span><span class=\"p\">]</span> <span class=\"o\">=</span> <span class=\"n\">t</span>\n    <span class=\"k\">end</span>\n\n    <span class=\"k\">return</span> <span class=\"n\">x</span>\n<span class=\"k\">end</span>\n\n<span class=\"n\">y</span> <span class=\"o\">=</span> <span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"mi\">2</span><span class=\"p\">,</span> <span class=\"mi\">3</span><span class=\"p\">,</span> <span class=\"mi\">4</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">myshuffle</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">y</span><span class=\"p\">)</span>\n  <span class=\"mf\">46.262</span> <span class=\"n\">ns</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>which is substantially worse than <code>MVector</code> version. And issue is not with <code>Setfield</code>, I've tried to write setindex manually, but performance is the same.</p>",
+        "id": 243487137,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1624351439
+    },
+    {
+        "content": "<p>Maybe <a href=\"https://jutho.github.io/TupleTools.jl/latest/#TupleTools.permute\">https://jutho.github.io/TupleTools.jl/latest/#TupleTools.permute</a> and <a href=\"https://docs.julialang.org/en/v1/stdlib/Random/#Random.randperm\">https://docs.julialang.org/en/v1/stdlib/Random/#Random.randperm</a>! with a workspace permutation? Not ideal :/</p>",
+        "id": 243583174,
+        "sender_full_name": "Eric Hanson",
+        "timestamp": 1624398526
+    },
+    {
+        "content": "<p>Ah, thank you for <a href=\"https://github.com/search?q=TupleTools.jl&amp;type=Repositories\">TupleTools.jl</a>, it's definitely useful package.</p>\n<p>Unfortunately, <code>randperm</code> produces <code>Vector</code>, so it allocates...</p>",
+        "id": 243690322,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1624471536
+    },
+    {
+        "content": "<p>Could you wrap it in a SVector?</p>",
+        "id": 243690433,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1624471569
+    },
+    {
+        "content": "<p>How?</p>",
+        "id": 243690483,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1624471599
+    },
+    {
+        "content": "<p>Who?</p>",
+        "id": 243690489,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1624471603
+    },
+    {
+        "content": "<p>I mean, who should be wrapped in <code>SVector</code>?</p>",
+        "id": 243690510,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1624471612
+    },
+    {
+        "content": "<p>Sorry, I should have read the OP more carefully, one sec</p>",
+        "id": 243690521,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1624471620
+    },
+    {
+        "content": "<p>I  hoped that because this doesn’t allocate:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">let</span> <span class=\"n\">x</span> <span class=\"o\">=</span> <span class=\"kt\">Ref</span><span class=\"p\">(</span><span class=\"n\">MVector</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"mi\">3</span><span class=\"p\">,</span><span class=\"mi\">4</span><span class=\"p\">))</span>\n    <span class=\"nd\">@btime</span> <span class=\"n\">shuffle!</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">x</span><span class=\"p\">[])</span>\n<span class=\"k\">end</span>\n <span class=\"mf\">30.424</span> <span class=\"n\">ns</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n<span class=\"mi\">4</span><span class=\"o\">-</span><span class=\"n\">element</span> <span class=\"kt\">MArray</span><span class=\"p\">{</span><span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"mi\">4</span><span class=\"p\">},</span><span class=\"kt\">Int64</span><span class=\"p\">,</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">4</span><span class=\"p\">}</span> <span class=\"n\">with</span> <span class=\"n\">indices</span> <span class=\"n\">SOneTo</span><span class=\"p\">(</span><span class=\"mi\">4</span><span class=\"p\">)</span><span class=\"o\">:</span>\n <span class=\"mi\">2</span>\n <span class=\"mi\">1</span>\n <span class=\"mi\">4</span>\n <span class=\"mi\">3</span>\n</code></pre></div>\n<p>That you could do</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">function</span> <span class=\"n\">Random</span><span class=\"o\">.</span><span class=\"n\">shuffle</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"o\">::</span><span class=\"kt\">SArray</span><span class=\"p\">)</span>\n    <span class=\"n\">mv</span> <span class=\"o\">=</span> <span class=\"n\">MArray</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"p\">)</span>\n    <span class=\"n\">shuffle!</span><span class=\"p\">(</span><span class=\"n\">mv</span><span class=\"p\">)</span>\n    <span class=\"n\">SArray</span><span class=\"p\">(</span><span class=\"n\">mv</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>But it didn’t end up stack allocating, I guess <code>shuffle!</code> is too complicated to in-line or something:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">let</span> <span class=\"n\">x</span> <span class=\"o\">=</span> <span class=\"kt\">Ref</span><span class=\"p\">(</span><span class=\"n\">SVector</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"mi\">3</span><span class=\"p\">,</span><span class=\"mi\">4</span><span class=\"p\">))</span>\n    <span class=\"nd\">@btime</span> <span class=\"n\">shuffle</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">x</span><span class=\"p\">[])</span>\n<span class=\"k\">end</span>\n<span class=\"mf\">38.550</span> <span class=\"n\">ns</span> <span class=\"p\">(</span><span class=\"mi\">1</span> <span class=\"n\">allocation</span><span class=\"o\">:</span> <span class=\"mi\">48</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n<span class=\"mi\">4</span><span class=\"o\">-</span><span class=\"n\">element</span> <span class=\"kt\">SArray</span><span class=\"p\">{</span><span class=\"kt\">Tuple</span><span class=\"p\">{</span><span class=\"mi\">4</span><span class=\"p\">},</span><span class=\"kt\">Int64</span><span class=\"p\">,</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">4</span><span class=\"p\">}</span> <span class=\"n\">with</span> <span class=\"n\">indices</span> <span class=\"n\">SOneTo</span><span class=\"p\">(</span><span class=\"mi\">4</span><span class=\"p\">)</span><span class=\"o\">:</span>\n <span class=\"mi\">3</span>\n <span class=\"mi\">1</span>\n <span class=\"mi\">4</span>\n <span class=\"mi\">2</span>\n</code></pre></div>",
+        "id": 243691783,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1624472163
+    },
+    {
+        "content": "<p>I yet again wish we had call-site inlining.</p>",
+        "id": 243691901,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1624472215
+    },
+    {
+        "content": "<p>Ah, yes, that's what I see as well.</p>\n<p>I have opposite feelings :-) <code>MVector</code> is faster than hand-written, but it allocates, so it can potentially give pressure to GC.</p>",
+        "id": 243693157,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1624472791
+    },
+    {
+        "content": "<p>What do you have opposite feelings about?</p>",
+        "id": 243693588,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1624473001
+    },
+    {
+        "content": "<p>Which one to use :-)<br>\nAllocating but fast version with MVector<br>\nOr handwritten nonallocating but slow version over tuples.</p>",
+        "id": 243695862,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1624474060
+    },
+    {
+        "content": "<p>I don’t know how you disagree with me then because I didn’t advocate either of those <span aria-label=\"stuck out tongue\" class=\"emoji emoji-1f61b\" role=\"img\" title=\"stuck out tongue\">:stuck_out_tongue:</span> </p>\n<p>I was trying to get the best of both worlds by stack allocating an MVector, then in place shuffling it, the casting back to SVector.</p>",
+        "id": 243696976,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1624474600
+    },
+    {
+        "content": "<p>But it didn’t work because <code>shuffle!</code> doesn’t inline</p>",
+        "id": 243697007,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1624474618
+    },
+    {
+        "content": "<p>Note that <code>shuffle!(::MVector)</code> does not allocate</p>",
+        "id": 243699276,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1624475767
+    },
+    {
+        "content": "<p>Ah! Sorry! I was not disagreeing with you, it's just a wrong translation.</p>\n<p>It should have been something like \"I have contradictorary (conflicting?) feelings, which approach to choose, because they both have good and bad sides\"</p>",
+        "id": 243699296,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1624475787
+    },
+    {
+        "content": "<p><code>Opposing</code> and <code>conflicting</code> are synonyms for me :-)</p>",
+        "id": 243699381,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1624475846
+    },
+    {
+        "content": "<p>Oh, and it should be <code>opposing</code> not <code>opposite</code>.<br>\nDamn, I am sorry, that was really stupid.</p>",
+        "id": 243699484,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1624475894
+    },
+    {
+        "content": "<p>no worries!</p>",
+        "id": 243699510,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1624475913
+    },
+    {
+        "content": "<p>Okay, this is a little janky, but I managed to get <a href=\"https://github.com/search?q=StrideArrays.jl&amp;type=Repositories\">StrideArrays.jl</a> working for this so that it's non-allocating <strong>and</strong> fast:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">using</span> <span class=\"n\">StrideArrays</span><span class=\"p\">,</span> <span class=\"n\">StaticArrays</span><span class=\"p\">,</span> <span class=\"n\">Random</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">function</span> <span class=\"n\">myshuffle</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"o\">::</span><span class=\"kt\">StaticArray</span><span class=\"p\">)</span>\n           <span class=\"n\">strv</span> <span class=\"o\">=</span> <span class=\"n\">StrideArray</span><span class=\"p\">(</span><span class=\"nb\">undef</span><span class=\"p\">,</span> <span class=\"n\">eltype</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"p\">),</span> <span class=\"n\">StrideArrays</span><span class=\"o\">.</span><span class=\"n\">size</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"p\">)</span><span class=\"o\">...</span><span class=\"p\">)</span>\n           <span class=\"n\">pv</span>   <span class=\"o\">=</span> <span class=\"n\">PtrArray</span><span class=\"p\">(</span><span class=\"n\">strv</span><span class=\"p\">)</span>\n           <span class=\"n\">GC</span><span class=\"o\">.</span><span class=\"nd\">@preserve</span> <span class=\"n\">strv</span> <span class=\"k\">begin</span>\n               <span class=\"n\">pv</span> <span class=\"o\">.=</span> <span class=\"n\">v</span>\n               <span class=\"n\">shuffle!</span><span class=\"p\">(</span><span class=\"n\">pv</span><span class=\"p\">)</span>\n               <span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"p\">)(</span><span class=\"n\">strv</span><span class=\"o\">.</span><span class=\"n\">data</span><span class=\"p\">)</span>\n           <span class=\"k\">end</span>\n       <span class=\"k\">end</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">let</span> <span class=\"n\">v</span> <span class=\"o\">=</span> <span class=\"kt\">Ref</span><span class=\"p\">(</span><span class=\"n\">SVector</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"mi\">3</span><span class=\"p\">,</span><span class=\"mi\">4</span><span class=\"p\">))</span>\n           <span class=\"nd\">@btime</span> <span class=\"n\">myshuffle</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">v</span><span class=\"p\">[])</span>\n       <span class=\"k\">end</span>\n  <span class=\"mf\">33.899</span> <span class=\"n\">ns</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n<span class=\"mi\">4</span><span class=\"o\">-</span><span class=\"n\">element</span> <span class=\"kt\">SVector</span><span class=\"p\">{</span><span class=\"mi\">4</span><span class=\"p\">,</span> <span class=\"kt\">Int64</span><span class=\"p\">}</span> <span class=\"n\">with</span> <span class=\"n\">indices</span> <span class=\"n\">SOneTo</span><span class=\"p\">(</span><span class=\"mi\">4</span><span class=\"p\">)</span><span class=\"o\">:</span>\n <span class=\"mi\">4</span>\n <span class=\"mi\">1</span>\n <span class=\"mi\">2</span>\n <span class=\"mi\">3</span>\n</code></pre></div>",
+        "id": 243700470,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1624476405
+    },
+    {
+        "content": "<p>That said, we should maybe just open an issue in <a href=\"https://github.com/search?q=StaticArrays.jl&amp;type=Repositories\">StaticArrays.jl</a> requesting an implementation of <code>shuffle</code> for static arrays.</p>",
+        "id": 243700550,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1624476455
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"269150\">Mason Protter</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/Nonallocating.20shuffle/near/243699276\">said</a>:</p>\n<blockquote>\n<p>Note that <code>shuffle!(::MVector)</code> does not allocate</p>\n</blockquote>\n<p>Ah! I wanted to answer you that I need to create new <code>MVector</code> in a loop, but it occurs to me, that <code>shuffle!</code> of <code>shuffle!</code> is <code>shuffle!</code>! I mean, I can shuffle shuffled vector and use it again.</p>\n<p>I.e. my original task was something like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">for</span> <span class=\"n\">x</span> <span class=\"k\">in</span> <span class=\"n\">v</span>\n   <span class=\"n\">a0</span> <span class=\"o\">=</span> <span class=\"n\">shuffle</span><span class=\"p\">((</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"mi\">2</span><span class=\"p\">,</span> <span class=\"mi\">3</span><span class=\"p\">,</span> <span class=\"mi\">4</span><span class=\"p\">))</span>\n  <span class=\"n\">apply</span><span class=\"p\">(</span><span class=\"n\">a0</span><span class=\"p\">,</span> <span class=\"n\">x</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>And I can do it </p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">a0</span> <span class=\"o\">=</span> <span class=\"n\">MVector</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">,</span> <span class=\"mi\">2</span><span class=\"p\">,</span> <span class=\"mi\">3</span><span class=\"p\">,</span> <span class=\"mi\">4</span><span class=\"p\">)</span>\n<span class=\"k\">for</span> <span class=\"n\">x</span> <span class=\"k\">in</span> <span class=\"n\">v</span>\n  <span class=\"n\">a0</span> <span class=\"o\">=</span> <span class=\"n\">shuffle!</span><span class=\"p\">(</span><span class=\"n\">a0</span><span class=\"p\">)</span>\n  <span class=\"n\">apply</span><span class=\"p\">(</span><span class=\"n\">a0</span><span class=\"p\">,</span> <span class=\"n\">x</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>So yes, it solves my task.<br>\nThe only question that is left, why <code>MVector</code> shuffles faster than <code>Tuple</code> (I've looked at the definition of <code>Random.shuffle!</code> it's basically the same as my handwritten version).</p>",
+        "id": 243700869,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1624476623
+    },
+    {
+        "content": "<p>The difference is that in your handwritten version,</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code> <span class=\"nd\">@set!</span> <span class=\"n\">x</span><span class=\"p\">[</span><span class=\"n\">i</span><span class=\"p\">]</span> <span class=\"o\">=</span> <span class=\"n\">x</span><span class=\"p\">[</span><span class=\"n\">j</span><span class=\"p\">]</span>\n</code></pre></div>\n<p>is something like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">x</span> <span class=\"o\">=</span> <span class=\"kt\">Tuple</span><span class=\"p\">(</span><span class=\"n\">k</span> <span class=\"o\">==</span> <span class=\"n\">i</span> <span class=\"o\">?</span> <span class=\"n\">x</span><span class=\"p\">[</span><span class=\"n\">j</span><span class=\"p\">]</span> <span class=\"o\">:</span> <span class=\"n\">x</span><span class=\"p\">[</span><span class=\"n\">k</span><span class=\"p\">]</span> <span class=\"k\">for</span> <span class=\"n\">k</span> <span class=\"k\">in</span> <span class=\"n\">eachindex</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">))</span>\n</code></pre></div>\n<p>so it's creating entire tuples instead of moving around individual values.</p>",
+        "id": 243701428,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1624476919
+    },
+    {
+        "content": "<p>Often LLVM / julia are smart enough to not create values on the stack that aren't actually used, but I suspect they aren't able to prove which values aren't being used in each iteration, so space is being wasted on the stack.</p>",
+        "id": 243701559,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1624476978
+    },
+    {
+        "content": "<p>So if we can use mutable stack allocated arrays we can speed up this calculation, right?<br>\nAh, I guess this is where <a href=\"https://github.com/search?q=StrideArrays.jl&amp;type=Repositories\">StrideArrays.jl</a> comes in, right?</p>",
+        "id": 243701945,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1624477184
+    },
+    {
+        "content": "<p>Should take a look at them.</p>",
+        "id": 243701954,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1624477189
+    },
+    {
+        "content": "<p>Yeah, that’s correct, I’m using a <code>StrideArrays.PtrArray</code> to get a stack allocated mutable array. You can often do this with just a plain MArray, but it’s harder to force julia to do it.</p>",
+        "id": 243706635,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1624479444
+    },
+    {
+        "content": "<p>This is awesome.</p>",
+        "id": 243709773,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1624480876
+    },
+    {
+        "content": "<p><span class=\"user-mention\" data-user-id=\"269150\">@Mason Protter</span> <code>@gc_preserve</code> from StrideArrays automates it</p>",
+        "id": 243725652,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1624490879
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">using</span> <span class=\"n\">StrideArrays</span><span class=\"p\">,</span> <span class=\"n\">StaticArrays</span><span class=\"p\">,</span> <span class=\"n\">Random</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">function</span> <span class=\"n\">shuffle_v1</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"o\">::</span><span class=\"kt\">SArray</span><span class=\"p\">)</span>\n          <span class=\"n\">mv</span> <span class=\"o\">=</span> <span class=\"n\">MArray</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"p\">)</span>\n          <span class=\"n\">shuffle!</span><span class=\"p\">(</span><span class=\"n\">mv</span><span class=\"p\">)</span>\n          <span class=\"n\">SArray</span><span class=\"p\">(</span><span class=\"n\">mv</span><span class=\"p\">)</span>\n       <span class=\"k\">end</span>\n<span class=\"n\">shuffle_v1</span> <span class=\"p\">(</span><span class=\"n\">generic</span> <span class=\"k\">function</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"k\">function</span> <span class=\"n\">shuffle_v2</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"o\">::</span><span class=\"kt\">SArray</span><span class=\"p\">)</span>\n          <span class=\"n\">mv</span> <span class=\"o\">=</span> <span class=\"n\">MArray</span><span class=\"p\">(</span><span class=\"n\">v</span><span class=\"p\">)</span>\n          <span class=\"nd\">@gc_preserve</span> <span class=\"n\">shuffle!</span><span class=\"p\">(</span><span class=\"n\">mv</span><span class=\"p\">)</span>\n          <span class=\"n\">SArray</span><span class=\"p\">(</span><span class=\"n\">mv</span><span class=\"p\">)</span>\n       <span class=\"k\">end</span>\n<span class=\"n\">shuffle_v2</span> <span class=\"p\">(</span><span class=\"n\">generic</span> <span class=\"k\">function</span> <span class=\"n\">with</span> <span class=\"mi\">1</span> <span class=\"n\">method</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">x</span> <span class=\"o\">=</span> <span class=\"nd\">@SVector</span><span class=\"p\">([</span><span class=\"mi\">1</span><span class=\"p\">,</span><span class=\"mi\">2</span><span class=\"p\">,</span><span class=\"mi\">3</span><span class=\"p\">,</span><span class=\"mi\">4</span><span class=\"p\">]);</span> <span class=\"n\">x</span><span class=\"o\">'</span>\n<span class=\"mi\">1</span><span class=\"o\">×</span><span class=\"mi\">4</span> <span class=\"n\">adjoint</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">SVector</span><span class=\"p\">{</span><span class=\"mi\">4</span><span class=\"p\">,</span> <span class=\"kt\">Int64</span><span class=\"p\">})</span> <span class=\"n\">with</span> <span class=\"n\">eltype</span> <span class=\"kt\">Int64</span> <span class=\"n\">with</span> <span class=\"n\">indices</span> <span class=\"n\">SOneTo</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">)</span><span class=\"o\">×</span><span class=\"n\">SOneTo</span><span class=\"p\">(</span><span class=\"mi\">4</span><span class=\"p\">)</span><span class=\"o\">:</span>\n <span class=\"mi\">1</span>  <span class=\"mi\">2</span>  <span class=\"mi\">3</span>  <span class=\"mi\">4</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">shuffle_v1</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"o\">'</span>\n  <span class=\"mf\">26.022</span> <span class=\"n\">ns</span> <span class=\"p\">(</span><span class=\"mi\">1</span> <span class=\"n\">allocation</span><span class=\"o\">:</span> <span class=\"mi\">48</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n<span class=\"mi\">1</span><span class=\"o\">×</span><span class=\"mi\">4</span> <span class=\"n\">adjoint</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">SVector</span><span class=\"p\">{</span><span class=\"mi\">4</span><span class=\"p\">,</span> <span class=\"kt\">Int64</span><span class=\"p\">})</span> <span class=\"n\">with</span> <span class=\"n\">eltype</span> <span class=\"kt\">Int64</span> <span class=\"n\">with</span> <span class=\"n\">indices</span> <span class=\"n\">SOneTo</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">)</span><span class=\"o\">×</span><span class=\"n\">SOneTo</span><span class=\"p\">(</span><span class=\"mi\">4</span><span class=\"p\">)</span><span class=\"o\">:</span>\n <span class=\"mi\">4</span>  <span class=\"mi\">3</span>  <span class=\"mi\">2</span>  <span class=\"mi\">1</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">shuffle_v2</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"o\">'</span>\n  <span class=\"mf\">20.040</span> <span class=\"n\">ns</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n<span class=\"mi\">1</span><span class=\"o\">×</span><span class=\"mi\">4</span> <span class=\"n\">adjoint</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">SVector</span><span class=\"p\">{</span><span class=\"mi\">4</span><span class=\"p\">,</span> <span class=\"kt\">Int64</span><span class=\"p\">})</span> <span class=\"n\">with</span> <span class=\"n\">eltype</span> <span class=\"kt\">Int64</span> <span class=\"n\">with</span> <span class=\"n\">indices</span> <span class=\"n\">SOneTo</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">)</span><span class=\"o\">×</span><span class=\"n\">SOneTo</span><span class=\"p\">(</span><span class=\"mi\">4</span><span class=\"p\">)</span><span class=\"o\">:</span>\n <span class=\"mi\">3</span>  <span class=\"mi\">4</span>  <span class=\"mi\">1</span>  <span class=\"mi\">2</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"nd\">@btime</span> <span class=\"n\">myshuffle</span><span class=\"p\">(</span><span class=\"o\">$</span><span class=\"n\">x</span><span class=\"p\">)</span><span class=\"o\">'</span> <span class=\"c\"># your version</span>\n  <span class=\"mf\">19.653</span> <span class=\"n\">ns</span> <span class=\"p\">(</span><span class=\"mi\">0</span> <span class=\"n\">allocations</span><span class=\"o\">:</span> <span class=\"mi\">0</span> <span class=\"n\">bytes</span><span class=\"p\">)</span>\n<span class=\"mi\">1</span><span class=\"o\">×</span><span class=\"mi\">4</span> <span class=\"n\">adjoint</span><span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">SVector</span><span class=\"p\">{</span><span class=\"mi\">4</span><span class=\"p\">,</span> <span class=\"kt\">Int64</span><span class=\"p\">})</span> <span class=\"n\">with</span> <span class=\"n\">eltype</span> <span class=\"kt\">Int64</span> <span class=\"n\">with</span> <span class=\"n\">indices</span> <span class=\"n\">SOneTo</span><span class=\"p\">(</span><span class=\"mi\">1</span><span class=\"p\">)</span><span class=\"o\">×</span><span class=\"n\">SOneTo</span><span class=\"p\">(</span><span class=\"mi\">4</span><span class=\"p\">)</span><span class=\"o\">:</span>\n <span class=\"mi\">4</span>  <span class=\"mi\">3</span>  <span class=\"mi\">2</span>  <span class=\"mi\">1</span>\n</code></pre></div>",
+        "id": 243725726,
+        "sender_full_name": "chriselrod",
+        "timestamp": 1624490912
+    },
+    {
+        "content": "<p>Nice!</p>",
+        "id": 243726380,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1624491328
+    },
+    {
+        "content": "<p>Wow, it is really short and fast.</p>",
+        "id": 243784183,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1624540816
+    }
+]

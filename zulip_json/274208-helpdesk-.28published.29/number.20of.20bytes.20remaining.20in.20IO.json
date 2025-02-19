@@ -1,0 +1,266 @@
+[
+    {
+        "content": "<p>Is there a way of finding out how many bytes remain in an IO stream? I want to be able to work out if  e.g.<code>peek(io, Int)</code> will error without calling it.</p>\n<p>I think this can probably only be done by trying to read the file and seeing what happens, then resetting the <code>seek</code> point (which is how <code>peek</code> works), but I thought I'd ask anyway.</p>",
+        "id": 226322167,
+        "sender_full_name": "Colin Caine",
+        "timestamp": 1613333122
+    },
+    {
+        "content": "<p>You can use <code>bytesavailable</code> maybe?</p>",
+        "id": 226322269,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1613333252
+    },
+    {
+        "content": "<p>Returns zero for me for a nonzero file</p>",
+        "id": 226322284,
+        "sender_full_name": "Jakob Nybo Nissen",
+        "timestamp": 1613333275
+    },
+    {
+        "content": "<p>ohhhh, so interesting that you should mention this... I think this may be a bug</p>",
+        "id": 226322800,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1613333879
+    },
+    {
+        "content": "<p>are you on 1.6?</p>",
+        "id": 226322803,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1613333881
+    },
+    {
+        "content": "<p>I saw this also, maybe we should open an issue</p>",
+        "id": 226322841,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1613333888
+    },
+    {
+        "content": "<p>Ah, right! I ran into this the other day.</p>",
+        "id": 226322842,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1613333895
+    },
+    {
+        "content": "<p>ok, we definitely need an issue</p>",
+        "id": 226322845,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1613333904
+    },
+    {
+        "content": "<p>let me ask on slack first</p>",
+        "id": 226322850,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1613333912
+    },
+    {
+        "content": "<p>It might be correct though, since the io stream needs to block before you can read?</p>",
+        "id": 226322881,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1613334002
+    },
+    {
+        "content": "<p>no, I've seen it give 0 and then immediately <code>readavailable</code> returns something of length <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding=\"application/x-tex\"> &gt;0</annotation></semantics></math></span><span aria-hidden=\"true\" class=\"katex-html\"><span class=\"base\"><span class=\"strut\" style=\"height:0.5782em;vertical-align:-0.0391em;\"></span><span class=\"mrel\">&gt;</span><span class=\"mspace\" style=\"margin-right:0.2777777777777778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.64444em;vertical-align:0em;\"></span><span class=\"mord\">0</span></span></span></span></p>",
+        "id": 226322930,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1613334040
+    },
+    {
+        "content": "<p>Yea but that is because <code>readavailable</code> does block and fill the buffer I think: <a href=\"https://github.com/JuliaLang/julia/blob/2eeef2e231a55cac770543b6dd673e349adfd797/base/iostream.jl#L381\">https://github.com/JuliaLang/julia/blob/2eeef2e231a55cac770543b6dd673e349adfd797/base/iostream.jl#L381</a></p>",
+        "id": 226322938,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1613334060
+    },
+    {
+        "content": "<p>I'm confused, shouldn't <code>readavailable</code> always return the number of bytes indicated before calling it by <code>bytesavailable</code>?</p>",
+        "id": 226322965,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1613334119
+    },
+    {
+        "content": "<p>that was my understanding of what they're supposed to do</p>",
+        "id": 226323003,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1613334126
+    },
+    {
+        "content": "<p><code>bytesavailable</code> seems to work on <code>IOBuffer</code> btw, though it may be worth noting that <code>IOBuffer</code> never blocks</p>",
+        "id": 226323021,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1613334197
+    },
+    {
+        "content": "<p>Yea I don't know actually.</p>",
+        "id": 226323030,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1613334221
+    },
+    {
+        "content": "<p>I believe this is something of a MWE</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">open</span><span class=\"p\">(</span><span class=\"n\">io</span> <span class=\"o\">-&gt;</span> <span class=\"n\">write</span><span class=\"p\">(</span><span class=\"n\">io</span><span class=\"p\">,</span> <span class=\"s\">\"what up\"</span><span class=\"p\">),</span> <span class=\"s\">\"testfile.txt\"</span><span class=\"p\">,</span> <span class=\"s\">\"w+\"</span><span class=\"p\">)</span>\n<span class=\"mi\">7</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">f</span> <span class=\"o\">=</span> <span class=\"n\">open</span><span class=\"p\">(</span><span class=\"s\">\"testfile.txt\"</span><span class=\"p\">)</span>\n<span class=\"kt\">IOStream</span><span class=\"p\">(</span><span class=\"o\">&lt;</span><span class=\"n\">file</span> <span class=\"n\">testfile</span><span class=\"o\">.</span><span class=\"n\">txt</span><span class=\"o\">&gt;</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">bytesavailable</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">)</span>\n<span class=\"mi\">0</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">readavailable</span><span class=\"p\">(</span><span class=\"n\">f</span><span class=\"p\">)</span>\n<span class=\"mi\">7</span><span class=\"o\">-</span><span class=\"n\">element</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">UInt8</span><span class=\"p\">}</span><span class=\"o\">:</span>\n <span class=\"mh\">0x77</span>\n <span class=\"mh\">0x68</span>\n <span class=\"mh\">0x61</span>\n <span class=\"mh\">0x74</span>\n <span class=\"mh\">0x20</span>\n <span class=\"mh\">0x75</span>\n <span class=\"mh\">0x70</span>\n</code></pre></div>",
+        "id": 226323145,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1613334384
+    },
+    {
+        "content": "<p>I believe <code>bytesavailable</code> should return <code>7</code></p>",
+        "id": 226323154,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1613334403
+    },
+    {
+        "content": "<p><code># num bytes available without blocking</code></p>",
+        "id": 226323223,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1613334512
+    },
+    {
+        "content": "<p>It is written in the source code.</p>",
+        "id": 226323225,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1613334521
+    },
+    {
+        "content": "<p>Yup, that's what the docs say, and the above does not block, so this looks like a bug</p>",
+        "id": 226323226,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1613334533
+    },
+    {
+        "content": "<p>So, it's not the number of bytes from here till the end of the stream.</p>",
+        "id": 226323231,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1613334546
+    },
+    {
+        "content": "<p>Mmmm....<br>\nYou need to block to <code>readavailable</code></p>",
+        "id": 226323237,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1613334578
+    },
+    {
+        "content": "<p>I mean, you can not assume that <code>readavailable</code> will give you <code>bytesavailable</code> bytes I think</p>",
+        "id": 226323252,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1613334601
+    },
+    {
+        "content": "<p>why not?</p>",
+        "id": 226323295,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1613334618
+    },
+    {
+        "content": "<p>Because that could have changed between calling <code>bytesavailable</code> and <code>readavailable</code>.</p>",
+        "id": 226323300,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1613334639
+    },
+    {
+        "content": "<p>well yeah, ok fair enough, but we are seeing it in examples where that is not the case</p>",
+        "id": 226323305,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1613334655
+    },
+    {
+        "content": "<p>Hmmm.... I do not quite understand what is intended behaviour, but code itself is rather straightforward.</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">bytesavailable</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"o\">::</span><span class=\"kt\">IOStream</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"nd\">@_lock_ios</span> <span class=\"n\">s</span> <span class=\"k\">ccall</span><span class=\"p\">(</span><span class=\"o\">:</span><span class=\"n\">jl_nb_available</span><span class=\"p\">,</span> <span class=\"kt\">Int32</span><span class=\"p\">,</span> <span class=\"p\">(</span><span class=\"kt\">Ptr</span><span class=\"p\">{</span><span class=\"n\">Cvoid</span><span class=\"p\">},),</span> <span class=\"n\">s</span><span class=\"o\">.</span><span class=\"n\">ios</span><span class=\"p\">)</span>\n\n<span class=\"k\">function</span> <span class=\"n\">readavailable</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"o\">::</span><span class=\"kt\">IOStream</span><span class=\"p\">)</span>\n    <span class=\"n\">lock</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"o\">.</span><span class=\"n\">lock</span><span class=\"p\">)</span>\n    <span class=\"n\">nb</span> <span class=\"o\">=</span> <span class=\"k\">ccall</span><span class=\"p\">(</span><span class=\"o\">:</span><span class=\"n\">jl_nb_available</span><span class=\"p\">,</span> <span class=\"kt\">Int32</span><span class=\"p\">,</span> <span class=\"p\">(</span><span class=\"kt\">Ptr</span><span class=\"p\">{</span><span class=\"n\">Cvoid</span><span class=\"p\">},),</span> <span class=\"n\">s</span><span class=\"o\">.</span><span class=\"n\">ios</span><span class=\"p\">)</span>\n    <span class=\"k\">if</span> <span class=\"n\">nb</span> <span class=\"o\">==</span> <span class=\"mi\">0</span>\n        <span class=\"k\">ccall</span><span class=\"p\">(</span><span class=\"o\">:</span><span class=\"n\">ios_fillbuf</span><span class=\"p\">,</span> <span class=\"kt\">Cssize_t</span><span class=\"p\">,</span> <span class=\"p\">(</span><span class=\"kt\">Ptr</span><span class=\"p\">{</span><span class=\"n\">Cvoid</span><span class=\"p\">},),</span> <span class=\"n\">s</span><span class=\"o\">.</span><span class=\"n\">ios</span><span class=\"p\">)</span>\n        <span class=\"n\">nb</span> <span class=\"o\">=</span> <span class=\"k\">ccall</span><span class=\"p\">(</span><span class=\"o\">:</span><span class=\"n\">jl_nb_available</span><span class=\"p\">,</span> <span class=\"kt\">Int32</span><span class=\"p\">,</span> <span class=\"p\">(</span><span class=\"kt\">Ptr</span><span class=\"p\">{</span><span class=\"n\">Cvoid</span><span class=\"p\">},),</span> <span class=\"n\">s</span><span class=\"o\">.</span><span class=\"n\">ios</span><span class=\"p\">)</span>\n    <span class=\"k\">end</span>\n    <span class=\"n\">a</span> <span class=\"o\">=</span> <span class=\"kt\">Vector</span><span class=\"p\">{</span><span class=\"kt\">UInt8</span><span class=\"p\">}(</span><span class=\"n\">undef</span><span class=\"p\">,</span> <span class=\"n\">nb</span><span class=\"p\">)</span>\n    <span class=\"n\">nr</span> <span class=\"o\">=</span> <span class=\"k\">ccall</span><span class=\"p\">(</span><span class=\"o\">:</span><span class=\"n\">ios_readall</span><span class=\"p\">,</span> <span class=\"kt\">Csize_t</span><span class=\"p\">,</span> <span class=\"p\">(</span><span class=\"kt\">Ptr</span><span class=\"p\">{</span><span class=\"n\">Cvoid</span><span class=\"p\">},</span> <span class=\"kt\">Ptr</span><span class=\"p\">{</span><span class=\"n\">Cvoid</span><span class=\"p\">},</span> <span class=\"kt\">Csize_t</span><span class=\"p\">),</span> <span class=\"n\">s</span><span class=\"p\">,</span> <span class=\"n\">a</span><span class=\"p\">,</span> <span class=\"n\">nb</span><span class=\"p\">)</span>\n    <span class=\"k\">if</span> <span class=\"n\">nr</span> <span class=\"o\">!=</span> <span class=\"n\">nb</span>\n        <span class=\"n\">unlock</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"o\">.</span><span class=\"n\">lock</span><span class=\"p\">)</span>\n        <span class=\"n\">throw</span><span class=\"p\">(</span><span class=\"kt\">EOFError</span><span class=\"p\">())</span>\n    <span class=\"k\">end</span>\n    <span class=\"n\">unlock</span><span class=\"p\">(</span><span class=\"n\">s</span><span class=\"o\">.</span><span class=\"n\">lock</span><span class=\"p\">)</span>\n    <span class=\"k\">return</span> <span class=\"n\">a</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 226323316,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1613334690
+    },
+    {
+        "content": "<p>What example? In your example you get mroe bytes than <code>bytesavailable</code> says so I think that is fine.</p>",
+        "id": 226323317,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1613334694
+    },
+    {
+        "content": "<p>So to <code>readavailable</code>it verify number of available bytes and if it is zero it fills the buffer and update this number.</p>",
+        "id": 226323391,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1613334792
+    },
+    {
+        "content": "<p>So, I think, correct meaning of <code>bytesavailable</code> is not the number of bytes available in <code>iostream</code>, but number of bytes available in the intermediate buffer.</p>",
+        "id": 226323407,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1613334838
+    },
+    {
+        "content": "<p>Purely technical thing.</p>",
+        "id": 226323451,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1613334853
+    },
+    {
+        "content": "<p>Yeah, I noticed that it's a direct ccall, kind of makes me suspect it's an intended thing, but I don't know why</p>",
+        "id": 226323459,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1613334892
+    },
+    {
+        "content": "<p>well, regardless, I find it all very confusing</p>",
+        "id": 226323468,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1613334927
+    },
+    {
+        "content": "<p>\"number of bytes available before blocking\" sounds very straightforward, and it's clearly not giving me that</p>",
+        "id": 226323472,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1613334943
+    },
+    {
+        "content": "<p>It depends on how you define <code>blocking</code></p>",
+        "id": 226323512,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1613334970
+    },
+    {
+        "content": "<p>For me, <code>blocking</code> means that you temporarily \"own\" file handler to read next chunk of data from the file.</p>",
+        "id": 226323519,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1613335014
+    },
+    {
+        "content": "<p>well I did not do an <code>@async</code> or <code>@spawn</code> and it's not stopping the execution, so that seems to me like it's not blocking</p>",
+        "id": 226323522,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1613335029
+    },
+    {
+        "content": "<p>Yea I am pretty sure that is what is meant.</p>",
+        "id": 226323528,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1613335050
+    },
+    {
+        "content": "<p>What are you using it for? I thought I would have use for it the other day but in the end I only use <code>read</code> and <code>write</code> with async tasks.</p>",
+        "id": 226323843,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1613335526
+    },
+    {
+        "content": "<p><a href=\"https://github.com/JuliaLang/julia/issues/24526\">https://github.com/JuliaLang/julia/issues/24526</a> has some review of this btw</p>",
+        "id": 226323848,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1613335535
+    },
+    {
+        "content": "<p>Ok, I just had a conversation on slack, I think our problem is just that we are conflating different types of blocking</p>",
+        "id": 226323860,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1613335561
+    },
+    {
+        "content": "<p>readavailable seems to normally only block on relatively fast stuff</p>",
+        "id": 226323908,
+        "sender_full_name": "Expanding Man",
+        "timestamp": 1613335578
+    },
+    {
+        "content": "<p>I feel like <code>bytesavailable</code> isn't what I want. I want to know if there are at least N bytes remaining in the file or stream, but I don't care how many are currently buffered. When N = 1, this is equivalent to <code>eof(io)</code>, but I want to be able to pick other Ns.</p>",
+        "id": 226326499,
+        "sender_full_name": "Colin Caine",
+        "timestamp": 1613339259
+    }
+]

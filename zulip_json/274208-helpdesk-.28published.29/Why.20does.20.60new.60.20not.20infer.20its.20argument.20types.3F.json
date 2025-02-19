@@ -1,0 +1,56 @@
+[
+    {
+        "content": "<p>Why does this not work:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"n\">Y</span><span class=\"p\">{</span><span class=\"n\">T</span><span class=\"o\">&lt;:</span><span class=\"kt\">Integer</span><span class=\"p\">}</span>\n    <span class=\"n\">y</span><span class=\"o\">::</span><span class=\"n\">T</span>\n    <span class=\"n\">Y</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"p\">)</span> <span class=\"o\">=</span> <span class=\"n\">new</span><span class=\"p\">(</span><span class=\"n\">a</span> <span class=\"o\">*</span> <span class=\"mi\">2</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>Instead, you have to do this, which seems like a lot of ceremony:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"n\">X</span><span class=\"p\">{</span><span class=\"n\">T</span><span class=\"o\">&lt;:</span><span class=\"kt\">Integer</span><span class=\"p\">}</span>\n    <span class=\"n\">x</span><span class=\"o\">::</span><span class=\"n\">T</span>\n    <span class=\"n\">X</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"n\">T</span><span class=\"p\">)</span> <span class=\"n\">where</span> <span class=\"p\">{</span><span class=\"n\">T</span><span class=\"p\">}</span> <span class=\"o\">=</span> <span class=\"n\">new</span><span class=\"p\">{</span><span class=\"n\">T</span><span class=\"p\">}(</span><span class=\"n\">a</span> <span class=\"o\">*</span> <span class=\"mi\">2</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>Edit: search terms: <code>ERROR: syntax: too few type parameters specified in \"new{...}\"</code></p>",
+        "id": 230180372,
+        "sender_full_name": "Colin Caine",
+        "timestamp": 1615660230
+    },
+    {
+        "content": "<p>Looking through the <a href=\"https://docs.julialang.org/en/v1/manual/constructors/#Parametric-Constructors\">manual</a>, the expected form is something like this</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"n\">Z</span><span class=\"p\">{</span><span class=\"n\">T</span><span class=\"p\">}</span>\n    <span class=\"n\">z</span><span class=\"o\">::</span><span class=\"n\">T</span>\n    <span class=\"n\">Z</span><span class=\"p\">{</span><span class=\"n\">T</span><span class=\"p\">}(</span><span class=\"n\">a</span><span class=\"p\">)</span> <span class=\"n\">where</span> <span class=\"p\">{</span><span class=\"n\">T</span><span class=\"p\">}</span> <span class=\"o\">=</span> <span class=\"n\">new</span><span class=\"p\">(</span><span class=\"n\">a</span> <span class=\"o\">*</span> <span class=\"mi\">2</span><span class=\"p\">)</span>\n<span class=\"k\">end</span>\n\n<span class=\"n\">Z</span><span class=\"p\">(</span><span class=\"n\">a</span><span class=\"o\">::</span><span class=\"n\">T</span><span class=\"p\">)</span> <span class=\"n\">where</span> <span class=\"p\">{</span><span class=\"n\">T</span><span class=\"p\">}</span> <span class=\"o\">=</span> <span class=\"n\">Z</span><span class=\"p\">{</span><span class=\"n\">T</span><span class=\"p\">}(</span><span class=\"n\">a</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>Which I guess is nice because it is very explicit? But I think it's adequately implied by <code>Y</code> above. It's nicer than <code>X</code>, tho</p>",
+        "id": 230181273,
+        "sender_full_name": "Colin Caine",
+        "timestamp": 1615661235
+    },
+    {
+        "content": "<p>Maybe it's because in general case type of <code>2*a</code> can differ from the type of <code>a</code>.  For example, what if <code>a</code> is of the (non existent) type <code>OddInteger</code>? In this case <code>2*a</code> is of the type <code>EvenInteger</code> and how compiler should solve this case? Is it <code>Y{OddInteger}(1)</code> or <code>Y{EvenInteger}(1)</code>? Only you know, what you really want to see in this case.</p>",
+        "id": 230182325,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1615662343
+    },
+    {
+        "content": "<p>I guess the issue is that I expect <code>new</code> to act like a generic method or a type with a default constructor. With those, we don't specify the types in the code, we just provide values and Julia decides what the types will be.</p>\n<p>With your example, I feel like I'd be more likely to mess it up if I'm forced to be explicit compared to if <code>new</code> behaved more like a function.</p>\n<p>(To be explicit, I expect a behaviour like:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">struct</span> <span class=\"n\">A</span><span class=\"p\">{</span><span class=\"n\">T</span><span class=\"p\">}</span>\n    <span class=\"n\">x</span><span class=\"o\">::</span><span class=\"n\">T</span>\n    <span class=\"k\">function</span> <span class=\"n\">A</span><span class=\"p\">(</span><span class=\"n\">x</span><span class=\"p\">)</span>\n        <span class=\"n\">x1</span> <span class=\"o\">=</span> <span class=\"n\">x</span> <span class=\"o\">*</span> <span class=\"mi\">2</span>\n        <span class=\"n\">new</span><span class=\"p\">{</span><span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">x1</span><span class=\"p\">)}(</span><span class=\"n\">x1</span><span class=\"p\">)</span>\n    <span class=\"k\">end</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>)</p>",
+        "id": 230183100,
+        "sender_full_name": "Colin Caine",
+        "timestamp": 1615663157
+    },
+    {
+        "content": "<p>But this is not the behavior of <code>Z</code> or <code>X</code> structure, right? Because they more or less explicitly say <code>new{typeof(x)}(x1)</code></p>",
+        "id": 230185054,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1615665302
+    },
+    {
+        "content": "<p>Hmm, I guess <code>Z</code> will just error in this case.</p>",
+        "id": 230185138,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1615665365
+    },
+    {
+        "content": "<p>Maybe they both error.</p>",
+        "id": 230185202,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1615665464
+    },
+    {
+        "content": "<p>Should put it in REPL :-)</p>",
+        "id": 230185208,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1615665481
+    },
+    {
+        "content": "<p>Ah, after some consideration, I think I get the real reason, why you should be explicit.</p>\n<p>I think that <code>new</code>is really can infer types on its own, but default inner constructor is more complicated than that.<br>\nI think it's closer to <code>A{T}(x) where T = new{T}(convert(T, f(x))</code>, and this gives you possibility to write expressions like <code>Vector{Float64}(1)</code>. In your syntax <code>A(x) = new(f(x))</code> everything will be fine till the moment, when you would need to call constructor with explicit type (like in <code>Vector{Float64}</code> example). Since types infer from the result of calculation, construction of the form <code>A{T}(x)</code> will be forbidden. And it would be nice until the moment when you need it.</p>\n<p>In your last example:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">A</span><span class=\"p\">{</span><span class=\"kt\">Int</span><span class=\"p\">}(</span><span class=\"mi\">1</span><span class=\"p\">)</span>\n<span class=\"n\">ERROR</span><span class=\"o\">:</span> <span class=\"kt\">MethodError</span><span class=\"o\">:</span> <span class=\"n\">no</span> <span class=\"n\">method</span> <span class=\"n\">matching</span> <span class=\"n\">A</span><span class=\"p\">{</span><span class=\"kt\">Int64</span><span class=\"p\">}(</span><span class=\"o\">::</span><span class=\"kt\">Int64</span><span class=\"p\">)</span>\n</code></pre></div>\n<p>And it looks unexpected. So you can shoot yourself in a foot, but at least you have to make extra efforts for it.</p>",
+        "id": 230186880,
+        "sender_full_name": "Kwaku Oskin",
+        "timestamp": 1615667283
+    }
+]

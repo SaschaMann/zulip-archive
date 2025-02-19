@@ -1,0 +1,140 @@
+[
+    {
+        "content": "<p>In <a href=\"https://github.com/fredrikekre/LokiLogger.jl\">LokiLogger.jl</a>, which pushes log messages using HTTP requests, I want to do some buffering and only \"flush\" the logger, i.e. fire off the HTTP request, every 5 minutes or so. What would be a good way to manage a background task doing this?<br>\nI am thinking I can just schedule a task that does something like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">task</span> <span class=\"o\">=</span> <span class=\"nd\">@async</span> <span class=\"k\">begin</span>\n    <span class=\"n\">sleep</span><span class=\"p\">(</span><span class=\"mi\">5</span> <span class=\"o\">*</span> <span class=\"mi\">60</span><span class=\"p\">)</span>\n    <span class=\"c\"># flush the logger</span>\n<span class=\"k\">end</span>\n</code></pre></div>\n<p>and store <code>task</code> in the logger struct, but how do I gracefully shut down that task?</p>",
+        "id": 239304382,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1621363114
+    },
+    {
+        "content": "<p>One option would be <code>Base.throwto</code> in order to shut it down</p>",
+        "id": 239304832,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1621363280
+    },
+    {
+        "content": "<p>There's probably a more blessed way to do it though</p>",
+        "id": 239304945,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1621363324
+    },
+    {
+        "content": "<p>Right, I have seen that trick but doesn't seem very \"graceful\" :)</p>",
+        "id": 239305021,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1621363360
+    },
+    {
+        "content": "<p>Hmm, what about <code>schedule(task, InterruptException(), error=true)</code>? I'm not sure if that's any different than just <code>throwto</code>,</p>",
+        "id": 239305444,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1621363536
+    },
+    {
+        "content": "<p>Does that wake up the task if it is currently sleeping?</p>",
+        "id": 239305645,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1621363615
+    },
+    {
+        "content": "<p>Hm, reading <a href=\"https://discourse.julialang.org/t/stop-terminate-a-sub-task-started-with-async/32193/10\">https://discourse.julialang.org/t/stop-terminate-a-sub-task-started-with-async/32193/10</a> <span class=\"user-mention\" data-user-id=\"369728\">@Jameson Nash</span>  is saying that </p>\n<blockquote>\n<p>No, there’s no generally safe way to interrupt a task. But you can interrupt any waitable object (by closing it).</p>\n</blockquote>",
+        "id": 239305677,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1621363626
+    },
+    {
+        "content": "<p><span class=\"user-mention silent\" data-user-id=\"272644\">Fredrik Ekre</span> <a href=\"#narrow/stream/274208-helpdesk-.28published.29/topic/managing.20background.20task/near/239305645\">said</a>:</p>\n<blockquote>\n<p>Does that wake up the task if it is currently sleeping?</p>\n</blockquote>\n<p>yes</p>",
+        "id": 239305968,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1621363728
+    },
+    {
+        "content": "<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">task</span> <span class=\"o\">=</span> <span class=\"nd\">@async</span> <span class=\"k\">begin</span>\n           <span class=\"n\">sleep</span><span class=\"p\">(</span><span class=\"mi\">5</span> <span class=\"o\">*</span> <span class=\"mi\">60</span><span class=\"p\">)</span>\n           <span class=\"c\"># flush the logger</span>\n       <span class=\"k\">end</span>\n<span class=\"kt\">Task</span> <span class=\"p\">(</span><span class=\"n\">runnable</span><span class=\"p\">)</span> <span class=\"err\">@</span><span class=\"mh\">0x00007fa6d39457b0</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">task</span> <span class=\"o\">|&gt;</span> <span class=\"n\">istaskstarted</span>\n<span class=\"nb\">true</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">task</span> <span class=\"o\">|&gt;</span> <span class=\"n\">istaskfailed</span>\n<span class=\"nb\">false</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">schedule</span><span class=\"p\">(</span><span class=\"n\">task</span><span class=\"p\">,</span> <span class=\"kt\">InterruptException</span><span class=\"p\">(),</span> <span class=\"n\">error</span><span class=\"o\">=</span><span class=\"nb\">true</span><span class=\"p\">)</span>\n<span class=\"kt\">Task</span> <span class=\"p\">(</span><span class=\"n\">failed</span><span class=\"p\">)</span> <span class=\"err\">@</span><span class=\"mh\">0x00007fa6d39457b0</span>\n<span class=\"kt\">InterruptException</span><span class=\"o\">:</span>\n<span class=\"n\">Stacktrace</span><span class=\"o\">:</span>\n <span class=\"p\">[</span><span class=\"mi\">1</span><span class=\"p\">]</span> <span class=\"n\">try_yieldto</span><span class=\"p\">(</span><span class=\"n\">undo</span><span class=\"o\">::</span><span class=\"n\">typeof</span><span class=\"p\">(</span><span class=\"n\">Base</span><span class=\"o\">.</span><span class=\"n\">ensure_rescheduled</span><span class=\"p\">))</span>\n   <span class=\"err\">@</span> <span class=\"n\">Base</span> <span class=\"o\">./</span><span class=\"n\">task</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">705</span>\n <span class=\"p\">[</span><span class=\"mi\">2</span><span class=\"p\">]</span> <span class=\"n\">wait</span>\n   <span class=\"err\">@</span> <span class=\"o\">./</span><span class=\"n\">task</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">764</span> <span class=\"p\">[</span><span class=\"n\">inlined</span><span class=\"p\">]</span>\n <span class=\"p\">[</span><span class=\"mi\">3</span><span class=\"p\">]</span> <span class=\"n\">wait</span><span class=\"p\">(</span><span class=\"n\">c</span><span class=\"o\">::</span><span class=\"kt\">Base</span><span class=\"o\">.</span><span class=\"kt\">GenericCondition</span><span class=\"p\">{</span><span class=\"kt\">Base</span><span class=\"o\">.</span><span class=\"kt\">Threads</span><span class=\"o\">.</span><span class=\"kt\">SpinLock</span><span class=\"p\">})</span>\n   <span class=\"err\">@</span> <span class=\"n\">Base</span> <span class=\"o\">./</span><span class=\"n\">condition</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">106</span>\n <span class=\"p\">[</span><span class=\"mi\">4</span><span class=\"p\">]</span> <span class=\"n\">_trywait</span><span class=\"p\">(</span><span class=\"n\">t</span><span class=\"o\">::</span><span class=\"kt\">Timer</span><span class=\"p\">)</span>\n   <span class=\"err\">@</span> <span class=\"n\">Base</span> <span class=\"o\">./</span><span class=\"n\">asyncevent</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">111</span>\n <span class=\"p\">[</span><span class=\"mi\">5</span><span class=\"p\">]</span> <span class=\"n\">wait</span>\n   <span class=\"err\">@</span> <span class=\"o\">./</span><span class=\"n\">asyncevent</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">129</span> <span class=\"p\">[</span><span class=\"n\">inlined</span><span class=\"p\">]</span>\n <span class=\"p\">[</span><span class=\"mi\">6</span><span class=\"p\">]</span> <span class=\"n\">sleep</span><span class=\"p\">(</span><span class=\"n\">sec</span><span class=\"o\">::</span><span class=\"kt\">Int64</span><span class=\"p\">)</span>\n   <span class=\"err\">@</span> <span class=\"n\">Base</span> <span class=\"o\">./</span><span class=\"n\">asyncevent</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">214</span>\n <span class=\"p\">[</span><span class=\"mi\">7</span><span class=\"p\">]</span> <span class=\"k\">macro</span> <span class=\"n\">expansion</span>\n   <span class=\"err\">@</span> <span class=\"o\">./</span><span class=\"n\">REPL</span><span class=\"p\">[</span><span class=\"mi\">8</span><span class=\"p\">]</span><span class=\"o\">:</span><span class=\"mi\">2</span> <span class=\"p\">[</span><span class=\"n\">inlined</span><span class=\"p\">]</span>\n <span class=\"p\">[</span><span class=\"mi\">8</span><span class=\"p\">]</span> <span class=\"p\">(</span><span class=\"o\">::</span><span class=\"kt\">var</span><span class=\"s\">\"#4#5\"</span><span class=\"p\">)()</span>\n   <span class=\"err\">@</span> <span class=\"n\">Main</span> <span class=\"o\">./</span><span class=\"n\">task</span><span class=\"o\">.</span><span class=\"n\">jl</span><span class=\"o\">:</span><span class=\"mi\">406</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">task</span> <span class=\"o\">|&gt;</span> <span class=\"n\">istaskfailed</span>\n<span class=\"nb\">true</span>\n</code></pre></div>",
+        "id": 239306037,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1621363762
+    },
+    {
+        "content": "<p>Right, so for example <code>Channel</code> is a waitable object, and I think I have seen something like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">ch</span> <span class=\"o\">=</span> <span class=\"kt\">Channel</span><span class=\"p\">()</span> <span class=\"k\">do</span> <span class=\"n\">ch</span>\n           <span class=\"n\">FLUSHTOKEN</span> <span class=\"o\">=</span> <span class=\"mi\">1</span>\n           <span class=\"n\">SHUTDOWNTOKEN</span> <span class=\"o\">=</span> <span class=\"mi\">0</span>\n           <span class=\"k\">for</span> <span class=\"n\">token</span> <span class=\"k\">in</span> <span class=\"n\">ch</span>\n               <span class=\"k\">if</span> <span class=\"n\">token</span> <span class=\"o\">==</span> <span class=\"n\">FLUSHTOKEN</span>\n                   <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"s\">\"flushing...\"</span><span class=\"p\">)</span>\n               <span class=\"k\">elseif</span> <span class=\"n\">token</span> <span class=\"o\">==</span> <span class=\"n\">SHUTDOWNTOKEN</span>\n                   <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"s\">\"shutting down...\"</span><span class=\"p\">)</span>\n                   <span class=\"k\">break</span>\n               <span class=\"k\">end</span>\n           <span class=\"k\">end</span>\n       <span class=\"k\">end</span>\n<span class=\"kt\">Channel</span><span class=\"p\">{</span><span class=\"kt\">Any</span><span class=\"p\">}(</span><span class=\"mi\">0</span><span class=\"p\">)</span> <span class=\"p\">(</span><span class=\"n\">empty</span><span class=\"p\">)</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">put!</span><span class=\"p\">(</span><span class=\"n\">ch</span><span class=\"p\">,</span> <span class=\"mi\">1</span><span class=\"p\">);</span>\n<span class=\"n\">flushing</span><span class=\"o\">...</span>\n\n<span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">put!</span><span class=\"p\">(</span><span class=\"n\">ch</span><span class=\"p\">,</span> <span class=\"mi\">0</span><span class=\"p\">);</span>\n<span class=\"n\">shutting</span> <span class=\"n\">down</span><span class=\"o\">...</span>\n</code></pre></div>\n<p>suggested before. You could then (in a finalizer?) do</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">put!</span><span class=\"p\">(</span><span class=\"n\">ch</span><span class=\"p\">,</span> <span class=\"n\">SHUTDOWNTOKEN</span><span class=\"p\">)</span>\n<span class=\"n\">wait</span><span class=\"p\">(</span><span class=\"n\">ch</span><span class=\"p\">)</span>\n</code></pre></div>",
+        "id": 239306231,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1621363843
+    },
+    {
+        "content": "<p>But then I need another task that, every 5 minutes, does <code>put!(ch, FLUSHTOKEN)</code> :P</p>",
+        "id": 239306289,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1621363867
+    },
+    {
+        "content": "<p>This method only uses one task and one channel: <a href=\"https://discourse.julialang.org/t/how-to-kill-thread/34236/8?u=mason\">https://discourse.julialang.org/t/how-to-kill-thread/34236/8?u=mason</a></p>",
+        "id": 239306579,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1621363981
+    },
+    {
+        "content": "<p>That is, just put a <code>while</code> loop inside the Channel</p>",
+        "id": 239306758,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1621364050
+    },
+    {
+        "content": "<p>Yea, but that just solves the problem by sleeping shorter (kinda). Perhaps that is fine.</p>",
+        "id": 239306769,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1621364053
+    },
+    {
+        "content": "<p>Couldn't you just sleep the full 5 minutes and then at the end of the 5 minutes check if you put in the <code>STOP</code> token and <code>break</code>?</p>",
+        "id": 239306852,
+        "sender_full_name": "Mason Protter",
+        "timestamp": 1621364090
+    },
+    {
+        "content": "<p>Don't I risk having to wait 5 minutes in the worst case scenario then?</p>",
+        "id": 239306985,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1621364144
+    },
+    {
+        "content": "<p>There's not really any cost to finishing waiting, but there is a cost to killing the task</p>",
+        "id": 239307255,
+        "sender_full_name": "Jameson Nash",
+        "timestamp": 1621364242
+    },
+    {
+        "content": "<p>That said, it sounds like you want <code>close(ch)</code>, so you can know to end?</p>",
+        "id": 239307325,
+        "sender_full_name": "Jameson Nash",
+        "timestamp": 1621364277
+    },
+    {
+        "content": "<p>In the <code>for</code> loop example you mean? In that case <code>close(ch)</code> would terminate directly IIUC. But when using  <code>for</code> loop I can only send the flush-token whenever there is a new log message beeing processed I guess.</p>",
+        "id": 239307596,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1621364373
+    },
+    {
+        "content": "<p>So yea, that could be written like</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"n\">julia</span><span class=\"o\">&gt;</span> <span class=\"n\">ch</span> <span class=\"o\">=</span> <span class=\"kt\">Channel</span><span class=\"p\">()</span> <span class=\"k\">do</span> <span class=\"n\">ch</span>\n           <span class=\"k\">for</span> <span class=\"n\">_</span> <span class=\"k\">in</span> <span class=\"n\">ch</span>\n               <span class=\"n\">println</span><span class=\"p\">(</span><span class=\"s\">\"flushing...\"</span><span class=\"p\">)</span>\n           <span class=\"k\">end</span>\n       <span class=\"k\">end</span>\n</code></pre></div>\n<p>I guess, and then keep track of time on the outside and <code>put!</code>ing when it is time.</p>",
+        "id": 239308136,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1621364558
+    },
+    {
+        "content": "<p>I guess that can just as well be spelled as:</p>\n<div class=\"codehilite\" data-code-language=\"Julia\"><pre><span></span><code><span class=\"k\">function</span> <span class=\"n\">handle_message</span><span class=\"p\">(</span><span class=\"o\">...</span><span class=\"p\">)</span>\n    <span class=\"k\">if</span> <span class=\"n\">time_to_flush</span>\n        <span class=\"n\">task</span> <span class=\"o\">=</span> <span class=\"nd\">@async</span> <span class=\"n\">do_flush</span><span class=\"p\">(</span><span class=\"o\">...</span><span class=\"p\">)</span>\n        <span class=\"n\">yield</span><span class=\"p\">()</span>\n        <span class=\"n\">wait</span><span class=\"p\">(</span><span class=\"n\">task</span><span class=\"p\">)</span>\n    <span class=\"k\">end</span>\n<span class=\"k\">end</span>\n</code></pre></div>",
+        "id": 239309603,
+        "sender_full_name": "Fredrik Ekre",
+        "timestamp": 1621365158
+    },
+    {
+        "content": "<p>For the question in the OP, it seems to be easier to use <code>Timer(do_flush, 5 * 60; interval = 5 * 60)</code>, since you can <code>close</code> the timer to shut it down.</p>\n<p>(Generic shutdown requires a manual cancellation token in Julia and is a much harder problem.)</p>",
+        "id": 239350394,
+        "sender_full_name": "Takafumi Arakaki (tkf)",
+        "timestamp": 1621387387
+    },
+    {
+        "content": "<p>True, in this case the Timer seems to be the actual resource</p>",
+        "id": 239355826,
+        "sender_full_name": "Jameson Nash",
+        "timestamp": 1621391524
+    }
+]

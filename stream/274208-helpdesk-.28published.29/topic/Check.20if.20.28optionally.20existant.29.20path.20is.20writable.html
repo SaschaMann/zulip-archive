@@ -1,0 +1,101 @@
+<html>
+<head><meta charset="utf-8"><title>Check if (optionally existant) path is writable · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Check.20if.20.28optionally.20existant.29.20path.20is.20writable.html">Check if (optionally existant) path is writable</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="309556572"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Check%20if%20%28optionally%20existant%29%20path%20is%20writable/near/309556572" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Check.20if.20.28optionally.20existant.29.20path.20is.20writable.html#309556572">(Nov 14 2022 at 09:14)</a>:</h4>
+<p>I just want to check if I can write to a file at a certain path. Unfortunately, this seems surprisingly hard <span aria-label="half frown" class="emoji emoji-1f615" role="img" title="half frown">:half_frown:</span>.</p>
+<ul>
+<li><code>uperm</code> seems bugy, <code>uperm("/tmp")</code> and <code>uperm("/root")</code> both give <code>0x07</code> (!!)</li>
+<li><code>ccall(:access, Cint, (Cstring, Cint), path, 2)</code> (+ checking directory if file does not exist) seems to work, but I'm not sure how portable this is</li>
+</ul>
+<p>Any suggestions?</p>
+
+
+
+<a name="309560971"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Check%20if%20%28optionally%20existant%29%20path%20is%20writable/near/309560971" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Check.20if.20.28optionally.20existant.29.20path.20is.20writable.html#309560971">(Nov 14 2022 at 09:43)</a>:</h4>
+<p>EAFP? In other words, don't check, just try writing and see if it fails.</p>
+
+
+
+<a name="309561437"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Check%20if%20%28optionally%20existant%29%20path%20is%20writable/near/309561437" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gunnar Farnebäck <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Check.20if.20.28optionally.20existant.29.20path.20is.20writable.html#309561437">(Nov 14 2022 at 09:46)</a>:</h4>
+<p><code>uperm</code> gives the permissions for the <em>owner</em>. Both <code>/tmp</code> and <code>/root</code> are (typically) owned by root and root has full permissions for them.</p>
+
+
+
+<a name="309562510"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Check%20if%20%28optionally%20existant%29%20path%20is%20writable/near/309562510" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Check.20if.20.28optionally.20existant.29.20path.20is.20writable.html#309562510">(Nov 14 2022 at 09:53)</a>:</h4>
+<p><span class="user-mention silent" data-user-id="326776">jar</span> <a href="#narrow/stream/274208-helpdesk-.28published.29/topic/Check.20if.20.28optionally.20existant.29.20path.20is.20writable/near/309560971">said</a>:</p>
+<blockquote>
+<p>EAFP? In other words, don't check, just try writing and see if it fails.</p>
+</blockquote>
+<p>That wouldn't be too bad, but I don't actually want to write to the path at this stage, just check if I <em>could</em>.</p>
+
+
+
+<a name="309562661"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Check%20if%20%28optionally%20existant%29%20path%20is%20writable/near/309562661" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> jar <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Check.20if.20.28optionally.20existant.29.20path.20is.20writable.html#309562661">(Nov 14 2022 at 09:54)</a>:</h4>
+<p>But it might change later between when you check and when  you use it <a href="https://en.wikipedia.org/wiki/Time-of-check_to_time-of-use">https://en.wikipedia.org/wiki/Time-of-check_to_time-of-use</a></p>
+
+
+
+<a name="309567126"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Check%20if%20%28optionally%20existant%29%20path%20is%20writable/near/309567126" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Check.20if.20.28optionally.20existant.29.20path.20is.20writable.html#309567126">(Nov 14 2022 at 10:22)</a>:</h4>
+<p>That's a reasonable concern, but not a problem here.</p>
+<p>I just need to check if I could write a file without actually trying to do so.</p>
+
+
+
+<a name="309590548"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Check%20if%20%28optionally%20existant%29%20path%20is%20writable/near/309590548" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gunnar Farnebäck <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Check.20if.20.28optionally.20existant.29.20path.20is.20writable.html#309590548">(Nov 14 2022 at 12:47)</a>:</h4>
+<p>Your best bet is probably to <code>ccall</code> to <code>:jl_fs_access</code>, which wraps <code>uv_fs_access</code>, which is libuv's attempt to make <code>access</code> portable. But I somehow suspect that actually trying to open a file for writing is more robust.</p>
+
+
+
+<a name="309600408"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Check%20if%20%28optionally%20existant%29%20path%20is%20writable/near/309600408" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Timothy <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Check.20if.20.28optionally.20existant.29.20path.20is.20writable.html#309600408">(Nov 14 2022 at 13:43)</a>:</h4>
+<p>I must say, for a simple check this is surprisingly complicated…</p>
+
+
+
+<a name="309600910"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Check%20if%20%28optionally%20existant%29%20path%20is%20writable/near/309600910" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Check.20if.20.28optionally.20existant.29.20path.20is.20writable.html#309600910">(Nov 14 2022 at 13:45)</a>:</h4>
+<p>it's not a simple check, being filesystem and OS specific</p>
+
+
+
+<a name="309621889"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Check%20if%20%28optionally%20existant%29%20path%20is%20writable/near/309621889" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Gunnar Farnebäck <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Check.20if.20.28optionally.20existant.29.20path.20is.20writable.html#309621889">(Nov 14 2022 at 14:58)</a>:</h4>
+<p>In my experience even the OS won't always know the answer. The permissions may look fine but then it turns out that the filesystem was mounted in some odd way or if it's a network file system that the server has its own ideas about what it wants to allow.</p>
+
+
+
+<a name="309624026"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Check%20if%20%28optionally%20existant%29%20path%20is%20writable/near/309624026" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Check.20if.20.28optionally.20existant.29.20path.20is.20writable.html#309624026">(Nov 14 2022 at 15:07)</a>:</h4>
+<p>oh yes, NFS in particular will make a mess of things, simply due to NFS being a mess</p>
+
+
+
+<a name="309624153"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Check%20if%20%28optionally%20existant%29%20path%20is%20writable/near/309624153" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Check.20if.20.28optionally.20existant.29.20path.20is.20writable.html#309624153">(Nov 14 2022 at 15:08)</a>:</h4>
+<p>did you know that if you're locally root, you can pretend to be root on an NFS system and read all files mounted there? :)</p>
+
+
+
+<a name="309624249"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Check%20if%20%28optionally%20existant%29%20path%20is%20writable/near/309624249" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sukera <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Check.20if.20.28optionally.20existant.29.20path.20is.20writable.html#309624249">(Nov 14 2022 at 15:09)</a>:</h4>
+<p>(talking about NFS specifically, not SMB or anything like that, which has its own set of things)</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>

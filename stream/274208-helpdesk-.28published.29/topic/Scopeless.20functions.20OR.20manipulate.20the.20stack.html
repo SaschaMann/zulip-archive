@@ -1,0 +1,164 @@
+<html>
+<head><meta charset="utf-8"><title>Scopeless functions OR manipulate the stack · helpdesk (published) · Zulip Chat Archive</title></head>
+<h2>Stream: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/index.html">helpdesk (published)</a></h2>
+<h3>Topic: <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Scopeless.20functions.20OR.20manipulate.20the.20stack.html">Scopeless functions OR manipulate the stack</a></h3>
+
+<hr>
+
+<base href="https://julialang.zulipchat.com">
+
+<head><link href="https://juliacommunity.github.io/zulip-archive/style.css" rel="stylesheet"></head>
+
+<a name="232176070"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Scopeless%20functions%20OR%20manipulate%20the%20stack/near/232176070" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Scopeless.20functions.20OR.20manipulate.20the.20stack.html#232176070">(Mar 28 2021 at 16:12)</a>:</h4>
+<p>So we have this <a href="https://github.com/BioJulia/Automa.jl/issues/53">tricky issue in Automa</a>. The short version is that <a href="https://github.com/search?q=Automa.jl&amp;type=Repositories">Automa.jl</a> works by creating _very_ large machine-generated functions by computing some <code>Expr</code> objects, interpolating them in, and <code>eval</code>'ing the function. Currently, some expression are being interpolated many times in the function, which leads to excessively large code. That's bad for compilation, cache usage, you name it.</p>
+<p>I'd like to factor it out, and I can think of two ways of doing it.</p>
+<ol>
+<li>Take each expression and wrap it in a function. Interpolate those functions in once, then replace the old places where the code was interpolated in with function calls. The issue is that the code may access variables in the outer scope, and I worry this would be super inefficient. So here, I would need to have a way of creating "functions without scopes" - that is - literally just a block of code that can be jumped into and then out of again.</li>
+<li>Alternatively, I can manually manipulate the stack and add in <code>callq</code> and <code>popq</code> instructions. But then I would need to be able to specify "push the memory location of this expression onto the stack", and I don't think that is possible.</li>
+</ol>
+<p>Is this a solvable problem in Julia?</p>
+
+
+
+<a name="232176540"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Scopeless%20functions%20OR%20manipulate%20the%20stack/near/232176540" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Robbie Rosati <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Scopeless.20functions.20OR.20manipulate.20the.20stack.html#232176540">(Mar 28 2021 at 16:20)</a>:</h4>
+<p>Maybe I'm misunderstanding something, but does <a href="https://github.com/search?q=RuntimeGeneratedFunctions.jl&amp;type=Repositories">RuntimeGeneratedFunctions.jl</a> work for you?</p>
+
+
+
+<a name="232176676"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Scopeless%20functions%20OR%20manipulate%20the%20stack/near/232176676" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Scopeless.20functions.20OR.20manipulate.20the.20stack.html#232176676">(Mar 28 2021 at 16:22)</a>:</h4>
+<p>I don't think so, sorry. We can construct the function alright (and we always do it at compiletime), the issue is code duplication within the function</p>
+
+
+
+<a name="232176802"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Scopeless%20functions%20OR%20manipulate%20the%20stack/near/232176802" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Robbie Rosati <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Scopeless.20functions.20OR.20manipulate.20the.20stack.html#232176802">(Mar 28 2021 at 16:24)</a>:</h4>
+<p>Ah, I see. Then you're really after some kind of common subexpression elimination (CSE)?</p>
+
+
+
+<a name="232176977"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Scopeless%20functions%20OR%20manipulate%20the%20stack/near/232176977" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Scopeless.20functions.20OR.20manipulate.20the.20stack.html#232176977">(Mar 28 2021 at 16:27)</a>:</h4>
+<p>Not quite. Here are the details:<br>
+<a href="https://github.com/search?q=Automa.jl&amp;type=Repositories">Automa.jl</a> is a package for generating parsers, lexers and similar programs. The user inputs some regexes, and some Julia code (<code>Expr</code> objects) that should be executed at each regex. Automa then computes the optimal finite state machine that parses the given regexes, and then creates a function that parses the code and executes the input Expr objects.<br>
+The issue is that while the user may specify a regex input once, that regex may correspond to many states in the state machine, and the result is that the input Expr object is interpolated many times into the large function</p>
+
+
+
+<a name="232194899"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Scopeless%20functions%20OR%20manipulate%20the%20stack/near/232194899" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Takafumi Arakaki (tkf) <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Scopeless.20functions.20OR.20manipulate.20the.20stack.html#232194899">(Mar 28 2021 at 21:34)</a>:</h4>
+<p>If it's possible, I'd suggest avoiding updating the state by re-assigning to the variables in the outer scope (reading from outer scopes should be totally fine). That is to say, instead of</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">f</span><span class="p">()</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+=</span> <span class="mi">1</span>
+<span class="n">f</span><span class="p">()</span>
+</code></pre></div>
+<p>I suggest</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">g</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">g</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</code></pre></div>
+<p>if possible. It's a very efficient approach. Purity works great for the compiler. This is why <code>foldl</code>/<code>reduce</code>-based iteration that I use in <a href="https://github.com/search?q=Transducers.jl&amp;type=Repositories">Transducers.jl</a> is so powerful. It wouldn't be possible to all that stuff if I modeled the iteration as <code>foreach</code> (i.e., equivalent to how <code>f</code> is used) instead of <code>foldl</code> (i.e., how <code>g</code> is used).</p>
+<p>Maybe you could use <code>Base.Experimental.@opaque</code> and hope that Keno will implement enough optimizations you need. But, if you control codegen, maybe it isn't worth the risk.</p>
+
+
+
+<a name="232232553"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Scopeless%20functions%20OR%20manipulate%20the%20stack/near/232232553" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Scopeless.20functions.20OR.20manipulate.20the.20stack.html#232232553">(Mar 29 2021 at 08:12)</a>:</h4>
+<p>That would be nice, but the content of these functions (the otherwise duplicated content) are supplied by the user. So to wrap them in ordinary scoped functions, I would need to, given some input <code>Expr</code> object, calculate all the variables accessed (for the function signature), and the variables modified (for the return statement), which I think is really hard, no?</p>
+
+
+
+<a name="232240052"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Scopeless%20functions%20OR%20manipulate%20the%20stack/near/232240052" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Florian Große <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Scopeless.20functions.20OR.20manipulate.20the.20stack.html#232240052">(Mar 29 2021 at 09:28)</a>:</h4>
+<p>Just to clarify my understanding: when you say "functions without scope" you mean those should just evaluate as if the body was in place of the function call, right? Or did you mean a function that has no access to any outer scope?</p>
+
+
+
+<a name="232240599"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Scopeless%20functions%20OR%20manipulate%20the%20stack/near/232240599" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Scopeless.20functions.20OR.20manipulate.20the.20stack.html#232240599">(Mar 29 2021 at 09:32)</a>:</h4>
+<p>The former</p>
+
+
+
+<a name="232240868"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Scopeless%20functions%20OR%20manipulate%20the%20stack/near/232240868" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Sebastian Pfitzner <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Scopeless.20functions.20OR.20manipulate.20the.20stack.html#232240868">(Mar 29 2021 at 09:34)</a>:</h4>
+<p>Pretty sure <a href="https://github.com/search?q=Pluto.jl&amp;type=Repositories">Pluto.jl</a> has all the requisite tooling for that, considering it can wrap cells in functions automatically</p>
+
+
+
+<a name="232241302"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Scopeless%20functions%20OR%20manipulate%20the%20stack/near/232241302" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Scopeless.20functions.20OR.20manipulate.20the.20stack.html#232241302">(Mar 29 2021 at 09:38)</a>:</h4>
+<p>Maybe restrict somehow user interface? Force user to provide all necessary information for input and output variables.</p>
+<p>You can use this function later, even when you would be able to get information automatically.</p>
+
+
+
+<a name="232241438"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Scopeless%20functions%20OR%20manipulate%20the%20stack/near/232241438" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Scopeless.20functions.20OR.20manipulate.20the.20stack.html#232241438">(Mar 29 2021 at 09:39)</a>:</h4>
+<p><span class="user-mention" data-user-id="208845">@Sebastian Pfitzner</span> <a href="https://github.com/search?q=Pluto.jl&amp;type=Repositories">Pluto.jl</a> - yeah. that looks right. I'll look into it.<br>
+I'm a bit wary of changing the interface, since that would break all the code ever written for Automa <span aria-label="sweat smile" class="emoji emoji-1f605" role="img" title="sweat smile">:sweat_smile:</span></p>
+
+
+
+<a name="232241559"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Scopeless%20functions%20OR%20manipulate%20the%20stack/near/232241559" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Kwaku Oskin <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Scopeless.20functions.20OR.20manipulate.20the.20stack.html#232241559">(Mar 29 2021 at 09:40)</a>:</h4>
+<p>This way it would be possible to focus on internal implementation details and get proof of concept that the whole restructuring make sense, get some profiling and what's not.</p>
+
+
+
+<a name="232241689"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Scopeless%20functions%20OR%20manipulate%20the%20stack/near/232241689" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Florian Große <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Scopeless.20functions.20OR.20manipulate.20the.20stack.html#232241689">(Mar 29 2021 at 09:41)</a>:</h4>
+<p>The former sounds like you could pull this off with the gotos you're already using. Like the stack thing you mentioned but you don't keep an actual function stack but you just label all the occasions where a "function" is called and insert some makeshift return-to-callside logic in each function. I don't know how easy that would be. Do you know all the places where each of those functions may be called before? </p>
+<p>Idea:</p>
+<div class="codehilite" data-code-language="Julia"><pre><span></span><code><span class="c"># keep a stack of callsides</span>
+<span class="n">push!</span><span class="p">(</span><span class="n">stack</span><span class="p">,</span> <span class="o">:</span><span class="n">fun_A_caller1</span><span class="p">)</span>
+<span class="nd">@goto</span> <span class="n">fun_A</span>
+<span class="nd">@label</span> <span class="n">fun_A_caller1</span>
+<span class="o">.</span>
+<span class="o">.</span>
+<span class="n">push!</span><span class="p">(</span><span class="n">stack</span><span class="p">,</span> <span class="o">:</span><span class="n">fun_A_caller2</span><span class="p">)</span>
+<span class="nd">@goto</span> <span class="n">fun_A</span>
+<span class="nd">@label</span> <span class="n">fun_A_caller2</span>
+<span class="o">.</span>
+<span class="o">.</span>
+<span class="c"># function A</span>
+<span class="nd">@label</span> <span class="n">fun_A</span>
+<span class="o">...</span> <span class="k">do</span> <span class="n">work</span> <span class="o">...</span>
+<span class="c"># return logic that would have to be generated</span>
+<span class="n">caller</span> <span class="o">=</span> <span class="n">pop!</span><span class="p">(</span><span class="n">stack</span><span class="p">)</span>
+<span class="n">caller</span> <span class="o">===</span> <span class="o">:</span><span class="n">fun_A_caller1</span> <span class="o">&amp;&amp;</span> <span class="nd">@goto</span> <span class="n">fun_A_caller1</span>
+<span class="n">caller</span> <span class="o">===</span> <span class="o">:</span><span class="n">fun_A_caller2</span> <span class="o">&amp;&amp;</span> <span class="nd">@goto</span> <span class="n">fun_A_caller2</span>
+</code></pre></div>
+<p>Although I have no clue if this would please the compiler or not.</p>
+
+
+
+<a name="232242004"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Scopeless%20functions%20OR%20manipulate%20the%20stack/near/232242004" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Scopeless.20functions.20OR.20manipulate.20the.20stack.html#232242004">(Mar 29 2021 at 09:43)</a>:</h4>
+<p>Ah yes, I could totally do it with <code>@goto</code>, a manual stack, and some symbols (or perhaps integers) for figuring out where to jump. It's not quite as efficient I suppose, but maybe it'll be fine.</p>
+
+
+
+<a name="232242320"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Scopeless%20functions%20OR%20manipulate%20the%20stack/near/232242320" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Jakob Nybo Nissen <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Scopeless.20functions.20OR.20manipulate.20the.20stack.html#232242320">(Mar 29 2021 at 09:46)</a>:</h4>
+<p>Ah, but then the problem is that executing the function would lead to allocating a vector for the stack, and some people have already used Automa to build functions with runtimes that are a few tens of nanoseconds.</p>
+
+
+
+<a name="232242674"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Scopeless%20functions%20OR%20manipulate%20the%20stack/near/232242674" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Florian Große <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Scopeless.20functions.20OR.20manipulate.20the.20stack.html#232242674">(Mar 29 2021 at 09:49)</a>:</h4>
+<p>That's true, it'd be a huge overhead for those but alleviate the scaling problems for larger things.<br>
+You should probably consider ripping Pluto's internals out and bathing in it's glory before you try that out :D</p>
+
+
+
+<a name="232242683"></a>
+<h4><a href="https://julialang.zulipchat.com#narrow/stream/274208-helpdesk%20%28published%29/topic/Scopeless%20functions%20OR%20manipulate%20the%20stack/near/232242683" class="zl"><img src="https://juliacommunity.github.io/zulip-archive/assets/img/zulip.svg" alt="view this post on Zulip" style="width:20px;height:20px;"></a> Florian Große <a href="https://juliacommunity.github.io/zulip-archive/stream/274208-helpdesk-.28published.29/topic/Scopeless.20functions.20OR.20manipulate.20the.20stack.html#232242683">(Mar 29 2021 at 09:49)</a>:</h4>
+<p>Good luck</p>
+
+
+
+<hr><p>Last updated: Feb 19 2025 at 04:41 UTC</p>
+</html>
